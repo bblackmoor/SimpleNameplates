@@ -74,18 +74,16 @@ local function AccessibleNumber(value)
 end
 
 local function ColorForUnit(unit)
-    -- Reaction is the cleanest expression of the three non-combat states.
-    -- 5-8 friendly; 4 neutral; 1-3 hostile.
     local reaction = UnitReaction(unit, "player")
-    if reaction ~= nil and not issecretvalue(reaction) and canaccessvalue(reaction) then
-        if reaction >= 5 then
-            return COLORS.friendly
-        elseif reaction == 4 then
-            return COLORS.neutral
-        end
-    else
-        -- Conservative fallback when reaction is unavailable. Only call something
-        -- friendly when neither side can attack the other.
+    local reactionAccessible = reaction ~= nil and not issecretvalue(reaction) and canaccessvalue(reaction)
+
+    -- Truly friendly units are always green. Do this before threat because threat
+    -- is irrelevant to units that cannot be enemies.
+    if reactionAccessible and reaction >= 5 then
+        return COLORS.friendly
+    end
+
+    if not reactionAccessible then
         local playerCanAttack = UnitCanAttack("player", unit)
         local unitCanAttack = UnitCanAttack(unit, "player")
         if not playerCanAttack and not unitCanAttack then
@@ -93,13 +91,20 @@ local function ColorForUnit(unit)
         end
     end
 
-    -- Threat status 2 and 3 both mean the player is the mob's primary target.
-    -- That is exactly our definition of RED. Status 0/1 remains ORANGE.
+    -- Combat state must outrank reaction. A neutral (reaction 4) NPC remains
+    -- reaction 4 after the player attacks it, so checking neutral first leaves an
+    -- actively attacking neutral mob yellow. Threat status 2/3 means the player
+    -- is its primary target, which is precisely our RED state.
     local threat = UnitThreatSituation("player", unit)
     if threat ~= nil and not issecretvalue(threat) and canaccessvalue(threat) then
         if threat >= 2 then
             return COLORS.angry
         end
+    end
+
+    -- Only after ruling out aggro do we use the passive reaction states.
+    if reactionAccessible and reaction == 4 then
+        return COLORS.neutral
     end
 
     return COLORS.hostile
@@ -140,8 +145,6 @@ local function UpdateThreatText(frame)
     if percent then
         text:SetFormattedText("%.0f%%", percent)
     else
-        -- Midnight may intentionally make threat values secret. Never attempt to
-        -- inspect or format a secret value; the color state can still be useful.
         text:SetText("")
     end
 end
@@ -156,7 +159,6 @@ local function ApplySimpleColor(frame)
     local color = ColorForUnit(frame.unit)
     healthBar:SetStatusBarColor(color[1], color[2], color[3], 1)
 
-    -- Keep the name and health bar speaking the same four-color language.
     if frame.name then
         frame.name:SetTextColor(color[1], color[2], color[3], 1)
     end
@@ -176,8 +178,6 @@ local function RefreshAll()
     end
 end
 
--- Blizzard recolors the health bar for faction, selection, and other normal
--- updates. Re-apply our deliberately small palette after Blizzard finishes.
 if hooksecurefunc and CompactUnitFrame_UpdateHealthColor then
     hooksecurefunc("CompactUnitFrame_UpdateHealthColor", function(frame)
         ApplySimpleColor(frame)
@@ -200,7 +200,6 @@ events:SetScript("OnEvent", function(_, event, unit)
     end
 
     if event == "NAME_PLATE_UNIT_ADDED" then
-        -- Let Blizzard finish its normal setup first, then apply only our color.
         C_Timer.After(0, function() RefreshUnit(unit) end)
         return
     end
@@ -213,10 +212,8 @@ events:SetScript("OnEvent", function(_, event, unit)
     if unit and tostring(unit):match("^nameplate%d+$") then
         RefreshUnit(unit)
     elseif event == "UNIT_THREAT_SITUATION_UPDATE" then
-        -- This event can refer to the player rather than a particular nameplate.
         RefreshAll()
     end
 end)
 
--- Public helper for testing: /run EllesmereUI._ModuleNS.EllesmereUISimpleNameplates.RefreshAll()
 ns.RefreshAll = RefreshAll
