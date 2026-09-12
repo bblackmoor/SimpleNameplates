@@ -19,6 +19,8 @@ local UnitCanAttack = UnitCanAttack
 local UnitReaction = UnitReaction
 local UnitThreatSituation = UnitThreatSituation
 local UnitDetailedThreatSituation = UnitDetailedThreatSituation
+local UnitHealth = UnitHealth
+local UnitHealthMax = UnitHealthMax
 local UnitName = UnitName
 local issecretvalue = issecretvalue or function() return false end
 local canaccessvalue = canaccessvalue or function(v) return not issecretvalue(v) end
@@ -77,8 +79,6 @@ local function ColorForUnit(unit)
     local reaction = UnitReaction(unit, "player")
     local reactionAccessible = reaction ~= nil and not issecretvalue(reaction) and canaccessvalue(reaction)
 
-    -- Truly friendly units are always green. Do this before threat because threat
-    -- is irrelevant to units that cannot be enemies.
     if reactionAccessible and reaction >= 5 then
         return COLORS.friendly
     end
@@ -91,10 +91,8 @@ local function ColorForUnit(unit)
         end
     end
 
-    -- Combat state must outrank reaction. A neutral (reaction 4) NPC remains
-    -- reaction 4 after the player attacks it, so checking neutral first leaves an
-    -- actively attacking neutral mob yellow. Threat status 2/3 means the player
-    -- is its primary target, which is precisely our RED state.
+    -- Combat state outranks neutral reaction. Neutral mobs stay reaction 4 after
+    -- combat begins, so threat has to be checked before returning yellow.
     local threat = UnitThreatSituation("player", unit)
     if threat ~= nil and not issecretvalue(threat) and canaccessvalue(threat) then
         if threat >= 2 then
@@ -102,7 +100,6 @@ local function ColorForUnit(unit)
         end
     end
 
-    -- Only after ruling out aggro do we use the passive reaction states.
     if reactionAccessible and reaction == 4 then
         return COLORS.neutral
     end
@@ -115,10 +112,30 @@ local function GetUnitFrame(unit)
     return plate and plate.UnitFrame or nil
 end
 
+local function GetHealthBar(frame)
+    return frame and (frame.healthBar or (frame.HealthBarsContainer and frame.HealthBarsContainer.healthBar)) or nil
+end
+
+local function UpdateHealthValue(frame)
+    local unit = frame and frame.unit
+    local healthBar = GetHealthBar(frame)
+    if not unit or not healthBar then return end
+
+    -- Blizzard normally drives this StatusBar itself. Explicitly synchronizing its
+    -- range/value here makes the fill reliably shrink with health while preserving
+    -- Blizzard's cast bar and the rest of the stock nameplate frame.
+    local health = AccessibleNumber(UnitHealth(unit))
+    local healthMax = AccessibleNumber(UnitHealthMax(unit))
+    if not health or not healthMax or healthMax <= 0 then return end
+
+    healthBar:SetMinMaxValues(0, healthMax)
+    healthBar:SetValue(health)
+end
+
 local function EnsureThreatText(frame)
     if frame.ESNPThreatText then return frame.ESNPThreatText end
 
-    local healthBar = frame.healthBar or (frame.HealthBarsContainer and frame.HealthBarsContainer.healthBar)
+    local healthBar = GetHealthBar(frame)
     if not healthBar then return nil end
 
     local text = healthBar:CreateFontString(nil, "OVERLAY")
@@ -153,8 +170,10 @@ local function ApplySimpleColor(frame)
     if not frame or not frame.unit then return end
     if not tostring(frame.unit):match("^nameplate%d+$") then return end
 
-    local healthBar = frame.healthBar or (frame.HealthBarsContainer and frame.HealthBarsContainer.healthBar)
+    local healthBar = GetHealthBar(frame)
     if not healthBar then return end
+
+    UpdateHealthValue(frame)
 
     local color = ColorForUnit(frame.unit)
     healthBar:SetStatusBarColor(color[1], color[2], color[3], 1)
@@ -190,6 +209,8 @@ events:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 events:RegisterEvent("PLAYER_TARGET_CHANGED")
 events:RegisterEvent("UNIT_FACTION")
 events:RegisterEvent("UNIT_FLAGS")
+events:RegisterEvent("UNIT_HEALTH")
+events:RegisterEvent("UNIT_MAXHEALTH")
 events:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
 events:RegisterEvent("UNIT_THREAT_SITUATION_UPDATE")
 
