@@ -1,13 +1,9 @@
 -- EllesmereUI Simple Nameplates
---
--- This addon does NOT create a second nameplate. It keeps Blizzard's current
--- Midnight nameplate frame (health depletion, cast bar, target treatment,
--- classification, etc.) and replaces only the reaction/threat color language.
---
---   green  = friendly / cannot fight
---   yellow = neutral / attackable but non-aggressive
---   orange = hostile / not currently attacking you
---   red    = hostile and currently targeting/tanking you
+-- Simple visibility policy:
+--   friendly = green name only
+--   neutral  = yellow full nameplate
+--   hostile  = orange full nameplate
+--   angry    = red full nameplate
 
 if EUI_CLIENT_BLOCKED then return end
 local addon, ns = ...
@@ -24,22 +20,18 @@ local UnitHealthMax = UnitHealthMax
 local UnitName = UnitName
 local issecretvalue = issecretvalue or function() return false end
 local canaccessvalue = canaccessvalue or function(v) return not issecretvalue(v) end
-
 local STANDARD_NAMEPLATES = "EllesmereUINameplates"
 
 local COLORS = {
-    friendly = { 0.20, 0.85, 0.25 },
-    neutral  = { 1.00, 0.82, 0.12 },
-    hostile  = { 1.00, 0.48, 0.08 },
-    angry    = { 1.00, 0.12, 0.10 },
+    friendly = { 0.20, 0.85, 0.25 }, neutral = { 1.00, 0.82, 0.12 },
+    hostile = { 1.00, 0.48, 0.08 }, angry = { 1.00, 0.12, 0.10 },
 }
 
 local function StandardNameplatesEnabled()
     if not C_AddOns then return false end
     if C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded(STANDARD_NAMEPLATES) then return true end
     if C_AddOns.GetAddOnEnableState then
-        local player = UnitName("player")
-        return (C_AddOns.GetAddOnEnableState(STANDARD_NAMEPLATES, player) or 0) > 0
+        return (C_AddOns.GetAddOnEnableState(STANDARD_NAMEPLATES, UnitName("player")) or 0) > 0
     end
     return false
 end
@@ -58,27 +50,20 @@ local function ShowNameplateConflictWarning()
     StaticPopup_Show("ESNP_ELLESMERE_NAMEPLATE_CONFLICT")
 end
 
-local function AccessibleNumber(value)
-    if value == nil or issecretvalue(value) or not canaccessvalue(value) then return nil end
-    if type(value) ~= "number" then return nil end
-    return value
+local function AccessibleNumber(v)
+    if v == nil or issecretvalue(v) or not canaccessvalue(v) or type(v) ~= "number" then return nil end
+    return v
 end
 
-local function ColorForUnit(unit)
+local function StateForUnit(unit)
     local reaction = UnitReaction(unit, "player")
-    local reactionAccessible = reaction ~= nil and not issecretvalue(reaction) and canaccessvalue(reaction)
-    if reactionAccessible and reaction >= 5 then return COLORS.friendly end
-    if not reactionAccessible then
-        local playerCanAttack = UnitCanAttack("player", unit)
-        local unitCanAttack = UnitCanAttack(unit, "player")
-        if not playerCanAttack and not unitCanAttack then return COLORS.friendly end
-    end
+    local accessible = reaction ~= nil and not issecretvalue(reaction) and canaccessvalue(reaction)
+    if accessible and reaction >= 5 then return "friendly" end
+    if not accessible and not UnitCanAttack("player", unit) and not UnitCanAttack(unit, "player") then return "friendly" end
     local threat = UnitThreatSituation("player", unit)
-    if threat ~= nil and not issecretvalue(threat) and canaccessvalue(threat) and threat >= 2 then
-        return COLORS.angry
-    end
-    if reactionAccessible and reaction == 4 then return COLORS.neutral end
-    return COLORS.hostile
+    if threat ~= nil and not issecretvalue(threat) and canaccessvalue(threat) and threat >= 2 then return "angry" end
+    if accessible and reaction == 4 then return "neutral" end
+    return "hostile"
 end
 
 local function GetUnitFrame(unit)
@@ -90,44 +75,43 @@ local function GetHealthBar(frame)
     return frame and (frame.healthBar or (frame.HealthBarsContainer and frame.HealthBarsContainer.healthBar)) or nil
 end
 
-local function UpdateHealthValue(frame)
-    local unit = frame and frame.unit
-    local healthBar = GetHealthBar(frame)
-    if not unit or not healthBar then return end
-    local health = AccessibleNumber(UnitHealth(unit))
-    local healthMax = AccessibleNumber(UnitHealthMax(unit))
-    if not health or not healthMax or healthMax <= 0 then return end
-    healthBar:SetMinMaxValues(0, healthMax)
-    healthBar:SetValue(health)
+local function SetShownSafe(region, shown)
+    if not region then return end
+    if shown then region:Show() else region:Hide() end
 end
 
-local function StyleName(frame, color)
+local function UpdateHealthValue(frame)
+    local bar, unit = GetHealthBar(frame), frame and frame.unit
+    if not bar or not unit then return end
+    local health, maxHealth = AccessibleNumber(UnitHealth(unit)), AccessibleNumber(UnitHealthMax(unit))
+    if health and maxHealth and maxHealth > 0 then
+        bar:SetMinMaxValues(0, maxHealth)
+        bar:SetValue(health)
+    end
+end
+
+local function StyleName(frame, state)
     local name = frame and frame.name
     if not name then return end
-
-    -- Names are labels first and status indicators second. White provides maximum
-    -- contrast for normal plates; a heavy outline keeps the text readable over
-    -- bright floors, foliage, spell effects, and dark interiors.
     local font, size = name:GetFont()
     if font and size then name:SetFont(font, size, "THICKOUTLINE") end
     name:SetShadowColor(0, 0, 0, 1)
     name:SetShadowOffset(1, -1)
-
-    if GetHealthBar(frame) then
-        name:SetTextColor(1, 1, 1, 1)
+    if state == "friendly" then
+        local c = COLORS.friendly
+        name:SetTextColor(c[1], c[2], c[3], 1)
     else
-        -- If Blizzard gives a friendly unit a name-only plate, retain green as the
-        -- only available friendly-state signal while keeping the strong outline.
-        name:SetTextColor(color[1], color[2], color[3], 1)
+        name:SetTextColor(1, 1, 1, 1)
     end
+    name:Show()
 end
 
 local function EnsureThreatText(frame)
     if frame.ESNPThreatText then return frame.ESNPThreatText end
-    local healthBar = GetHealthBar(frame)
-    if not healthBar then return nil end
-    local text = healthBar:CreateFontString(nil, "OVERLAY")
-    text:SetPoint("RIGHT", healthBar, "RIGHT", -3, 0)
+    local bar = GetHealthBar(frame)
+    if not bar then return nil end
+    local text = bar:CreateFontString(nil, "OVERLAY")
+    text:SetPoint("RIGHT", bar, "RIGHT", -3, 0)
     text:SetJustifyH("RIGHT")
     text:SetFont("Fonts\\FRIZQT__.TTF", 9, "OUTLINE")
     text:SetTextColor(1, 1, 1, 1)
@@ -135,67 +119,78 @@ local function EnsureThreatText(frame)
     return text
 end
 
-local function UpdateThreatText(frame)
+local function UpdateThreatText(frame, state)
     local text = EnsureThreatText(frame)
     if not text then return end
-    local unit = frame.unit
-    if not unit or not UnitCanAttack("player", unit) then text:SetText(""); return end
-    local _, _, scaledPercent, rawPercent = UnitDetailedThreatSituation("player", unit)
-    local percent = AccessibleNumber(rawPercent) or AccessibleNumber(scaledPercent)
+    if state == "friendly" then text:SetText(""); return end
+    local _, _, scaled, raw = UnitDetailedThreatSituation("player", frame.unit)
+    local percent = AccessibleNumber(raw) or AccessibleNumber(scaled)
     if percent then text:SetFormattedText("%.0f%%", percent) else text:SetText("") end
 end
 
-local function ApplySimpleColor(frame)
-    if not frame or not frame.unit then return end
-    if not tostring(frame.unit):match("^nameplate%d+$") then return end
-    local healthBar = GetHealthBar(frame)
-    local color = ColorForUnit(frame.unit)
+local function ApplyVisibility(frame, state)
+    local friendly = state == "friendly"
+    local bar = GetHealthBar(frame)
 
-    if healthBar then
+    -- Friendly units deliberately become name-only. Everything potentially
+    -- fightable keeps Blizzard's full frame, including health and cast bars.
+    SetShownSafe(bar, not friendly)
+    SetShownSafe(frame.HealthBarsContainer, not friendly)
+    SetShownSafe(frame.castBar, not friendly)
+    SetShownSafe(frame.CastBar, not friendly)
+    SetShownSafe(frame.castBarAnchor, not friendly)
+
+    -- Common stock-nameplate extras should not remain floating under a friendly name.
+    SetShownSafe(frame.classificationIndicator, not friendly)
+    SetShownSafe(frame.ClassificationFrame, not friendly)
+    SetShownSafe(frame.selectionHighlight, not friendly)
+end
+
+local function ApplySimpleStyle(frame)
+    if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
+    local state = StateForUnit(frame.unit)
+    local color = COLORS[state]
+    local bar = GetHealthBar(frame)
+
+    ApplyVisibility(frame, state)
+    StyleName(frame, state)
+
+    if state ~= "friendly" and bar then
         UpdateHealthValue(frame)
-        healthBar:SetStatusBarColor(color[1], color[2], color[3], 1)
-        UpdateThreatText(frame)
+        bar:SetStatusBarColor(color[1], color[2], color[3], 1)
+        UpdateThreatText(frame, state)
+    elseif frame.ESNPThreatText then
+        frame.ESNPThreatText:SetText("")
     end
-
-    StyleName(frame, color)
 end
 
 local function RefreshUnit(unit)
     local frame = GetUnitFrame(unit)
-    if frame then ApplySimpleColor(frame) end
+    if frame then ApplySimpleStyle(frame) end
 end
 
 local function RefreshAll()
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
-        if plate.UnitFrame then ApplySimpleColor(plate.UnitFrame) end
+        if plate.UnitFrame then ApplySimpleStyle(plate.UnitFrame) end
     end
 end
 
 if hooksecurefunc and CompactUnitFrame_UpdateHealthColor then
-    hooksecurefunc("CompactUnitFrame_UpdateHealthColor", function(frame) ApplySimpleColor(frame) end)
+    hooksecurefunc("CompactUnitFrame_UpdateHealthColor", function(frame) ApplySimpleStyle(frame) end)
 end
 
 local events = CreateFrame("Frame")
-events:RegisterEvent("PLAYER_LOGIN")
-events:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-events:RegisterEvent("PLAYER_TARGET_CHANGED")
-events:RegisterEvent("UNIT_FACTION")
-events:RegisterEvent("UNIT_FLAGS")
-events:RegisterEvent("UNIT_HEALTH")
-events:RegisterEvent("UNIT_MAXHEALTH")
-events:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
-events:RegisterEvent("UNIT_THREAT_SITUATION_UPDATE")
+for _, event in ipairs({"PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE"}) do
+    events:RegisterEvent(event)
+end
 
 events:SetScript("OnEvent", function(_, event, unit)
     if event == "PLAYER_LOGIN" then C_Timer.After(0.5, ShowNameplateConflictWarning); return end
     if event == "NAME_PLATE_UNIT_ADDED" then C_Timer.After(0, function() RefreshUnit(unit) end); return end
     if event == "PLAYER_TARGET_CHANGED" then RefreshAll(); return end
-    if unit and tostring(unit):match("^nameplate%d+$") then
-        RefreshUnit(unit)
-    elseif event == "UNIT_THREAT_SITUATION_UPDATE" then
-        RefreshAll()
-    end
+    if unit and tostring(unit):match("^nameplate%d+$") then RefreshUnit(unit)
+    elseif event == "UNIT_THREAT_SITUATION_UPDATE" then RefreshAll() end
 end)
 
 ns.RefreshAll = RefreshAll
