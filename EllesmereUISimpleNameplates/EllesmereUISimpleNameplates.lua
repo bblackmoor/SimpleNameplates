@@ -18,6 +18,10 @@ local UnitDetailedThreatSituation = UnitDetailedThreatSituation
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
 local UnitName = UnitName
+local UnitExists = UnitExists
+local UnitIsUnit = UnitIsUnit
+local UnitPlayerOrPetInParty = UnitPlayerOrPetInParty
+local UnitPlayerOrPetInRaid = UnitPlayerOrPetInRaid
 local issecretvalue = issecretvalue or function() return false end
 local canaccessvalue = canaccessvalue or function(v) return not issecretvalue(v) end
 local STANDARD_NAMEPLATES = "EllesmereUINameplates"
@@ -55,13 +59,39 @@ local function AccessibleNumber(v)
     return v
 end
 
+local function HasAggroOnOurGroup(unit)
+    -- Threat against the player remains a useful signal even when the hostile
+    -- unit's target token is briefly unavailable during a target transition.
+    local threat = UnitThreatSituation("player", unit)
+    if threat ~= nil and not issecretvalue(threat) and canaccessvalue(threat) and threat >= 2 then
+        return true
+    end
+
+    -- Pets can tank something without the player having meaningful threat.
+    if UnitExists and UnitExists("pet") then
+        local petThreat = UnitThreatSituation("pet", unit)
+        if petThreat ~= nil and not issecretvalue(petThreat) and canaccessvalue(petThreat) and petThreat >= 2 then
+            return true
+        end
+    end
+
+    -- The clearest definition of "angry" is who the mob is actually attacking.
+    -- nameplateNtarget lets us recognize the player, the player's pet, and any
+    -- player/pet in our party or raid without scanning every group member.
+    local target = unit .. "target"
+    if not UnitExists or not UnitExists(target) then return false end
+    if UnitIsUnit and (UnitIsUnit(target, "player") or UnitIsUnit(target, "pet")) then return true end
+    if UnitPlayerOrPetInParty and UnitPlayerOrPetInParty(target) then return true end
+    if UnitPlayerOrPetInRaid and UnitPlayerOrPetInRaid(target) then return true end
+    return false
+end
+
 local function StateForUnit(unit)
     local reaction = UnitReaction(unit, "player")
     local accessible = reaction ~= nil and not issecretvalue(reaction) and canaccessvalue(reaction)
     if accessible and reaction >= 5 then return "friendly" end
     if not accessible and not UnitCanAttack("player", unit) and not UnitCanAttack(unit, "player") then return "friendly" end
-    local threat = UnitThreatSituation("player", unit)
-    if threat ~= nil and not issecretvalue(threat) and canaccessvalue(threat) and threat >= 2 then return "angry" end
+    if HasAggroOnOurGroup(unit) then return "angry" end
     if accessible and reaction == 4 then return "neutral" end
     return "hostile"
 end
@@ -94,7 +124,7 @@ local function UpdateNameText(frame)
     local name, unit = frame and frame.name, frame and frame.unit
     if not name or not unit then return end
 
-    -- Blizzard recycles compact nameplate frames.  A recycled frame can still
+    -- Blizzard recycles compact nameplate frames. A recycled frame can still
     -- contain the previous unit's text when our styling hook runs, so never
     -- trust the FontString's existing contents as the identity of this plate.
     local unitName = UnitName(unit)
@@ -198,14 +228,14 @@ if hooksecurefunc and CompactUnitFrame_UpdateHealthColor then
 end
 
 local events = CreateFrame("Frame")
-for _, event in ipairs({"PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE"}) do
+for _, event in ipairs({"PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","GROUP_ROSTER_UPDATE"}) do
     events:RegisterEvent(event)
 end
 
 events:SetScript("OnEvent", function(_, event, unit)
     if event == "PLAYER_LOGIN" then C_Timer.After(0.5, ShowNameplateConflictWarning); return end
     if event == "NAME_PLATE_UNIT_ADDED" then
-        -- Refresh both immediately and on the next frame.  The immediate pass
+        -- Refresh both immediately and on the next frame. The immediate pass
         -- clears recycled text; the deferred pass follows Blizzard's own setup.
         RefreshUnit(unit)
         C_Timer.After(0, function() RefreshUnit(unit) end)
@@ -219,9 +249,9 @@ events:SetScript("OnEvent", function(_, event, unit)
         end
         return
     end
-    if event == "PLAYER_TARGET_CHANGED" then RefreshAll(); return end
+    if event == "PLAYER_TARGET_CHANGED" or event == "GROUP_ROSTER_UPDATE" then RefreshAll(); return end
     if unit and tostring(unit):match("^nameplate%d+$") then RefreshUnit(unit)
-    elseif event == "UNIT_THREAT_SITUATION_UPDATE" then RefreshAll() end
+    elseif event == "UNIT_THREAT_SITUATION_UPDATE" or event == "UNIT_THREAT_LIST_UPDATE" then RefreshAll() end
 end)
 
 ns.RefreshAll = RefreshAll
