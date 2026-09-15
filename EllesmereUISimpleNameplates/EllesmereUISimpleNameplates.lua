@@ -90,9 +90,26 @@ local function UpdateHealthValue(frame)
     end
 end
 
+local function UpdateNameText(frame)
+    local name, unit = frame and frame.name, frame and frame.unit
+    if not name or not unit then return end
+
+    -- Blizzard recycles compact nameplate frames.  A recycled frame can still
+    -- contain the previous unit's text when our styling hook runs, so never
+    -- trust the FontString's existing contents as the identity of this plate.
+    local unitName = UnitName(unit)
+    if unitName ~= nil and not issecretvalue(unitName) and canaccessvalue(unitName) then
+        name:SetText(unitName)
+    else
+        -- Do not leave a stale name from the unit that previously owned this frame.
+        name:SetText("")
+    end
+end
+
 local function StyleName(frame, state)
     local name = frame and frame.name
     if not name then return end
+    UpdateNameText(frame)
     local font, size = name:GetFont()
     if font and size then name:SetFont(font, size, "THICKOUTLINE") end
     name:SetShadowColor(0, 0, 0, 1)
@@ -181,13 +198,27 @@ if hooksecurefunc and CompactUnitFrame_UpdateHealthColor then
 end
 
 local events = CreateFrame("Frame")
-for _, event in ipairs({"PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE"}) do
+for _, event in ipairs({"PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE"}) do
     events:RegisterEvent(event)
 end
 
 events:SetScript("OnEvent", function(_, event, unit)
     if event == "PLAYER_LOGIN" then C_Timer.After(0.5, ShowNameplateConflictWarning); return end
-    if event == "NAME_PLATE_UNIT_ADDED" then C_Timer.After(0, function() RefreshUnit(unit) end); return end
+    if event == "NAME_PLATE_UNIT_ADDED" then
+        -- Refresh both immediately and on the next frame.  The immediate pass
+        -- clears recycled text; the deferred pass follows Blizzard's own setup.
+        RefreshUnit(unit)
+        C_Timer.After(0, function() RefreshUnit(unit) end)
+        return
+    end
+    if event == "NAME_PLATE_UNIT_REMOVED" then
+        local frame = GetUnitFrame(unit)
+        if frame then
+            if frame.name then frame.name:SetText("") end
+            if frame.ESNPThreatText then frame.ESNPThreatText:SetText("") end
+        end
+        return
+    end
     if event == "PLAYER_TARGET_CHANGED" then RefreshAll(); return end
     if unit and tostring(unit):match("^nameplate%d+$") then RefreshUnit(unit)
     elseif event == "UNIT_THREAT_SITUATION_UPDATE" then RefreshAll() end
