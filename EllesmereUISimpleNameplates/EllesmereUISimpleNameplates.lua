@@ -18,10 +18,6 @@ local UnitDetailedThreatSituation = UnitDetailedThreatSituation
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
 local UnitName = UnitName
-local UnitExists = UnitExists
-local UnitIsUnit = UnitIsUnit
-local UnitPlayerOrPetInParty = UnitPlayerOrPetInParty
-local UnitPlayerOrPetInRaid = UnitPlayerOrPetInRaid
 local issecretvalue = issecretvalue or function() return false end
 local canaccessvalue = canaccessvalue or function(v) return not issecretvalue(v) end
 local STANDARD_NAMEPLATES = "EllesmereUINameplates"
@@ -59,30 +55,33 @@ local function AccessibleNumber(v)
     return v
 end
 
-local function HasAggroOnOurGroup(unit)
-    -- Threat against the player remains a useful signal even when the hostile
-    -- unit's target token is briefly unavailable during a target transition.
-    local threat = UnitThreatSituation("player", unit)
-    if threat ~= nil and not issecretvalue(threat) and canaccessvalue(threat) and threat >= 2 then
-        return true
-    end
+local function UnitHasAggro(unitToken, hostileUnit)
+    local threat = UnitThreatSituation(unitToken, hostileUnit)
+    threat = AccessibleNumber(threat)
+    return threat ~= nil and threat >= 2
+end
 
-    -- Pets can tank something without the player having meaningful threat.
-    if UnitExists and UnitExists("pet") then
-        local petThreat = UnitThreatSituation("pet", unit)
-        if petThreat ~= nil and not issecretvalue(petThreat) and canaccessvalue(petThreat) and petThreat >= 2 then
+local function HasAggroOnOurGroup(unit)
+    -- Midnight can return secret booleans from target-identity APIs while in
+    -- combat. Never branch on UnitExists/UnitIsUnit/PlayerOrPetInParty here.
+    -- Threat status is numeric and can be explicitly rejected when secret.
+    if UnitHasAggro("player", unit) or UnitHasAggro("pet", unit) then return true end
+
+    -- Check party members and their pets. Invalid unit tokens simply produce
+    -- nil threat, so this does not need UnitExists (which may itself be secret).
+    for i = 1, 4 do
+        if UnitHasAggro("party" .. i, unit) or UnitHasAggro("partypet" .. i, unit) then
             return true
         end
     end
 
-    -- The clearest definition of "angry" is who the mob is actually attacking.
-    -- nameplateNtarget lets us recognize the player, the player's pet, and any
-    -- player/pet in our party or raid without scanning every group member.
-    local target = unit .. "target"
-    if not UnitExists or not UnitExists(target) then return false end
-    if UnitIsUnit and (UnitIsUnit(target, "player") or UnitIsUnit(target, "pet")) then return true end
-    if UnitPlayerOrPetInParty and UnitPlayerOrPetInParty(target) then return true end
-    if UnitPlayerOrPetInRaid and UnitPlayerOrPetInRaid(target) then return true end
+    -- Check raid members and their pets as well. This also covers parties that
+    -- have been converted to raids.
+    for i = 1, 40 do
+        if UnitHasAggro("raid" .. i, unit) or UnitHasAggro("raidpet" .. i, unit) then
+            return true
+        end
+    end
     return false
 end
 
