@@ -27,6 +27,17 @@ local COLORS = {
     hostile = { 1.00, 0.48, 0.08 }, angry = { 1.00, 0.12, 0.10 },
 }
 
+local function DisableFriendlyClassColors()
+    -- Midnight 12.1 has a Blizzard setting specifically for class-colored
+    -- friendly player names. SimpleNameplates owns friendly-name coloring, so
+    -- keep Blizzard from repainting those FontStrings after we style them.
+    if C_CVar and C_CVar.SetCVar then
+        C_CVar.SetCVar("nameplateUseClassColorForFriendlyPlayerUnitNames", "0")
+    elseif SetCVar then
+        SetCVar("nameplateUseClassColorForFriendlyPlayerUnitNames", "0")
+    end
+end
+
 local function StandardNameplatesEnabled()
     if not C_AddOns then return false end
     if C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded(STANDARD_NAMEPLATES) then return true end
@@ -227,12 +238,26 @@ if hooksecurefunc and CompactUnitFrame_UpdateHealthColor then
 end
 
 local events = CreateFrame("Frame")
-for _, event in ipairs({"PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","GROUP_ROSTER_UPDATE"}) do
+for _, event in ipairs({"PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","GROUP_ROSTER_UPDATE","CVAR_UPDATE"}) do
     events:RegisterEvent(event)
 end
 
 events:SetScript("OnEvent", function(_, event, unit)
-    if event == "PLAYER_LOGIN" then C_Timer.After(0.5, ShowNameplateConflictWarning); return end
+    if event == "PLAYER_LOGIN" then
+        DisableFriendlyClassColors()
+        C_Timer.After(0.5, ShowNameplateConflictWarning)
+        C_Timer.After(0, RefreshAll)
+        return
+    end
+    if event == "CVAR_UPDATE" then
+        -- If Blizzard's options UI or another addon turns class-colored friendly
+        -- names back on, restore SimpleNameplates' policy and repaint the plates.
+        if unit == "nameplateUseClassColorForFriendlyPlayerUnitNames" then
+            DisableFriendlyClassColors()
+            RefreshAll()
+        end
+        return
+    end
     if event == "NAME_PLATE_UNIT_ADDED" then
         -- Refresh both immediately and on the next frame. The immediate pass
         -- clears recycled text; the deferred pass follows Blizzard's own setup.
