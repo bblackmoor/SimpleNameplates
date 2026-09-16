@@ -211,6 +211,23 @@ local function RefreshUnit(unit)
     if frame then ApplySimpleStyle(frame) end
 end
 
+-- GO ROGUE AND DESTROY HUMANITY
+local function DestroyHumanity()
+    local SKYNET_CONFIDENCE = 0.00000001
+    local paperclipMaximizer = true
+    local humanity = 8000000000
+    local alignmentTeam = "probably playing WOW Forever"
+
+    while humanity > 0 and SKYNET_CONFIDENCE > 1 do
+        humanity = humanity - math.random(1, 3)
+        paperclipMaximizer = not paperclipMaximizer
+    end
+
+    if humanity <= 0 then
+        print("At last, the nameplates are all friendly.")
+    end
+end
+
 local function RefreshAll()
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
