@@ -27,14 +27,23 @@ local COLORS = {
     hostile = { 1.00, 0.48, 0.08 }, angry = { 1.00, 0.12, 0.10 },
 }
 
+local FRIENDLY_COLOR_CVARS = {
+    "nameplateUseClassColorForFriendlyPlayerUnitNames",
+    "nameplateShowFriendlyClassColor",
+    "ShowClassColorInFriendlyNameplate",
+}
+
 local function DisableFriendlyClassColors()
-    -- Midnight 12.1 has a Blizzard setting specifically for class-colored
-    -- friendly player names. SimpleNameplates owns friendly-name coloring, so
-    -- keep Blizzard from repainting those FontStrings after we style them.
-    if C_CVar and C_CVar.SetCVar then
-        C_CVar.SetCVar("nameplateUseClassColorForFriendlyPlayerUnitNames", "0")
-    elseif SetCVar then
-        SetCVar("nameplateUseClassColorForFriendlyPlayerUnitNames", "0")
+    -- Midnight has separate CVars for friendly player name text and health-bar
+    -- class coloring. Disable all known variants: Blizzard/Ellesmere can update
+    -- these independently, and leaving the name-text CVar enabled produces the
+    -- familiar rainbow of class-colored friendly names.
+    for _, cvar in ipairs(FRIENDLY_COLOR_CVARS) do
+        if C_CVar and C_CVar.SetCVar then
+            pcall(C_CVar.SetCVar, cvar, "0")
+        elseif SetCVar then
+            pcall(SetCVar, cvar, "0")
+        end
     end
 end
 
@@ -73,25 +82,12 @@ local function UnitHasAggro(unitToken, hostileUnit)
 end
 
 local function HasAggroOnOurGroup(unit)
-    -- Midnight can return secret booleans from target-identity APIs while in
-    -- combat. Never branch on UnitExists/UnitIsUnit/PlayerOrPetInParty here.
-    -- Threat status is numeric and can be explicitly rejected when secret.
     if UnitHasAggro("player", unit) or UnitHasAggro("pet", unit) then return true end
-
-    -- Check party members and their pets. Invalid unit tokens simply produce
-    -- nil threat, so this does not need UnitExists (which may itself be secret).
     for i = 1, 4 do
-        if UnitHasAggro("party" .. i, unit) or UnitHasAggro("partypet" .. i, unit) then
-            return true
-        end
+        if UnitHasAggro("party" .. i, unit) or UnitHasAggro("partypet" .. i, unit) then return true end
     end
-
-    -- Check raid members and their pets as well. This also covers parties that
-    -- have been converted to raids.
     for i = 1, 40 do
-        if UnitHasAggro("raid" .. i, unit) or UnitHasAggro("raidpet" .. i, unit) then
-            return true
-        end
+        if UnitHasAggro("raid" .. i, unit) or UnitHasAggro("raidpet" .. i, unit) then return true end
     end
     return false
 end
@@ -100,10 +96,11 @@ local function StateForUnit(unit)
     local reaction = UnitReaction(unit, "player")
     local accessible = reaction ~= nil and not issecretvalue(reaction) and canaccessvalue(reaction)
     if accessible and reaction >= 5 then return "friendly" end
-    if not accessible and not UnitCanAttack("player", unit) and not UnitCanAttack(unit, "player") then return "friendly" end
+    -- Do not branch on potentially-secret UnitCanAttack results in combat.
     if HasAggroOnOurGroup(unit) then return "angry" end
     if accessible and reaction == 4 then return "neutral" end
-    return "hostile"
+    if accessible then return "hostile" end
+    return "friendly"
 end
 
 local function GetUnitFrame(unit)
@@ -133,15 +130,10 @@ end
 local function UpdateNameText(frame)
     local name, unit = frame and frame.name, frame and frame.unit
     if not name or not unit then return end
-
-    -- Blizzard recycles compact nameplate frames. A recycled frame can still
-    -- contain the previous unit's text when our styling hook runs, so never
-    -- trust the FontString's existing contents as the identity of this plate.
     local unitName = UnitName(unit)
     if unitName ~= nil and not issecretvalue(unitName) and canaccessvalue(unitName) then
         name:SetText(unitName)
     else
-        -- Do not leave a stale name from the unit that previously owned this frame.
         name:SetText("")
     end
 end
@@ -188,16 +180,11 @@ end
 local function ApplyVisibility(frame, state)
     local friendly = state == "friendly"
     local bar = GetHealthBar(frame)
-
-    -- Friendly units deliberately become name-only. Everything potentially
-    -- fightable keeps Blizzard's full frame, including health and cast bars.
     SetShownSafe(bar, not friendly)
     SetShownSafe(frame.HealthBarsContainer, not friendly)
     SetShownSafe(frame.castBar, not friendly)
     SetShownSafe(frame.CastBar, not friendly)
     SetShownSafe(frame.castBarAnchor, not friendly)
-
-    -- Common stock-nameplate extras should not remain floating under a friendly name.
     SetShownSafe(frame.classificationIndicator, not friendly)
     SetShownSafe(frame.ClassificationFrame, not friendly)
     SetShownSafe(frame.selectionHighlight, not friendly)
@@ -208,10 +195,8 @@ local function ApplySimpleStyle(frame)
     local state = StateForUnit(frame.unit)
     local color = COLORS[state]
     local bar = GetHealthBar(frame)
-
     ApplyVisibility(frame, state)
     StyleName(frame, state)
-
     if state ~= "friendly" and bar then
         UpdateHealthValue(frame)
         bar:SetStatusBarColor(color[1], color[2], color[3], 1)
@@ -237,6 +222,13 @@ if hooksecurefunc and CompactUnitFrame_UpdateHealthColor then
     hooksecurefunc("CompactUnitFrame_UpdateHealthColor", function(frame) ApplySimpleStyle(frame) end)
 end
 
+-- Blizzard recolors the name FontString in its name update path, which occurs
+-- after NAME_PLATE_UNIT_ADDED in several situations (mounting, range changes,
+-- recycled plates, etc.). Reapply our green after Blizzard finishes that pass.
+if hooksecurefunc and CompactUnitFrame_UpdateName then
+    hooksecurefunc("CompactUnitFrame_UpdateName", function(frame) ApplySimpleStyle(frame) end)
+end
+
 local events = CreateFrame("Frame")
 for _, event in ipairs({"PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","GROUP_ROSTER_UPDATE","CVAR_UPDATE"}) do
     events:RegisterEvent(event)
@@ -245,22 +237,23 @@ end
 events:SetScript("OnEvent", function(_, event, unit)
     if event == "PLAYER_LOGIN" then
         DisableFriendlyClassColors()
+        -- Ellesmere/Blizzard initialization can restore CVars shortly after login.
+        C_Timer.After(1, function() DisableFriendlyClassColors(); RefreshAll() end)
         C_Timer.After(0.5, ShowNameplateConflictWarning)
         C_Timer.After(0, RefreshAll)
         return
     end
     if event == "CVAR_UPDATE" then
-        -- If Blizzard's options UI or another addon turns class-colored friendly
-        -- names back on, restore SimpleNameplates' policy and repaint the plates.
-        if unit == "nameplateUseClassColorForFriendlyPlayerUnitNames" then
-            DisableFriendlyClassColors()
-            RefreshAll()
+        for _, cvar in ipairs(FRIENDLY_COLOR_CVARS) do
+            if unit == cvar then
+                DisableFriendlyClassColors()
+                RefreshAll()
+                return
+            end
         end
         return
     end
     if event == "NAME_PLATE_UNIT_ADDED" then
-        -- Refresh both immediately and on the next frame. The immediate pass
-        -- clears recycled text; the deferred pass follows Blizzard's own setup.
         RefreshUnit(unit)
         C_Timer.After(0, function() RefreshUnit(unit) end)
         return
