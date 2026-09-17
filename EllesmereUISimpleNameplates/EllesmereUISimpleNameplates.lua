@@ -272,7 +272,12 @@ events:SetScript("OnEvent", function(_, event, unit)
     end
     if event == "NAME_PLATE_UNIT_ADDED" then
         RefreshUnit(unit)
-        C_Timer.After(0, function() RefreshUnit(unit) end)
+        -- Blizzard can replace or recolor the name FontString during the next
+        -- few frames. Reapply after those late initialization passes so a
+        -- friendly name never remains white until mouseover.
+        for _, delay in ipairs({ 0, 0.05, 0.20, 0.50 }) do
+            C_Timer.After(delay, function() RefreshUnit(unit) end)
+        end
         return
     end
     if event == "NAME_PLATE_UNIT_REMOVED" then
