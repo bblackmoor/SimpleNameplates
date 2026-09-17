@@ -62,6 +62,10 @@ when WoW reports threat or the hostile player is targeting you, your pet, or
 a member of your group.
 
 CHANGELOG
+0.3.2
+- Split the addon into focused core, nameplate, and settings modules without
+  changing its behavior.
+
 0.3.1
 - Added an About screen modeled on RP Emote Menu.
 - About reads its version directly from the addon TOC metadata.

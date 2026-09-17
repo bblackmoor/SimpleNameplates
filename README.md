@@ -65,6 +65,10 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 
 ## Changelog
 
+### 0.3.2
+
+* Split the addon into focused core, nameplate, and settings modules without changing its behavior.
+
 ### 0.3.1
 
 * Added an About screen modeled on RP Emote Menu.
