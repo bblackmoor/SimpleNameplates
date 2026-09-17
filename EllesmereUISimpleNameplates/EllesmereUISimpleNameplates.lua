@@ -1,9 +1,7 @@
 -- EllesmereUI Simple Nameplates
 -- Simple visibility policy:
---   friendly = green name only
---   neutral  = yellow full nameplate
---   hostile  = orange full nameplate
---   angry    = red full nameplate
+--   friendly NPC/PC = colored name only
+--   all other states = white name with a colored full nameplate
 
 if EUI_CLIENT_BLOCKED then return end
 local addon, ns = ...
@@ -12,6 +10,10 @@ if EllesmereUI._ModuleNS then EllesmereUI._ModuleNS[addon] = ns end
 
 local C_NamePlate = C_NamePlate
 local UnitCanAttack = UnitCanAttack
+local UnitIsPlayer = UnitIsPlayer
+local UnitIsPVP = UnitIsPVP
+local UnitIsUnit = UnitIsUnit
+local UnitPlayerControlled = UnitPlayerControlled
 local UnitReaction = UnitReaction
 local UnitThreatSituation = UnitThreatSituation
 local UnitDetailedThreatSituation = UnitDetailedThreatSituation
@@ -22,10 +24,52 @@ local issecretvalue = issecretvalue or function() return false end
 local canaccessvalue = canaccessvalue or function(v) return not issecretvalue(v) end
 local STANDARD_NAMEPLATES = "EllesmereUINameplates"
 
-local COLORS = {
-    friendly = { 0.20, 0.85, 0.25 }, neutral = { 1.00, 0.82, 0.12 },
-    hostile = { 1.00, 0.48, 0.08 }, angry = { 1.00, 0.12, 0.10 },
+local DEFAULT_COLORS = {
+    friendlyNPC = { r = 0.20, g = 0.85, b = 0.25 },
+    unfriendlyNPC = { r = 1.00, g = 0.82, b = 0.12 },
+    hostileNPC = { r = 1.00, g = 0.48, b = 0.08 },
+    attackingNPC = { r = 1.00, g = 0.12, b = 0.10 },
+    friendlyPC = { r = 0.25, g = 0.75, b = 1.00 },
+    unfriendlyPC = { r = 0.55, g = 0.55, b = 1.00 },
+    hostilePC = { r = 0.85, g = 0.30, b = 1.00 },
+    attackingPC = { r = 1.00, g = 0.15, b = 0.55 },
 }
+
+local dbReady = false
+
+local function EnsureDB()
+    if dbReady then return EllesmereUISimpleNameplatesDB end
+    if type(EllesmereUISimpleNameplatesDB) ~= "table" then
+        EllesmereUISimpleNameplatesDB = {}
+    end
+    local db = EllesmereUISimpleNameplatesDB
+    if type(db.colors) ~= "table" then db.colors = {} end
+    for key, default in pairs(DEFAULT_COLORS) do
+        local color = db.colors[key]
+        if type(color) ~= "table" or type(color.r) ~= "number"
+            or type(color.g) ~= "number" or type(color.b) ~= "number" then
+            db.colors[key] = { r = default.r, g = default.g, b = default.b }
+        end
+    end
+    dbReady = true
+    return db
+end
+
+local function ColorForState(state)
+    local color = EnsureDB().colors[state] or DEFAULT_COLORS[state] or DEFAULT_COLORS.friendlyNPC
+    return color.r, color.g, color.b
+end
+
+local function SetStateColor(state, r, g, b)
+    EnsureDB().colors[state] = { r = r, g = g, b = b }
+end
+
+local function ResetStateColors()
+    local colors = EnsureDB().colors
+    for key, default in pairs(DEFAULT_COLORS) do
+        colors[key] = { r = default.r, g = default.g, b = default.b }
+    end
+end
 
 local FRIENDLY_COLOR_CVARS = {
     "nameplateUseClassColorForFriendlyPlayerUnitNames",
@@ -75,6 +119,11 @@ local function AccessibleNumber(v)
     return v
 end
 
+local function AccessibleBoolean(v)
+    if v == nil or issecretvalue(v) or not canaccessvalue(v) or type(v) ~= "boolean" then return nil end
+    return v
+end
+
 local function UnitHasAggro(unitToken, hostileUnit)
     local threat = UnitThreatSituation(unitToken, hostileUnit)
     threat = AccessibleNumber(threat)
@@ -92,15 +141,60 @@ local function HasAggroOnOurGroup(unit)
     return false
 end
 
+local function UnitMatches(unit1, unit2)
+    return AccessibleBoolean(UnitIsUnit(unit1, unit2)) == true
+end
+
+local function TargetsOurGroup(unit)
+    local target = unit .. "target"
+    if UnitMatches(target, "player") or UnitMatches(target, "pet") then return true end
+    for i = 1, 4 do
+        if UnitMatches(target, "party" .. i) or UnitMatches(target, "partypet" .. i) then return true end
+    end
+    for i = 1, 40 do
+        if UnitMatches(target, "raid" .. i) or UnitMatches(target, "raidpet" .. i) then return true end
+    end
+    return false
+end
+
+local function IsPlayerControlledUnit(unit)
+    if AccessibleBoolean(UnitIsPlayer(unit)) == true then return true end
+    return AccessibleBoolean(UnitPlayerControlled(unit)) == true
+end
+
 local function StateForUnit(unit)
-    local reaction = UnitReaction(unit, "player")
-    local accessible = reaction ~= nil and not issecretvalue(reaction) and canaccessvalue(reaction)
-    if accessible and reaction >= 5 then return "friendly" end
-    -- Do not branch on potentially-secret UnitCanAttack results in combat.
-    if HasAggroOnOurGroup(unit) then return "angry" end
-    if accessible and reaction == 4 then return "neutral" end
-    if accessible then return "hostile" end
-    return "friendly"
+    local reaction = AccessibleNumber(UnitReaction(unit, "player"))
+
+    -- Pets, guardians, minions, and vehicles follow the player-side color
+    -- language instead of being mistaken for ordinary NPCs.
+    if IsPlayerControlledUnit(unit) then
+        if reaction and reaction >= 5 then return "friendlyPC" end
+
+        local pvp = AccessibleBoolean(UnitIsPVP(unit))
+        if pvp == true and (HasAggroOnOurGroup(unit) or TargetsOurGroup(unit)) then
+            return "attackingPC"
+        end
+        if pvp == true then return "hostilePC" end
+        if pvp == false then return "unfriendlyPC" end
+
+        -- UnitIsPVP can be secret when unit identity is restricted. Fall back
+        -- to attackability without ever branching on a secret value.
+        if AccessibleBoolean(UnitCanAttack("player", unit)) == true then return "hostilePC" end
+        return "unfriendlyPC"
+    end
+
+    if reaction and reaction >= 5 then return "friendlyNPC" end
+    if HasAggroOnOurGroup(unit) then return "attackingNPC" end
+    if reaction == 4 then return "unfriendlyNPC" end
+    if reaction then return "hostileNPC" end
+
+    local attackable = AccessibleBoolean(UnitCanAttack("player", unit))
+    if attackable == true then return "hostileNPC" end
+    return "friendlyNPC"
+end
+
+local function IsFriendlyState(state)
+    return state == "friendlyNPC" or state == "friendlyPC"
 end
 
 local function GetUnitFrame(unit)
@@ -146,9 +240,9 @@ local function StyleName(frame, state)
     if font and size then name:SetFont(font, size, "THICKOUTLINE") end
     name:SetShadowColor(0, 0, 0, 1)
     name:SetShadowOffset(1, -1)
-    if state == "friendly" then
-        local c = COLORS.friendly
-        name:SetTextColor(c[1], c[2], c[3], 1)
+    if IsFriendlyState(state) then
+        local r, g, b = ColorForState(state)
+        name:SetTextColor(r, g, b, 1)
     else
         name:SetTextColor(1, 1, 1, 1)
     end
@@ -171,14 +265,14 @@ end
 local function UpdateThreatText(frame, state)
     local text = EnsureThreatText(frame)
     if not text then return end
-    if state == "friendly" then text:SetText(""); return end
+    if IsFriendlyState(state) then text:SetText(""); return end
     local _, _, scaled, raw = UnitDetailedThreatSituation("player", frame.unit)
     local percent = AccessibleNumber(raw) or AccessibleNumber(scaled)
     if percent then text:SetFormattedText("%.0f%%", percent) else text:SetText("") end
 end
 
 local function ApplyVisibility(frame, state)
-    local friendly = state == "friendly"
+    local friendly = IsFriendlyState(state)
     local bar = GetHealthBar(frame)
     SetShownSafe(bar, not friendly)
     SetShownSafe(frame.HealthBarsContainer, not friendly)
@@ -193,13 +287,13 @@ end
 local function ApplySimpleStyle(frame)
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
     local state = StateForUnit(frame.unit)
-    local color = COLORS[state]
+    local r, g, b = ColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyVisibility(frame, state)
     StyleName(frame, state)
-    if state ~= "friendly" and bar then
+    if not IsFriendlyState(state) and bar then
         UpdateHealthValue(frame)
-        bar:SetStatusBarColor(color[1], color[2], color[3], 1)
+        bar:SetStatusBarColor(r, g, b, 1)
         UpdateThreatText(frame, state)
     elseif frame.ESNPThreatText then
         frame.ESNPThreatText:SetText("")
@@ -235,13 +329,140 @@ local function RefreshAll()
     end
 end
 
+local settingsCategory
+
+local function RegisterSettingsPanel()
+    if settingsCategory or not Settings or not Settings.RegisterCanvasLayoutCategory then return end
+
+    local panel = CreateFrame("Frame")
+    panel.name = "EllesmereUI Simple Nameplates"
+
+    local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 20, -18)
+    title:SetText("EllesmereUI Simple Nameplates")
+
+    local description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+    description:SetPoint("RIGHT", panel, "RIGHT", -20, 0)
+    description:SetJustifyH("LEFT")
+    description:SetText("Choose the name color for friendly units and the health-bar color for all other units.")
+
+    local swatchRefreshers = {}
+
+    local function CreateSection(text, y)
+        local label = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        label:SetPoint("TOPLEFT", 24, y)
+        label:SetText(text)
+    end
+
+    local function CreateColorRow(text, state, y)
+        local row = CreateFrame("Frame", nil, panel)
+        row:SetPoint("TOPLEFT", 24, y)
+        row:SetPoint("RIGHT", panel, "RIGHT", -24, 0)
+        row:SetHeight(34)
+
+        local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        label:SetPoint("LEFT", 4, 0)
+        label:SetPoint("RIGHT", row, "RIGHT", -44, 0)
+        label:SetJustifyH("LEFT")
+        label:SetText(text)
+
+        local swatch = CreateFrame("Button", nil, row, "BackdropTemplate")
+        swatch:SetSize(26, 26)
+        swatch:SetPoint("RIGHT", -4, 0)
+        swatch:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        swatch:SetBackdropColor(0.04, 0.04, 0.04, 1)
+        swatch:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
+
+        local fill = swatch:CreateTexture(nil, "ARTWORK")
+        fill:SetPoint("TOPLEFT", 3, -3)
+        fill:SetPoint("BOTTOMRIGHT", -3, 3)
+
+        local function UpdateSwatch()
+            fill:SetColorTexture(ColorForState(state))
+        end
+        swatchRefreshers[#swatchRefreshers + 1] = UpdateSwatch
+        UpdateSwatch()
+
+        swatch:SetScript("OnEnter", function(self)
+            self:SetBackdropBorderColor(1, 1, 1, 1)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(text)
+            GameTooltip:AddLine("Click to choose a color.", 1, 1, 1)
+            GameTooltip:Show()
+        end)
+        swatch:SetScript("OnLeave", function(self)
+            self:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
+            GameTooltip:Hide()
+        end)
+        swatch:SetScript("OnClick", function()
+            local oldR, oldG, oldB = ColorForState(state)
+            local function ApplyPickerColor()
+                local r, g, b = ColorPickerFrame:GetColorRGB()
+                SetStateColor(state, r, g, b)
+                UpdateSwatch()
+                RefreshAll()
+            end
+            local info = {
+                r = oldR, g = oldG, b = oldB,
+                hasOpacity = false,
+                swatchFunc = ApplyPickerColor,
+                cancelFunc = function()
+                    SetStateColor(state, oldR, oldG, oldB)
+                    UpdateSwatch()
+                    RefreshAll()
+                end,
+            }
+            ColorPickerFrame:SetupColorPickerAndShow(info)
+        end)
+    end
+
+    CreateSection("NON-PLAYER CHARACTERS", -82)
+    CreateColorRow("Friendly NPC", "friendlyNPC", -108)
+    CreateColorRow("Unfriendly (attackable) NPC", "unfriendlyNPC", -144)
+    CreateColorRow("Hostile (will attack me) NPC", "hostileNPC", -180)
+    CreateColorRow("Attacking (me, a pet, or an ally) NPC", "attackingNPC", -216)
+
+    CreateSection("PLAYER CHARACTERS", -266)
+    CreateColorRow("Friendly (same faction) PC", "friendlyPC", -292)
+    CreateColorRow("Unfriendly (opposite faction) PC", "unfriendlyPC", -328)
+    CreateColorRow("Hostile (PvP-enabled opposite faction) PC", "hostilePC", -364)
+    CreateColorRow("Attacking (PvP-enabled opposite faction) PC", "attackingPC", -400)
+
+    local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+    reset:SetSize(150, 24)
+    reset:SetPoint("TOPLEFT", 24, -454)
+    reset:SetText("Reset Colors")
+    reset:SetScript("OnClick", function()
+        ResetStateColors()
+        for _, refresh in ipairs(swatchRefreshers) do refresh() end
+        RefreshAll()
+    end)
+
+    settingsCategory = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
+    Settings.RegisterAddOnCategory(settingsCategory)
+
+    SLASH_ESNP1 = "/esnp"
+    SlashCmdList.ESNP = function()
+        if InCombatLockdown and InCombatLockdown() then
+            print("|cff0cd29fEllesmereUI Simple Nameplates:|r Settings cannot be opened during combat.")
+            return
+        end
+        Settings.OpenToCategory(settingsCategory:GetID())
+    end
+end
+
 if hooksecurefunc and CompactUnitFrame_UpdateHealthColor then
     hooksecurefunc("CompactUnitFrame_UpdateHealthColor", function(frame) ApplySimpleStyle(frame) end)
 end
 
 -- Blizzard recolors the name FontString in its name update path, which occurs
 -- after NAME_PLATE_UNIT_ADDED in several situations (mounting, range changes,
--- recycled plates, etc.). Reapply our green after Blizzard finishes that pass.
+-- recycled plates, etc.). Reapply our configured color after Blizzard finishes that pass.
 if hooksecurefunc and CompactUnitFrame_UpdateName then
     hooksecurefunc("CompactUnitFrame_UpdateName", function(frame) ApplySimpleStyle(frame) end)
 end
@@ -253,6 +474,8 @@ end
 
 events:SetScript("OnEvent", function(_, event, unit)
     if event == "PLAYER_LOGIN" then
+        EnsureDB()
+        RegisterSettingsPanel()
         DisableFriendlyClassColors()
         -- Ellesmere/Blizzard initialization can restore CVars shortly after login.
         C_Timer.After(1, function() DisableFriendlyClassColors(); RefreshAll() end)
@@ -294,3 +517,4 @@ events:SetScript("OnEvent", function(_, event, unit)
 end)
 
 ns.RefreshAll = RefreshAll
+ns.ColorForState = ColorForState

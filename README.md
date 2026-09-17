@@ -4,16 +4,18 @@ A deliberately simple alternative nameplate-color module for **EllesmereUI**.
 
 ## The Short Version
 
-Simple Nameplates keeps Blizzard's standard Midnight nameplates, but replaces the confusing assortment of nameplate colors with four easy-to-understand colors:
+Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs and player characters separate, customizable color languages:
 
-| Color      | Meaning                                  |
-| ---------- | ---------------------------------------- |
-| **Green**  | Friendly — you cannot fight them         |
-| **Yellow** | Neutral — attackable, but non-aggressive |
-| **Orange** | Hostile — not currently attacking you    |
-| **Red**    | Attacking you — you have aggro           |
-
-That's it.
+| Unit state | Default color | Meaning |
+| --- | --- | --- |
+| Friendly NPC | Green | You cannot fight them |
+| Unfriendly NPC | Yellow | Attackable, but non-aggressive |
+| Hostile NPC | Orange | Will attack, but is not attacking your group |
+| Attacking NPC | Red | Attacking you, a pet, or a group member |
+| Friendly PC | Light blue | Same faction |
+| Unfriendly PC | Periwinkle | Opposite faction, but not PvP-enabled |
+| Hostile PC | Purple | PvP-enabled opposite-faction player |
+| Attacking PC | Magenta | Hostile player targeting or generating threat on your group |
 
 ## How It Works
 
@@ -30,6 +32,10 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 * Normal Blizzard cast/channel bar and spell information
 * Normal Blizzard target treatment
 * Threat percentage at the right side of the health bar when Midnight exposes a non-secret threat percentage
+
+## Color Settings
+
+Open **Options → AddOns → EllesmereUI Simple Nameplates**, or type `/esnp`, to customize all eight colors. Changes apply immediately and are saved between sessions. The panel also includes a **Reset Colors** button.
 
 ## Installation
 
@@ -51,7 +57,17 @@ World of Warcraft: Midnight may mark some threat information as secret.
 
 Simple Nameplates does not attempt to inspect secret values. Threat percentage is displayed only when WoW allows the value to be read.
 
+NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat or when the hostile player is targeting you, your pet, or a member of your group.
+
 ## Changelog
+
+### 0.3.0
+
+* Added separate colors for four NPC states and four player-character states.
+* Added a standard WoW AddOns settings panel with eight color pickers and a reset button.
+* Added `/esnp` to open the color settings directly.
+* Added safe Midnight handling for restricted PvP and unit-comparison values.
+* Player-controlled pets, guardians, minions, and vehicles use the player color language.
 
 ### 0.2.0
 

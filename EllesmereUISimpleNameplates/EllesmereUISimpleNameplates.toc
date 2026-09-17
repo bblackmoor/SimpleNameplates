@@ -2,9 +2,9 @@
 ## Title: |cff0cd29fEllesmereUI|r Simple Nameplates
 ## Category: |cff0cd29fEllesmere|rUI
 ## Group: EllesmereUI
-## Notes: Four-state nameplate colors while retaining Blizzard health and cast bars.
+## Notes: Custom NPC and player nameplate colors while retaining Blizzard health and cast bars.
 ## Author: Brandon + ChatGPT
-## Version: 0.2.0
+## Version: 0.3.0
 ## Dependencies: EllesmereUI
 ## SavedVariables: EllesmereUISimpleNameplatesDB
 ## IconTexture: Interface\AddOns\EllesmereUI\media\eg-logo.tga
