@@ -35,7 +35,11 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 
 ## Color Settings
 
-Open **Options → AddOns → EllesmereUI Simple Nameplates**, or type `/esnp`, to customize all eight colors. Changes apply immediately and are saved between sessions. The panel also includes a **Reset Colors** button.
+Open **Options → AddOns → EllesmereUI Simple Nameplates → Colors**, or type `/esnp`, to customize all eight colors. Changes apply immediately and are saved between sessions. The panel also includes a **Reset Colors** button.
+
+## About
+
+The main **EllesmereUI Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
 
 ## Installation
 
@@ -60,6 +64,14 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat or when the hostile player is targeting you, your pet, or a member of your group.
 
 ## Changelog
+
+### 0.3.1
+
+* Added an About screen modeled on RP Emote Menu.
+* The About screen reads its version directly from the addon's `.toc` metadata.
+* Added author, license, website, and category information.
+* Moved the eight color pickers to a **Colors** child page.
+* Added `/esnp about`; `/esnp` continues to open the color settings.
 
 ### 0.3.0
 

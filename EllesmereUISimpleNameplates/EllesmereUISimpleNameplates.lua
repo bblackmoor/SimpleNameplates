@@ -8,6 +8,10 @@ local addon, ns = ...
 if not EllesmereUI then return end
 if EllesmereUI._ModuleNS then EllesmereUI._ModuleNS[addon] = ns end
 
+local getAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
+local VERSION = getAddOnMetadata and getAddOnMetadata(addon, "Version") or "Unknown"
+local SOURCE_URL = "https://github.com/bblackmoor/SimpleNameplates"
+
 local C_NamePlate = C_NamePlate
 local UnitCanAttack = UnitCanAttack
 local UnitIsPlayer = UnitIsPlayer
@@ -330,16 +334,99 @@ local function RefreshAll()
 end
 
 local settingsCategory
+local colorsSettingsCategory
+
+local function CreateAboutPanel()
+    local panel = CreateFrame("Frame")
+
+    StaticPopupDialogs["ESNP_COPY_SOURCE"] = {
+        text = "Press Ctrl+C to copy the source URL.",
+        button1 = CLOSE or "Close",
+        hasEditBox = true,
+        maxLetters = 255,
+        editBoxWidth = 340,
+        OnShow = function(self, url)
+            local editBox = self.GetEditBox and self:GetEditBox() or self.editBox
+            editBox:SetText(url or self.data or SOURCE_URL)
+            editBox:SetFocus()
+            editBox:HighlightText()
+        end,
+        EditBoxOnEnterPressed = function(self) self:GetParent():Hide() end,
+        EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true,
+        preferredIndex = 3,
+    }
+
+    local heading = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    heading:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -16)
+    heading:SetText("EllesmereUI Simple Nameplates — About")
+
+    local description = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    description:SetPoint("TOPLEFT", heading, "BOTTOMLEFT", 0, -12)
+    description:SetWidth(620)
+    description:SetJustifyH("LEFT")
+    description:SetText(
+        "A deliberately simple alternative nameplate-color module for EllesmereUI. " ..
+        "It keeps Blizzard's Midnight nameplates while providing separate, " ..
+        "customizable colors for NPC and player-character relationships."
+    )
+
+    local details = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    details:SetPoint("TOPLEFT", description, "BOTTOMLEFT", 0, -24)
+    details:SetWidth(620)
+    details:SetJustifyH("LEFT")
+    details:SetText(
+        "Version " .. VERSION .. "\n" ..
+        "Author    Brandon Blackmoor\n" ..
+        "Category  EllesmereUI"
+    )
+
+    local sourceLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sourceLabel:SetPoint("TOPLEFT", details, "BOTTOMLEFT", 0, -2)
+    sourceLabel:SetText("Source    ")
+
+    local sourceLink = CreateFrame("Button", nil, panel)
+    sourceLink:SetPoint("LEFT", sourceLabel, "RIGHT", 0, 0)
+
+    local sourceText = sourceLink:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sourceText:SetPoint("LEFT", sourceLink, "LEFT")
+    sourceText:SetText(SOURCE_URL)
+    sourceText:SetTextColor(0.35, 0.7, 1, 1)
+
+    sourceLink:SetSize(sourceText:GetStringWidth(), 16)
+    sourceLink:SetScript("OnEnter", function() sourceText:SetTextColor(0.65, 0.85, 1, 1) end)
+    sourceLink:SetScript("OnLeave", function() sourceText:SetTextColor(0.35, 0.7, 1, 1) end)
+    sourceLink:SetScript("OnClick", function()
+        StaticPopup_Show("ESNP_COPY_SOURCE", nil, nil, SOURCE_URL)
+    end)
+
+    local information = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    information:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", 0, -2)
+    information:SetWidth(620)
+    information:SetJustifyH("LEFT")
+    information:SetText(
+        "License   GPL-3.0\n\n" ..
+        "Slash commands\n" ..
+        "    /esnp - Open the color settings.\n" ..
+        "    /esnp colors - Open the color settings.\n" ..
+        "    /esnp about - Open this About page."
+    )
+
+    return panel
+end
 
 local function RegisterSettingsPanel()
-    if settingsCategory or not Settings or not Settings.RegisterCanvasLayoutCategory then return end
+    if settingsCategory or not Settings or not Settings.RegisterCanvasLayoutCategory
+        or not Settings.RegisterCanvasLayoutSubcategory then return end
 
     local panel = CreateFrame("Frame")
-    panel.name = "EllesmereUI Simple Nameplates"
+    panel.name = "Colors"
 
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 20, -18)
-    title:SetText("EllesmereUI Simple Nameplates")
+    title:SetText("EllesmereUI Simple Nameplates — Colors")
 
     local description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
@@ -443,16 +530,31 @@ local function RegisterSettingsPanel()
         RefreshAll()
     end)
 
-    settingsCategory = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
+    local aboutPanel = CreateAboutPanel()
+    settingsCategory = Settings.RegisterCanvasLayoutCategory(aboutPanel, "EllesmereUI Simple Nameplates")
     Settings.RegisterAddOnCategory(settingsCategory)
+    colorsSettingsCategory = Settings.RegisterCanvasLayoutSubcategory(
+        settingsCategory,
+        panel,
+        "Colors"
+    )
 
     SLASH_ESNP1 = "/esnp"
-    SlashCmdList.ESNP = function()
+    SlashCmdList.ESNP = function(message)
         if InCombatLockdown and InCombatLockdown() then
             print("|cff0cd29fEllesmereUI Simple Nameplates:|r Settings cannot be opened during combat.")
             return
         end
-        Settings.OpenToCategory(settingsCategory:GetID())
+
+        local command = string.lower(strtrim(message or ""))
+        if command == "about" then
+            Settings.OpenToCategory(settingsCategory:GetID())
+        elseif command == "" or command == "colors" or command == "config"
+            or command == "options" or command == "settings" then
+            Settings.OpenToCategory(colorsSettingsCategory:GetID())
+        else
+            print("|cff0cd29fEllesmereUI Simple Nameplates:|r /esnp, /esnp colors, /esnp about")
+        end
     end
 end
 
@@ -518,3 +620,4 @@ end)
 
 ns.RefreshAll = RefreshAll
 ns.ColorForState = ColorForState
+ns.VERSION = VERSION

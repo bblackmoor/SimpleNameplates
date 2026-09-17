@@ -1,4 +1,4 @@
-EllesmereUI Simple Nameplates 0.3.0
+EllesmereUI Simple Nameplates 0.3.1
 ===================================
 
 PURPOSE
@@ -30,9 +30,15 @@ DISPLAYED
   exposes a non-secret threat percentage
 
 COLOR SETTINGS
-Open Options > AddOns > EllesmereUI Simple Nameplates, or type /esnp. All
-eight colors can be changed and apply immediately. The panel includes a
-Reset Colors button.
+Open Options > AddOns > EllesmereUI Simple Nameplates > Colors, or type
+/esnp. All eight colors can be changed and apply immediately. The panel
+includes a Reset Colors button.
+
+ABOUT
+The main EllesmereUI Simple Nameplates AddOns page shows the version, author,
+category, GPL-3.0 license, source repository, and slash commands. The version
+is read directly from the addon's TOC metadata. Click the source URL for a
+copy-ready dialog. Type /esnp about to open this page directly.
 
 INSTALL
 1. Exit WoW.
@@ -56,6 +62,13 @@ when WoW reports threat or the hostile player is targeting you, your pet, or
 a member of your group.
 
 CHANGELOG
+0.3.1
+- Added an About screen modeled on RP Emote Menu.
+- About reads its version directly from the addon TOC metadata.
+- Added author, license, website, and category information.
+- Moved color pickers to a Colors child page.
+- Added /esnp about; /esnp still opens Colors.
+
 0.3.0
 - Added separate colors for four NPC and four player-character states.
 - Added a standard WoW AddOns panel with eight color pickers and reset.
