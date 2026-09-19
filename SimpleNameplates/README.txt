@@ -34,6 +34,14 @@ Open Options > AddOns > Simple Nameplates > Colors, or type /snp. All eight
 colors can be changed and apply immediately. The panel includes a Reset Colors
 button.
 
+TEXT SETTINGS
+Open Options > AddOns > Simple Nameplates > Text, or type /snp text. Choose a
+unit-name font, a separate threat-percentage font, and whether hostile-unit
+names appear above or inside their health bars. Both fonts default to Arial
+Narrow with a normal outline. Inside-bar names shrink to fit the existing bar
+and reserve space for threat percentage. The bar is not resized. Name-only
+friendly and non-PvP plates are unaffected by name placement.
+
 ABOUT
 The main Simple Nameplates AddOns page shows the version, author,
 category, GPL-3.0 license, source repository, and slash commands. The version
@@ -62,6 +70,13 @@ when WoW reports threat or the hostile player is targeting you, your pet, or
 a member of your group.
 
 CHANGELOG
+2.0.25
+- Added separate unit-name and threat-font selectors.
+- Changed both default fonts to Arial Narrow with a normal outline.
+- Added Above Bar and Inside Bar hostile-name placement.
+- Inside-bar names shrink to fit and reserve space for threat percentage.
+- Added /snp text.
+
 2.0.24
 - Distinguishes player factions independently of sanctuary reaction.
 - Keeps non-PvP opposite-faction players name-only and periwinkle.

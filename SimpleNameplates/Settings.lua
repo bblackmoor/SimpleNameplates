@@ -8,9 +8,13 @@ local SOURCE_URL = ns.SOURCE_URL
 local ColorForState = ns.ColorForState
 local SetStateColor = ns.SetStateColor
 local ResetStateColors = ns.ResetStateColors
+local GetAppearanceSetting = ns.GetAppearanceSetting
+local SetAppearanceSetting = ns.SetAppearanceSetting
+local ResetAppearance = ns.ResetAppearance
 
 local settingsCategory
 local colorsSettingsCategory
+local textSettingsCategory
 
 local function RefreshNameplates()
     if ns.RefreshAll then ns.RefreshAll() end
@@ -91,9 +95,115 @@ local function CreateAboutPanel()
         "Slash commands\n" ..
         "    /snp - Open the color settings.\n" ..
         "    /snp colors - Open the color settings.\n" ..
+        "    /snp text - Open the text settings.\n" ..
         "    /snp about - Open this About page."
     )
 
+    return panel
+end
+
+local function CreateTextPanel()
+    local panel = CreateFrame("Frame")
+    panel.name = "Text"
+
+    local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 20, -18)
+    title:SetText("Simple Nameplates — Text")
+
+    local description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+    description:SetPoint("RIGHT", panel, "RIGHT", -20, 0)
+    description:SetJustifyH("LEFT")
+    description:SetText("Choose the name and threat fonts and place hostile-unit names above or inside their health bars.")
+
+    local refreshers = {}
+
+    local function OptionLabel(options, value)
+        for _, option in ipairs(options) do
+            if option.value == value then return option.label end
+        end
+        return ""
+    end
+
+    local function CreateDropdown(labelText, y, options, getter, setter)
+        local label = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        label:SetPoint("TOPLEFT", 24, y)
+        label:SetText(labelText)
+
+        local dropdown = CreateFrame("Frame", nil, panel, "UIDropDownMenuTemplate")
+        dropdown:SetPoint("TOPLEFT", 8, y - 18)
+        UIDropDownMenu_SetWidth(dropdown, 190)
+
+        local function Refresh()
+            local value = getter()
+            UIDropDownMenu_SetSelectedValue(dropdown, value)
+            UIDropDownMenu_SetText(dropdown, OptionLabel(options, value))
+        end
+
+        UIDropDownMenu_Initialize(dropdown, function(_, level)
+            for _, option in ipairs(options) do
+                local value, optionLabel = option.value, option.label
+                local info = UIDropDownMenu_CreateInfo()
+                info.text = optionLabel
+                info.value = value
+                info.checked = getter() == value
+                info.func = function()
+                    setter(value)
+                    Refresh()
+                    RefreshNameplates()
+                end
+                UIDropDownMenu_AddButton(info, level)
+            end
+        end)
+
+        refreshers[#refreshers + 1] = Refresh
+        Refresh()
+    end
+
+    CreateDropdown(
+        "Name font",
+        -88,
+        ns.FONT_OPTIONS,
+        function() return GetAppearanceSetting("nameFont") end,
+        function(value) SetAppearanceSetting("nameFont", value) end
+    )
+    CreateDropdown(
+        "Threat-percentage font",
+        -170,
+        ns.FONT_OPTIONS,
+        function() return GetAppearanceSetting("threatFont") end,
+        function(value) SetAppearanceSetting("threatFont", value) end
+    )
+    CreateDropdown(
+        "Hostile-unit name placement",
+        -252,
+        {
+            { value = "ABOVE", label = "Above bar" },
+            { value = "INSIDE", label = "Inside bar" },
+        },
+        function() return GetAppearanceSetting("namePlacement") end,
+        function(value) SetAppearanceSetting("namePlacement", value) end
+    )
+
+    local note = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    note:SetPoint("TOPLEFT", 24, -334)
+    note:SetWidth(600)
+    note:SetJustifyH("LEFT")
+    note:SetText("Inside-bar names automatically shrink to fit the existing Blizzard bar. Name-only friendly and non-PvP players are unaffected.")
+
+    local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+    reset:SetSize(150, 24)
+    reset:SetPoint("TOPLEFT", 24, -386)
+    reset:SetText("Reset Text")
+    reset:SetScript("OnClick", function()
+        ResetAppearance()
+        for _, refresh in ipairs(refreshers) do refresh() end
+        RefreshNameplates()
+    end)
+
+    panel:SetScript("OnShow", function()
+        for _, refresh in ipairs(refreshers) do refresh() end
+    end)
     return panel
 end
 
@@ -218,6 +328,11 @@ local function RegisterSettingsPanel()
         panel,
         "Colors"
     )
+    textSettingsCategory = Settings.RegisterCanvasLayoutSubcategory(
+        settingsCategory,
+        CreateTextPanel(),
+        "Text"
+    )
 
     SLASH_SNP1 = "/snp"
     SlashCmdList.SNP = function(message)
@@ -229,11 +344,13 @@ local function RegisterSettingsPanel()
         local command = string.lower(strtrim(message or ""))
         if command == "about" then
             Settings.OpenToCategory(settingsCategory:GetID())
+        elseif command == "text" or command == "font" or command == "fonts" then
+            Settings.OpenToCategory(textSettingsCategory:GetID())
         elseif command == "" or command == "colors" or command == "config"
             or command == "options" or command == "settings" then
             Settings.OpenToCategory(colorsSettingsCategory:GetID())
         else
-            print("|cff0cd29fSimple Nameplates:|r /snp, /snp colors, /snp about")
+            print("|cff0cd29fSimple Nameplates:|r /snp, /snp colors, /snp text, /snp about")
         end
     end
 end

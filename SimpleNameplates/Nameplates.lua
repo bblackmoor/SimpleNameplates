@@ -23,6 +23,8 @@ local AccessibleNumber = ns.AccessibleNumber
 local AccessibleBoolean = ns.AccessibleBoolean
 local AccessibleValue = ns.AccessibleValue
 local ColorForState = ns.ColorForState
+local GetAppearanceSetting = ns.GetAppearanceSetting
+local FontPath = ns.FontPath
 
 local function UnitHasAggro(unitToken, hostileUnit)
     local threat = UnitThreatSituation(unitToken, hostileUnit)
@@ -149,8 +151,34 @@ local function StyleName(frame, state)
     local name = frame and frame.name
     if not name then return end
     UpdateNameText(frame)
-    local font, size = name:GetFont()
-    if font and size then name:SetFont(font, size, "THICKOUTLINE") end
+
+    local _, currentSize = name:GetFont()
+    if not frame.SNPBaseNameSize and type(currentSize) == "number" then
+        frame.SNPBaseNameSize = currentSize
+    end
+    local size = frame.SNPBaseNameSize or currentSize or 10
+    local bar = GetHealthBar(frame)
+    local inside = GetAppearanceSetting("namePlacement") == "INSIDE"
+        and not IsNameOnlyState(state) and bar
+
+    if inside then
+        local barHeight = bar:GetHeight()
+        if type(barHeight) == "number" and barHeight > 0 then
+            size = math.max(6, math.min(size, math.floor(barHeight - 2)))
+        else
+            size = math.min(size, 9)
+        end
+        name:ClearAllPoints()
+        name:SetPoint("LEFT", bar, "LEFT", 3, 0)
+        name:SetPoint("RIGHT", bar, "RIGHT", -42, 0)
+        name:SetJustifyH("LEFT")
+    elseif bar then
+        name:ClearAllPoints()
+        name:SetPoint("BOTTOM", bar, "TOP", 0, 2)
+        name:SetJustifyH("CENTER")
+    end
+
+    name:SetFont(FontPath(GetAppearanceSetting("nameFont")), size, "OUTLINE")
     name:SetShadowColor(0, 0, 0, 1)
     name:SetShadowOffset(1, -1)
     if IsNameOnlyState(state) then
@@ -169,7 +197,6 @@ local function EnsureThreatText(frame)
     local threatText = bar:CreateFontString(nil, "OVERLAY")
     threatText:SetPoint("RIGHT", bar, "RIGHT", -3, 0)
     threatText:SetJustifyH("RIGHT")
-    threatText:SetFont("Fonts\\FRIZQT__.TTF", 9, "OUTLINE")
     threatText:SetTextColor(1, 1, 1, 1)
     frame.SNPThreatText = threatText
     return threatText
@@ -178,6 +205,7 @@ end
 local function UpdateThreatText(frame, state)
     local threatText = EnsureThreatText(frame)
     if not threatText then return end
+    threatText:SetFont(FontPath(GetAppearanceSetting("threatFont")), 9, "OUTLINE")
     if IsNameOnlyState(state) then threatText:SetText(""); return end
     local _, _, scaled, raw = UnitDetailedThreatSituation("player", frame.unit)
     local percent = AccessibleNumber(raw) or AccessibleNumber(scaled)
@@ -303,9 +331,9 @@ events:SetScript("OnEvent", function(_, event, unit)
     elseif event == "UNIT_THREAT_SITUATION_UPDATE" or event == "UNIT_THREAT_LIST_UPDATE" then RefreshAll() end
 end)
 
--- Blizzard sometimes recolors a friendly name without calling either compact
--- unit-frame update path. Repair only cached name-only plates; classification,
--- threat scans, and hostile plate styling remain event-driven.
+-- Blizzard sometimes changes name font or placement without calling either
+-- compact unit-frame update path. Repair cached names only; classification,
+-- threat scans, and health-bar styling remain event-driven.
 local reconcileElapsed = 0
 events:SetScript("OnUpdate", function(_, elapsed)
     reconcileElapsed = reconcileElapsed + elapsed
@@ -315,7 +343,7 @@ events:SetScript("OnUpdate", function(_, elapsed)
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
         local frame = plate.UnitFrame
-        if frame and IsNameOnlyState(frame.SNPState) then
+        if frame and frame.SNPState then
             StyleName(frame, frame.SNPState)
         end
     end

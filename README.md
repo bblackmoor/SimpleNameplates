@@ -37,6 +37,16 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 
 Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize all eight colors. Changes apply immediately and are saved between sessions. The panel also includes a **Reset Colors** button.
 
+## Text Settings
+
+Open **Options → AddOns → Simple Nameplates → Text**, or type `/snp text`, to choose:
+
+* The unit-name font.
+* A separate threat-percentage font.
+* Whether hostile-unit names appear above or inside their health bars.
+
+Both fonts default to WoW's built-in **Arial Narrow** with a normal outline. Other standard Blizzard fonts are available without an external font library. Inside-bar names automatically shrink to fit the existing bar; the bar itself is not resized. Friendly and non-PvP name-only plates are unaffected by the placement setting.
+
 ## About
 
 The main **Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
@@ -63,6 +73,14 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat or when the hostile player is targeting you, your pet, or a member of your group.
 
 ## Changelog
+
+### 2.0.25
+
+* Added a Text settings page with separate name and threat-font selectors.
+* Changed both default fonts to Arial Narrow with a normal outline.
+* Added Above Bar and Inside Bar placement for names on hostile-unit health bars.
+* Inside-bar names automatically shrink and reserve space for the threat percentage.
+* Added `/snp text`.
 
 ### 2.0.24
 

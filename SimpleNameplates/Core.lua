@@ -22,6 +22,26 @@ local DEFAULT_COLORS = {
 }
 ns.DEFAULT_COLORS = DEFAULT_COLORS
 
+local FONT_OPTIONS = {
+    { value = "ARIALN", label = "Arial Narrow", path = "Fonts\\ARIALN.TTF" },
+    { value = "FRIZQT", label = "Friz Quadrata", path = "Fonts\\FRIZQT__.TTF" },
+    { value = "MORPHEUS", label = "Morpheus", path = "Fonts\\MORPHEUS.TTF" },
+    { value = "SKURRI", label = "Skurri", path = "Fonts\\skurri.ttf" },
+    { value = "2002", label = "2002", path = "Fonts\\2002.TTF" },
+    { value = "2002B", label = "2002 Bold", path = "Fonts\\2002B.TTF" },
+}
+local FONT_BY_VALUE = {}
+for _, option in ipairs(FONT_OPTIONS) do FONT_BY_VALUE[option.value] = option end
+
+local DEFAULT_APPEARANCE = {
+    nameFont = "ARIALN",
+    threatFont = "ARIALN",
+    namePlacement = "ABOVE",
+}
+
+ns.FONT_OPTIONS = FONT_OPTIONS
+ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
+
 local dbReady = false
 
 local function EnsureDB()
@@ -38,8 +58,41 @@ local function EnsureDB()
             db.colors[key] = { r = default.r, g = default.g, b = default.b }
         end
     end
+    if type(db.appearance) ~= "table" then db.appearance = {} end
+    if not FONT_BY_VALUE[db.appearance.nameFont] then
+        db.appearance.nameFont = DEFAULT_APPEARANCE.nameFont
+    end
+    if not FONT_BY_VALUE[db.appearance.threatFont] then
+        db.appearance.threatFont = DEFAULT_APPEARANCE.threatFont
+    end
+    if db.appearance.namePlacement ~= "ABOVE" and db.appearance.namePlacement ~= "INSIDE" then
+        db.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
+    end
     dbReady = true
     return db
+end
+
+local function GetAppearanceSetting(key)
+    return EnsureDB().appearance[key]
+end
+
+local function SetAppearanceSetting(key, value)
+    local appearance = EnsureDB().appearance
+    if (key == "nameFont" or key == "threatFont") and FONT_BY_VALUE[value] then
+        appearance[key] = value
+    elseif key == "namePlacement" and (value == "ABOVE" or value == "INSIDE") then
+        appearance[key] = value
+    end
+end
+
+local function FontPath(value)
+    local option = FONT_BY_VALUE[value] or FONT_BY_VALUE.ARIALN
+    return option.path
+end
+
+local function ResetAppearance()
+    local appearance = EnsureDB().appearance
+    for key, value in pairs(DEFAULT_APPEARANCE) do appearance[key] = value end
 end
 
 local function ColorForState(state)
@@ -146,6 +199,10 @@ ns.EnsureDB = EnsureDB
 ns.ColorForState = ColorForState
 ns.SetStateColor = SetStateColor
 ns.ResetStateColors = ResetStateColors
+ns.GetAppearanceSetting = GetAppearanceSetting
+ns.SetAppearanceSetting = SetAppearanceSetting
+ns.FontPath = FontPath
+ns.ResetAppearance = ResetAppearance
 ns.DisableFriendlyClassColors = DisableFriendlyClassColors
 ns.ShowNameplateConflictWarning = ShowNameplateConflictWarning
 ns.AccessibleNumber = AccessibleNumber
