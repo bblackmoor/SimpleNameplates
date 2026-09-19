@@ -82,42 +82,46 @@ when WoW reports threat or the hostile player is targeting you, your pet, or
 a member of your group.
 
 CHANGELOG
-2.0.29
+1.0.30
+- Reset the standalone release line to 1.0.(build number).
+- Updated the Git hook to generate future 1.0 build versions automatically.
+
+1.0.29
 - Changed friendly NPCs to light blue and friendly PCs and minions to green.
 - Uses yellow for attackable non-aggressive NPCs and non-attacking PCs.
 - Classifies opposing PCs by actual two-way attackability, not inferred War Mode.
 - Recognizes the player's temporary guardians and minions as friendly PCs.
 - Added an optional same-color glow around PC health bars, off by default.
 
-2.0.28
+1.0.28
 - Left-aligned names and TRP3 full titles with the health bar.
 - Kept threat percentages right-aligned with the health bar.
 
-2.0.27
+1.0.27
 - Added optional TRP3 roleplaying full names with WoW-name fallback.
 - Added optional short titles before names.
 - Added [OOC] in place of short titles; IC profiles receive no marker.
 - Added optional full titles above names and always outside health bars.
 
-2.0.26
+1.0.26
 - Added an optional TRP3.lua integration skeleton using public TRP3 APIs.
 - Added a TRP3 settings page with a master toggle, disabled by default.
 - Added TRP3 availability status and /snp trp3.
 - No TRP3 profile fields are displayed yet.
 
-2.0.25
+1.0.25
 - Added separate unit-name and threat-font selectors.
 - Changed both default fonts to Arial Narrow with a normal outline.
 - Added Above Bar and Inside Bar hostile-name placement.
 - Inside-bar names shrink to fit and reserve space for threat percentage.
 - Added /snp text.
 
-2.0.24
+1.0.24
 - Distinguishes player factions independently of sanctuary reaction.
 - Keeps non-PvP opposite-faction players name-only and periwinkle.
 - Repairs Blizzard name-color overwrites with a lightweight reconciliation.
 
-2.0.23
+1.0.23
 - Fresh standalone release with no previous-version or legacy-settings handling.
 - Warns when another enabled third-party "plate" addon may conflict.
 - Uses /snp for settings and About commands.

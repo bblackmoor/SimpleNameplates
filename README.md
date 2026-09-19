@@ -85,7 +85,12 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 
 ## Changelog
 
-### 2.0.29
+### 1.0.30
+
+* Reset the standalone addon's release line to `1.0.(build number)`.
+* Updated the tracked Git hook to generate future `1.0` build versions automatically.
+
+### 1.0.29
 
 * Changed the defaults to light-blue friendly NPCs and green friendly PCs and player-controlled units.
 * Uses yellow for both attackable non-aggressive NPCs and attackable non-attacking PCs.
@@ -93,26 +98,26 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 * Correctly recognizes the player's own temporary guardians and minions as friendly player-controlled units.
 * Added an optional same-color glow around PC health bars, disabled by default.
 
-### 2.0.28
+### 1.0.28
 
 * Left-aligned names and TRP3 full titles with the health bar.
 * Kept threat percentages right-aligned with the health bar.
 
-### 2.0.27
+### 1.0.27
 
 * Added optional TRP3 roleplaying full names with automatic WoW-name fallback.
 * Added optional short titles before names.
 * Added `[OOC]` indicators that replace short titles; IC profiles receive no marker.
 * Added optional full titles on a separate line above the name and always outside the health bar.
 
-### 2.0.26
+### 1.0.26
 
 * Added an optional `TRP3.lua` integration skeleton using public TRP3 APIs.
 * Added a TRP3 settings page with a master profile-display toggle, disabled by default.
 * Added TRP3 availability status and `/snp trp3`.
 * No TRP3 profile fields are displayed yet.
 
-### 2.0.25
+### 1.0.25
 
 * Added a Text settings page with separate name and threat-font selectors.
 * Changed both default fonts to Arial Narrow with a normal outline.
@@ -120,13 +125,13 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 * Inside-bar names automatically shrink and reserve space for the threat percentage.
 * Added `/snp text`.
 
-### 2.0.24
+### 1.0.24
 
 * Distinguishes same-faction and opposite-faction players by actual faction rather than sanctuary reaction.
 * Keeps non-PvP opposite-faction players name-only and applies their configured name color.
 * Repairs Blizzard name-color overwrites with a lightweight cached-state reconciliation pass.
 
-### 2.0.23
+### 1.0.23
 
 * Fresh standalone release with no previous-version or legacy-settings handling.
 * Warns at login when another enabled third-party “plate” addon may conflict.
