@@ -1,6 +1,6 @@
 -- Simple Nameplates: unit classification, styling, and event handling.
--- Friendly units and non-PvP opposite-faction players use colored names only;
--- hostile states use white names with colored full nameplates.
+-- Friendly units and unattackable opposite-faction players use colored names
+-- only; attackable states use white names with colored full nameplates.
 
 local _, ns = ...
 if not ns.EnsureDB then return end
@@ -9,6 +9,7 @@ local C_NamePlate = C_NamePlate
 local UnitCanAttack = UnitCanAttack
 local UnitFactionGroup = UnitFactionGroup
 local UnitIsPlayer = UnitIsPlayer
+local UnitIsOwnerOrControllerOfUnit = UnitIsOwnerOrControllerOfUnit
 local UnitIsPVP = UnitIsPVP
 local UnitIsUnit = UnitIsUnit
 local UnitPlayerControlled = UnitPlayerControlled
@@ -25,6 +26,7 @@ local AccessibleValue = ns.AccessibleValue
 local ColorForState = ns.ColorForState
 local GetAppearanceSetting = ns.GetAppearanceSetting
 local GetTRP3Setting = ns.GetTRP3Setting
+local GetPCGlowEnabled = ns.GetPCGlowEnabled
 local FontPath = ns.FontPath
 
 local function UnitHasAggro(unitToken, hostileUnit)
@@ -65,17 +67,35 @@ local function IsPlayerControlledUnit(unit)
     return AccessibleBoolean(UnitPlayerControlled(unit)) == true
 end
 
+local function IsOwnedOrControlledByPlayer(unit)
+    if not UnitIsOwnerOrControllerOfUnit then return false end
+    return AccessibleBoolean(UnitIsOwnerOrControllerOfUnit("player", unit)) == true
+end
+
 local function OpposingPlayerState(unit)
+    local canAttackThem = AccessibleBoolean(UnitCanAttack("player", unit))
+    local canAttackUs = AccessibleBoolean(UnitCanAttack(unit, "player"))
+    local combatAvailable = canAttackThem == true or canAttackUs == true
+
+    if combatAvailable then
+        if HasAggroOnOurGroup(unit) or TargetsOurGroup(unit) then
+            return "attackingPC"
+        end
+        return "attackablePC"
+    end
+
+    if canAttackThem == false and canAttackUs == false then
+        return "unfriendlyPC"
+    end
+
+    -- Attackability can be secret. PvP state is only a fallback and does not
+    -- attempt to distinguish War Mode from ordinary PvP flagging.
     local pvp = AccessibleBoolean(UnitIsPVP(unit))
     if pvp == true and (HasAggroOnOurGroup(unit) or TargetsOurGroup(unit)) then
         return "attackingPC"
     end
-    if pvp == true then return "hostilePC" end
+    if pvp == true then return "attackablePC" end
     if pvp == false then return "unfriendlyPC" end
-
-    -- UnitIsPVP can be secret when unit identity is restricted. Fall back
-    -- to attackability without ever branching on a secret value.
-    if AccessibleBoolean(UnitCanAttack("player", unit)) == true then return "hostilePC" end
     return "unfriendlyPC"
 end
 
@@ -96,8 +116,12 @@ local function StateForUnit(unit)
         return OpposingPlayerState(unit)
     end
 
-    -- Pets, guardians, minions, and vehicles follow the player-side color
-    -- language instead of being mistaken for ordinary NPCs.
+    -- Some temporary guardians do not report a useful reaction. Explicitly
+    -- recognize the player's own pets, guardians, minions, and vehicles first.
+    if IsOwnedOrControlledByPlayer(unit) then return "friendlyPC" end
+
+    -- Other player-controlled units follow the player-side color language
+    -- instead of being mistaken for ordinary NPCs.
     if IsPlayerControlledUnit(unit) then
         if reaction and reaction >= 5 then return "friendlyPC" end
         return OpposingPlayerState(unit)
@@ -115,6 +139,11 @@ end
 
 local function IsNameOnlyState(state)
     return state == "friendlyNPC" or state == "friendlyPC" or state == "unfriendlyPC"
+end
+
+local function IsPCState(state)
+    return state == "friendlyPC" or state == "unfriendlyPC"
+        or state == "attackablePC" or state == "attackingPC"
 end
 
 local function GetUnitFrame(unit)
@@ -272,6 +301,58 @@ local function UpdateThreatText(frame, state)
     if percent then threatText:SetFormattedText("%.0f%%", percent) else threatText:SetText("") end
 end
 
+local function EnsurePCGlow(frame)
+    local bar = GetHealthBar(frame)
+    if not bar then return nil end
+    if frame.SNPPCGlow and frame.SNPPCGlow.bar == bar then return frame.SNPPCGlow end
+
+    local function CreateEdge()
+        local edge = bar:CreateTexture(nil, "OVERLAY")
+        edge:SetColorTexture(1, 1, 1, 0.7)
+        edge:SetBlendMode("ADD")
+        edge:Hide()
+        return edge
+    end
+
+    local glow = {
+        bar = bar,
+        top = CreateEdge(),
+        bottom = CreateEdge(),
+        left = CreateEdge(),
+        right = CreateEdge(),
+    }
+    glow.top:SetPoint("BOTTOMLEFT", bar, "TOPLEFT", -2, -1)
+    glow.top:SetPoint("BOTTOMRIGHT", bar, "TOPRIGHT", 2, -1)
+    glow.top:SetHeight(3)
+    glow.bottom:SetPoint("TOPLEFT", bar, "BOTTOMLEFT", -2, 1)
+    glow.bottom:SetPoint("TOPRIGHT", bar, "BOTTOMRIGHT", 2, 1)
+    glow.bottom:SetHeight(3)
+    glow.left:SetPoint("TOPRIGHT", bar, "TOPLEFT", 1, 2)
+    glow.left:SetPoint("BOTTOMRIGHT", bar, "BOTTOMLEFT", 1, -2)
+    glow.left:SetWidth(3)
+    glow.right:SetPoint("TOPLEFT", bar, "TOPRIGHT", -1, 2)
+    glow.right:SetPoint("BOTTOMLEFT", bar, "BOTTOMRIGHT", -1, -2)
+    glow.right:SetWidth(3)
+    frame.SNPPCGlow = glow
+    return glow
+end
+
+local function UpdatePCGlow(frame, state, r, g, b)
+    local glow = frame.SNPPCGlow
+    local shown = GetPCGlowEnabled() and IsPCState(state) and not IsNameOnlyState(state)
+    if shown then glow = EnsurePCGlow(frame) end
+    if not glow then return end
+
+    for _, edge in ipairs({glow.top, glow.bottom, glow.left, glow.right}) do
+        if shown then
+            edge:SetColorTexture(r, g, b, 0.7)
+            edge:Show()
+        else
+            edge:Hide()
+        end
+    end
+end
+
 local function ApplyVisibility(frame, state)
     local nameOnly = IsNameOnlyState(state)
     local bar = GetHealthBar(frame)
@@ -300,6 +381,7 @@ local function ApplySimpleStyle(frame)
     elseif frame.SNPThreatText then
         frame.SNPThreatText:SetText("")
     end
+    UpdatePCGlow(frame, state, r, g, b)
 end
 
 local function RefreshUnit(unit)
@@ -384,6 +466,7 @@ events:SetScript("OnEvent", function(_, event, unit)
             if frame.name then frame.name:SetText("") end
             if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
             if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
+            UpdatePCGlow(frame, "", 1, 1, 1)
         end
         return
     end

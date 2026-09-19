@@ -11,14 +11,14 @@ local issecretvalue = issecretvalue or function() return false end
 local canaccessvalue = canaccessvalue or function(v) return not issecretvalue(v) end
 
 local DEFAULT_COLORS = {
-    friendlyNPC = { r = 0.20, g = 0.85, b = 0.25 },
+    friendlyNPC = { r = 0.25, g = 0.75, b = 1.00 },
     unfriendlyNPC = { r = 1.00, g = 0.82, b = 0.12 },
     hostileNPC = { r = 1.00, g = 0.48, b = 0.08 },
     attackingNPC = { r = 1.00, g = 0.12, b = 0.10 },
-    friendlyPC = { r = 0.25, g = 0.75, b = 1.00 },
-    unfriendlyPC = { r = 0.55, g = 0.55, b = 1.00 },
-    hostilePC = { r = 0.85, g = 0.30, b = 1.00 },
-    attackingPC = { r = 1.00, g = 0.15, b = 0.55 },
+    friendlyPC = { r = 0.20, g = 0.85, b = 0.25 },
+    unfriendlyPC = { r = 1.00, g = 0.82, b = 0.12 },
+    attackablePC = { r = 1.00, g = 0.82, b = 0.12 },
+    attackingPC = { r = 1.00, g = 0.12, b = 0.10 },
 }
 ns.DEFAULT_COLORS = DEFAULT_COLORS
 
@@ -76,6 +76,7 @@ local function EnsureDB()
     if db.appearance.namePlacement ~= "ABOVE" and db.appearance.namePlacement ~= "INSIDE" then
         db.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
     end
+    if type(db.pcGlow) ~= "boolean" then db.pcGlow = false end
     if type(db.trp3) ~= "table" then db.trp3 = {} end
     for key, default in pairs(DEFAULT_TRP3) do
         if type(db.trp3[key]) ~= "boolean" then db.trp3[key] = default end
@@ -139,6 +140,14 @@ local function ResetStateColors()
     for key, default in pairs(DEFAULT_COLORS) do
         colors[key] = { r = default.r, g = default.g, b = default.b }
     end
+end
+
+local function GetPCGlowEnabled()
+    return EnsureDB().pcGlow
+end
+
+local function SetPCGlowEnabled(enabled)
+    EnsureDB().pcGlow = enabled == true
 end
 
 local FRIENDLY_COLOR_CVARS = {
@@ -229,6 +238,8 @@ ns.EnsureDB = EnsureDB
 ns.ColorForState = ColorForState
 ns.SetStateColor = SetStateColor
 ns.ResetStateColors = ResetStateColors
+ns.GetPCGlowEnabled = GetPCGlowEnabled
+ns.SetPCGlowEnabled = SetPCGlowEnabled
 ns.GetAppearanceSetting = GetAppearanceSetting
 ns.SetAppearanceSetting = SetAppearanceSetting
 ns.FontPath = FontPath

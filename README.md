@@ -8,14 +8,14 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 
 | Unit state | Default color | Meaning |
 | --- | --- | --- |
-| Friendly NPC | Green | You cannot fight them |
+| Friendly NPC | Light blue | You cannot fight them |
 | Unfriendly NPC | Yellow | Attackable, but non-aggressive |
 | Hostile NPC | Orange | Will attack, but is not attacking your group |
 | Attacking NPC | Red | Attacking you, a pet, or a group member |
-| Friendly PC | Light blue | Same faction |
-| Unfriendly PC | Periwinkle | Opposite faction, but not PvP-enabled; name only |
-| Hostile PC | Purple | PvP-enabled opposite-faction player |
-| Attacking PC | Magenta | Hostile player targeting or generating threat on your group |
+| Friendly PC | Green | Same faction, including your pets, guardians, and minions |
+| Unfriendly PC | Yellow | Opposite faction, but neither side can attack; name only |
+| Attackable PC | Yellow | Either side can attack, but the player is not attacking your group |
+| Attacking PC | Red | Player targeting or generating threat on your group |
 
 ## How It Works
 
@@ -32,10 +32,13 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 * Normal Blizzard cast/channel bar and spell information
 * Normal Blizzard target treatment
 * Threat percentage at the right side of the health bar when Midnight exposes a non-secret threat percentage
+* Optional same-color glow around PC health bars
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize all eight colors. Changes apply immediately and are saved between sessions. The panel also includes a **Reset Colors** button.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize all eight colors. Changes apply immediately and are saved between sessions. The panel also includes a **Reset Colors** button and an optional **Glow PC health bars** setting, disabled by default.
+
+Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
 
 ## Text Settings
 
@@ -43,9 +46,9 @@ Open **Options → AddOns → Simple Nameplates → Text**, or type `/snp text`,
 
 * The unit-name font.
 * A separate threat-percentage font.
-* Whether hostile-unit names appear above or inside their health bars.
+* Whether names appear above or inside visible health bars.
 
-Both fonts default to WoW's built-in **Arial Narrow** with a normal outline. Other standard Blizzard fonts are available without an external font library. Inside-bar names automatically shrink to fit the existing bar; the bar itself is not resized. Friendly and non-PvP name-only plates are unaffected by the placement setting.
+Both fonts default to WoW's built-in **Arial Narrow** with a normal outline. Other standard Blizzard fonts are available without an external font library. Inside-bar names automatically shrink to fit the existing bar; the bar itself is not resized. Friendly and unattackable name-only plates are unaffected by the placement setting.
 
 ## TRP3 Integration
 
@@ -81,6 +84,14 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat or when the hostile player is targeting you, your pet, or a member of your group.
 
 ## Changelog
+
+### 2.0.29
+
+* Changed the defaults to light-blue friendly NPCs and green friendly PCs and player-controlled units.
+* Uses yellow for both attackable non-aggressive NPCs and attackable non-attacking PCs.
+* Uses actual two-way attackability rather than inferred War Mode to decide whether an opposing PC receives a health bar.
+* Correctly recognizes the player's own temporary guardians and minions as friendly player-controlled units.
+* Added an optional same-color glow around PC health bars, disabled by default.
 
 ### 2.0.28
 

@@ -11,6 +11,8 @@ local ResetStateColors = ns.ResetStateColors
 local GetAppearanceSetting = ns.GetAppearanceSetting
 local SetAppearanceSetting = ns.SetAppearanceSetting
 local ResetAppearance = ns.ResetAppearance
+local GetPCGlowEnabled = ns.GetPCGlowEnabled
+local SetPCGlowEnabled = ns.SetPCGlowEnabled
 
 local settingsCategory
 local colorsSettingsCategory
@@ -116,7 +118,7 @@ local function CreateTextPanel()
     description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
     description:SetPoint("RIGHT", panel, "RIGHT", -20, 0)
     description:SetJustifyH("LEFT")
-    description:SetText("Choose the name and threat fonts and place hostile-unit names above or inside their health bars.")
+    description:SetText("Choose the name and threat fonts and place names above or inside visible health bars.")
 
     local refreshers = {}
 
@@ -177,7 +179,7 @@ local function CreateTextPanel()
         function(value) SetAppearanceSetting("threatFont", value) end
     )
     CreateDropdown(
-        "Hostile-unit name placement",
+        "Health-bar name placement",
         -252,
         {
             { value = "ABOVE", label = "Above bar" },
@@ -191,7 +193,7 @@ local function CreateTextPanel()
     note:SetPoint("TOPLEFT", 24, -334)
     note:SetWidth(600)
     note:SetJustifyH("LEFT")
-    note:SetText("Inside-bar names automatically shrink to fit the existing Blizzard bar. Name-only friendly and non-PvP players are unaffected.")
+    note:SetText("Inside-bar names automatically shrink to fit the existing Blizzard bar. Name-only friendly and unattackable players are unaffected.")
 
     local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
@@ -317,7 +319,7 @@ local function RegisterSettingsPanel()
     description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
     description:SetPoint("RIGHT", panel, "RIGHT", -20, 0)
     description:SetJustifyH("LEFT")
-    description:SetText("Choose name colors for nonattackable units and health-bar colors for hostile units.")
+    description:SetText("Choose name colors for units without bars and health-bar colors for attackable units.")
 
     local swatchRefreshers = {}
 
@@ -401,13 +403,32 @@ local function RegisterSettingsPanel()
 
     CreateSection("PLAYER CHARACTERS", -266)
     CreateColorRow("Friendly (same faction) PC", "friendlyPC", -292)
-    CreateColorRow("Unfriendly (opposite faction) PC", "unfriendlyPC", -328)
-    CreateColorRow("Hostile (PvP-enabled opposite faction) PC", "hostilePC", -364)
-    CreateColorRow("Attacking (PvP-enabled opposite faction) PC", "attackingPC", -400)
+    CreateColorRow("Unfriendly (opposite faction, cannot fight) PC", "unfriendlyPC", -328)
+    CreateColorRow("Attackable (not attacking) opposite-faction PC", "attackablePC", -364)
+    CreateColorRow("Attacking (me, a pet, or an ally) PC", "attackingPC", -400)
+
+    local pcGlow = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    pcGlow:SetSize(26, 26)
+    pcGlow:SetPoint("TOPLEFT", 20, -438)
+    pcGlow:SetHitRectInsets(0, -260, 0, 0)
+
+    local pcGlowLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    pcGlowLabel:SetPoint("LEFT", pcGlow, "RIGHT", 4, 0)
+    pcGlowLabel:SetText("Glow PC health bars")
+
+    local function RefreshPCGlow()
+        pcGlow:SetChecked(GetPCGlowEnabled())
+    end
+    pcGlow:SetScript("OnClick", function(self)
+        SetPCGlowEnabled(self:GetChecked() == true)
+        RefreshNameplates()
+    end)
+    panel:SetScript("OnShow", RefreshPCGlow)
+    RefreshPCGlow()
 
     local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
-    reset:SetPoint("TOPLEFT", 24, -454)
+    reset:SetPoint("TOPLEFT", 24, -482)
     reset:SetText("Reset Colors")
     reset:SetScript("OnClick", function()
         ResetStateColors()

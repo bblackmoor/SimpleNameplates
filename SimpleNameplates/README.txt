@@ -5,14 +5,14 @@ PURPOSE
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
 DEFAULT COLOR LANGUAGE
-Green      = friendly NPC
+Light blue = friendly NPC
 Yellow     = unfriendly NPC / attackable but non-aggressive
 Orange     = hostile NPC / will attack but not attacking your group
 Red        = NPC attacking you, a pet, or a group member
-Light blue = friendly same-faction PC
-Periwinkle = unfriendly opposite-faction PC (name only)
-Purple     = hostile PvP-enabled opposite-faction PC
-Magenta    = hostile PC attacking your group (best effort)
+Green      = friendly PC, including your pets, guardians, and minions
+Yellow     = opposite-faction PC when neither side can attack (name only)
+Yellow     = attackable opposite-faction PC not attacking your group
+Red        = PC attacking your group (best effort)
 
 HOW IT WORKS
 Simple Nameplates no longer draws its own replacement nameplate. It keeps the
@@ -28,19 +28,22 @@ DISPLAYED
 - Normal Blizzard target treatment
 - Threat percentage added at the right side of the health bar when Midnight
   exposes a non-secret threat percentage
+- Optional same-color glow around PC health bars
 
 COLOR SETTINGS
 Open Options > AddOns > Simple Nameplates > Colors, or type /snp. All eight
 colors can be changed and apply immediately. The panel includes a Reset Colors
-button.
+button and a Glow PC health bars toggle, disabled by default. Units without
+health bars use the relationship color for their name. When a bar is present,
+the name stays white for contrast and the bar carries the relationship color.
 
 TEXT SETTINGS
 Open Options > AddOns > Simple Nameplates > Text, or type /snp text. Choose a
-unit-name font, a separate threat-percentage font, and whether hostile-unit
-names appear above or inside their health bars. Both fonts default to Arial
+unit-name font, a separate threat-percentage font, and whether names appear
+above or inside visible health bars. Both fonts default to Arial
 Narrow with a normal outline. Inside-bar names shrink to fit the existing bar
 and reserve space for threat percentage. The bar is not resized. Name-only
-friendly and non-PvP plates are unaffected by name placement.
+friendly and unattackable plates are unaffected by name placement.
 
 TRP3 SETTINGS
 Open Options > AddOns > Simple Nameplates > TRP3, or type /snp trp3. The page
@@ -79,6 +82,13 @@ when WoW reports threat or the hostile player is targeting you, your pet, or
 a member of your group.
 
 CHANGELOG
+2.0.29
+- Changed friendly NPCs to light blue and friendly PCs and minions to green.
+- Uses yellow for attackable non-aggressive NPCs and non-attacking PCs.
+- Classifies opposing PCs by actual two-way attackability, not inferred War Mode.
+- Recognizes the player's temporary guardians and minions as friendly PCs.
+- Added an optional same-color glow around PC health bars, off by default.
+
 2.0.28
 - Left-aligned names and TRP3 full titles with the health bar.
 - Kept threat percentages right-aligned with the health bar.
