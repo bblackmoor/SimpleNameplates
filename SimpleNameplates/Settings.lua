@@ -19,7 +19,7 @@ end
 local function CreateAboutPanel()
     local panel = CreateFrame("Frame")
 
-    StaticPopupDialogs["ESNP_COPY_SOURCE"] = {
+    StaticPopupDialogs["SNP_COPY_SOURCE"] = {
         text = "Press Ctrl+C to copy the source URL.",
         button1 = CLOSE or "Close",
         hasEditBox = true,
@@ -79,7 +79,7 @@ local function CreateAboutPanel()
     sourceLink:SetScript("OnEnter", function() sourceText:SetTextColor(0.65, 0.85, 1, 1) end)
     sourceLink:SetScript("OnLeave", function() sourceText:SetTextColor(0.35, 0.7, 1, 1) end)
     sourceLink:SetScript("OnClick", function()
-        StaticPopup_Show("ESNP_COPY_SOURCE", nil, nil, SOURCE_URL)
+        StaticPopup_Show("SNP_COPY_SOURCE", nil, nil, SOURCE_URL)
     end)
 
     local information = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -91,8 +91,7 @@ local function CreateAboutPanel()
         "Slash commands\n" ..
         "    /snp - Open the color settings.\n" ..
         "    /snp colors - Open the color settings.\n" ..
-        "    /snp about - Open this About page.\n" ..
-        "    /esnp - Legacy alias for /snp."
+        "    /snp about - Open this About page."
     )
 
     return panel
@@ -220,9 +219,8 @@ local function RegisterSettingsPanel()
         "Colors"
     )
 
-    SLASH_ESNP1 = "/snp"
-    SLASH_ESNP2 = "/esnp"
-    SlashCmdList.ESNP = function(message)
+    SLASH_SNP1 = "/snp"
+    SlashCmdList.SNP = function(message)
         if InCombatLockdown and InCombatLockdown() then
             print("|cff0cd29fSimple Nameplates:|r Settings cannot be opened during combat.")
             return

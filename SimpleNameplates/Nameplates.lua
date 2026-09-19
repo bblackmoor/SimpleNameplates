@@ -145,7 +145,7 @@ local function StyleName(frame, state)
 end
 
 local function EnsureThreatText(frame)
-    if frame.ESNPThreatText then return frame.ESNPThreatText end
+    if frame.SNPThreatText then return frame.SNPThreatText end
     local bar = GetHealthBar(frame)
     if not bar then return nil end
     local threatText = bar:CreateFontString(nil, "OVERLAY")
@@ -153,7 +153,7 @@ local function EnsureThreatText(frame)
     threatText:SetJustifyH("RIGHT")
     threatText:SetFont("Fonts\\FRIZQT__.TTF", 9, "OUTLINE")
     threatText:SetTextColor(1, 1, 1, 1)
-    frame.ESNPThreatText = threatText
+    frame.SNPThreatText = threatText
     return threatText
 end
 
@@ -190,8 +190,8 @@ local function ApplySimpleStyle(frame)
         UpdateHealthValue(frame)
         bar:SetStatusBarColor(r, g, b, 1)
         UpdateThreatText(frame, state)
-    elseif frame.ESNPThreatText then
-        frame.ESNPThreatText:SetText("")
+    elseif frame.SNPThreatText then
+        frame.SNPThreatText:SetText("")
     end
 end
 
@@ -275,7 +275,7 @@ events:SetScript("OnEvent", function(_, event, unit)
         local frame = GetUnitFrame(unit)
         if frame then
             if frame.name then frame.name:SetText("") end
-            if frame.ESNPThreatText then frame.ESNPThreatText:SetText("") end
+            if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
         end
         return
     end

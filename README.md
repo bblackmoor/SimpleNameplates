@@ -35,7 +35,7 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize all eight colors. Changes apply immediately and are saved between sessions. The panel also includes a **Reset Colors** button. The old `/esnp` command remains available as an alias.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize all eight colors. Changes apply immediately and are saved between sessions. The panel also includes a **Reset Colors** button.
 
 ## About
 
@@ -44,19 +44,15 @@ The main **Simple Nameplates** AddOns page is an About screen showing the addon 
 ## Installation
 
 1. Exit World of Warcraft.
-2. Remove the old `EllesmereUISimpleNameplates` folder if it is installed.
-3. Extract `SimpleNameplates` into `_retail_/Interface/AddOns/`.
-4. Disable **EllesmereUI Nameplates** in the AddOns list.
-5. Enable **Simple Nameplates**.
-6. Log in.
+2. Extract `SimpleNameplates` into `_retail_/Interface/AddOns/`.
+3. Enable **Simple Nameplates**.
+4. Log in.
 
-Because WoW stores saved variables under the addon folder name, upgrading from the old EllesmereUI-dependent addon resets custom colors to their defaults. Set them again once in **Options → AddOns → Simple Nameplates → Colors**.
+## Other Nameplate Addons
 
-## EllesmereUI Nameplates Conflict
+Simple Nameplates checks the enabled addon list at login. If it finds another third-party addon whose name or title contains “plate,” it displays a warning listing the possible conflicts. Blizzard's own internal addons are ignored.
 
-**EllesmereUI Nameplates and Simple Nameplates should not be enabled at the same time.**
-
-If the standard EllesmereUI Nameplates addon is enabled, Simple Nameplates displays a startup warning with a **Disable & Reload** button.
+Running multiple nameplate addons can cause competing colors or duplicate nameplates. Disable the others and reload the UI if you see problems.
 
 ## Midnight and Secret Values
 
@@ -68,53 +64,11 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 
 ## Changelog
 
-### 2.0.22
+### 2.0.23
 
-* Made Simple Nameplates completely standalone; EllesmereUI is no longer required.
-* Renamed the installed addon folder and TOC to `SimpleNameplates`.
-* Uses its own `SimpleNameplatesDB`; the clean folder rename means Version 1 custom colors must be selected again.
-* Rebranded the settings and About pages and added `/snp`; `/esnp` remains an alias.
-* Retained the warning when the separate EllesmereUI Nameplates addon is enabled.
-
-### 1.0.21
-
-* Adopted RP Emote Menu's `major.minor.build` versioning, with the build number derived from the Git commit count.
-
-### 0.3.2
-
-* Split the addon into focused core, nameplate, and settings modules without changing its behavior.
-
-### 0.3.1
-
-* Added an About screen modeled on RP Emote Menu.
-* The About screen reads its version directly from the addon's `.toc` metadata.
-* Added author, license, website, and category information.
-* Moved the eight color pickers to a **Colors** child page.
-* Added `/esnp about`; `/esnp` opens the color settings.
-
-### 0.3.0
-
-* Added separate colors for four NPC states and four player-character states.
-* Added a standard WoW AddOns settings panel with eight color pickers and a reset button.
-* Added `/esnp` to open the color settings directly.
-* Added safe Midnight handling for restricted PvP and unit-comparison values.
-* Player-controlled pets, guardians, minions, and vehicles use the player color language.
-
-### 0.2.0
-
-* Removed the custom overlay nameplate that caused duplicate nameplates.
-* Reworked Simple Nameplates to recolor Blizzard's existing nameplates instead.
-* Preserved Blizzard health depletion and cast/channel bars.
-* Simplified reaction and threat coloring to green, yellow, orange, and red.
-* Retained the startup conflict warning for EllesmereUI Nameplates.
-
-### 0.1.1
-
-* Added a startup conflict warning for EllesmereUI Nameplates.
-
-### 0.1.0
-
-* Initial test implementation.
+* Fresh standalone release with no previous-version or legacy-settings handling.
+* Warns at login when another enabled third-party “plate” addon may conflict.
+* Uses `/snp` for settings and About commands.
 
 ---
 

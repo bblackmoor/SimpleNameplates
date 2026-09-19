@@ -32,7 +32,7 @@ DISPLAYED
 COLOR SETTINGS
 Open Options > AddOns > Simple Nameplates > Colors, or type /snp. All eight
 colors can be changed and apply immediately. The panel includes a Reset Colors
-button. The old /esnp command remains available as an alias.
+button.
 
 ABOUT
 The main Simple Nameplates AddOns page shows the version, author,
@@ -42,19 +42,14 @@ copy-ready dialog. Type /snp about to open this page directly.
 
 INSTALL
 1. Exit WoW.
-2. Remove the old EllesmereUISimpleNameplates folder if it is installed.
-3. Extract SimpleNameplates into _retail_/Interface/AddOns/.
-4. Disable "EllesmereUI Nameplates" in the AddOns list.
-5. Enable "Simple Nameplates".
-6. Log in.
-
-WoW stores saved variables under the addon folder name. Upgrading from the old
-EllesmereUI-dependent addon therefore resets custom colors to their defaults.
-Set them again once in Options > AddOns > Simple Nameplates > Colors.
+2. Extract SimpleNameplates into _retail_/Interface/AddOns/.
+3. Enable "Simple Nameplates".
+4. Log in.
 
 CONFLICT WARNING
-If the standard EllesmereUI Nameplates addon is enabled, Simple Nameplates
-shows a startup warning with a Disable & Reload button.
+At login, Simple Nameplates warns if another enabled third-party addon has
+"plate" in its name or title. Blizzard's internal addons are ignored. Running
+multiple nameplate addons can cause competing colors or duplicate nameplates.
 
 NOTES
 Midnight may make some threat information secret. Simple Nameplates does not
@@ -67,42 +62,7 @@ when WoW reports threat or the hostile player is targeting you, your pet, or
 a member of your group.
 
 CHANGELOG
-2.0.22
-- Made Simple Nameplates standalone; EllesmereUI is no longer required.
-- Renamed the installed addon folder and TOC to SimpleNameplates.
-- Uses SimpleNameplatesDB; Version 1 custom colors must be selected again.
-- Added /snp; /esnp remains available as an alias.
-
-1.0.21
-- Adopted major.minor.build versioning based on the Git commit count.
-
-0.3.2
-- Split the addon into focused core, nameplate, and settings modules without
-  changing its behavior.
-
-0.3.1
-- Added an About screen modeled on RP Emote Menu.
-- About reads its version directly from the addon TOC metadata.
-- Added author, license, website, and category information.
-- Moved color pickers to a Colors child page.
-- Added /esnp about; /esnp still opens Colors.
-
-0.3.0
-- Added separate colors for four NPC and four player-character states.
-- Added a standard WoW AddOns panel with eight color pickers and reset.
-- Added /esnp to open the color settings.
-- Safely handles restricted Midnight PvP and unit-comparison values.
-- Player-controlled pets, guardians, minions, and vehicles use PC colors.
-
-0.2.0
-- Removed the custom overlay nameplate that caused double nameplates.
-- Skin/recolor Blizzard's existing nameplate instead.
-- Preserve Blizzard health depletion and cast/channel bars.
-- Simplified all reaction/threat coloring to green/yellow/orange/red.
-- Retained startup conflict warning for EllesmereUI Nameplates.
-
-0.1.1
-- Added startup conflict warning for EllesmereUI Nameplates.
-
-0.1.0
-- Initial test implementation.
+2.0.23
+- Fresh standalone release with no previous-version or legacy-settings handling.
+- Warns when another enabled third-party "plate" addon may conflict.
+- Uses /snp for settings and About commands.

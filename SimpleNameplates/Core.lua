@@ -3,11 +3,9 @@
 local addon, ns = ...
 
 local getAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
-local STANDARD_NAMEPLATES = "EllesmereUINameplates"
 
 ns.VERSION = getAddOnMetadata and getAddOnMetadata(addon, "Version") or "Unknown"
 ns.SOURCE_URL = "https://github.com/bblackmoor/SimpleNameplates"
-ns.STANDARD_NAMEPLATES = STANDARD_NAMEPLATES
 
 local issecretvalue = issecretvalue or function() return false end
 local canaccessvalue = canaccessvalue or function(v) return not issecretvalue(v) end
@@ -81,27 +79,52 @@ local function DisableFriendlyClassColors()
     end
 end
 
-local function StandardNameplatesEnabled()
-    if not C_AddOns then return false end
-    if C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded(STANDARD_NAMEPLATES) then return true end
-    if C_AddOns.GetAddOnEnableState then
-        return (C_AddOns.GetAddOnEnableState(UnitName("player"), STANDARD_NAMEPLATES) or 0) > 0
+local function AddOnEnabled(name)
+    local isLoaded = C_AddOns and C_AddOns.IsAddOnLoaded or IsAddOnLoaded
+    if isLoaded and isLoaded(name) then return true end
+
+    local getEnableState = C_AddOns and C_AddOns.GetAddOnEnableState or GetAddOnEnableState
+    if getEnableState then
+        local state = getEnableState(UnitName("player"), name)
+        return type(state) == "number" and state > 0
     end
     return false
 end
 
+local function PlainTitle(title)
+    return (title or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+end
+
+local function FindOtherPlateAddOns()
+    local getNumAddOns = C_AddOns and C_AddOns.GetNumAddOns or GetNumAddOns
+    local getAddOnInfo = C_AddOns and C_AddOns.GetAddOnInfo or GetAddOnInfo
+    if not getNumAddOns or not getAddOnInfo then return {} end
+
+    local found = {}
+    for index = 1, getNumAddOns() do
+        local name, title = getAddOnInfo(index)
+        if name and name ~= addon and not name:match("^Blizzard_") then
+            local searchText = string.lower(name .. " " .. (title or "")):gsub("template", "")
+            if searchText:find("plate", 1, true) and AddOnEnabled(name) then
+                local displayName = type(title) == "string" and title ~= "" and title or name
+                found[#found + 1] = PlainTitle(displayName)
+            end
+        end
+    end
+    table.sort(found)
+    return found
+end
+
 local function ShowNameplateConflictWarning()
-    if not StandardNameplatesEnabled() then return end
-    StaticPopupDialogs["ESNP_ELLESMERE_NAMEPLATE_CONFLICT"] = {
-        text = "|cff0cd29fSimple Nameplates|r\n\n|cff0cd29fEllesmereUI Nameplates|r is also enabled. The two nameplate addons should not run together.\n\nDisable EllesmereUI Nameplates and reload the UI?",
-        button1 = "Disable & Reload", button2 = "Ignore",
-        OnAccept = function()
-            if C_AddOns and C_AddOns.DisableAddOn then C_AddOns.DisableAddOn(STANDARD_NAMEPLATES) end
-            ReloadUI()
-        end,
-        timeout = 0, whileDead = true, hideOnEscape = false, preferredIndex = 3,
+    local conflicts = FindOtherPlateAddOns()
+    if #conflicts == 0 then return end
+
+    StaticPopupDialogs["SNP_NAMEPLATE_CONFLICT"] = {
+        text = "|cff0cd29fSimple Nameplates|r\n\nOther enabled addons whose names contain ‘plate’ were found:\n\n%s\n\nRunning more than one nameplate addon can cause conflicting colors or duplicate nameplates. Disable the others and reload the UI if you see problems.",
+        button1 = OKAY or "Okay",
+        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
     }
-    StaticPopup_Show("ESNP_ELLESMERE_NAMEPLATE_CONFLICT")
+    StaticPopup_Show("SNP_NAMEPLATE_CONFLICT", table.concat(conflicts, "\n"))
 end
 
 local function AccessibleNumber(v)
