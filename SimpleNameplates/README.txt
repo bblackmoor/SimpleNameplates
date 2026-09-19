@@ -10,7 +10,7 @@ Yellow     = unfriendly NPC / attackable but non-aggressive
 Orange     = hostile NPC / will attack but not attacking your group
 Red        = NPC attacking you, a pet, or a group member
 Light blue = friendly same-faction PC
-Periwinkle = unfriendly opposite-faction PC
+Periwinkle = unfriendly opposite-faction PC (name only)
 Purple     = hostile PvP-enabled opposite-faction PC
 Magenta    = hostile PC attacking your group (best effort)
 
@@ -62,6 +62,11 @@ when WoW reports threat or the hostile player is targeting you, your pet, or
 a member of your group.
 
 CHANGELOG
+2.0.24
+- Distinguishes player factions independently of sanctuary reaction.
+- Keeps non-PvP opposite-faction players name-only and periwinkle.
+- Repairs Blizzard name-color overwrites with a lightweight reconciliation.
+
 2.0.23
 - Fresh standalone release with no previous-version or legacy-settings handling.
 - Warns when another enabled third-party "plate" addon may conflict.

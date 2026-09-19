@@ -13,7 +13,7 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | Hostile NPC | Orange | Will attack, but is not attacking your group |
 | Attacking NPC | Red | Attacking you, a pet, or a group member |
 | Friendly PC | Light blue | Same faction |
-| Unfriendly PC | Periwinkle | Opposite faction, but not PvP-enabled |
+| Unfriendly PC | Periwinkle | Opposite faction, but not PvP-enabled; name only |
 | Hostile PC | Purple | PvP-enabled opposite-faction player |
 | Attacking PC | Magenta | Hostile player targeting or generating threat on your group |
 
@@ -63,6 +63,12 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat or when the hostile player is targeting you, your pet, or a member of your group.
 
 ## Changelog
+
+### 2.0.24
+
+* Distinguishes same-faction and opposite-faction players by actual faction rather than sanctuary reaction.
+* Keeps non-PvP opposite-faction players name-only and applies their configured name color.
+* Repairs Blizzard name-color overwrites with a lightweight cached-state reconciliation pass.
 
 ### 2.0.23
 

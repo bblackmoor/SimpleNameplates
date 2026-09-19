@@ -112,7 +112,7 @@ local function RegisterSettingsPanel()
     description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
     description:SetPoint("RIGHT", panel, "RIGHT", -20, 0)
     description:SetJustifyH("LEFT")
-    description:SetText("Choose the name color for friendly units and the health-bar color for all other units.")
+    description:SetText("Choose name colors for nonattackable units and health-bar colors for hostile units.")
 
     local swatchRefreshers = {}
 

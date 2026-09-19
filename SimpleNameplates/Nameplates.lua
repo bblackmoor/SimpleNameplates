@@ -1,12 +1,13 @@
 -- Simple Nameplates: unit classification, styling, and event handling.
--- Friendly NPCs and PCs use colored names only; all other states use white
--- names with colored full nameplates.
+-- Friendly units and non-PvP opposite-faction players use colored names only;
+-- hostile states use white names with colored full nameplates.
 
 local _, ns = ...
 if not ns.EnsureDB then return end
 
 local C_NamePlate = C_NamePlate
 local UnitCanAttack = UnitCanAttack
+local UnitFactionGroup = UnitFactionGroup
 local UnitIsPlayer = UnitIsPlayer
 local UnitIsPVP = UnitIsPVP
 local UnitIsUnit = UnitIsUnit
@@ -61,25 +62,42 @@ local function IsPlayerControlledUnit(unit)
     return AccessibleBoolean(UnitPlayerControlled(unit)) == true
 end
 
+local function OpposingPlayerState(unit)
+    local pvp = AccessibleBoolean(UnitIsPVP(unit))
+    if pvp == true and (HasAggroOnOurGroup(unit) or TargetsOurGroup(unit)) then
+        return "attackingPC"
+    end
+    if pvp == true then return "hostilePC" end
+    if pvp == false then return "unfriendlyPC" end
+
+    -- UnitIsPVP can be secret when unit identity is restricted. Fall back
+    -- to attackability without ever branching on a secret value.
+    if AccessibleBoolean(UnitCanAttack("player", unit)) == true then return "hostilePC" end
+    return "unfriendlyPC"
+end
+
 local function StateForUnit(unit)
     local reaction = AccessibleNumber(UnitReaction(unit, "player"))
+
+    if AccessibleBoolean(UnitIsPlayer(unit)) == true then
+        local playerFaction = AccessibleValue(UnitFactionGroup("player"))
+        local unitFaction = AccessibleValue(UnitFactionGroup(unit))
+        if playerFaction and unitFaction then
+            if playerFaction == unitFaction then return "friendlyPC" end
+            return OpposingPlayerState(unit)
+        end
+
+        -- If faction information is restricted, retain reaction as the safest
+        -- available same-side signal.
+        if reaction and reaction >= 5 then return "friendlyPC" end
+        return OpposingPlayerState(unit)
+    end
 
     -- Pets, guardians, minions, and vehicles follow the player-side color
     -- language instead of being mistaken for ordinary NPCs.
     if IsPlayerControlledUnit(unit) then
         if reaction and reaction >= 5 then return "friendlyPC" end
-
-        local pvp = AccessibleBoolean(UnitIsPVP(unit))
-        if pvp == true and (HasAggroOnOurGroup(unit) or TargetsOurGroup(unit)) then
-            return "attackingPC"
-        end
-        if pvp == true then return "hostilePC" end
-        if pvp == false then return "unfriendlyPC" end
-
-        -- UnitIsPVP can be secret when unit identity is restricted. Fall back
-        -- to attackability without ever branching on a secret value.
-        if AccessibleBoolean(UnitCanAttack("player", unit)) == true then return "hostilePC" end
-        return "unfriendlyPC"
+        return OpposingPlayerState(unit)
     end
 
     if reaction and reaction >= 5 then return "friendlyNPC" end
@@ -92,8 +110,8 @@ local function StateForUnit(unit)
     return "friendlyNPC"
 end
 
-local function IsFriendlyState(state)
-    return state == "friendlyNPC" or state == "friendlyPC"
+local function IsNameOnlyState(state)
+    return state == "friendlyNPC" or state == "friendlyPC" or state == "unfriendlyPC"
 end
 
 local function GetUnitFrame(unit)
@@ -135,7 +153,7 @@ local function StyleName(frame, state)
     if font and size then name:SetFont(font, size, "THICKOUTLINE") end
     name:SetShadowColor(0, 0, 0, 1)
     name:SetShadowOffset(1, -1)
-    if IsFriendlyState(state) then
+    if IsNameOnlyState(state) then
         local r, g, b = ColorForState(state)
         name:SetTextColor(r, g, b, 1)
     else
@@ -160,33 +178,34 @@ end
 local function UpdateThreatText(frame, state)
     local threatText = EnsureThreatText(frame)
     if not threatText then return end
-    if IsFriendlyState(state) then threatText:SetText(""); return end
+    if IsNameOnlyState(state) then threatText:SetText(""); return end
     local _, _, scaled, raw = UnitDetailedThreatSituation("player", frame.unit)
     local percent = AccessibleNumber(raw) or AccessibleNumber(scaled)
     if percent then threatText:SetFormattedText("%.0f%%", percent) else threatText:SetText("") end
 end
 
 local function ApplyVisibility(frame, state)
-    local friendly = IsFriendlyState(state)
+    local nameOnly = IsNameOnlyState(state)
     local bar = GetHealthBar(frame)
-    SetShownSafe(bar, not friendly)
-    SetShownSafe(frame.HealthBarsContainer, not friendly)
-    SetShownSafe(frame.castBar, not friendly)
-    SetShownSafe(frame.CastBar, not friendly)
-    SetShownSafe(frame.castBarAnchor, not friendly)
-    SetShownSafe(frame.classificationIndicator, not friendly)
-    SetShownSafe(frame.ClassificationFrame, not friendly)
-    SetShownSafe(frame.selectionHighlight, not friendly)
+    SetShownSafe(bar, not nameOnly)
+    SetShownSafe(frame.HealthBarsContainer, not nameOnly)
+    SetShownSafe(frame.castBar, not nameOnly)
+    SetShownSafe(frame.CastBar, not nameOnly)
+    SetShownSafe(frame.castBarAnchor, not nameOnly)
+    SetShownSafe(frame.classificationIndicator, not nameOnly)
+    SetShownSafe(frame.ClassificationFrame, not nameOnly)
+    SetShownSafe(frame.selectionHighlight, not nameOnly)
 end
 
 local function ApplySimpleStyle(frame)
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
     local state = StateForUnit(frame.unit)
+    frame.SNPState = state
     local r, g, b = ColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyVisibility(frame, state)
     StyleName(frame, state)
-    if not IsFriendlyState(state) and bar then
+    if not IsNameOnlyState(state) and bar then
         UpdateHealthValue(frame)
         bar:SetStatusBarColor(r, g, b, 1)
         UpdateThreatText(frame, state)
@@ -282,6 +301,24 @@ events:SetScript("OnEvent", function(_, event, unit)
     if event == "PLAYER_TARGET_CHANGED" or event == "GROUP_ROSTER_UPDATE" then RefreshAll(); return end
     if unit and tostring(unit):match("^nameplate%d+$") then RefreshUnit(unit)
     elseif event == "UNIT_THREAT_SITUATION_UPDATE" or event == "UNIT_THREAT_LIST_UPDATE" then RefreshAll() end
+end)
+
+-- Blizzard sometimes recolors a friendly name without calling either compact
+-- unit-frame update path. Repair only cached name-only plates; classification,
+-- threat scans, and hostile plate styling remain event-driven.
+local reconcileElapsed = 0
+events:SetScript("OnUpdate", function(_, elapsed)
+    reconcileElapsed = reconcileElapsed + elapsed
+    if reconcileElapsed < 0.20 then return end
+    reconcileElapsed = 0
+
+    if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
+    for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
+        local frame = plate.UnitFrame
+        if frame and IsNameOnlyState(frame.SNPState) then
+            StyleName(frame, frame.SNPState)
+        end
+    end
 end)
 
 ns.RefreshAll = RefreshAll
