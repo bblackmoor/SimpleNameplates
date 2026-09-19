@@ -1,10 +1,9 @@
--- EllesmereUI Simple Nameplates: unit classification, styling, and event handling.
+-- Simple Nameplates: unit classification, styling, and event handling.
 -- Friendly NPCs and PCs use colored names only; all other states use white
 -- names with colored full nameplates.
 
-if EUI_CLIENT_BLOCKED then return end
 local _, ns = ...
-if not EllesmereUI or not ns.EnsureDB then return end
+if not ns.EnsureDB then return end
 
 local C_NamePlate = C_NamePlate
 local UnitCanAttack = UnitCanAttack
@@ -246,7 +245,7 @@ events:SetScript("OnEvent", function(_, event, unit)
         ns.EnsureDB()
         if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
         ns.DisableFriendlyClassColors()
-        -- Ellesmere/Blizzard initialization can restore CVars shortly after login.
+        -- Blizzard or another addon can restore CVars shortly after login.
         C_Timer.After(1, function() ns.DisableFriendlyClassColors(); RefreshAll() end)
         C_Timer.After(0.5, ns.ShowNameplateConflictWarning)
         C_Timer.After(0, RefreshAll)

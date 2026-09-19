@@ -1,9 +1,6 @@
--- EllesmereUI Simple Nameplates: shared metadata, saved variables, and startup helpers.
+-- Simple Nameplates: shared metadata, saved variables, and startup helpers.
 
-if EUI_CLIENT_BLOCKED then return end
 local addon, ns = ...
-if not EllesmereUI then return end
-if EllesmereUI._ModuleNS then EllesmereUI._ModuleNS[addon] = ns end
 
 local getAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 local STANDARD_NAMEPLATES = "EllesmereUINameplates"
@@ -30,11 +27,11 @@ ns.DEFAULT_COLORS = DEFAULT_COLORS
 local dbReady = false
 
 local function EnsureDB()
-    if dbReady then return EllesmereUISimpleNameplatesDB end
-    if type(EllesmereUISimpleNameplatesDB) ~= "table" then
-        EllesmereUISimpleNameplatesDB = {}
+    if dbReady then return SimpleNameplatesDB end
+    if type(SimpleNameplatesDB) ~= "table" then
+        SimpleNameplatesDB = {}
     end
-    local db = EllesmereUISimpleNameplatesDB
+    local db = SimpleNameplatesDB
     if type(db.colors) ~= "table" then db.colors = {} end
     for key, default in pairs(DEFAULT_COLORS) do
         local color = db.colors[key]
@@ -72,7 +69,7 @@ ns.FRIENDLY_COLOR_CVARS = FRIENDLY_COLOR_CVARS
 
 local function DisableFriendlyClassColors()
     -- Midnight has separate CVars for friendly player name text and health-bar
-    -- class coloring. Disable all known variants: Blizzard/Ellesmere can update
+    -- class coloring. Disable all known variants: Blizzard or another addon can update
     -- these independently, and leaving the name-text CVar enabled produces the
     -- familiar rainbow of class-colored friendly names.
     for _, cvar in ipairs(FRIENDLY_COLOR_CVARS) do
@@ -88,7 +85,7 @@ local function StandardNameplatesEnabled()
     if not C_AddOns then return false end
     if C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded(STANDARD_NAMEPLATES) then return true end
     if C_AddOns.GetAddOnEnableState then
-        return (C_AddOns.GetAddOnEnableState(STANDARD_NAMEPLATES, UnitName("player")) or 0) > 0
+        return (C_AddOns.GetAddOnEnableState(UnitName("player"), STANDARD_NAMEPLATES) or 0) > 0
     end
     return false
 end
@@ -96,7 +93,7 @@ end
 local function ShowNameplateConflictWarning()
     if not StandardNameplatesEnabled() then return end
     StaticPopupDialogs["ESNP_ELLESMERE_NAMEPLATE_CONFLICT"] = {
-        text = "|cff0cd29fEllesmereUI Simple Nameplates|r\n\nThe standard |cff0cd29fEllesmereUI Nameplates|r addon is also enabled. The two nameplate modules should not run together.\n\nDisable standard EllesmereUI Nameplates and reload the UI?",
+        text = "|cff0cd29fSimple Nameplates|r\n\n|cff0cd29fEllesmereUI Nameplates|r is also enabled. The two nameplate addons should not run together.\n\nDisable EllesmereUI Nameplates and reload the UI?",
         button1 = "Disable & Reload", button2 = "Ignore",
         OnAccept = function()
             if C_AddOns and C_AddOns.DisableAddOn then C_AddOns.DisableAddOn(STANDARD_NAMEPLATES) end

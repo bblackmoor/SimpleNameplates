@@ -1,0 +1,14 @@
+## Interface: 120100, 120105
+## Title: Simple Nameplates
+## Category: Unit Frames
+## Notes: Custom NPC and player nameplate colors while retaining Blizzard health and cast bars.
+## Author: Brandon Blackmoor <bblackmoor@blackgate.net>
+## Version: 2.0.22
+## SavedVariables: SimpleNameplatesDB
+## IconTexture: Interface\Icons\INV_Misc_Eye_01
+## X-License: GPL-3.0
+## X-Website: https://github.com/bblackmoor/SimpleNameplates
+
+Core.lua
+Nameplates.lua
+Settings.lua

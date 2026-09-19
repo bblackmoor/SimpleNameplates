@@ -1,6 +1,6 @@
-# EllesmereUI Simple Nameplates
+# Simple Nameplates
 
-A deliberately simple alternative nameplate-color module for **EllesmereUI**.
+A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
 ## The Short Version
 
@@ -35,23 +35,26 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 
 ## Color Settings
 
-Open **Options → AddOns → EllesmereUI Simple Nameplates → Colors**, or type `/esnp`, to customize all eight colors. Changes apply immediately and are saved between sessions. The panel also includes a **Reset Colors** button.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize all eight colors. Changes apply immediately and are saved between sessions. The panel also includes a **Reset Colors** button. The old `/esnp` command remains available as an alias.
 
 ## About
 
-The main **EllesmereUI Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
+The main **Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
 
 ## Installation
 
 1. Exit World of Warcraft.
-2. Extract `EllesmereUISimpleNameplates` into `_retail_/Interface/AddOns/`.
-3. Disable **EllesmereUI Nameplates** in the AddOns list.
-4. Enable **EllesmereUI Simple Nameplates** and **EllesmereUI**.
-5. Log in.
+2. Remove the old `EllesmereUISimpleNameplates` folder if it is installed.
+3. Extract `SimpleNameplates` into `_retail_/Interface/AddOns/`.
+4. Disable **EllesmereUI Nameplates** in the AddOns list.
+5. Enable **Simple Nameplates**.
+6. Log in.
+
+Because WoW stores saved variables under the addon folder name, upgrading from the old EllesmereUI-dependent addon resets custom colors to their defaults. Set them again once in **Options → AddOns → Simple Nameplates → Colors**.
 
 ## EllesmereUI Nameplates Conflict
 
-**EllesmereUI Nameplates and EllesmereUI Simple Nameplates should not be enabled at the same time.**
+**EllesmereUI Nameplates and Simple Nameplates should not be enabled at the same time.**
 
 If the standard EllesmereUI Nameplates addon is enabled, Simple Nameplates displays a startup warning with a **Disable & Reload** button.
 
@@ -65,6 +68,18 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 
 ## Changelog
 
+### 2.0.22
+
+* Made Simple Nameplates completely standalone; EllesmereUI is no longer required.
+* Renamed the installed addon folder and TOC to `SimpleNameplates`.
+* Uses its own `SimpleNameplatesDB`; the clean folder rename means Version 1 custom colors must be selected again.
+* Rebranded the settings and About pages and added `/snp`; `/esnp` remains an alias.
+* Retained the warning when the separate EllesmereUI Nameplates addon is enabled.
+
+### 1.0.21
+
+* Adopted RP Emote Menu's `major.minor.build` versioning, with the build number derived from the Git commit count.
+
 ### 0.3.2
 
 * Split the addon into focused core, nameplate, and settings modules without changing its behavior.
@@ -75,7 +90,7 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 * The About screen reads its version directly from the addon's `.toc` metadata.
 * Added author, license, website, and category information.
 * Moved the eight color pickers to a **Colors** child page.
-* Added `/esnp about`; `/esnp` continues to open the color settings.
+* Added `/esnp about`; `/esnp` opens the color settings.
 
 ### 0.3.0
 

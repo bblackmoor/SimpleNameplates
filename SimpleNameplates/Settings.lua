@@ -1,8 +1,7 @@
--- EllesmereUI Simple Nameplates: About and color settings pages.
+-- Simple Nameplates: About and color settings pages.
 
-if EUI_CLIENT_BLOCKED then return end
 local _, ns = ...
-if not EllesmereUI or not ns.ColorForState then return end
+if not ns.ColorForState then return end
 
 local VERSION = ns.VERSION
 local SOURCE_URL = ns.SOURCE_URL
@@ -42,14 +41,14 @@ local function CreateAboutPanel()
 
     local heading = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     heading:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -16)
-    heading:SetText("EllesmereUI Simple Nameplates — About")
+    heading:SetText("Simple Nameplates — About")
 
     local description = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     description:SetPoint("TOPLEFT", heading, "BOTTOMLEFT", 0, -12)
     description:SetWidth(620)
     description:SetJustifyH("LEFT")
     description:SetText(
-        "A deliberately simple alternative nameplate-color module for EllesmereUI. " ..
+        "A deliberately simple standalone nameplate-color addon. " ..
         "It keeps Blizzard's Midnight nameplates while providing separate, " ..
         "customizable colors for NPC and player-character relationships."
     )
@@ -61,7 +60,7 @@ local function CreateAboutPanel()
     details:SetText(
         "Version " .. VERSION .. "\n" ..
         "Author    Brandon Blackmoor\n" ..
-        "Category  EllesmereUI"
+        "Category  Unit Frames"
     )
 
     local sourceLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -90,9 +89,10 @@ local function CreateAboutPanel()
     information:SetText(
         "License   GPL-3.0\n\n" ..
         "Slash commands\n" ..
-        "    /esnp - Open the color settings.\n" ..
-        "    /esnp colors - Open the color settings.\n" ..
-        "    /esnp about - Open this About page."
+        "    /snp - Open the color settings.\n" ..
+        "    /snp colors - Open the color settings.\n" ..
+        "    /snp about - Open this About page.\n" ..
+        "    /esnp - Legacy alias for /snp."
     )
 
     return panel
@@ -107,7 +107,7 @@ local function RegisterSettingsPanel()
 
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 20, -18)
-    title:SetText("EllesmereUI Simple Nameplates — Colors")
+    title:SetText("Simple Nameplates — Colors")
 
     local description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
@@ -212,7 +212,7 @@ local function RegisterSettingsPanel()
     end)
 
     local aboutPanel = CreateAboutPanel()
-    settingsCategory = Settings.RegisterCanvasLayoutCategory(aboutPanel, "EllesmereUI Simple Nameplates")
+    settingsCategory = Settings.RegisterCanvasLayoutCategory(aboutPanel, "Simple Nameplates")
     Settings.RegisterAddOnCategory(settingsCategory)
     colorsSettingsCategory = Settings.RegisterCanvasLayoutSubcategory(
         settingsCategory,
@@ -220,10 +220,11 @@ local function RegisterSettingsPanel()
         "Colors"
     )
 
-    SLASH_ESNP1 = "/esnp"
+    SLASH_ESNP1 = "/snp"
+    SLASH_ESNP2 = "/esnp"
     SlashCmdList.ESNP = function(message)
         if InCombatLockdown and InCombatLockdown() then
-            print("|cff0cd29fEllesmereUI Simple Nameplates:|r Settings cannot be opened during combat.")
+            print("|cff0cd29fSimple Nameplates:|r Settings cannot be opened during combat.")
             return
         end
 
@@ -234,7 +235,7 @@ local function RegisterSettingsPanel()
             or command == "options" or command == "settings" then
             Settings.OpenToCategory(colorsSettingsCategory:GetID())
         else
-            print("|cff0cd29fEllesmereUI Simple Nameplates:|r /esnp, /esnp colors, /esnp about")
+            print("|cff0cd29fSimple Nameplates:|r /snp, /snp colors, /snp about")
         end
     end
 end

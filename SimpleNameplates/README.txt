@@ -1,8 +1,8 @@
-EllesmereUI Simple Nameplates 0.3.1
-===================================
+Simple Nameplates
+=================
 
 PURPOSE
-A deliberately simple alternative nameplate-color module for EllesmereUI.
+A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
 DEFAULT COLOR LANGUAGE
 Green      = friendly NPC
@@ -30,22 +30,27 @@ DISPLAYED
   exposes a non-secret threat percentage
 
 COLOR SETTINGS
-Open Options > AddOns > EllesmereUI Simple Nameplates > Colors, or type
-/esnp. All eight colors can be changed and apply immediately. The panel
-includes a Reset Colors button.
+Open Options > AddOns > Simple Nameplates > Colors, or type /snp. All eight
+colors can be changed and apply immediately. The panel includes a Reset Colors
+button. The old /esnp command remains available as an alias.
 
 ABOUT
-The main EllesmereUI Simple Nameplates AddOns page shows the version, author,
+The main Simple Nameplates AddOns page shows the version, author,
 category, GPL-3.0 license, source repository, and slash commands. The version
 is read directly from the addon's TOC metadata. Click the source URL for a
-copy-ready dialog. Type /esnp about to open this page directly.
+copy-ready dialog. Type /snp about to open this page directly.
 
 INSTALL
 1. Exit WoW.
-2. Extract EllesmereUISimpleNameplates into _retail_/Interface/AddOns/.
-3. Disable "EllesmereUI Nameplates" in the AddOns list.
-4. Enable "EllesmereUI Simple Nameplates" and EllesmereUI.
-5. Log in.
+2. Remove the old EllesmereUISimpleNameplates folder if it is installed.
+3. Extract SimpleNameplates into _retail_/Interface/AddOns/.
+4. Disable "EllesmereUI Nameplates" in the AddOns list.
+5. Enable "Simple Nameplates".
+6. Log in.
+
+WoW stores saved variables under the addon folder name. Upgrading from the old
+EllesmereUI-dependent addon therefore resets custom colors to their defaults.
+Set them again once in Options > AddOns > Simple Nameplates > Colors.
 
 CONFLICT WARNING
 If the standard EllesmereUI Nameplates addon is enabled, Simple Nameplates
@@ -62,6 +67,15 @@ when WoW reports threat or the hostile player is targeting you, your pet, or
 a member of your group.
 
 CHANGELOG
+2.0.22
+- Made Simple Nameplates standalone; EllesmereUI is no longer required.
+- Renamed the installed addon folder and TOC to SimpleNameplates.
+- Uses SimpleNameplatesDB; Version 1 custom colors must be selected again.
+- Added /snp; /esnp remains available as an alias.
+
+1.0.21
+- Adopted major.minor.build versioning based on the Git commit count.
+
 0.3.2
 - Split the addon into focused core, nameplate, and settings modules without
   changing its behavior.
