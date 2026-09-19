@@ -82,6 +82,11 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 
 ## Changelog
 
+### 2.0.28
+
+* Left-aligned names and TRP3 full titles with the health bar.
+* Kept threat percentages right-aligned with the health bar.
+
 ### 2.0.27
 
 * Added optional TRP3 roleplaying full names with automatic WoW-name fallback.

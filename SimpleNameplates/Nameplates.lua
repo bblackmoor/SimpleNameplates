@@ -172,7 +172,7 @@ end
 local function EnsureFullTitleText(frame)
     if frame.SNPFullTitleText then return frame.SNPFullTitleText end
     local fullTitle = frame:CreateFontString(nil, "OVERLAY")
-    fullTitle:SetJustifyH("CENTER")
+    fullTitle:SetJustifyH("LEFT")
     fullTitle:SetWordWrap(false)
     fullTitle:SetMaxLines(1)
     frame.SNPFullTitleText = fullTitle
@@ -193,9 +193,9 @@ local function StyleFullTitle(frame, state, text, nameInsideBar, baseNameSize, b
     fullTitle:SetShadowOffset(1, -1)
     fullTitle:ClearAllPoints()
     if nameInsideBar and bar then
-        fullTitle:SetPoint("BOTTOM", bar, "TOP", 0, 2)
+        fullTitle:SetPoint("BOTTOMLEFT", bar, "TOPLEFT", 0, 2)
     else
-        fullTitle:SetPoint("BOTTOM", frame.name, "TOP", 0, 1)
+        fullTitle:SetPoint("BOTTOMLEFT", frame.name, "TOPLEFT", 0, 1)
     end
     if IsNameOnlyState(state) then
         fullTitle:SetTextColor(ColorForState(state))
@@ -233,8 +233,8 @@ local function StyleName(frame, state)
         name:SetJustifyH("LEFT")
     elseif bar then
         name:ClearAllPoints()
-        name:SetPoint("BOTTOM", bar, "TOP", 0, 2)
-        name:SetJustifyH("CENTER")
+        name:SetPoint("BOTTOMLEFT", bar, "TOPLEFT", 0, 2)
+        name:SetJustifyH("LEFT")
     end
 
     name:SetFont(FontPath(GetAppearanceSetting("nameFont")), size, "OUTLINE")

@@ -79,6 +79,10 @@ when WoW reports threat or the hostile player is targeting you, your pet, or
 a member of your group.
 
 CHANGELOG
+2.0.28
+- Left-aligned names and TRP3 full titles with the health bar.
+- Kept threat percentages right-aligned with the health bar.
+
 2.0.27
 - Added optional TRP3 roleplaying full names with WoW-name fallback.
 - Added optional short titles before names.
