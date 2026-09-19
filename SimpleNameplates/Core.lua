@@ -68,8 +68,18 @@ local function EnsureDB()
     if db.appearance.namePlacement ~= "ABOVE" and db.appearance.namePlacement ~= "INSIDE" then
         db.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
     end
+    if type(db.trp3) ~= "table" then db.trp3 = {} end
+    if type(db.trp3.enabled) ~= "boolean" then db.trp3.enabled = false end
     dbReady = true
     return db
+end
+
+local function GetTRP3Enabled()
+    return EnsureDB().trp3.enabled
+end
+
+local function SetTRP3Enabled(enabled)
+    EnsureDB().trp3.enabled = enabled == true
 end
 
 local function GetAppearanceSetting(key)
@@ -203,6 +213,8 @@ ns.GetAppearanceSetting = GetAppearanceSetting
 ns.SetAppearanceSetting = SetAppearanceSetting
 ns.FontPath = FontPath
 ns.ResetAppearance = ResetAppearance
+ns.GetTRP3Enabled = GetTRP3Enabled
+ns.SetTRP3Enabled = SetTRP3Enabled
 ns.DisableFriendlyClassColors = DisableFriendlyClassColors
 ns.ShowNameplateConflictWarning = ShowNameplateConflictWarning
 ns.AccessibleNumber = AccessibleNumber

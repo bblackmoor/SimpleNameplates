@@ -42,6 +42,13 @@ Narrow with a normal outline. Inside-bar names shrink to fit the existing bar
 and reserve space for threat percentage. The bar is not resized. Name-only
 friendly and non-PvP plates are unaffected by name placement.
 
+TRP3 SETTINGS
+Open Options > AddOns > Simple Nameplates > TRP3, or type /snp trp3. The page
+starts with a Display TRP3 profile information toggle, disabled by default.
+TRP3.lua isolates optional access to TRP3's public profile APIs. No profile
+fields are displayed yet; future name, title, status, icon, and related choices
+will be added here. Simple Nameplates continues to work without TRP3.
+
 ABOUT
 The main Simple Nameplates AddOns page shows the version, author,
 category, GPL-3.0 license, source repository, and slash commands. The version
@@ -70,6 +77,12 @@ when WoW reports threat or the hostile player is targeting you, your pet, or
 a member of your group.
 
 CHANGELOG
+2.0.26
+- Added an optional TRP3.lua integration skeleton using public TRP3 APIs.
+- Added a TRP3 settings page with a master toggle, disabled by default.
+- Added TRP3 availability status and /snp trp3.
+- No TRP3 profile fields are displayed yet.
+
 2.0.25
 - Added separate unit-name and threat-font selectors.
 - Changed both default fonts to Arial Narrow with a normal outline.

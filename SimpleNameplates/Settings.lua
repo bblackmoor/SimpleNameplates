@@ -15,6 +15,7 @@ local ResetAppearance = ns.ResetAppearance
 local settingsCategory
 local colorsSettingsCategory
 local textSettingsCategory
+local trp3SettingsCategory
 
 local function RefreshNameplates()
     if ns.RefreshAll then ns.RefreshAll() end
@@ -96,6 +97,7 @@ local function CreateAboutPanel()
         "    /snp - Open the color settings.\n" ..
         "    /snp colors - Open the color settings.\n" ..
         "    /snp text - Open the text settings.\n" ..
+        "    /snp trp3 - Open the TRP3 settings.\n" ..
         "    /snp about - Open this About page."
     )
 
@@ -204,6 +206,61 @@ local function CreateTextPanel()
     panel:SetScript("OnShow", function()
         for _, refresh in ipairs(refreshers) do refresh() end
     end)
+    return panel
+end
+
+local function CreateTRP3Panel()
+    local panel = CreateFrame("Frame")
+    panel.name = "TRP3"
+
+    local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 20, -18)
+    title:SetText("Simple Nameplates — TRP3")
+
+    local description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+    description:SetPoint("RIGHT", panel, "RIGHT", -20, 0)
+    description:SetJustifyH("LEFT")
+    description:SetText("Optional Total RP 3 profile integration. Simple Nameplates continues to work normally when TRP3 is absent.")
+
+    local enabled = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    enabled:SetSize(26, 26)
+    enabled:SetPoint("TOPLEFT", 20, -78)
+    enabled:SetHitRectInsets(0, -260, 0, 0)
+
+    local enabledLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    enabledLabel:SetPoint("LEFT", enabled, "RIGHT", 4, 0)
+    enabledLabel:SetText("Display TRP3 profile information")
+
+    local status = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    status:SetPoint("TOPLEFT", 24, -116)
+    status:SetWidth(600)
+    status:SetJustifyH("LEFT")
+
+    local future = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    future:SetPoint("TOPLEFT", 24, -158)
+    future:SetWidth(600)
+    future:SetJustifyH("LEFT")
+    future:SetText("No TRP3 fields are displayed yet. Future profile-name, title, status, icon, and related choices will be added here.")
+
+    local function Refresh()
+        enabled:SetChecked(ns.GetTRP3Enabled())
+        if ns.TRP3 and ns.TRP3.IsAvailable() then
+            status:SetText("Total RP 3 detected. Profile display is ready for future field options.")
+            status:SetTextColor(0.35, 0.85, 0.35, 1)
+        else
+            status:SetText("Total RP 3 is not currently available. This setting will take effect when it is installed and enabled.")
+            status:SetTextColor(0.75, 0.75, 0.75, 1)
+        end
+    end
+
+    enabled:SetScript("OnClick", function(self)
+        ns.SetTRP3Enabled(self:GetChecked() == true)
+        if ns.TRP3 then ns.TRP3.Refresh() end
+        Refresh()
+    end)
+    panel:SetScript("OnShow", Refresh)
+    Refresh()
     return panel
 end
 
@@ -333,6 +390,11 @@ local function RegisterSettingsPanel()
         CreateTextPanel(),
         "Text"
     )
+    trp3SettingsCategory = Settings.RegisterCanvasLayoutSubcategory(
+        settingsCategory,
+        CreateTRP3Panel(),
+        "TRP3"
+    )
 
     SLASH_SNP1 = "/snp"
     SlashCmdList.SNP = function(message)
@@ -346,11 +408,13 @@ local function RegisterSettingsPanel()
             Settings.OpenToCategory(settingsCategory:GetID())
         elseif command == "text" or command == "font" or command == "fonts" then
             Settings.OpenToCategory(textSettingsCategory:GetID())
+        elseif command == "trp3" or command == "rp" then
+            Settings.OpenToCategory(trp3SettingsCategory:GetID())
         elseif command == "" or command == "colors" or command == "config"
             or command == "options" or command == "settings" then
             Settings.OpenToCategory(colorsSettingsCategory:GetID())
         else
-            print("|cff0cd29fSimple Nameplates:|r /snp, /snp colors, /snp text, /snp about")
+            print("|cff0cd29fSimple Nameplates:|r /snp, /snp colors, /snp text, /snp trp3, /snp about")
         end
     end
 end

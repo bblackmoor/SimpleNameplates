@@ -47,6 +47,12 @@ Open **Options → AddOns → Simple Nameplates → Text**, or type `/snp text`,
 
 Both fonts default to WoW's built-in **Arial Narrow** with a normal outline. Other standard Blizzard fonts are available without an external font library. Inside-bar names automatically shrink to fit the existing bar; the bar itself is not resized. Friendly and non-PvP name-only plates are unaffected by the placement setting.
 
+## TRP3 Integration
+
+Open **Options → AddOns → Simple Nameplates → TRP3**, or type `/snp trp3`. The page begins with **Display TRP3 profile information**, which is disabled by default.
+
+`TRP3.lua` provides an optional, isolated integration boundary using TRP3's public APIs. It can recognize TRP3, resolve a nameplate unit to an already-known profile, and return that profile to future display options. No profile fields are displayed yet; name, title, status, icon, and related choices will be added after their desired behavior is decided. Simple Nameplates continues to work without TRP3.
+
 ## About
 
 The main **Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
@@ -73,6 +79,13 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat or when the hostile player is targeting you, your pet, or a member of your group.
 
 ## Changelog
+
+### 2.0.26
+
+* Added an optional `TRP3.lua` integration skeleton using public TRP3 APIs.
+* Added a TRP3 settings page with a master profile-display toggle, disabled by default.
+* Added TRP3 availability status and `/snp trp3`.
+* No TRP3 profile fields are displayed yet.
 
 ### 2.0.25
 
