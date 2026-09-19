@@ -10,12 +10,12 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | --- | --- | --- |
 | Friendly NPC | Light blue | You cannot fight them |
 | Unfriendly NPC | Yellow | Attackable, but non-aggressive |
-| Hostile NPC | Orange | Will attack, but is not attacking your group |
-| Attacking NPC | Red | Attacking you, a pet, or a group member |
+| Hostile NPC | Orange | Will attack, but is not attacking you or one of your controlled units |
+| Attacking NPC | Red | Attacking you, your pet, guardian, or minion |
 | Friendly PC | Green | Same faction, including your pets, guardians, and minions |
 | Unfriendly PC | Yellow | Opposite faction, but neither side can attack; name only |
-| Attackable PC | Yellow | Either side can attack, but the player is not attacking your group |
-| Attacking PC | Red | Player targeting or generating threat on your group |
+| Attackable PC | Yellow | Either side can attack, but the player is not attacking you or one of your controlled units |
+| Attacking PC | Red | Player targeting or generating threat on you or one of your controlled units |
 
 ## How It Works
 
@@ -81,9 +81,17 @@ World of Warcraft: Midnight may mark some threat information as secret.
 
 Simple Nameplates does not attempt to inspect secret values. Threat percentage is displayed only when WoW allows the value to be read.
 
-NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat or when the hostile player is targeting you, your pet, or a member of your group.
+NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
 ## Changelog
+
+### 1.0.31
+
+* Reduced attack detection to the player and the player's pets, guardians, and minions.
+* Health events now update only health instead of reclassifying and restyling the plate.
+* Coalesced duplicate event refreshes and narrowed Blizzard hooks to the visual they repair.
+* Replaced repeated name rewriting with a slower cached drift check.
+* Reduced new-nameplate delayed refreshes and refreshes TRP3 text from profile events.
 
 ### 1.0.30
 

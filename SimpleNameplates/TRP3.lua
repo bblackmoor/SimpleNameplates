@@ -8,6 +8,7 @@ local _, ns = ...
 
 local TRP3 = {}
 local ROLEPLAY_STATUS_OUT_OF_CHARACTER = 2
+local callbacksRegistered = false
 
 local function CleanText(value)
     if type(value) ~= "string" then return nil end
@@ -74,6 +75,23 @@ end
 
 function TRP3.Refresh()
     if ns.RefreshAll then ns.RefreshAll() end
+end
+
+function TRP3.RegisterCallbacks()
+    if callbacksRegistered or not TRP3.IsAvailable() then return end
+    if type(TRP3_API.RegisterCallback) ~= "function"
+        or type(TRP3_Addon) ~= "table"
+        or type(TRP3_Addon.Events) ~= "table"
+        or not TRP3_Addon.Events.REGISTER_DATA_UPDATED then
+        return
+    end
+
+    TRP3_API.RegisterCallback(
+        TRP3_Addon,
+        TRP3_Addon.Events.REGISTER_DATA_UPDATED,
+        TRP3.Refresh
+    )
+    callbacksRegistered = true
 end
 
 ns.TRP3 = TRP3

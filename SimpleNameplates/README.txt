@@ -7,12 +7,12 @@ A deliberately simple standalone nameplate-color addon for World of Warcraft.
 DEFAULT COLOR LANGUAGE
 Light blue = friendly NPC
 Yellow     = unfriendly NPC / attackable but non-aggressive
-Orange     = hostile NPC / will attack but not attacking your group
-Red        = NPC attacking you, a pet, or a group member
+Orange     = hostile NPC / will attack but not attacking you or your controlled units
+Red        = NPC attacking you, your pet, guardian, or minion
 Green      = friendly PC, including your pets, guardians, and minions
 Yellow     = opposite-faction PC when neither side can attack (name only)
-Yellow     = attackable opposite-faction PC not attacking your group
-Red        = PC attacking your group (best effort)
+Yellow     = attackable opposite-faction PC not attacking you or your controlled units
+Red        = PC attacking you, your pet, guardian, or minion (best effort)
 
 HOW IT WORKS
 Simple Nameplates no longer draws its own replacement nameplate. It keeps the
@@ -78,10 +78,17 @@ allows the value to be read.
 
 NPC aggro uses WoW's threat information. PvP does not expose an equally
 complete threat table, so the attacking-PC color is best effort. It is used
-when WoW reports threat or the hostile player is targeting you, your pet, or
-a member of your group.
+when WoW reports threat on you or your pet, or when the hostile player is
+targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.31
+- Reduced attack detection to the player and the player's pets, guardians, and minions.
+- Health events now update only health instead of reclassifying and restyling the plate.
+- Coalesced duplicate event refreshes and narrowed Blizzard hooks to the visual they repair.
+- Replaced repeated name rewriting with a slower cached drift check.
+- Reduced new-nameplate delayed refreshes and refreshes TRP3 text from profile events.
+
 1.0.30
 - Reset the standalone release line to 1.0.(build number).
 - Updated the Git hook to generate future 1.0 build versions automatically.

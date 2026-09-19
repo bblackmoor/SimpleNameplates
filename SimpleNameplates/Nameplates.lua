@@ -35,14 +35,8 @@ local function UnitHasAggro(unitToken, hostileUnit)
     return threat ~= nil and threat >= 2
 end
 
-local function HasAggroOnOurGroup(unit)
+local function HasAggroOnPlayerOrPet(unit)
     if UnitHasAggro("player", unit) or UnitHasAggro("pet", unit) then return true end
-    for i = 1, 4 do
-        if UnitHasAggro("party" .. i, unit) or UnitHasAggro("partypet" .. i, unit) then return true end
-    end
-    for i = 1, 40 do
-        if UnitHasAggro("raid" .. i, unit) or UnitHasAggro("raidpet" .. i, unit) then return true end
-    end
     return false
 end
 
@@ -50,16 +44,17 @@ local function UnitMatches(unit1, unit2)
     return AccessibleBoolean(UnitIsUnit(unit1, unit2)) == true
 end
 
-local function TargetsOurGroup(unit)
+local function TargetsPlayerControlledUnit(unit)
     local target = unit .. "target"
     if UnitMatches(target, "player") or UnitMatches(target, "pet") then return true end
-    for i = 1, 4 do
-        if UnitMatches(target, "party" .. i) or UnitMatches(target, "partypet" .. i) then return true end
-    end
-    for i = 1, 40 do
-        if UnitMatches(target, "raid" .. i) or UnitMatches(target, "raidpet" .. i) then return true end
+    if UnitIsOwnerOrControllerOfUnit then
+        return AccessibleBoolean(UnitIsOwnerOrControllerOfUnit("player", target)) == true
     end
     return false
+end
+
+local function IsAttackingPlayerControlledUnit(unit)
+    return HasAggroOnPlayerOrPet(unit) or TargetsPlayerControlledUnit(unit)
 end
 
 local function IsPlayerControlledUnit(unit)
@@ -78,7 +73,7 @@ local function OpposingPlayerState(unit)
     local combatAvailable = canAttackThem == true or canAttackUs == true
 
     if combatAvailable then
-        if HasAggroOnOurGroup(unit) or TargetsOurGroup(unit) then
+        if IsAttackingPlayerControlledUnit(unit) then
             return "attackingPC"
         end
         return "attackablePC"
@@ -91,7 +86,7 @@ local function OpposingPlayerState(unit)
     -- Attackability can be secret. PvP state is only a fallback and does not
     -- attempt to distinguish War Mode from ordinary PvP flagging.
     local pvp = AccessibleBoolean(UnitIsPVP(unit))
-    if pvp == true and (HasAggroOnOurGroup(unit) or TargetsOurGroup(unit)) then
+    if pvp == true and IsAttackingPlayerControlledUnit(unit) then
         return "attackingPC"
     end
     if pvp == true then return "attackablePC" end
@@ -128,7 +123,7 @@ local function StateForUnit(unit)
     end
 
     if reaction and reaction >= 5 then return "friendlyNPC" end
-    if HasAggroOnOurGroup(unit) then return "attackingNPC" end
+    if IsAttackingPlayerControlledUnit(unit) then return "attackingNPC" end
     if reaction == 4 then return "unfriendlyNPC" end
     if reaction then return "hostileNPC" end
 
@@ -195,7 +190,7 @@ local function UpdateNameText(frame)
     end
 
     name:SetText(displayName)
-    return fullTitle
+    return fullTitle, displayName
 end
 
 local function EnsureFullTitleText(frame)
@@ -237,7 +232,7 @@ end
 local function StyleName(frame, state)
     local name = frame and frame.name
     if not name then return end
-    local fullTitle = UpdateNameText(frame)
+    local fullTitle, displayName = UpdateNameText(frame)
 
     local _, currentSize = name:GetFont()
     if not frame.SNPBaseNameSize and type(currentSize) == "number" then
@@ -266,17 +261,68 @@ local function StyleName(frame, state)
         name:SetJustifyH("LEFT")
     end
 
-    name:SetFont(FontPath(GetAppearanceSetting("nameFont")), size, "OUTLINE")
+    local fontPath = FontPath(GetAppearanceSetting("nameFont"))
+    name:SetFont(fontPath, size, "OUTLINE")
     name:SetShadowColor(0, 0, 0, 1)
     name:SetShadowOffset(1, -1)
-    if IsNameOnlyState(state) then
-        local r, g, b = ColorForState(state)
-        name:SetTextColor(r, g, b, 1)
-    else
-        name:SetTextColor(1, 1, 1, 1)
-    end
+    local nameR, nameG, nameB = 1, 1, 1
+    if IsNameOnlyState(state) then nameR, nameG, nameB = ColorForState(state) end
+    name:SetTextColor(nameR, nameG, nameB, 1)
     name:Show()
     StyleFullTitle(frame, state, fullTitle, inside, baseSize, bar)
+
+    local expected = frame.SNPNameStyle or {}
+    frame.SNPNameStyle = expected
+    expected.text = displayName
+    expected.font = fontPath
+    expected.size = size
+    expected.flags = "OUTLINE"
+    expected.r, expected.g, expected.b = nameR, nameG, nameB
+    expected.inside = inside == true
+    expected.bar = bar
+end
+
+local function NearlyEqual(a, b)
+    return type(a) == "number" and type(b) == "number" and math.abs(a - b) < 0.001
+end
+
+local function CachedNameHasDrifted(frame)
+    local name, expected = frame and frame.name, frame and frame.SNPNameStyle
+    if not name or not expected then return false end
+    if name:GetText() ~= expected.text then return true end
+
+    local font, size, flags = name:GetFont()
+    if font ~= expected.font or not NearlyEqual(size, expected.size) or flags ~= expected.flags then
+        return true
+    end
+
+    local r, g, b = name:GetTextColor()
+    if not NearlyEqual(r, expected.r) or not NearlyEqual(g, expected.g) or not NearlyEqual(b, expected.b) then
+        return true
+    end
+
+    return false
+end
+
+local function RepairCachedName(frame)
+    local name, expected = frame and frame.name, frame and frame.SNPNameStyle
+    if not name or not expected then return end
+    name:SetText(expected.text)
+    name:SetFont(expected.font, expected.size, expected.flags)
+    name:SetShadowColor(0, 0, 0, 1)
+    name:SetShadowOffset(1, -1)
+    name:SetTextColor(expected.r, expected.g, expected.b, 1)
+    if expected.bar then
+        name:ClearAllPoints()
+        if expected.inside then
+            name:SetPoint("LEFT", expected.bar, "LEFT", 3, 0)
+            name:SetPoint("RIGHT", expected.bar, "RIGHT", -42, 0)
+        else
+            name:SetPoint("BOTTOMLEFT", expected.bar, "TOPLEFT", 0, 2)
+        end
+    end
+    name:SetJustifyH("LEFT")
+    name:Show()
 end
 
 local function EnsureThreatText(frame)
@@ -337,20 +383,25 @@ local function EnsurePCGlow(frame)
     return glow
 end
 
+local function UpdateGlowEdge(edge, shown, r, g, b)
+    if shown then
+        edge:SetColorTexture(r, g, b, 0.7)
+        edge:Show()
+    else
+        edge:Hide()
+    end
+end
+
 local function UpdatePCGlow(frame, state, r, g, b)
     local glow = frame.SNPPCGlow
     local shown = GetPCGlowEnabled() and IsPCState(state) and not IsNameOnlyState(state)
     if shown then glow = EnsurePCGlow(frame) end
     if not glow then return end
 
-    for _, edge in ipairs({glow.top, glow.bottom, glow.left, glow.right}) do
-        if shown then
-            edge:SetColorTexture(r, g, b, 0.7)
-            edge:Show()
-        else
-            edge:Hide()
-        end
-    end
+    UpdateGlowEdge(glow.top, shown, r, g, b)
+    UpdateGlowEdge(glow.bottom, shown, r, g, b)
+    UpdateGlowEdge(glow.left, shown, r, g, b)
+    UpdateGlowEdge(glow.right, shown, r, g, b)
 end
 
 local function ApplyVisibility(frame, state)
@@ -384,6 +435,26 @@ local function ApplySimpleStyle(frame)
     UpdatePCGlow(frame, state, r, g, b)
 end
 
+local function RepairHealthColor(frame)
+    if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
+    local state = frame.SNPState or StateForUnit(frame.unit)
+    frame.SNPState = state
+    local r, g, b = ColorForState(state)
+    local bar = GetHealthBar(frame)
+    ApplyVisibility(frame, state)
+    if not IsNameOnlyState(state) and bar then
+        bar:SetStatusBarColor(r, g, b, 1)
+    end
+    UpdatePCGlow(frame, state, r, g, b)
+end
+
+local function RepairName(frame)
+    if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
+    local state = frame.SNPState or StateForUnit(frame.unit)
+    frame.SNPState = state
+    StyleName(frame, state)
+end
+
 local function RefreshUnit(unit)
     local frame = GetUnitFrame(unit)
     if frame then ApplySimpleStyle(frame) end
@@ -414,25 +485,50 @@ local function RefreshAll()
 end
 
 if hooksecurefunc and CompactUnitFrame_UpdateHealthColor then
-    hooksecurefunc("CompactUnitFrame_UpdateHealthColor", function(frame) ApplySimpleStyle(frame) end)
+    hooksecurefunc("CompactUnitFrame_UpdateHealthColor", RepairHealthColor)
 end
 
 -- Blizzard recolors the name FontString in its name update path, which occurs
 -- after NAME_PLATE_UNIT_ADDED in several situations (mounting, range changes,
 -- recycled plates, etc.). Reapply our configured color after Blizzard finishes that pass.
 if hooksecurefunc and CompactUnitFrame_UpdateName then
-    hooksecurefunc("CompactUnitFrame_UpdateName", function(frame) ApplySimpleStyle(frame) end)
+    hooksecurefunc("CompactUnitFrame_UpdateName", RepairName)
 end
 
 local events = CreateFrame("Frame")
-for _, event in ipairs({"PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","GROUP_ROSTER_UPDATE","CVAR_UPDATE"}) do
+for _, event in ipairs({"PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","CVAR_UPDATE"}) do
     events:RegisterEvent(event)
+end
+
+local dirtyUnits = {}
+local refreshAllQueued = false
+
+local function QueueUnitRefresh(unit)
+    if unit and tostring(unit):match("^nameplate%d+$") then dirtyUnits[unit] = true end
+end
+
+local function QueueRefreshAll()
+    refreshAllQueued = true
+end
+
+local function FlushQueuedRefreshes()
+    if refreshAllQueued then
+        refreshAllQueued = false
+        wipe(dirtyUnits)
+        RefreshAll()
+        return
+    end
+    for unit in pairs(dirtyUnits) do
+        dirtyUnits[unit] = nil
+        RefreshUnit(unit)
+    end
 end
 
 events:SetScript("OnEvent", function(_, event, unit)
     if event == "PLAYER_LOGIN" then
         ns.EnsureDB()
         if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
+        if ns.TRP3 and ns.TRP3.RegisterCallbacks then ns.TRP3.RegisterCallbacks() end
         ns.DisableFriendlyClassColors()
         -- Blizzard or another addon can restore CVars shortly after login.
         C_Timer.After(1, function() ns.DisableFriendlyClassColors(); RefreshAll() end)
@@ -444,7 +540,7 @@ events:SetScript("OnEvent", function(_, event, unit)
         for _, cvar in ipairs(ns.FRIENDLY_COLOR_CVARS) do
             if unit == cvar then
                 ns.DisableFriendlyClassColors()
-                RefreshAll()
+                QueueRefreshAll()
                 return
             end
         end
@@ -452,12 +548,9 @@ events:SetScript("OnEvent", function(_, event, unit)
     end
     if event == "NAME_PLATE_UNIT_ADDED" then
         RefreshUnit(unit)
-        -- Blizzard can replace or recolor the name FontString during the next
-        -- few frames. Reapply after those late initialization passes so a
-        -- friendly name never remains white until mouseover.
-        for _, delay in ipairs({ 0, 0.05, 0.20, 0.50 }) do
-            C_Timer.After(delay, function() RefreshUnit(unit) end)
-        end
+        -- One delayed pass covers late nameplate initialization; the Blizzard
+        -- hooks and cached drift check handle subsequent changes.
+        C_Timer.After(0.50, function() RefreshUnit(unit) end)
         return
     end
     if event == "NAME_PLATE_UNIT_REMOVED" then
@@ -466,29 +559,40 @@ events:SetScript("OnEvent", function(_, event, unit)
             if frame.name then frame.name:SetText("") end
             if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
             if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
+            frame.SNPNameStyle = nil
+            frame.SNPState = nil
             UpdatePCGlow(frame, "", 1, 1, 1)
         end
+        dirtyUnits[unit] = nil
         return
     end
-    if event == "PLAYER_TARGET_CHANGED" or event == "GROUP_ROSTER_UPDATE" then RefreshAll(); return end
-    if unit and tostring(unit):match("^nameplate%d+$") then RefreshUnit(unit)
-    elseif event == "UNIT_THREAT_SITUATION_UPDATE" or event == "UNIT_THREAT_LIST_UPDATE" then RefreshAll() end
+    if event == "PLAYER_TARGET_CHANGED" then QueueRefreshAll(); return end
+    if event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" then
+        local frame = GetUnitFrame(unit)
+        if frame then UpdateHealthValue(frame) end
+        return
+    end
+    if unit and tostring(unit):match("^nameplate%d+$") then QueueUnitRefresh(unit)
+    elseif event == "UNIT_THREAT_SITUATION_UPDATE" or event == "UNIT_THREAT_LIST_UPDATE" then QueueRefreshAll() end
 end)
 
--- Blizzard sometimes changes name font or placement without calling either
--- compact unit-frame update path. Repair cached names only; classification,
--- threat scans, and health-bar styling remain event-driven.
+-- Blizzard sometimes changes name text, font, or color without calling either
+-- compact unit-frame update path. Compare safe cached properties twice per
+-- second and write only when something has drifted. Avoid point inspection on
+-- Blizzard frames; hooks handle placement changes. Classification, TRP3
+-- profile access, threat checks, and health-bar styling remain event-driven.
 local reconcileElapsed = 0
 events:SetScript("OnUpdate", function(_, elapsed)
+    FlushQueuedRefreshes()
     reconcileElapsed = reconcileElapsed + elapsed
-    if reconcileElapsed < 0.20 then return end
+    if reconcileElapsed < 0.50 then return end
     reconcileElapsed = 0
 
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
         local frame = plate.UnitFrame
-        if frame and frame.SNPState then
-            StyleName(frame, frame.SNPState)
+        if frame and frame.SNPState and CachedNameHasDrifted(frame) then
+            RepairCachedName(frame)
         end
     end
 end)
