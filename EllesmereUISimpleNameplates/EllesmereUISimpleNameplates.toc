@@ -4,7 +4,7 @@
 ## Group: EllesmereUI
 ## Notes: Custom NPC and player nameplate colors while retaining Blizzard health and cast bars.
 ## Author: Brandon Blackmoor <bblackmoor@blackgate.net>
-## Version: 0.3.2
+## Version: 1.0.21
 ## Dependencies: EllesmereUI
 ## SavedVariables: EllesmereUISimpleNameplatesDB
 ## IconTexture: Interface\AddOns\EllesmereUI\media\eg-logo.tga
