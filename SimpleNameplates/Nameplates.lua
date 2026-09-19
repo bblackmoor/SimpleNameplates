@@ -16,6 +16,7 @@ local UnitPlayerControlled = UnitPlayerControlled
 local UnitReaction = UnitReaction
 local UnitThreatSituation = UnitThreatSituation
 local UnitDetailedThreatSituation = UnitDetailedThreatSituation
+local UnitExists = UnitExists
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
 local UnitName = UnitName
@@ -27,6 +28,8 @@ local ColorForState = ns.ColorForState
 local GetAppearanceSetting = ns.GetAppearanceSetting
 local GetTRP3Setting = ns.GetTRP3Setting
 local GetPCGlowEnabled = ns.GetPCGlowEnabled
+local GetStylingEnabled = ns.GetStylingEnabled
+local GetThreatEnabled = ns.GetThreatEnabled
 local FontPath = ns.FontPath
 
 local function UnitHasAggro(unitToken, hostileUnit)
@@ -245,6 +248,7 @@ local function StyleName(frame, state)
         and not IsNameOnlyState(state) and bar
 
     if inside then
+        local rightInset = GetThreatEnabled() and -42 or -3
         local barHeight = bar:GetHeight()
         if type(barHeight) == "number" and barHeight > 0 then
             size = math.max(6, math.min(size, math.floor(barHeight - 2)))
@@ -253,7 +257,7 @@ local function StyleName(frame, state)
         end
         name:ClearAllPoints()
         name:SetPoint("LEFT", bar, "LEFT", 3, 0)
-        name:SetPoint("RIGHT", bar, "RIGHT", -42, 0)
+        name:SetPoint("RIGHT", bar, "RIGHT", rightInset, 0)
         name:SetJustifyH("LEFT")
     elseif bar then
         name:ClearAllPoints()
@@ -279,6 +283,7 @@ local function StyleName(frame, state)
     expected.flags = "OUTLINE"
     expected.r, expected.g, expected.b = nameR, nameG, nameB
     expected.inside = inside == true
+    expected.rightInset = GetThreatEnabled() and -42 or -3
     expected.bar = bar
 end
 
@@ -316,7 +321,7 @@ local function RepairCachedName(frame)
         name:ClearAllPoints()
         if expected.inside then
             name:SetPoint("LEFT", expected.bar, "LEFT", 3, 0)
-            name:SetPoint("RIGHT", expected.bar, "RIGHT", -42, 0)
+            name:SetPoint("RIGHT", expected.bar, "RIGHT", expected.rightInset or -42, 0)
         else
             name:SetPoint("BOTTOMLEFT", expected.bar, "TOPLEFT", 0, 2)
         end
@@ -341,6 +346,7 @@ local function UpdateThreatText(frame, state)
     local threatText = EnsureThreatText(frame)
     if not threatText then return end
     threatText:SetFont(FontPath(GetAppearanceSetting("threatFont")), 9, "OUTLINE")
+    if not GetThreatEnabled() then threatText:SetText(""); return end
     if IsNameOnlyState(state) then threatText:SetText(""); return end
     local _, _, scaled, raw = UnitDetailedThreatSituation("player", frame.unit)
     local percent = AccessibleNumber(raw) or AccessibleNumber(scaled)
@@ -418,6 +424,7 @@ local function ApplyVisibility(frame, state)
 end
 
 local function ApplySimpleStyle(frame)
+    if not GetStylingEnabled() then return end
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
     local state = StateForUnit(frame.unit)
     frame.SNPState = state
@@ -436,6 +443,7 @@ local function ApplySimpleStyle(frame)
 end
 
 local function RepairHealthColor(frame)
+    if not GetStylingEnabled() then return end
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
     local state = frame.SNPState or StateForUnit(frame.unit)
     frame.SNPState = state
@@ -449,6 +457,7 @@ local function RepairHealthColor(frame)
 end
 
 local function RepairName(frame)
+    if not GetStylingEnabled() then return end
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
     local state = frame.SNPState or StateForUnit(frame.unit)
     frame.SNPState = state
@@ -478,9 +487,37 @@ local function DestroyHumanity()
 end
 
 local function RefreshAll()
+    if not GetStylingEnabled() then return end
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
         if plate.UnitFrame then ApplySimpleStyle(plate.UnitFrame) end
+    end
+end
+
+local function RestoreFrame(frame)
+    if not frame then return end
+    if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
+    if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
+    if frame.SNPPCGlow then UpdatePCGlow(frame, "", 1, 1, 1) end
+    frame.SNPNameStyle = nil
+    frame.SNPState = nil
+
+    -- Restore anything hidden by name-only styling before asking Blizzard to
+    -- rebuild the frame according to its own current settings.
+    SetShownSafe(GetHealthBar(frame), true)
+    SetShownSafe(frame.HealthBarsContainer, true)
+    if CompactUnitFrame_UpdateAll then
+        CompactUnitFrame_UpdateAll(frame)
+    else
+        if CompactUnitFrame_UpdateName then CompactUnitFrame_UpdateName(frame) end
+        if CompactUnitFrame_UpdateHealthColor then CompactUnitFrame_UpdateHealthColor(frame) end
+    end
+end
+
+local function RestoreAll()
+    if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
+    for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
+        if plate.UnitFrame then RestoreFrame(plate.UnitFrame) end
     end
 end
 
@@ -529,13 +566,18 @@ events:SetScript("OnEvent", function(_, event, unit)
         ns.EnsureDB()
         if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
         if ns.TRP3 and ns.TRP3.RegisterCallbacks then ns.TRP3.RegisterCallbacks() end
-        ns.DisableFriendlyClassColors()
-        -- Blizzard or another addon can restore CVars shortly after login.
-        C_Timer.After(1, function() ns.DisableFriendlyClassColors(); RefreshAll() end)
-        C_Timer.After(0.5, ns.ShowNameplateConflictWarning)
-        C_Timer.After(0, RefreshAll)
+        if GetStylingEnabled() then
+            ns.DisableFriendlyClassColors()
+            -- Blizzard or another addon can restore CVars shortly after login.
+            C_Timer.After(1, function()
+                if GetStylingEnabled() then ns.DisableFriendlyClassColors(); RefreshAll() end
+            end)
+            C_Timer.After(0.5, ns.ShowNameplateConflictWarning)
+            C_Timer.After(0, RefreshAll)
+        end
         return
     end
+    if not GetStylingEnabled() then return end
     if event == "CVAR_UPDATE" then
         for _, cvar in ipairs(ns.FRIENDLY_COLOR_CVARS) do
             if unit == cvar then
@@ -583,6 +625,7 @@ end)
 -- profile access, threat checks, and health-bar styling remain event-driven.
 local reconcileElapsed = 0
 events:SetScript("OnUpdate", function(_, elapsed)
+    if not GetStylingEnabled() then return end
     FlushQueuedRefreshes()
     reconcileElapsed = reconcileElapsed + elapsed
     if reconcileElapsed < 0.50 then return end
@@ -597,5 +640,47 @@ events:SetScript("OnUpdate", function(_, elapsed)
     end
 end)
 
+local function DebugBoolean(value)
+    value = AccessibleBoolean(value)
+    if value == nil then return "restricted/unavailable" end
+    return value and "yes" or "no"
+end
+
+local function DebugValue(value)
+    value = AccessibleValue(value)
+    return value == nil and "restricted/unavailable" or tostring(value)
+end
+
+local function DebugUnit(unit)
+    if AccessibleBoolean(UnitExists(unit)) ~= true then
+        print("|cff0cd29fSimple Nameplates:|r No target selected.")
+        return
+    end
+
+    local name = DebugValue(UnitName(unit))
+    local state = StateForUnit(unit)
+    local reaction = AccessibleNumber(UnitReaction(unit, "player"))
+    local r, g, b = ColorForState(state)
+    local colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
+    local display = IsNameOnlyState(state) and "colored name only" or "white name with colored health bar"
+
+    print("|cff0cd29fSimple Nameplates debug:|r " .. name)
+    print("  Styling enabled: " .. (GetStylingEnabled() and "yes" or "no")
+        .. "; detected state: " .. state .. "; display: " .. display .. "; color: " .. colorHex)
+    print("  Player: " .. DebugBoolean(UnitIsPlayer(unit))
+        .. "; player-controlled: " .. DebugBoolean(UnitPlayerControlled(unit))
+        .. "; owned/controlled by you: " .. DebugBoolean(UnitIsOwnerOrControllerOfUnit and UnitIsOwnerOrControllerOfUnit("player", unit)))
+    print("  Reaction: " .. (reaction and tostring(reaction) or "restricted/unavailable")
+        .. "; faction: " .. DebugValue(UnitFactionGroup(unit))
+        .. "; you can attack: " .. DebugBoolean(UnitCanAttack("player", unit))
+        .. "; it can attack you: " .. DebugBoolean(UnitCanAttack(unit, "player"))
+        .. "; PvP flagged: " .. DebugBoolean(UnitIsPVP(unit)))
+    print("  Threat on you: " .. DebugValue(UnitThreatSituation("player", unit))
+        .. "; threat on pet: " .. DebugValue(UnitThreatSituation("pet", unit))
+        .. "; targeting your controlled unit: " .. (TargetsPlayerControlledUnit(unit) and "yes" or "no"))
+end
+
 ns.RefreshAll = RefreshAll
+ns.RestoreAll = RestoreAll
+ns.DebugUnit = DebugUnit
 ns.StateForUnit = StateForUnit

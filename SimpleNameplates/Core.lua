@@ -47,6 +47,9 @@ local DEFAULT_TRP3 = {
     showOOC = true,
 }
 
+local DEFAULT_STYLING_ENABLED = true
+local DEFAULT_SHOW_THREAT = true
+
 ns.FONT_OPTIONS = FONT_OPTIONS
 ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
 
@@ -76,6 +79,8 @@ local function EnsureDB()
     if db.appearance.namePlacement ~= "ABOVE" and db.appearance.namePlacement ~= "INSIDE" then
         db.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
     end
+    if type(db.stylingEnabled) ~= "boolean" then db.stylingEnabled = DEFAULT_STYLING_ENABLED end
+    if type(db.showThreat) ~= "boolean" then db.showThreat = DEFAULT_SHOW_THREAT end
     if type(db.pcGlow) ~= "boolean" then db.pcGlow = false end
     if type(db.trp3) ~= "table" then db.trp3 = {} end
     for key, default in pairs(DEFAULT_TRP3) do
@@ -135,6 +140,12 @@ local function SetStateColor(state, r, g, b)
     EnsureDB().colors[state] = { r = r, g = g, b = b }
 end
 
+local function ResetStateColor(state)
+    local default = DEFAULT_COLORS[state]
+    if not default then return end
+    EnsureDB().colors[state] = { r = default.r, g = default.g, b = default.b }
+end
+
 local function ResetStateColors()
     local colors = EnsureDB().colors
     for key, default in pairs(DEFAULT_COLORS) do
@@ -150,12 +161,30 @@ local function SetPCGlowEnabled(enabled)
     EnsureDB().pcGlow = enabled == true
 end
 
+local function GetStylingEnabled()
+    return EnsureDB().stylingEnabled
+end
+
+local function SetStylingEnabled(enabled)
+    EnsureDB().stylingEnabled = enabled == true
+end
+
+local function GetThreatEnabled()
+    return EnsureDB().showThreat
+end
+
+local function SetThreatEnabled(enabled)
+    EnsureDB().showThreat = enabled == true
+end
+
 local FRIENDLY_COLOR_CVARS = {
     "nameplateUseClassColorForFriendlyPlayerUnitNames",
     "nameplateShowFriendlyClassColor",
     "ShowClassColorInFriendlyNameplate",
 }
 ns.FRIENDLY_COLOR_CVARS = FRIENDLY_COLOR_CVARS
+local friendlyColorCVarOriginals = {}
+local friendlyColorCVarsCaptured = false
 
 local function DisableFriendlyClassColors()
     -- Midnight has separate CVars for friendly player name text and health-bar
@@ -163,10 +192,29 @@ local function DisableFriendlyClassColors()
     -- these independently, and leaving the name-text CVar enabled produces the
     -- familiar rainbow of class-colored friendly names.
     for _, cvar in ipairs(FRIENDLY_COLOR_CVARS) do
+        if not friendlyColorCVarsCaptured then
+            local getCVar = C_CVar and C_CVar.GetCVar or GetCVar
+            if getCVar then friendlyColorCVarOriginals[cvar] = getCVar(cvar) end
+        end
         if C_CVar and C_CVar.SetCVar then
             pcall(C_CVar.SetCVar, cvar, "0")
         elseif SetCVar then
             pcall(SetCVar, cvar, "0")
+        end
+    end
+    friendlyColorCVarsCaptured = true
+end
+
+local function RestoreFriendlyClassColors()
+    if not friendlyColorCVarsCaptured then return end
+    for _, cvar in ipairs(FRIENDLY_COLOR_CVARS) do
+        local value = friendlyColorCVarOriginals[cvar]
+        if value ~= nil then
+            if C_CVar and C_CVar.SetCVar then
+                pcall(C_CVar.SetCVar, cvar, value)
+            elseif SetCVar then
+                pcall(SetCVar, cvar, value)
+            end
         end
     end
 end
@@ -237,9 +285,14 @@ end
 ns.EnsureDB = EnsureDB
 ns.ColorForState = ColorForState
 ns.SetStateColor = SetStateColor
+ns.ResetStateColor = ResetStateColor
 ns.ResetStateColors = ResetStateColors
 ns.GetPCGlowEnabled = GetPCGlowEnabled
 ns.SetPCGlowEnabled = SetPCGlowEnabled
+ns.GetStylingEnabled = GetStylingEnabled
+ns.SetStylingEnabled = SetStylingEnabled
+ns.GetThreatEnabled = GetThreatEnabled
+ns.SetThreatEnabled = SetThreatEnabled
 ns.GetAppearanceSetting = GetAppearanceSetting
 ns.SetAppearanceSetting = SetAppearanceSetting
 ns.FontPath = FontPath
@@ -249,6 +302,7 @@ ns.SetTRP3Enabled = SetTRP3Enabled
 ns.GetTRP3Setting = GetTRP3Setting
 ns.SetTRP3Setting = SetTRP3Setting
 ns.DisableFriendlyClassColors = DisableFriendlyClassColors
+ns.RestoreFriendlyClassColors = RestoreFriendlyClassColors
 ns.ShowNameplateConflictWarning = ShowNameplateConflictWarning
 ns.AccessibleNumber = AccessibleNumber
 ns.AccessibleBoolean = AccessibleBoolean

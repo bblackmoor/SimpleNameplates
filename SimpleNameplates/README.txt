@@ -26,21 +26,25 @@ DISPLAYED
 - Normal health depletion as the unit takes damage
 - Normal Blizzard cast/channel bar and spell information
 - Normal Blizzard target treatment
-- Threat percentage added at the right side of the health bar when Midnight
+- Optional threat percentage added at the right side of the health bar when Midnight
   exposes a non-secret threat percentage
 - Optional same-color glow around PC health bars
 
 COLOR SETTINGS
 Open Options > AddOns > Simple Nameplates > Colors, or type /snp. All eight
-colors can be changed and apply immediately. The panel includes a Reset Colors
-button and a Glow PC health bars toggle, disabled by default. Units without
-health bars use the relationship color for their name. When a bar is present,
-the name stays white for contrast and the bar carries the relationship color.
+colors can be changed and apply immediately. Each row says whether its color
+appears on the name or health bar and has its own Reset button. The panel also
+includes Reset Colors, a master styling switch, and a Glow PC health bars
+toggle, disabled by default. Name-only PCs cannot glow because they have no
+visible health bar. Units without health bars use the relationship color for
+their name. When a bar is present, the name stays white for contrast and the
+bar carries the relationship color.
 
 TEXT SETTINGS
 Open Options > AddOns > Simple Nameplates > Text, or type /snp text. Choose a
-unit-name font, a separate threat-percentage font, and whether names appear
-above or inside visible health bars. Both fonts default to Arial
+unit-name font, a separate threat-percentage font, whether available threat
+percentages are shown, and whether names appear above or inside visible health
+bars. Both fonts default to Arial
 Narrow with a normal outline. Inside-bar names shrink to fit the existing bar
 and reserve space for threat percentage. The bar is not resized. Name-only
 friendly and unattackable plates are unaffected by name placement.
@@ -59,6 +63,11 @@ The main Simple Nameplates AddOns page shows the version, author,
 category, GPL-3.0 license, source repository, and slash commands. The version
 is read directly from the addon's TOC metadata. Click the source URL for a
 copy-ready dialog. Type /snp about to open this page directly.
+
+DIAGNOSTICS
+Target a unit and type /snp debug to report its detected type, reaction,
+faction, attackability, PvP and threat information, resulting state, display
+treatment, and color. Restricted Midnight values are identified, not inspected.
 
 INSTALL
 1. Exit WoW.
@@ -82,6 +91,13 @@ when WoW reports threat on you or your pet, or when the hostile player is
 targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.32
+- Added a master styling switch that restores Blizzard nameplates and friendly-color settings when disabled.
+- Added /snp debug diagnostics for the current target.
+- Labeled every color row as a colored name or health bar and added individual reset buttons.
+- Added a threat-percentage display toggle, enabled by default.
+- Clarified that PC glow applies only to PCs with visible health bars.
+
 1.0.31
 - Reduced attack detection to the player and the player's pets, guardians, and minions.
 - Health events now update only health instead of reclassifying and restyling the plate.

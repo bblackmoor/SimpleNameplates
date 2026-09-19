@@ -7,12 +7,17 @@ local VERSION = ns.VERSION
 local SOURCE_URL = ns.SOURCE_URL
 local ColorForState = ns.ColorForState
 local SetStateColor = ns.SetStateColor
+local ResetStateColor = ns.ResetStateColor
 local ResetStateColors = ns.ResetStateColors
 local GetAppearanceSetting = ns.GetAppearanceSetting
 local SetAppearanceSetting = ns.SetAppearanceSetting
 local ResetAppearance = ns.ResetAppearance
 local GetPCGlowEnabled = ns.GetPCGlowEnabled
 local SetPCGlowEnabled = ns.SetPCGlowEnabled
+local GetStylingEnabled = ns.GetStylingEnabled
+local SetStylingEnabled = ns.SetStylingEnabled
+local GetThreatEnabled = ns.GetThreatEnabled
+local SetThreatEnabled = ns.SetThreatEnabled
 
 local settingsCategory
 local colorsSettingsCategory
@@ -100,6 +105,7 @@ local function CreateAboutPanel()
         "    /snp colors - Open the color settings.\n" ..
         "    /snp text - Open the text settings.\n" ..
         "    /snp trp3 - Open the TRP3 settings.\n" ..
+        "    /snp debug - Explain the current target's detected state.\n" ..
         "    /snp about - Open this About page."
     )
 
@@ -189,25 +195,46 @@ local function CreateTextPanel()
         function(value) SetAppearanceSetting("namePlacement", value) end
     )
 
+    local threat = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    threat:SetSize(26, 26)
+    threat:SetPoint("TOPLEFT", 20, -326)
+    threat:SetHitRectInsets(0, -250, 0, 0)
+
+    local threatLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    threatLabel:SetPoint("LEFT", threat, "RIGHT", 4, 0)
+    threatLabel:SetText("Show threat percentage when available")
+
+    local function RefreshThreat()
+        threat:SetChecked(GetThreatEnabled())
+    end
+    threat:SetScript("OnClick", function(self)
+        SetThreatEnabled(self:GetChecked() == true)
+        RefreshNameplates()
+    end)
+
     local note = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    note:SetPoint("TOPLEFT", 24, -334)
+    note:SetPoint("TOPLEFT", 24, -370)
     note:SetWidth(600)
     note:SetJustifyH("LEFT")
     note:SetText("Inside-bar names automatically shrink to fit the existing Blizzard bar. Name-only friendly and unattackable players are unaffected.")
 
     local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
-    reset:SetPoint("TOPLEFT", 24, -386)
+    reset:SetPoint("TOPLEFT", 24, -422)
     reset:SetText("Reset Text")
     reset:SetScript("OnClick", function()
         ResetAppearance()
+        SetThreatEnabled(true)
         for _, refresh in ipairs(refreshers) do refresh() end
+        RefreshThreat()
         RefreshNameplates()
     end)
 
     panel:SetScript("OnShow", function()
         for _, refresh in ipairs(refreshers) do refresh() end
+        RefreshThreat()
     end)
+    RefreshThreat()
     return panel
 end
 
@@ -319,7 +346,31 @@ local function RegisterSettingsPanel()
     description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
     description:SetPoint("RIGHT", panel, "RIGHT", -20, 0)
     description:SetJustifyH("LEFT")
-    description:SetText("Choose name colors for units without bars and health-bar colors for attackable units.")
+    description:SetText("Each row shows whether its color is applied to the name or the health bar.")
+
+    local enabled = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    enabled:SetSize(26, 26)
+    enabled:SetPoint("TOPLEFT", 20, -66)
+    enabled:SetHitRectInsets(0, -280, 0, 0)
+
+    local enabledLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    enabledLabel:SetPoint("LEFT", enabled, "RIGHT", 4, 0)
+    enabledLabel:SetText("Enable Simple Nameplates styling")
+
+    local function RefreshEnabled()
+        enabled:SetChecked(GetStylingEnabled())
+    end
+    enabled:SetScript("OnClick", function(self)
+        local isEnabled = self:GetChecked() == true
+        SetStylingEnabled(isEnabled)
+        if isEnabled then
+            ns.DisableFriendlyClassColors()
+            RefreshNameplates()
+        else
+            ns.RestoreFriendlyClassColors()
+            if ns.RestoreAll then ns.RestoreAll() end
+        end
+    end)
 
     local swatchRefreshers = {}
 
@@ -329,7 +380,7 @@ local function RegisterSettingsPanel()
         label:SetText(text)
     end
 
-    local function CreateColorRow(text, state, y)
+    local function CreateColorRow(text, state, displayText, y)
         local row = CreateFrame("Frame", nil, panel)
         row:SetPoint("TOPLEFT", 24, y)
         row:SetPoint("RIGHT", panel, "RIGHT", -24, 0)
@@ -337,7 +388,7 @@ local function RegisterSettingsPanel()
 
         local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
         label:SetPoint("LEFT", 4, 0)
-        label:SetPoint("RIGHT", row, "RIGHT", -44, 0)
+        label:SetPoint("RIGHT", row, "RIGHT", -250, 0)
         label:SetJustifyH("LEFT")
         label:SetText(text)
 
@@ -393,28 +444,50 @@ local function RegisterSettingsPanel()
             }
             ColorPickerFrame:SetupColorPickerAndShow(info)
         end)
+
+        local resetOne = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+        resetOne:SetSize(54, 22)
+        resetOne:SetPoint("RIGHT", swatch, "LEFT", -8, 0)
+        resetOne:SetText("Reset")
+        resetOne:SetScript("OnClick", function()
+            ResetStateColor(state)
+            UpdateSwatch()
+            RefreshNameplates()
+        end)
+
+        local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        display:SetPoint("RIGHT", resetOne, "LEFT", -12, 0)
+        display:SetWidth(125)
+        display:SetJustifyH("RIGHT")
+        display:SetText(displayText)
     end
 
-    CreateSection("NON-PLAYER CHARACTERS", -82)
-    CreateColorRow("Friendly NPC", "friendlyNPC", -108)
-    CreateColorRow("Unfriendly (attackable) NPC", "unfriendlyNPC", -144)
-    CreateColorRow("Hostile (will attack me) NPC", "hostileNPC", -180)
-    CreateColorRow("Attacking (me, a pet, or an ally) NPC", "attackingNPC", -216)
+    CreateSection("NON-PLAYER CHARACTERS", -106)
+    CreateColorRow("Friendly NPC", "friendlyNPC", "Colored name", -132)
+    CreateColorRow("Unfriendly (attackable) NPC", "unfriendlyNPC", "Health bar", -168)
+    CreateColorRow("Hostile (will attack me) NPC", "hostileNPC", "Health bar", -204)
+    CreateColorRow("Attacking me or one of my controlled units", "attackingNPC", "Health bar", -240)
 
-    CreateSection("PLAYER CHARACTERS", -266)
-    CreateColorRow("Friendly (same faction) PC", "friendlyPC", -292)
-    CreateColorRow("Unfriendly (opposite faction, cannot fight) PC", "unfriendlyPC", -328)
-    CreateColorRow("Attackable (not attacking) opposite-faction PC", "attackablePC", -364)
-    CreateColorRow("Attacking (me, a pet, or an ally) PC", "attackingPC", -400)
+    CreateSection("PLAYER CHARACTERS", -282)
+    CreateColorRow("Friendly (same faction) PC", "friendlyPC", "Colored name", -308)
+    CreateColorRow("Unfriendly (opposite faction, cannot fight) PC", "unfriendlyPC", "Colored name", -344)
+    CreateColorRow("Attackable (not attacking) opposite-faction PC", "attackablePC", "Health bar", -380)
+    CreateColorRow("Attacking me or one of my controlled units", "attackingPC", "Health bar", -416)
 
     local pcGlow = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
     pcGlow:SetSize(26, 26)
-    pcGlow:SetPoint("TOPLEFT", 20, -438)
+    pcGlow:SetPoint("TOPLEFT", 20, -454)
     pcGlow:SetHitRectInsets(0, -260, 0, 0)
 
     local pcGlowLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     pcGlowLabel:SetPoint("LEFT", pcGlow, "RIGHT", 4, 0)
     pcGlowLabel:SetText("Glow PC health bars")
+
+    local pcGlowNote = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    pcGlowNote:SetPoint("TOPLEFT", 24, -486)
+    pcGlowNote:SetWidth(600)
+    pcGlowNote:SetJustifyH("LEFT")
+    pcGlowNote:SetText("Only PCs with a visible health bar can glow. Name-only PCs have no bar to receive the effect.")
 
     local function RefreshPCGlow()
         pcGlow:SetChecked(GetPCGlowEnabled())
@@ -423,18 +496,22 @@ local function RegisterSettingsPanel()
         SetPCGlowEnabled(self:GetChecked() == true)
         RefreshNameplates()
     end)
-    panel:SetScript("OnShow", RefreshPCGlow)
-    RefreshPCGlow()
-
     local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
-    reset:SetPoint("TOPLEFT", 24, -482)
+    reset:SetPoint("TOPLEFT", 24, -530)
     reset:SetText("Reset Colors")
     reset:SetScript("OnClick", function()
         ResetStateColors()
         for _, refresh in ipairs(swatchRefreshers) do refresh() end
         RefreshNameplates()
     end)
+
+    panel:SetScript("OnShow", function()
+        RefreshEnabled()
+        RefreshPCGlow()
+    end)
+    RefreshEnabled()
+    RefreshPCGlow()
 
     local aboutPanel = CreateAboutPanel()
     settingsCategory = Settings.RegisterCanvasLayoutCategory(aboutPanel, "Simple Nameplates")
@@ -457,12 +534,17 @@ local function RegisterSettingsPanel()
 
     SLASH_SNP1 = "/snp"
     SlashCmdList.SNP = function(message)
+        local command = string.lower(strtrim(message or ""))
+        if command == "debug" or command == "diagnose" then
+            if ns.DebugUnit then ns.DebugUnit("target") end
+            return
+        end
+
         if InCombatLockdown and InCombatLockdown() then
             print("|cff0cd29fSimple Nameplates:|r Settings cannot be opened during combat.")
             return
         end
 
-        local command = string.lower(strtrim(message or ""))
         if command == "about" then
             Settings.OpenToCategory(settingsCategory:GetID())
         elseif command == "text" or command == "font" or command == "fonts" then
@@ -473,7 +555,7 @@ local function RegisterSettingsPanel()
             or command == "options" or command == "settings" then
             Settings.OpenToCategory(colorsSettingsCategory:GetID())
         else
-            print("|cff0cd29fSimple Nameplates:|r /snp, /snp colors, /snp text, /snp trp3, /snp about")
+            print("|cff0cd29fSimple Nameplates:|r /snp, /snp colors, /snp text, /snp trp3, /snp debug, /snp about")
         end
     end
 end

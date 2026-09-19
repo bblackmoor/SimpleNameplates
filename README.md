@@ -31,12 +31,12 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 * Normal health depletion as the unit takes damage
 * Normal Blizzard cast/channel bar and spell information
 * Normal Blizzard target treatment
-* Threat percentage at the right side of the health bar when Midnight exposes a non-secret threat percentage
+* Optional threat percentage at the right side of the health bar when Midnight exposes a non-secret threat percentage
 * Optional same-color glow around PC health bars
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize all eight colors. Changes apply immediately and are saved between sessions. The panel also includes a **Reset Colors** button and an optional **Glow PC health bars** setting, disabled by default.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize all eight colors. Each row identifies whether its color appears on the name or health bar and has its own reset button. Changes apply immediately and are saved between sessions. The panel also includes **Reset Colors**, a master styling switch, and an optional **Glow PC health bars** setting, disabled by default. Name-only PCs cannot glow because they have no visible health bar.
 
 Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
 
@@ -47,6 +47,7 @@ Open **Options → AddOns → Simple Nameplates → Text**, or type `/snp text`,
 * The unit-name font.
 * A separate threat-percentage font.
 * Whether names appear above or inside visible health bars.
+* Whether available threat percentages are displayed.
 
 Both fonts default to WoW's built-in **Arial Narrow** with a normal outline. Other standard Blizzard fonts are available without an external font library. Inside-bar names automatically shrink to fit the existing bar; the bar itself is not resized. Friendly and unattackable name-only plates are unaffected by the placement setting.
 
@@ -61,6 +62,8 @@ Each field has its own toggle. The normal WoW name is used whenever a cached TRP
 ## About
 
 The main **Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
+
+Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting state, display treatment, and color. Restricted Midnight values are identified rather than inspected.
 
 ## Installation
 
@@ -84,6 +87,14 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
 ## Changelog
+
+### 1.0.32
+
+* Added a master styling switch that restores Blizzard nameplates and friendly-color settings when disabled.
+* Added `/snp debug` diagnostics for the current target.
+* Labeled every color row as a colored name or health bar and added individual reset buttons.
+* Added a threat-percentage display toggle, enabled by default.
+* Clarified that PC glow applies only to PCs with visible health bars.
 
 ### 1.0.31
 
