@@ -7,6 +7,14 @@
 local _, ns = ...
 
 local TRP3 = {}
+local ROLEPLAY_STATUS_OUT_OF_CHARACTER = 2
+
+local function CleanText(value)
+    if type(value) ~= "string" then return nil end
+    value = value:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+    if value == "" then return nil end
+    return value
+end
 
 function TRP3.IsAvailable()
     return type(TRP3_API) == "table"
@@ -36,15 +44,31 @@ function TRP3.GetKnownProfile(unitToken)
     return profile, characterID
 end
 
--- Future profile-name, title, status, icon, or other display choices belong
--- here. Until one is selected, Simple Nameplates deliberately changes no text.
 function TRP3.GetDisplayInfo(unitToken)
     local profile, characterID = TRP3.GetKnownProfile(unitToken)
     if not profile then return nil end
 
+    local characteristics = type(profile.characteristics) == "table" and profile.characteristics or {}
+    local character = type(profile.character) == "table" and profile.character or {}
+    local firstName = CleanText(characteristics.FN)
+    local lastName = CleanText(characteristics.LN)
+    local roleplayingName
+
+    if firstName and lastName then
+        roleplayingName = firstName .. " " .. lastName
+    elseif firstName then
+        roleplayingName = firstName
+    elseif lastName then
+        local unitName = ns.AccessibleValue(UnitName(unitToken))
+        roleplayingName = unitName and (unitName .. " " .. lastName) or lastName
+    end
+
     return {
         characterID = characterID,
-        profile = profile,
+        roleplayingName = roleplayingName,
+        shortTitle = CleanText(characteristics.TI),
+        fullTitle = CleanText(characteristics.FT),
+        isOutOfCharacter = character.RP == ROLEPLAY_STATUS_OUT_OF_CHARACTER,
     }
 end
 

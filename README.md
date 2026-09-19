@@ -51,7 +51,9 @@ Both fonts default to WoW's built-in **Arial Narrow** with a normal outline. Oth
 
 Open **Options → AddOns → Simple Nameplates → TRP3**, or type `/snp trp3`. The page begins with **Display TRP3 profile information**, which is disabled by default.
 
-`TRP3.lua` provides an optional, isolated integration boundary using TRP3's public APIs. It can recognize TRP3, resolve a nameplate unit to an already-known profile, and return that profile to future display options. No profile fields are displayed yet; name, title, status, icon, and related choices will be added after their desired behavior is decided. Simple Nameplates continues to work without TRP3.
+When enabled, Simple Nameplates can use a character's TRP3 roleplaying full name, put the short title before the name, show the full title on a separate line above the name, and mark out-of-character profiles. If the OOC option is enabled, `[OOC]` replaces the short title; IC profiles receive no marker. Full titles always remain outside the health bar, even when the name itself is inside it.
+
+Each field has its own toggle. The normal WoW name is used whenever a cached TRP3 profile or selected field is unavailable. `TRP3.lua` keeps the optional profile access isolated, and Simple Nameplates continues to work normally without TRP3.
 
 ## About
 
@@ -79,6 +81,13 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat or when the hostile player is targeting you, your pet, or a member of your group.
 
 ## Changelog
+
+### 2.0.27
+
+* Added optional TRP3 roleplaying full names with automatic WoW-name fallback.
+* Added optional short titles before names.
+* Added `[OOC]` indicators that replace short titles; IC profiles receive no marker.
+* Added optional full titles on a separate line above the name and always outside the health bar.
 
 ### 2.0.26
 

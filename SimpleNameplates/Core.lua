@@ -39,6 +39,14 @@ local DEFAULT_APPEARANCE = {
     namePlacement = "ABOVE",
 }
 
+local DEFAULT_TRP3 = {
+    enabled = false,
+    useRoleplayingName = true,
+    showShortTitle = true,
+    showFullTitle = true,
+    showOOC = true,
+}
+
 ns.FONT_OPTIONS = FONT_OPTIONS
 ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
 
@@ -69,7 +77,9 @@ local function EnsureDB()
         db.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
     end
     if type(db.trp3) ~= "table" then db.trp3 = {} end
-    if type(db.trp3.enabled) ~= "boolean" then db.trp3.enabled = false end
+    for key, default in pairs(DEFAULT_TRP3) do
+        if type(db.trp3[key]) ~= "boolean" then db.trp3[key] = default end
+    end
     dbReady = true
     return db
 end
@@ -80,6 +90,16 @@ end
 
 local function SetTRP3Enabled(enabled)
     EnsureDB().trp3.enabled = enabled == true
+end
+
+local function GetTRP3Setting(key)
+    return EnsureDB().trp3[key]
+end
+
+local function SetTRP3Setting(key, enabled)
+    if DEFAULT_TRP3[key] ~= nil then
+        EnsureDB().trp3[key] = enabled == true
+    end
 end
 
 local function GetAppearanceSetting(key)
@@ -215,6 +235,8 @@ ns.FontPath = FontPath
 ns.ResetAppearance = ResetAppearance
 ns.GetTRP3Enabled = GetTRP3Enabled
 ns.SetTRP3Enabled = SetTRP3Enabled
+ns.GetTRP3Setting = GetTRP3Setting
+ns.SetTRP3Setting = SetTRP3Setting
 ns.DisableFriendlyClassColors = DisableFriendlyClassColors
 ns.ShowNameplateConflictWarning = ShowNameplateConflictWarning
 ns.AccessibleNumber = AccessibleNumber

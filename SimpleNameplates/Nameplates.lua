@@ -24,6 +24,7 @@ local AccessibleBoolean = ns.AccessibleBoolean
 local AccessibleValue = ns.AccessibleValue
 local ColorForState = ns.ColorForState
 local GetAppearanceSetting = ns.GetAppearanceSetting
+local GetTRP3Setting = ns.GetTRP3Setting
 local FontPath = ns.FontPath
 
 local function UnitHasAggro(unitToken, hostileUnit)
@@ -142,21 +143,79 @@ end
 
 local function UpdateNameText(frame)
     local name, unit = frame and frame.name, frame and frame.unit
-    if not name or not unit then return end
+    if not name or not unit then return nil end
     local unitName = AccessibleValue(UnitName(unit))
-    name:SetText(unitName or "")
+    local displayName = unitName or ""
+    local fullTitle
+    local info = ns.TRP3 and ns.TRP3.GetDisplayInfo(unit)
+
+    if info then
+        if GetTRP3Setting("useRoleplayingName") and info.roleplayingName then
+            displayName = info.roleplayingName
+        end
+
+        local prefix
+        if GetTRP3Setting("showOOC") and info.isOutOfCharacter then
+            prefix = "[OOC]"
+        elseif GetTRP3Setting("showShortTitle") then
+            prefix = info.shortTitle
+        end
+        if prefix then displayName = prefix .. " " .. displayName end
+
+        if GetTRP3Setting("showFullTitle") then fullTitle = info.fullTitle end
+    end
+
+    name:SetText(displayName)
+    return fullTitle
+end
+
+local function EnsureFullTitleText(frame)
+    if frame.SNPFullTitleText then return frame.SNPFullTitleText end
+    local fullTitle = frame:CreateFontString(nil, "OVERLAY")
+    fullTitle:SetJustifyH("CENTER")
+    fullTitle:SetWordWrap(false)
+    fullTitle:SetMaxLines(1)
+    frame.SNPFullTitleText = fullTitle
+    return fullTitle
+end
+
+local function StyleFullTitle(frame, state, text, nameInsideBar, baseNameSize, bar)
+    local fullTitle = frame.SNPFullTitleText
+    if not text then
+        if fullTitle then fullTitle:SetText(""); fullTitle:Hide() end
+        return
+    end
+
+    fullTitle = EnsureFullTitleText(frame)
+    fullTitle:SetText(text)
+    fullTitle:SetFont(FontPath(GetAppearanceSetting("nameFont")), math.max(6, baseNameSize - 1), "OUTLINE")
+    fullTitle:SetShadowColor(0, 0, 0, 1)
+    fullTitle:SetShadowOffset(1, -1)
+    fullTitle:ClearAllPoints()
+    if nameInsideBar and bar then
+        fullTitle:SetPoint("BOTTOM", bar, "TOP", 0, 2)
+    else
+        fullTitle:SetPoint("BOTTOM", frame.name, "TOP", 0, 1)
+    end
+    if IsNameOnlyState(state) then
+        fullTitle:SetTextColor(ColorForState(state))
+    else
+        fullTitle:SetTextColor(1, 1, 1, 1)
+    end
+    fullTitle:Show()
 end
 
 local function StyleName(frame, state)
     local name = frame and frame.name
     if not name then return end
-    UpdateNameText(frame)
+    local fullTitle = UpdateNameText(frame)
 
     local _, currentSize = name:GetFont()
     if not frame.SNPBaseNameSize and type(currentSize) == "number" then
         frame.SNPBaseNameSize = currentSize
     end
-    local size = frame.SNPBaseNameSize or currentSize or 10
+    local baseSize = frame.SNPBaseNameSize or currentSize or 10
+    local size = baseSize
     local bar = GetHealthBar(frame)
     local inside = GetAppearanceSetting("namePlacement") == "INSIDE"
         and not IsNameOnlyState(state) and bar
@@ -188,6 +247,7 @@ local function StyleName(frame, state)
         name:SetTextColor(1, 1, 1, 1)
     end
     name:Show()
+    StyleFullTitle(frame, state, fullTitle, inside, baseSize, bar)
 end
 
 local function EnsureThreatText(frame)
@@ -323,6 +383,7 @@ events:SetScript("OnEvent", function(_, event, unit)
         if frame then
             if frame.name then frame.name:SetText("") end
             if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
+            if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
         end
         return
     end

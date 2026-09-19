@@ -45,9 +45,11 @@ friendly and non-PvP plates are unaffected by name placement.
 TRP3 SETTINGS
 Open Options > AddOns > Simple Nameplates > TRP3, or type /snp trp3. The page
 starts with a Display TRP3 profile information toggle, disabled by default.
-TRP3.lua isolates optional access to TRP3's public profile APIs. No profile
-fields are displayed yet; future name, title, status, icon, and related choices
-will be added here. Simple Nameplates continues to work without TRP3.
+When enabled, separate options can display the TRP3 roleplaying full name, a
+short title before the name, [OOC] in place of the short title, and a full title
+on a separate line above the name. IC profiles receive no status marker. Full
+titles always remain outside the health bar. The WoW name is used when profile
+information is unavailable. Simple Nameplates continues to work without TRP3.
 
 ABOUT
 The main Simple Nameplates AddOns page shows the version, author,
@@ -77,6 +79,12 @@ when WoW reports threat or the hostile player is targeting you, your pet, or
 a member of your group.
 
 CHANGELOG
+2.0.27
+- Added optional TRP3 roleplaying full names with WoW-name fallback.
+- Added optional short titles before names.
+- Added [OOC] in place of short titles; IC profiles receive no marker.
+- Added optional full titles above names and always outside health bars.
+
 2.0.26
 - Added an optional TRP3.lua integration skeleton using public TRP3 APIs.
 - Added a TRP3 settings page with a master toggle, disabled by default.

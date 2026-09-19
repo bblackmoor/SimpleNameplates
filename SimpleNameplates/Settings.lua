@@ -237,16 +237,54 @@ local function CreateTRP3Panel()
     status:SetWidth(600)
     status:SetJustifyH("LEFT")
 
-    local future = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    future:SetPoint("TOPLEFT", 24, -158)
-    future:SetWidth(600)
-    future:SetJustifyH("LEFT")
-    future:SetText("No TRP3 fields are displayed yet. Future profile-name, title, status, icon, and related choices will be added here.")
+    local section = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    section:SetPoint("TOPLEFT", 24, -158)
+    section:SetText("DISPLAY OPTIONS")
+
+    local optionControls = {}
+
+    local function CreateOption(labelText, setting, y)
+        local option = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+        option:SetSize(26, 26)
+        option:SetPoint("TOPLEFT", 20, y)
+        option:SetHitRectInsets(0, -360, 0, 0)
+
+        local label = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        label:SetPoint("LEFT", option, "RIGHT", 4, 0)
+        label:SetText(labelText)
+
+        option:SetScript("OnClick", function(self)
+            ns.SetTRP3Setting(setting, self:GetChecked() == true)
+            if ns.TRP3 then ns.TRP3.Refresh() end
+        end)
+        optionControls[#optionControls + 1] = { button = option, label = label, setting = setting }
+    end
+
+    CreateOption("Use TRP3 roleplaying full name", "useRoleplayingName", -180)
+    CreateOption("Show short title before the name", "showShortTitle", -216)
+    CreateOption("Show [OOC] instead of the short title", "showOOC", -252)
+    CreateOption("Show full title above the name", "showFullTitle", -288)
+
+    local note = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    note:SetPoint("TOPLEFT", 24, -334)
+    note:SetWidth(600)
+    note:SetJustifyH("LEFT")
+    note:SetText("Full titles always appear outside the health bar. If no cached TRP3 profile or selected field is available, the normal WoW name is used.")
 
     local function Refresh()
         enabled:SetChecked(ns.GetTRP3Enabled())
+        local isEnabled = ns.GetTRP3Enabled()
+        for _, control in ipairs(optionControls) do
+            control.button:SetChecked(ns.GetTRP3Setting(control.setting))
+            control.button:SetEnabled(isEnabled)
+            if isEnabled then
+                control.label:SetTextColor(1, 1, 1, 1)
+            else
+                control.label:SetTextColor(0.5, 0.5, 0.5, 1)
+            end
+        end
         if ns.TRP3 and ns.TRP3.IsAvailable() then
-            status:SetText("Total RP 3 detected. Profile display is ready for future field options.")
+            status:SetText("Total RP 3 detected. Enabled options apply to cached player profiles.")
             status:SetTextColor(0.35, 0.85, 0.35, 1)
         else
             status:SetText("Total RP 3 is not currently available. This setting will take effect when it is installed and enabled.")
