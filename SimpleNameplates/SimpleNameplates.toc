@@ -3,7 +3,7 @@
 ## Category: Unit Frames
 ## Notes: Custom NPC and player nameplate colors while retaining Blizzard health and cast bars.
 ## Author: Brandon Blackmoor <bblackmoor@blackgate.net>
-## Version: 1.0.33
+## Version: 1.0.34
 ## OptionalDeps: totalRP3
 ## SavedVariables: SimpleNameplatesDB
 ## IconTexture: Interface\Icons\INV_Misc_Eye_01

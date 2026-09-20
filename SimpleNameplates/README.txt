@@ -91,6 +91,9 @@ when WoW reports threat on you or your pet, or when the hostile player is
 targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.34
+- Replaced the screenshot-sampled default values with a clean web-safe RGB palette.
+
 1.0.33
 - Neutralized Blizzard's additional vertex tint so configured name colors display accurately.
 - Updated all eight default colors to match the documented settings palette.

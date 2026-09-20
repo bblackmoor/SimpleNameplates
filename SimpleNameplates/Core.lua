@@ -15,14 +15,14 @@ local function RGB8(r, g, b)
 end
 
 local DEFAULT_COLORS = {
-    friendlyNPC = RGB8(48, 221, 61),
-    unfriendlyNPC = RGB8(255, 212, 27),
-    hostileNPC = RGB8(255, 122, 16),
-    attackingNPC = RGB8(255, 27, 22),
-    friendlyPC = RGB8(61, 194, 255),
-    unfriendlyPC = RGB8(0, 255, 207),
-    attackablePC = RGB8(255, 212, 27),
-    attackingPC = RGB8(255, 34, 140),
+    friendlyNPC = RGB8(51, 204, 51),
+    unfriendlyNPC = RGB8(255, 204, 0),
+    hostileNPC = RGB8(255, 102, 0),
+    attackingNPC = RGB8(255, 0, 0),
+    friendlyPC = RGB8(51, 204, 255),
+    unfriendlyPC = RGB8(0, 255, 204),
+    attackablePC = RGB8(255, 204, 0),
+    attackingPC = RGB8(255, 51, 153),
 }
 ns.DEFAULT_COLORS = DEFAULT_COLORS
 

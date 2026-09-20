@@ -88,6 +88,10 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 
 ## Changelog
 
+### 1.0.34
+
+* Replaced the screenshot-sampled default values with a clean web-safe RGB palette.
+
 ### 1.0.33
 
 * Neutralized Blizzard's additional vertex tint so configured name colors display accurately.
