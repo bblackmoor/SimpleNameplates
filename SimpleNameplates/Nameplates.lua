@@ -688,9 +688,11 @@ local function DebugUnit(unit)
     local r, g, b = ColorForState(state)
     local colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
     local display = IsNameOnlyState(state) and "colored name only" or "white name with colored health bar"
+    local hasNameplate = GetUnitFrame(unit) ~= nil
 
     print("|cff0cd29fSimple Nameplates debug:|r " .. name)
     print("  Styling enabled: " .. (GetStylingEnabled() and "yes" or "no")
+        .. "; nameplate frame: " .. (hasNameplate and "yes" or "no")
         .. "; detected state: " .. state .. "; display: " .. display .. "; color: " .. colorHex)
     print("  Player: " .. DebugBoolean(UnitIsPlayer(unit))
         .. "; player-controlled: " .. DebugBoolean(UnitPlayerControlled(unit))

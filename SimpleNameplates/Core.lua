@@ -168,6 +168,8 @@ local function SetPCGlowEnabled(enabled)
 end
 
 local OVERHEAD_NAME_CVARS = {
+    nameplateShowAll = "1",
+    nameplateForceShowUnitName = "1",
     nameplateShowFriendlyPlayers = "1",
     nameplateShowFriendlyPlayerPets = "1",
     nameplateShowFriendlyPlayerGuardians = "1",

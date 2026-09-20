@@ -514,7 +514,7 @@ local function RegisterSettingsPanel()
     replaceNamesNote:SetPoint("TOPLEFT", 24, -554)
     replaceNamesNote:SetWidth(600)
     replaceNamesNote:SetJustifyH("LEFT")
-    replaceNamesNote:SetText("Uses colorable nameplates instead. Blizzard guild and owner lines may not be shown. Your previous WoW nameplate settings are restored when this is disabled.")
+    replaceNamesNote:SetText("Temporarily enables Always Show Nameplates and uses colorable nameplates instead. Blizzard guild and owner lines may not be shown. Your previous WoW nameplate settings are restored when this is disabled.")
 
     local function RefreshReplaceNames()
         replaceNames:SetChecked(GetReplaceOverheadNamesEnabled())
