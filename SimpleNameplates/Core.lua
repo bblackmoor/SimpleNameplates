@@ -44,7 +44,7 @@ for _, option in ipairs(FONT_OPTIONS) do
     OVERHEAD_FONT_OPTIONS[#OVERHEAD_FONT_OPTIONS + 1] = option
 end
 
-local BLIZZARD_UNIT_NAME_FONT = _G.UNIT_NAME_FONT
+local BLIZZARD_UNIT_NAME_FONT = _G.UNIT_NAME_FONT or "Fonts\\FRIZQT__.TTF"
 
 local DEFAULT_APPEARANCE = {
     nameFont = "ARIALN",
@@ -161,11 +161,14 @@ local function GetAppearanceSetting(key)
 end
 
 local function ApplyOverheadNameFont()
-    local value = EnsureDB().appearance.overheadNameFont
-    if value == "DEFAULT" then
+    local appearance = EnsureDB().appearance
+    local value = appearance.overheadNameFont
+    local option = FONT_BY_VALUE[value]
+    if value == "DEFAULT" or not option then
+        appearance.overheadNameFont = "DEFAULT"
         _G.UNIT_NAME_FONT = BLIZZARD_UNIT_NAME_FONT
     else
-        _G.UNIT_NAME_FONT = FONT_BY_VALUE[value].path
+        _G.UNIT_NAME_FONT = option.path
     end
 end
 
@@ -369,9 +372,3 @@ ns.ShowNameplateConflictWarning = ShowNameplateConflictWarning
 ns.AccessibleNumber = AccessibleNumber
 ns.AccessibleBoolean = AccessibleBoolean
 ns.AccessibleValue = AccessibleValue
-
--- Apply a saved custom font as early as this addon can. The engine may cache
--- world-name fonts, so the settings page also warns that a restart can be needed.
-if GetAppearanceSetting("overheadNameFont") ~= "DEFAULT" then
-    ApplyOverheadNameFont()
-end

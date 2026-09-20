@@ -2,7 +2,7 @@
 -- Friendly units and unattackable opposite-faction players use colored names
 -- only; attackable states use white names with colored full nameplates.
 
-local _, ns = ...
+local addon, ns = ...
 if not ns.EnsureDB then return end
 
 local C_NamePlate = C_NamePlate
@@ -548,7 +548,7 @@ if hooksecurefunc and CompactUnitFrame_UpdateName then
 end
 
 local events = CreateFrame("Frame")
-for _, event in ipairs({"PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","CVAR_UPDATE"}) do
+for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","CVAR_UPDATE"}) do
     events:RegisterEvent(event)
 end
 
@@ -577,6 +577,15 @@ local function FlushQueuedRefreshes()
 end
 
 events:SetScript("OnEvent", function(_, event, unit)
+    if event == "ADDON_LOADED" then
+        if unit ~= addon then return end
+        events:UnregisterEvent("ADDON_LOADED")
+        ns.EnsureDB()
+        if ns.GetAppearanceSetting("overheadNameFont") ~= "DEFAULT" then
+            ns.ApplyOverheadNameFont()
+        end
+        return
+    end
     if event == "PLAYER_LOGIN" then
         ns.EnsureDB()
         if ns.GetAppearanceSetting("overheadNameFont") ~= "DEFAULT" then

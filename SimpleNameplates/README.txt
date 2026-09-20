@@ -95,6 +95,10 @@ when WoW reports threat on you or your pet, or when the hostile player is
 targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.40
+- Delayed overhead-font initialization until saved variables are available.
+- Added a safe Blizzard-font fallback for missing or invalid saved selections.
+
 1.0.39
 - Added a global font selector for Blizzard's engine-drawn overhead unit names.
 - Preserves Blizzard's locale-appropriate font by default and warns when a full restart may be needed.

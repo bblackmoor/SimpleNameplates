@@ -91,6 +91,11 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 
 ## Changelog
 
+### 1.0.40
+
+* Delayed overhead-font initialization until saved variables are available.
+* Added a safe Blizzard-font fallback for missing or invalid saved selections.
+
 ### 1.0.39
 
 * Added a global font selector for Blizzard's engine-drawn overhead unit names.
