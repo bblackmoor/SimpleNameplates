@@ -20,6 +20,7 @@ local DEFAULT_COLORS = {
     unfriendlyNPC = RGB8(255, 204, 0),
     hostile = RGB8(255, 102, 0),
     attacking = RGB8(255, 0, 0),
+    interruptible = RGB8(0, 255, 255),
 }
 ns.DEFAULT_COLORS = DEFAULT_COLORS
 
@@ -147,6 +148,7 @@ local function EnsureDB()
         db.attackingGlow = type(db.pcGlow) == "boolean" and db.pcGlow or false
     end
     db.pcGlow = nil
+    if type(db.interruptibleHighlight) ~= "boolean" then db.interruptibleHighlight = false end
     if type(db.trp3) ~= "table" then db.trp3 = {} end
     for key, default in pairs(DEFAULT_TRP3) do
         if type(db.trp3[key]) ~= "boolean" then db.trp3[key] = default end
@@ -228,6 +230,14 @@ end
 
 local function SetAttackingGlowEnabled(enabled)
     EnsureDB().attackingGlow = enabled == true
+end
+
+local function GetInterruptibleHighlightEnabled()
+    return EnsureDB().interruptibleHighlight
+end
+
+local function SetInterruptibleHighlightEnabled(enabled)
+    EnsureDB().interruptibleHighlight = enabled == true
 end
 
 local function GetStylingEnabled()
@@ -358,6 +368,8 @@ ns.ResetStateColor = ResetStateColor
 ns.ResetStateColors = ResetStateColors
 ns.GetAttackingGlowEnabled = GetAttackingGlowEnabled
 ns.SetAttackingGlowEnabled = SetAttackingGlowEnabled
+ns.GetInterruptibleHighlightEnabled = GetInterruptibleHighlightEnabled
+ns.SetInterruptibleHighlightEnabled = SetInterruptibleHighlightEnabled
 ns.GetStylingEnabled = GetStylingEnabled
 ns.SetStylingEnabled = SetStylingEnabled
 ns.GetThreatEnabled = GetThreatEnabled

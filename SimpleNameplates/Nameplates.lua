@@ -29,6 +29,7 @@ local ColorForState = ns.ColorForState
 local GetAppearanceSetting = ns.GetAppearanceSetting
 local GetTRP3Setting = ns.GetTRP3Setting
 local GetAttackingGlowEnabled = ns.GetAttackingGlowEnabled
+local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
 local GetStylingEnabled = ns.GetStylingEnabled
 local GetThreatEnabled = ns.GetThreatEnabled
 local FontPath = ns.FontPath
@@ -136,6 +137,10 @@ end
 
 local function GetHealthBar(frame)
     return frame and (frame.healthBar or (frame.HealthBarsContainer and frame.HealthBarsContainer.healthBar)) or nil
+end
+
+local function GetCastBar(frame)
+    return frame and (frame.castBar or frame.CastBar) or nil
 end
 
 local function SetShownSafe(region, shown)
@@ -410,6 +415,94 @@ local function UpdateAttackingGlow(frame, state, r, g, b)
     UpdateGlowEdge(glow.right, shown, r, g, b)
 end
 
+local function SetInterruptibleHighlightShown(overlay, shown)
+    if not overlay then return end
+    local ok = pcall(overlay.SetShown, overlay, shown)
+    if not ok then overlay:Hide() end
+end
+
+local function EnsureInterruptibleHighlight(frame)
+    local castBar = GetCastBar(frame)
+    if not castBar then return nil end
+    local existing = frame.SNPInterruptibleHighlight
+    if existing and existing.castBar == castBar then return existing end
+    if existing and existing.frame then existing.frame:Hide() end
+
+    local overlay = CreateFrame("Frame", nil, castBar)
+    overlay:SetPoint("TOPLEFT", castBar, "TOPLEFT", -3, 3)
+    overlay:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 3, -3)
+    local healthBar = GetHealthBar(frame)
+    local highestFrameLevel = castBar:GetFrameLevel()
+    if healthBar then highestFrameLevel = math.max(highestFrameLevel, healthBar:GetFrameLevel()) end
+    overlay:SetFrameLevel(highestFrameLevel + 20)
+    overlay:Hide()
+
+    local function CreateEdge()
+        local edge = overlay:CreateTexture(nil, "OVERLAY", nil, 7)
+        edge:SetColorTexture(0, 1, 1, 0.9)
+        edge:SetBlendMode("ADD")
+        return edge
+    end
+
+    local highlight = {
+        castBar = castBar,
+        frame = overlay,
+        top = CreateEdge(),
+        bottom = CreateEdge(),
+        left = CreateEdge(),
+        right = CreateEdge(),
+    }
+    highlight.top:SetPoint("TOPLEFT")
+    highlight.top:SetPoint("TOPRIGHT")
+    highlight.top:SetHeight(3)
+    highlight.bottom:SetPoint("BOTTOMLEFT")
+    highlight.bottom:SetPoint("BOTTOMRIGHT")
+    highlight.bottom:SetHeight(3)
+    highlight.left:SetPoint("TOPLEFT")
+    highlight.left:SetPoint("BOTTOMLEFT")
+    highlight.left:SetWidth(3)
+    highlight.right:SetPoint("TOPRIGHT")
+    highlight.right:SetPoint("BOTTOMRIGHT")
+    highlight.right:SetWidth(3)
+    frame.SNPInterruptibleHighlight = highlight
+
+    -- Blizzard already makes the secret-safe interruptibility decision and
+    -- shows the ordinary spell icon only for interruptible modern nameplate
+    -- casts. Mirror that resulting visibility without inspecting the secret.
+    if castBar.Icon then
+        hooksecurefunc(castBar.Icon, "SetShown", function(_, shown)
+            if GetStylingEnabled() and GetInterruptibleHighlightEnabled() then
+                SetInterruptibleHighlightShown(overlay, shown)
+            else
+                overlay:Hide()
+            end
+        end)
+    end
+
+    return highlight
+end
+
+local function UpdateInterruptibleHighlight(frame)
+    local highlight = EnsureInterruptibleHighlight(frame)
+    if not highlight then return end
+
+    local r, g, b = ColorForState("interruptible")
+    highlight.top:SetColorTexture(r, g, b, 0.9)
+    highlight.bottom:SetColorTexture(r, g, b, 0.9)
+    highlight.left:SetColorTexture(r, g, b, 0.9)
+    highlight.right:SetColorTexture(r, g, b, 0.9)
+
+    if not GetInterruptibleHighlightEnabled() then
+        highlight.frame:Hide()
+        return
+    end
+
+    local icon = highlight.castBar and highlight.castBar.Icon
+    if not icon then highlight.frame:Hide(); return end
+    local ok, shown = pcall(icon.IsShown, icon)
+    if ok then SetInterruptibleHighlightShown(highlight.frame, shown) end
+end
+
 local function ApplyVisibility(frame, state)
     local nameOnly = IsNameOnlyState(state)
     local bar = GetHealthBar(frame)
@@ -441,6 +534,7 @@ local function ApplySimpleStyle(frame)
         frame.SNPThreatText:SetText("")
     end
     UpdateAttackingGlow(frame, state, r, g, b)
+    UpdateInterruptibleHighlight(frame)
 end
 
 local function RepairHealthColor(frame)
@@ -456,6 +550,7 @@ local function RepairHealthColor(frame)
         bar:SetStatusBarColor(r, g, b, 1)
     end
     UpdateAttackingGlow(frame, state, r, g, b)
+    UpdateInterruptibleHighlight(frame)
 end
 
 local function RepairName(frame)
@@ -502,6 +597,7 @@ local function RestoreFrame(frame)
     if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
     if frame.SNPAttackingGlow then UpdateAttackingGlow(frame, "", 1, 1, 1) end
+    if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
     frame.SNPNameStyle = nil
     frame.SNPState = nil
 
@@ -616,6 +712,7 @@ events:SetScript("OnEvent", function(_, event, unit)
             frame.SNPNameStyle = nil
             frame.SNPState = nil
             UpdateAttackingGlow(frame, "", 1, 1, 1)
+            if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
         end
         dirtyUnits[unit] = nil
         return

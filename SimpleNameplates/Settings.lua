@@ -14,6 +14,8 @@ local SetAppearanceSetting = ns.SetAppearanceSetting
 local ResetAppearance = ns.ResetAppearance
 local GetAttackingGlowEnabled = ns.GetAttackingGlowEnabled
 local SetAttackingGlowEnabled = ns.SetAttackingGlowEnabled
+local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
+local SetInterruptibleHighlightEnabled = ns.SetInterruptibleHighlightEnabled
 local GetStylingEnabled = ns.GetStylingEnabled
 local SetStylingEnabled = ns.SetStylingEnabled
 local GetThreatEnabled = ns.GetThreatEnabled
@@ -62,7 +64,7 @@ local function CreateAboutPanel()
     description:SetText(
         "A deliberately simple standalone nameplate-color addon. " ..
         "It recolors addon-accessible Blizzard Midnight nameplates with " ..
-        "customizable colors for NPC and player-character relationships."
+        "customizable relationship colors and an optional interruptible cast highlight."
     )
 
     local details = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -346,7 +348,7 @@ local function RegisterSettingsPanel()
     description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
     description:SetPoint("RIGHT", panel, "RIGHT", -20, 0)
     description:SetJustifyH("LEFT")
-    description:SetText("Each row shows whether its color is applied to the name or the health bar.")
+    description:SetText("Each row shows where its color is applied.")
 
     local enabled = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
     enabled:SetSize(26, 26)
@@ -373,6 +375,7 @@ local function RegisterSettingsPanel()
     end)
 
     local swatchRefreshers = {}
+    local toggleRefreshers = {}
 
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
         text = "Blizzard draws non-attackable opposing-faction players and all player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nWoW's settings and addons can request friendly, enemy, and always-visible nameplates, but they cannot force the game to create a nameplate frame for these units. Without that frame, addons cannot recolor the name, change its font, or draw replacement text at the same world position.\n\nI have spent months trying to change this one fucking text type. Apparently, it is simply impossible.",
@@ -389,14 +392,28 @@ local function RegisterSettingsPanel()
         label:SetText(text)
     end
 
-    local function CreateColorRow(text, state, displayText, y)
+    local function CreateColorRow(text, state, displayText, y, getEnabled, setEnabled)
         local row = CreateFrame("Frame", nil, panel)
         row:SetPoint("TOPLEFT", 24, y)
         row:SetPoint("RIGHT", panel, "RIGHT", -24, 0)
         row:SetHeight(34)
 
         local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        label:SetPoint("LEFT", 4, 0)
+        if getEnabled and setEnabled then
+            local toggle = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
+            toggle:SetSize(26, 26)
+            toggle:SetPoint("LEFT", -4, 0)
+            toggle:SetScript("OnClick", function(self)
+                setEnabled(self:GetChecked() == true)
+                RefreshNameplates()
+            end)
+            local function RefreshToggle() toggle:SetChecked(getEnabled()) end
+            toggleRefreshers[#toggleRefreshers + 1] = RefreshToggle
+            RefreshToggle()
+            label:SetPoint("LEFT", toggle, "RIGHT", 0, 0)
+        else
+            label:SetPoint("LEFT", 4, 0)
+        end
         label:SetPoint("RIGHT", row, "RIGHT", -250, 0)
         label:SetJustifyH("LEFT")
         label:SetText(text)
@@ -558,9 +575,25 @@ local function RegisterSettingsPanel()
         RefreshNameplates()
     end)
 
+    CreateSection("CAST BARS", -486)
+    CreateColorRow(
+        "Highlight interruptible casts and channels",
+        "interruptible",
+        "Cast-bar outline",
+        -512,
+        GetInterruptibleHighlightEnabled,
+        SetInterruptibleHighlightEnabled
+    )
+
+    local interruptibleNote = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    interruptibleNote:SetPoint("TOPLEFT", 24, -544)
+    interruptibleNote:SetWidth(600)
+    interruptibleNote:SetJustifyH("LEFT")
+    interruptibleNote:SetText("Uses Blizzard's interruptibility result and is drawn above the attacking glow.")
+
     local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
-    reset:SetPoint("TOPLEFT", 24, -486)
+    reset:SetPoint("TOPLEFT", 24, -576)
     reset:SetText("Reset Colors")
     reset:SetScript("OnClick", function()
         ResetStateColors()
@@ -571,6 +604,7 @@ local function RegisterSettingsPanel()
     panel:SetScript("OnShow", function()
         RefreshEnabled()
         RefreshAttackingGlow()
+        for _, refresh in ipairs(toggleRefreshers) do refresh() end
     end)
     RefreshEnabled()
     RefreshAttackingGlow()

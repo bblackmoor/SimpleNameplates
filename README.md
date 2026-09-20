@@ -6,13 +6,14 @@ A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
 Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs and player characters separate, customizable color languages:
 
-| Unit state | Default color | Meaning |
+| State or indicator | Default color | Meaning |
 | --- | --- | --- |
 | Friendly NPC | Green | Friendly non-player character; colored name |
 | Friendly PC | Light blue | Friendly same-faction player; colored name |
 | Unfriendly NPC | Yellow | Attackable, but non-aggressive; colored health bar |
 | Hostile opponent | Orange | Aggressive NPC or PvP-enabled opposing PC; colored health bar |
 | Attacking | Red | PC or NPC attacking you or one of your controlled units; colored health bar |
+| Interruptible cast | Cyan | Optional cast-bar outline for interruptible casts and channels |
 | Blizzard overhead name | Periwinkle blue, locked | Non-attackable opposing PCs and all player-controlled pets, guardians, totems, and minions |
 
 ## How It Works
@@ -33,14 +34,17 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 * Normal Blizzard target treatment
 * Optional threat percentage at the right side of the health bar when Midnight exposes a non-secret threat percentage
 * Optional attacking-color glow around the health bars of attacking PCs and NPCs
+* Optional cyan outline around interruptible cast bars
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five colors. Each editable row identifies whether its color appears on the name or health bar and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled periwinkle-blue overhead names, which are not exposed to addons. The panel also includes **Reset Colors**, a master styling switch, and an optional **Glow attacking units** setting, disabled by default. The glow uses the configured Attacking color and applies to attacking PCs and NPCs.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five relationship colors and the interruptible cast-bar highlight. Each editable row identifies where its color appears and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled periwinkle-blue overhead names, which are not exposed to addons. The panel also includes **Reset Colors**, a master styling switch, and two options disabled by default: **Glow attacking units** and **Highlight interruptible casts and channels**.
 
 Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
 
 Blizzard's separate overhead world names cannot be recolored because they are not addon-accessible nameplate frames. This includes non-attackable opposing-faction PCs and player-controlled pets, guardians, totems, and minions. Enabling every relevant nameplate setting still cannot force those units to receive nameplates; only Blizzard decides whether to create the required frame.
+
+The interruptible highlight is a static outline around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to both ordinary casts and channels, preserves their different bar textures and progress directions, and is drawn above the optional attacking glow. Non-interruptible abilities retain Blizzard's normal shield treatment without the added outline.
 
 ## Text Settings
 
@@ -89,6 +93,11 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so applying the shared red attacking color to PCs is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
 ## Changelog
+
+### 1.0.47
+
+* Added an optional, customizable interruptible cast-bar highlight, cyan by default.
+* Preserves Blizzard's cast, channel, and non-interruptible treatments while drawing the highlight above the attacking glow.
 
 ### 1.0.46
 
