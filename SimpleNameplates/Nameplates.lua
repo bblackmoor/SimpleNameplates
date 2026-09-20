@@ -583,9 +583,14 @@ events:SetScript("OnEvent", function(_, event, unit)
         if ns.TRP3 and ns.TRP3.RegisterCallbacks then ns.TRP3.RegisterCallbacks() end
         if GetStylingEnabled() then
             ns.DisableFriendlyClassColors()
+            ns.ApplyOverheadNameReplacement()
             -- Blizzard or another addon can restore CVars shortly after login.
             C_Timer.After(1, function()
-                if GetStylingEnabled() then ns.DisableFriendlyClassColors(); RefreshAll() end
+                if GetStylingEnabled() then
+                    ns.DisableFriendlyClassColors()
+                    ns.ApplyOverheadNameReplacement()
+                    RefreshAll()
+                end
             end)
             C_Timer.After(0.5, ns.ShowNameplateConflictWarning)
             C_Timer.After(0, RefreshAll)
@@ -600,6 +605,11 @@ events:SetScript("OnEvent", function(_, event, unit)
                 QueueRefreshAll()
                 return
             end
+        end
+        if ns.OVERHEAD_NAME_CVARS[unit] and ns.GetReplaceOverheadNamesEnabled() then
+            ns.ApplyOverheadNameReplacement()
+            QueueRefreshAll()
+            return
         end
         return
     end
