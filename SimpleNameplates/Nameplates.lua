@@ -28,7 +28,7 @@ local AccessibleValue = ns.AccessibleValue
 local ColorForState = ns.ColorForState
 local GetAppearanceSetting = ns.GetAppearanceSetting
 local GetTRP3Setting = ns.GetTRP3Setting
-local GetPCGlowEnabled = ns.GetPCGlowEnabled
+local GetAttackingGlowEnabled = ns.GetAttackingGlowEnabled
 local GetStylingEnabled = ns.GetStylingEnabled
 local GetThreatEnabled = ns.GetThreatEnabled
 local FontPath = ns.FontPath
@@ -353,10 +353,10 @@ local function UpdateThreatText(frame, state)
     if percent then threatText:SetFormattedText("%.0f%%", percent) else threatText:SetText("") end
 end
 
-local function EnsurePCGlow(frame)
+local function EnsureAttackingGlow(frame)
     local bar = GetHealthBar(frame)
     if not bar then return nil end
-    if frame.SNPPCGlow and frame.SNPPCGlow.bar == bar then return frame.SNPPCGlow end
+    if frame.SNPAttackingGlow and frame.SNPAttackingGlow.bar == bar then return frame.SNPAttackingGlow end
 
     local function CreateEdge()
         local edge = bar:CreateTexture(nil, "OVERLAY")
@@ -385,7 +385,7 @@ local function EnsurePCGlow(frame)
     glow.right:SetPoint("TOPLEFT", bar, "TOPRIGHT", -1, 2)
     glow.right:SetPoint("BOTTOMLEFT", bar, "BOTTOMRIGHT", -1, -2)
     glow.right:SetWidth(3)
-    frame.SNPPCGlow = glow
+    frame.SNPAttackingGlow = glow
     return glow
 end
 
@@ -398,11 +398,10 @@ local function UpdateGlowEdge(edge, shown, r, g, b)
     end
 end
 
-local function UpdatePCGlow(frame, state, r, g, b)
-    local glow = frame.SNPPCGlow
-    local isPlayer = frame and frame.unit and AccessibleBoolean(UnitIsPlayer(frame.unit)) == true
-    local shown = GetPCGlowEnabled() and isPlayer and not IsNameOnlyState(state)
-    if shown then glow = EnsurePCGlow(frame) end
+local function UpdateAttackingGlow(frame, state, r, g, b)
+    local glow = frame.SNPAttackingGlow
+    local shown = GetAttackingGlowEnabled() and state == "attacking"
+    if shown then glow = EnsureAttackingGlow(frame) end
     if not glow then return end
 
     UpdateGlowEdge(glow.top, shown, r, g, b)
@@ -441,7 +440,7 @@ local function ApplySimpleStyle(frame)
     elseif frame.SNPThreatText then
         frame.SNPThreatText:SetText("")
     end
-    UpdatePCGlow(frame, state, r, g, b)
+    UpdateAttackingGlow(frame, state, r, g, b)
 end
 
 local function RepairHealthColor(frame)
@@ -456,7 +455,7 @@ local function RepairHealthColor(frame)
     if not IsNameOnlyState(state) and bar then
         bar:SetStatusBarColor(r, g, b, 1)
     end
-    UpdatePCGlow(frame, state, r, g, b)
+    UpdateAttackingGlow(frame, state, r, g, b)
 end
 
 local function RepairName(frame)
@@ -502,7 +501,7 @@ local function RestoreFrame(frame)
     if not frame then return end
     if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
-    if frame.SNPPCGlow then UpdatePCGlow(frame, "", 1, 1, 1) end
+    if frame.SNPAttackingGlow then UpdateAttackingGlow(frame, "", 1, 1, 1) end
     frame.SNPNameStyle = nil
     frame.SNPState = nil
 
@@ -616,7 +615,7 @@ events:SetScript("OnEvent", function(_, event, unit)
             if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
             frame.SNPNameStyle = nil
             frame.SNPState = nil
-            UpdatePCGlow(frame, "", 1, 1, 1)
+            UpdateAttackingGlow(frame, "", 1, 1, 1)
         end
         dirtyUnits[unit] = nil
         return

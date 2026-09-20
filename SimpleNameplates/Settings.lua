@@ -12,8 +12,8 @@ local ResetStateColors = ns.ResetStateColors
 local GetAppearanceSetting = ns.GetAppearanceSetting
 local SetAppearanceSetting = ns.SetAppearanceSetting
 local ResetAppearance = ns.ResetAppearance
-local GetPCGlowEnabled = ns.GetPCGlowEnabled
-local SetPCGlowEnabled = ns.SetPCGlowEnabled
+local GetAttackingGlowEnabled = ns.GetAttackingGlowEnabled
+local SetAttackingGlowEnabled = ns.SetAttackingGlowEnabled
 local GetStylingEnabled = ns.GetStylingEnabled
 local SetStylingEnabled = ns.SetStylingEnabled
 local GetThreatEnabled = ns.GetThreatEnabled
@@ -535,26 +535,26 @@ local function RegisterSettingsPanel()
     CreateSection("COMBAT OVERRIDE", -350)
     CreateColorRow("Attacking me or one of my controlled units", "attacking", "Health bar", -376)
 
-    local pcGlow = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    pcGlow:SetSize(26, 26)
-    pcGlow:SetPoint("TOPLEFT", 20, -418)
-    pcGlow:SetHitRectInsets(0, -260, 0, 0)
+    local attackingGlow = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    attackingGlow:SetSize(26, 26)
+    attackingGlow:SetPoint("TOPLEFT", 20, -418)
+    attackingGlow:SetHitRectInsets(0, -320, 0, 0)
 
-    local pcGlowLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    pcGlowLabel:SetPoint("LEFT", pcGlow, "RIGHT", 4, 0)
-    pcGlowLabel:SetText("Glow PC health bars")
+    local attackingGlowLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    attackingGlowLabel:SetPoint("LEFT", attackingGlow, "RIGHT", 4, 0)
+    attackingGlowLabel:SetText("Glow units marked Attacking")
 
-    local pcGlowNote = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    pcGlowNote:SetPoint("TOPLEFT", 24, -450)
-    pcGlowNote:SetWidth(600)
-    pcGlowNote:SetJustifyH("LEFT")
-    pcGlowNote:SetText("Only PCs with a visible health bar can glow. Name-only PCs have no bar to receive the effect.")
+    local attackingGlowNote = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    attackingGlowNote:SetPoint("TOPLEFT", 24, -450)
+    attackingGlowNote:SetWidth(600)
+    attackingGlowNote:SetJustifyH("LEFT")
+    attackingGlowNote:SetText("Uses the configured Attacking color and applies to both PCs and NPCs.")
 
-    local function RefreshPCGlow()
-        pcGlow:SetChecked(GetPCGlowEnabled())
+    local function RefreshAttackingGlow()
+        attackingGlow:SetChecked(GetAttackingGlowEnabled())
     end
-    pcGlow:SetScript("OnClick", function(self)
-        SetPCGlowEnabled(self:GetChecked() == true)
+    attackingGlow:SetScript("OnClick", function(self)
+        SetAttackingGlowEnabled(self:GetChecked() == true)
         RefreshNameplates()
     end)
 
@@ -570,10 +570,10 @@ local function RegisterSettingsPanel()
 
     panel:SetScript("OnShow", function()
         RefreshEnabled()
-        RefreshPCGlow()
+        RefreshAttackingGlow()
     end)
     RefreshEnabled()
-    RefreshPCGlow()
+    RefreshAttackingGlow()
 
     local aboutPanel = CreateAboutPanel()
     settingsCategory = Settings.RegisterCanvasLayoutCategory(aboutPanel, "Simple Nameplates")

@@ -26,18 +26,18 @@ DISPLAYED
 - Normal Blizzard target treatment
 - Optional threat percentage added at the right side of the health bar when Midnight
   exposes a non-secret threat percentage
-- Optional same-color glow around PC health bars
+- Optional attacking-color glow around attacking PC and NPC health bars
 
 COLOR SETTINGS
 Open Options > AddOns > Simple Nameplates > Colors, or type /snp. Five colors
 can be changed and apply immediately. Each editable row says whether its color
 appears on the name or health bar and has its own Reset button. A locked row
 explains Blizzard-controlled lavender overhead names. The panel also includes
-Reset Colors, a master styling switch, and a Glow PC health bars toggle,
-disabled by default. Name-only PCs cannot glow because they have no visible
-health bar. Units without health bars use the relationship color for their
-name. When a bar is present, the name stays white for contrast and the bar
-carries the relationship color. Blizzard's overhead names for non-attackable
+Reset Colors, a master styling switch, and a Glow units marked Attacking
+toggle, disabled by default. The glow uses the configured Attacking color and
+applies to attacking PCs and NPCs. Units without health bars use the
+relationship color for their name. When a bar is present, the name stays white
+for contrast and the bar carries the relationship color. Blizzard's overhead names for non-attackable
 opposing PCs and player-controlled pets, guardians, totems, and minions cannot
 be recolored because they are not addon-accessible nameplate frames.
 
@@ -92,6 +92,10 @@ best effort. It is used when WoW reports threat on you or your pet, or when the
 hostile player is targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.44
+- Changed the optional glow into an attacking-state indicator for PCs and NPCs.
+- The glow now always uses the configured Attacking color.
+
 1.0.43
 - Consolidated hostile NPCs and PvP-enabled opposing PCs into one orange setting.
 - Consolidated attacking PCs and NPCs into one red combat-override setting.

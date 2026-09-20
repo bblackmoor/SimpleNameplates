@@ -30,11 +30,11 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 * Normal Blizzard cast/channel bar and spell information
 * Normal Blizzard target treatment
 * Optional threat percentage at the right side of the health bar when Midnight exposes a non-secret threat percentage
-* Optional same-color glow around PC health bars
+* Optional attacking-color glow around the health bars of attacking PCs and NPCs
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five colors. Each editable row identifies whether its color appears on the name or health bar and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled overhead names, which the game engine colors lavender and does not expose to addons. The panel also includes **Reset Colors**, a master styling switch, and an optional **Glow PC health bars** setting, disabled by default. Name-only PCs cannot glow because they have no visible health bar.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five colors. Each editable row identifies whether its color appears on the name or health bar and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled overhead names, which the game engine colors lavender and does not expose to addons. The panel also includes **Reset Colors**, a master styling switch, and an optional **Glow units marked Attacking** setting, disabled by default. The glow uses the configured Attacking color and applies to attacking PCs and NPCs.
 
 Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
 
@@ -87,6 +87,11 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so applying the shared red attacking color to PCs is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
 ## Changelog
+
+### 1.0.44
+
+* Changed the optional glow into an attacking-state indicator for both PCs and NPCs.
+* The glow now always uses the configured Attacking color.
 
 ### 1.0.43
 

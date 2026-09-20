@@ -143,7 +143,10 @@ local function EnsureDB()
     end
     if type(db.stylingEnabled) ~= "boolean" then db.stylingEnabled = DEFAULT_STYLING_ENABLED end
     if type(db.showThreat) ~= "boolean" then db.showThreat = DEFAULT_SHOW_THREAT end
-    if type(db.pcGlow) ~= "boolean" then db.pcGlow = false end
+    if type(db.attackingGlow) ~= "boolean" then
+        db.attackingGlow = type(db.pcGlow) == "boolean" and db.pcGlow or false
+    end
+    db.pcGlow = nil
     if type(db.trp3) ~= "table" then db.trp3 = {} end
     for key, default in pairs(DEFAULT_TRP3) do
         if type(db.trp3[key]) ~= "boolean" then db.trp3[key] = default end
@@ -219,12 +222,12 @@ local function ResetStateColors()
     end
 end
 
-local function GetPCGlowEnabled()
-    return EnsureDB().pcGlow
+local function GetAttackingGlowEnabled()
+    return EnsureDB().attackingGlow
 end
 
-local function SetPCGlowEnabled(enabled)
-    EnsureDB().pcGlow = enabled == true
+local function SetAttackingGlowEnabled(enabled)
+    EnsureDB().attackingGlow = enabled == true
 end
 
 local function GetStylingEnabled()
@@ -353,8 +356,8 @@ ns.ColorForState = ColorForState
 ns.SetStateColor = SetStateColor
 ns.ResetStateColor = ResetStateColor
 ns.ResetStateColors = ResetStateColors
-ns.GetPCGlowEnabled = GetPCGlowEnabled
-ns.SetPCGlowEnabled = SetPCGlowEnabled
+ns.GetAttackingGlowEnabled = GetAttackingGlowEnabled
+ns.SetAttackingGlowEnabled = SetAttackingGlowEnabled
 ns.GetStylingEnabled = GetStylingEnabled
 ns.SetStylingEnabled = SetStylingEnabled
 ns.GetThreatEnabled = GetThreatEnabled
