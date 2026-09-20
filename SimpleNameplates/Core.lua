@@ -59,6 +59,34 @@ ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
 
 local dbReady = false
 
+local function GetCVarValue(cvar)
+    local getter = C_CVar and C_CVar.GetCVar or GetCVar
+    return getter and getter(cvar) or nil
+end
+
+local function SetCVarValue(cvar, value)
+    if value == nil or GetCVarValue(cvar) == tostring(value) then return end
+    if C_CVar and C_CVar.SetCVar then
+        pcall(C_CVar.SetCVar, cvar, tostring(value))
+    elseif SetCVar then
+        pcall(SetCVar, cvar, tostring(value))
+    end
+end
+
+-- Versions 1.0.35 through 1.0.37 offered an option that tried to replace
+-- Blizzard's overhead names with nameplates. Midnight does not create a
+-- nameplate for every affected unit, so restore settings saved by that option
+-- once and remove its obsolete saved state.
+local function RemoveOverheadNameReplacement(db)
+    if type(db.overheadNameCVarOriginals) == "table" then
+        for cvar, value in pairs(db.overheadNameCVarOriginals) do
+            SetCVarValue(cvar, value)
+        end
+    end
+    db.replaceOverheadNames = nil
+    db.overheadNameCVarOriginals = nil
+end
+
 local function EnsureDB()
     if dbReady then return SimpleNameplatesDB end
     if type(SimpleNameplatesDB) ~= "table" then
@@ -86,8 +114,7 @@ local function EnsureDB()
     if type(db.stylingEnabled) ~= "boolean" then db.stylingEnabled = DEFAULT_STYLING_ENABLED end
     if type(db.showThreat) ~= "boolean" then db.showThreat = DEFAULT_SHOW_THREAT end
     if type(db.pcGlow) ~= "boolean" then db.pcGlow = false end
-    if type(db.replaceOverheadNames) ~= "boolean" then db.replaceOverheadNames = false end
-    if type(db.overheadNameCVarOriginals) ~= "table" then db.overheadNameCVarOriginals = {} end
+    RemoveOverheadNameReplacement(db)
     if type(db.trp3) ~= "table" then db.trp3 = {} end
     for key, default in pairs(DEFAULT_TRP3) do
         if type(db.trp3[key]) ~= "boolean" then db.trp3[key] = default end
@@ -165,98 +192,6 @@ end
 
 local function SetPCGlowEnabled(enabled)
     EnsureDB().pcGlow = enabled == true
-end
-
-local OVERHEAD_NAME_CVARS = {
-    nameplateShowAll = "1",
-    nameplateForceShowUnitName = "1",
-    nameplateShowFriendlyPlayers = "1",
-    nameplateShowFriendlyPlayerPets = "1",
-    nameplateShowFriendlyPlayerGuardians = "1",
-    nameplateShowFriendlyPlayerTotems = "1",
-    nameplateShowFriendlyPlayerMinions = "1",
-    nameplateShowEnemies = "1",
-    nameplateShowEnemyPets = "1",
-    nameplateShowEnemyGuardians = "1",
-    nameplateShowEnemyTotems = "1",
-    nameplateShowEnemyMinions = "1",
-    nameplateShowOnlyNameForFriendlyPlayerUnits = "1",
-}
-ns.OVERHEAD_NAME_CVARS = OVERHEAD_NAME_CVARS
-
--- Version 1.0.35 briefly changed these CVars before it became clear that
--- Blizzard also uses them to decide whether nameplate text may be shown.
--- Restore any values captured by that version, then leave them alone.
-local LEGACY_WORLD_NAME_CVARS = {
-    "UnitNameFriendlyPlayerName",
-    "UnitNameFriendlyPetName",
-    "UnitNameFriendlyGuardianName",
-    "UnitNameFriendlyTotemName",
-    "UnitNameFriendlyMinionName",
-    "UnitNameEnemyPlayerName",
-    "UnitNameEnemyPetName",
-    "UnitNameEnemyGuardianName",
-    "UnitNameEnemyTotemName",
-    "UnitNameEnemyMinionName",
-}
-
-local function GetCVarValue(cvar)
-    local getter = C_CVar and C_CVar.GetCVar or GetCVar
-    return getter and getter(cvar) or nil
-end
-
-local function SetCVarValue(cvar, value)
-    if value == nil or GetCVarValue(cvar) == tostring(value) then return end
-    if C_CVar and C_CVar.SetCVar then
-        pcall(C_CVar.SetCVar, cvar, tostring(value))
-    elseif SetCVar then
-        pcall(SetCVar, cvar, tostring(value))
-    end
-end
-
-local function GetReplaceOverheadNamesEnabled()
-    return EnsureDB().replaceOverheadNames
-end
-
-local function RestoreLegacyWorldNameSettings(db)
-    for _, cvar in ipairs(LEGACY_WORLD_NAME_CVARS) do
-        local value = db.overheadNameCVarOriginals[cvar]
-        if value ~= nil then
-            SetCVarValue(cvar, value)
-            db.overheadNameCVarOriginals[cvar] = nil
-        end
-    end
-end
-
-local function ApplyOverheadNameReplacement()
-    local db = EnsureDB()
-    RestoreLegacyWorldNameSettings(db)
-    if not db.stylingEnabled or not db.replaceOverheadNames then return end
-
-    for cvar, value in pairs(OVERHEAD_NAME_CVARS) do
-        if db.overheadNameCVarOriginals[cvar] == nil then
-            db.overheadNameCVarOriginals[cvar] = GetCVarValue(cvar)
-        end
-        SetCVarValue(cvar, value)
-    end
-end
-
-local function RestoreOverheadNameSettings()
-    local db = EnsureDB()
-    for cvar, value in pairs(db.overheadNameCVarOriginals) do
-        SetCVarValue(cvar, value)
-    end
-    wipe(db.overheadNameCVarOriginals)
-end
-
-local function SetReplaceOverheadNamesEnabled(enabled)
-    local db = EnsureDB()
-    db.replaceOverheadNames = enabled == true
-    if db.replaceOverheadNames and db.stylingEnabled then
-        ApplyOverheadNameReplacement()
-    else
-        RestoreOverheadNameSettings()
-    end
 end
 
 local function GetStylingEnabled()
@@ -387,10 +322,6 @@ ns.ResetStateColor = ResetStateColor
 ns.ResetStateColors = ResetStateColors
 ns.GetPCGlowEnabled = GetPCGlowEnabled
 ns.SetPCGlowEnabled = SetPCGlowEnabled
-ns.GetReplaceOverheadNamesEnabled = GetReplaceOverheadNamesEnabled
-ns.SetReplaceOverheadNamesEnabled = SetReplaceOverheadNamesEnabled
-ns.ApplyOverheadNameReplacement = ApplyOverheadNameReplacement
-ns.RestoreOverheadNameSettings = RestoreOverheadNameSettings
 ns.GetStylingEnabled = GetStylingEnabled
 ns.SetStylingEnabled = SetStylingEnabled
 ns.GetThreatEnabled = GetThreatEnabled

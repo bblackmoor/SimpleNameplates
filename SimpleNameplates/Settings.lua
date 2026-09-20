@@ -367,10 +367,8 @@ local function RegisterSettingsPanel()
         SetStylingEnabled(isEnabled)
         if isEnabled then
             ns.DisableFriendlyClassColors()
-            ns.ApplyOverheadNameReplacement()
             RefreshNameplates()
         else
-            ns.RestoreOverheadNameSettings()
             ns.RestoreFriendlyClassColors()
             if ns.RestoreAll then ns.RestoreAll() end
         end
@@ -501,32 +499,9 @@ local function RegisterSettingsPanel()
         RefreshNameplates()
     end)
 
-    local replaceNames = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    replaceNames:SetSize(26, 26)
-    replaceNames:SetPoint("TOPLEFT", 20, -522)
-    replaceNames:SetHitRectInsets(0, -340, 0, 0)
-
-    local replaceNamesLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    replaceNamesLabel:SetPoint("LEFT", replaceNames, "RIGHT", 4, 0)
-    replaceNamesLabel:SetText("Replace Blizzard player and minion names")
-
-    local replaceNamesNote = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    replaceNamesNote:SetPoint("TOPLEFT", 24, -554)
-    replaceNamesNote:SetWidth(600)
-    replaceNamesNote:SetJustifyH("LEFT")
-    replaceNamesNote:SetText("Temporarily enables Always Show Nameplates and uses colorable nameplates instead. Blizzard guild and owner lines may not be shown. Your previous WoW nameplate settings are restored when this is disabled.")
-
-    local function RefreshReplaceNames()
-        replaceNames:SetChecked(GetReplaceOverheadNamesEnabled())
-    end
-    replaceNames:SetScript("OnClick", function(self)
-        SetReplaceOverheadNamesEnabled(self:GetChecked() == true)
-        RefreshNameplates()
-    end)
-
     local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
-    reset:SetPoint("TOPLEFT", 24, -610)
+    reset:SetPoint("TOPLEFT", 24, -522)
     reset:SetText("Reset Colors")
     reset:SetScript("OnClick", function()
         ResetStateColors()
@@ -537,11 +512,9 @@ local function RegisterSettingsPanel()
     panel:SetScript("OnShow", function()
         RefreshEnabled()
         RefreshPCGlow()
-        RefreshReplaceNames()
     end)
     RefreshEnabled()
     RefreshPCGlow()
-    RefreshReplaceNames()
 
     local aboutPanel = CreateAboutPanel()
     settingsCategory = Settings.RegisterCanvasLayoutCategory(aboutPanel, "Simple Nameplates")

@@ -35,16 +35,11 @@ Open Options > AddOns > Simple Nameplates > Colors, or type /snp. All eight
 colors can be changed and apply immediately. Each row says whether its color
 appears on the name or health bar and has its own Reset button. The panel also
 includes Reset Colors, a master styling switch, and a Glow PC health bars
-toggle, disabled by default. An optional Replace Blizzard player and minion
-names toggle enables colorable nameplates for players and controlled units.
-It temporarily enables Always Show Nameplates so idle units receive persistent
-replacement frames. Blizzard suppresses the overlapping engine-drawn name
-while a replacement nameplate is present. Guild and owner lines may not appear
-on replacement names. Previous WoW nameplate settings are restored when
-replacement or master styling is disabled. Name-only PCs cannot glow because
-they have no visible health bar. Units without health bars use the relationship
-color for their name. When a bar is present, the name stays white for contrast
-and the bar carries the relationship color.
+toggle, disabled by default. Name-only PCs cannot glow because they have no
+visible health bar. Units without health bars use the relationship color for
+their name. When a bar is present, the name stays white for contrast and the
+bar carries the relationship color. Blizzard's separate overhead world names
+cannot be recolored because they are not addon-accessible nameplate frames.
 
 TEXT SETTINGS
 Open Options > AddOns > Simple Nameplates > Text, or type /snp text. Choose a
@@ -97,6 +92,11 @@ when WoW reports threat on you or your pet, or when the hostile player is
 targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.38
+- Removed the ineffective replacement-name toggle and ongoing CVar enforcement.
+- Restores saved WoW nameplate settings once for users who enabled the removed option.
+- Retained nameplate-frame availability in /snp debug for diagnosing engine-drawn names.
+
 1.0.37
 - Made replacement names persistent by enabling Always Show Nameplates and forcing nameplate names.
 - Added nameplate-frame availability to /snp debug output.
