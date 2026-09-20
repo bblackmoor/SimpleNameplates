@@ -10,7 +10,7 @@ Light blue = friendly same-faction PC name
 Yellow     = attackable but non-aggressive NPC health bar
 Orange     = aggressive NPC or PvP-enabled opposing PC health bar
 Red        = PC or NPC attacking you or one of your controlled units
-Lavender   = usual Blizzard overhead-name color; locked and not addon-editable
+Periwinkle blue = Blizzard overhead-name color; locked and not addon-editable
 
 HOW IT WORKS
 Simple Nameplates no longer draws its own replacement nameplate. It keeps the
@@ -33,8 +33,8 @@ COLOR SETTINGS
 Open Options > AddOns > Simple Nameplates > Colors, or type /snp. Five colors
 can be changed and apply immediately. Each editable row says whether its color
 appears on the name or health bar and has its own Reset button. A locked row
-explains Blizzard-controlled overhead names, which are usually lavender. The
-panel also includes Reset Colors, a master styling switch, and a Glow attacking
+explains Blizzard-controlled periwinkle-blue overhead names. The panel also
+includes Reset Colors, a master styling switch, and a Glow attacking
 units toggle, disabled by default. The glow uses the configured Attacking color
 and applies to attacking PCs and NPCs. Units without health bars use the
 relationship color for their name. When a bar is present, the name stays white
@@ -95,6 +95,9 @@ best effort. It is used when WoW reports threat on you or your pet, or when the
 hostile player is targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.46
+- Renamed Blizzard's fixed overhead-name color from lavender to periwinkle blue.
+
 1.0.45
 - Clarified that addons can request nameplates but cannot force WoW to create them.
 - Simplified the attacking-glow label and corrected overhead-name descriptions.
@@ -106,7 +109,7 @@ CHANGELOG
 1.0.43
 - Consolidated hostile NPCs and PvP-enabled opposing PCs into one orange setting.
 - Consolidated attacking PCs and NPCs into one red combat-override setting.
-- Added a locked informational row for Blizzard-controlled lavender overhead names.
+- Added a locked informational row for Blizzard-controlled periwinkle-blue overhead names.
 - Migrates customized NPC hostile and attacking colors and removes obsolete PC-specific colors.
 
 1.0.42
@@ -197,7 +200,7 @@ CHANGELOG
 
 1.0.24
 - Distinguishes player factions independently of sanctuary reaction.
-- Keeps non-PvP opposite-faction players name-only and periwinkle.
+- Keeps non-PvP opposite-faction players name-only and periwinkle blue.
 - Repairs Blizzard name-color overwrites with a lightweight reconciliation.
 
 1.0.23

@@ -375,7 +375,7 @@ local function RegisterSettingsPanel()
     local swatchRefreshers = {}
 
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
-        text = "Blizzard draws non-attackable opposing-faction players and all player-controlled pets, guardians, totems, and minions as engine-level overhead names, usually lavender, rather than addon-accessible nameplate text.\n\nWoW's settings and addons can request friendly, enemy, and always-visible nameplates, but they cannot force the game to create a nameplate frame for these units. Without that frame, addons cannot recolor the name, change its font, or draw replacement text at the same world position.\n\nI have spent months trying to change this one fucking text type. Apparently, it is simply impossible.",
+        text = "Blizzard draws non-attackable opposing-faction players and all player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nWoW's settings and addons can request friendly, enemy, and always-visible nameplates, but they cannot force the game to create a nameplate frame for these units. Without that frame, addons cannot recolor the name, change its font, or draw replacement text at the same world position.\n\nI have spent months trying to change this one fucking text type. Apparently, it is simply impossible.",
         button1 = OKAY or "Okay",
         timeout = 0,
         whileDead = true,

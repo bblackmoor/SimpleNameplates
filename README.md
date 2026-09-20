@@ -13,7 +13,7 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | Unfriendly NPC | Yellow | Attackable, but non-aggressive; colored health bar |
 | Hostile opponent | Orange | Aggressive NPC or PvP-enabled opposing PC; colored health bar |
 | Attacking | Red | PC or NPC attacking you or one of your controlled units; colored health bar |
-| Blizzard overhead name | Usually lavender, locked | Non-attackable opposing PCs and all player-controlled pets, guardians, totems, and minions |
+| Blizzard overhead name | Periwinkle blue, locked | Non-attackable opposing PCs and all player-controlled pets, guardians, totems, and minions |
 
 ## How It Works
 
@@ -36,7 +36,7 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five colors. Each editable row identifies whether its color appears on the name or health bar and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled overhead names, which are usually lavender and are not exposed to addons. The panel also includes **Reset Colors**, a master styling switch, and an optional **Glow attacking units** setting, disabled by default. The glow uses the configured Attacking color and applies to attacking PCs and NPCs.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five colors. Each editable row identifies whether its color appears on the name or health bar and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled periwinkle-blue overhead names, which are not exposed to addons. The panel also includes **Reset Colors**, a master styling switch, and an optional **Glow attacking units** setting, disabled by default. The glow uses the configured Attacking color and applies to attacking PCs and NPCs.
 
 Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
 
@@ -90,6 +90,10 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 
 ## Changelog
 
+### 1.0.46
+
+* Renamed Blizzard's fixed overhead-name color from lavender to periwinkle blue.
+
 ### 1.0.45
 
 * Clarified that addons can request nameplates but cannot force Blizzard to create them.
@@ -104,7 +108,7 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 
 * Consolidated hostile NPCs and PvP-enabled opposing PCs into one orange setting.
 * Consolidated attacking PCs and NPCs into one red combat-override setting.
-* Added a locked informational row explaining Blizzard-controlled lavender overhead names.
+* Added a locked informational row explaining Blizzard-controlled periwinkle-blue overhead names.
 * Migrates customized NPC hostile and attacking colors and removes obsolete PC-specific colors.
 
 ### 1.0.42
