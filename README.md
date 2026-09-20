@@ -98,6 +98,10 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
+## AI Disclaimer
+
+AI-assisted tools were used during the development of this project. The author reviewed and approved the resulting code and documentation and remains responsible for the project.
+
 ---
 
 Copyright © 2026 Brandon Blackmoor ([bblackmoor@blackgate.net](mailto:bblackmoor@blackgate.net))
