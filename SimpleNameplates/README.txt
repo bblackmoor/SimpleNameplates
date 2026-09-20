@@ -36,9 +36,10 @@ colors can be changed and apply immediately. Each row says whether its color
 appears on the name or health bar and has its own Reset button. The panel also
 includes Reset Colors, a master styling switch, and a Glow PC health bars
 toggle, disabled by default. An optional Replace Blizzard player and minion
-names toggle hides the engine-drawn names and enables colorable nameplates in
-their place. Blizzard guild and owner lines may not appear on replacement
-names. The previous WoW name settings are restored when replacement or master
+names toggle enables colorable nameplates for players and controlled units.
+Blizzard suppresses the overlapping engine-drawn name while a replacement
+nameplate is present. Guild and owner lines may not appear on replacement
+names. Previous WoW nameplate settings are restored when replacement or master
 styling is disabled. Name-only PCs cannot glow because they have no visible
 health bar. Units without health bars use the relationship color for their
 name. When a bar is present, the name stays white for contrast and the bar
@@ -95,6 +96,10 @@ when WoW reports threat on you or your pet, or when the hostile player is
 targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.36
+- Kept ordinary-name settings enabled because they also control whether nameplate text can appear.
+- Restores ordinary-name settings previously captured and changed by version 1.0.35.
+
 1.0.35
 - Added an optional, reversible replacement for Blizzard's uncolorable overhead player and minion names.
 

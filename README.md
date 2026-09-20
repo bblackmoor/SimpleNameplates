@@ -38,7 +38,7 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 
 Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize all eight colors. Each row identifies whether its color appears on the name or health bar and has its own reset button. Changes apply immediately and are saved between sessions. The panel also includes **Reset Colors**, a master styling switch, and optional **Glow PC health bars** and **Replace Blizzard player and minion names** settings, both disabled by default. Name-only PCs cannot glow because they have no visible health bar.
 
-The replacement-name option hides Blizzard's engine-drawn player and minion names and enables the corresponding colorable nameplates. Blizzard's guild and owner lines may not be available on those replacement names. The addon saves the affected WoW settings before enabling the option and restores them when the option or master styling is disabled.
+The replacement-name option enables colorable nameplates for players and their controlled units. Blizzard suppresses the overlapping engine-drawn name while a replacement nameplate is present. Guild and owner lines may not be available on replacement names. The addon saves the affected WoW nameplate settings before enabling the option and restores them when the option or master styling is disabled.
 
 Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
 
@@ -89,6 +89,11 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
 ## Changelog
+
+### 1.0.36
+
+* Kept Blizzard's ordinary-name settings enabled because they also control whether nameplate text can appear.
+* Restores any ordinary-name settings previously captured and changed by version 1.0.35.
 
 ### 1.0.35
 

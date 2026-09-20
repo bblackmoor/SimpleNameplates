@@ -168,16 +168,6 @@ local function SetPCGlowEnabled(enabled)
 end
 
 local OVERHEAD_NAME_CVARS = {
-    UnitNameFriendlyPlayerName = "0",
-    UnitNameFriendlyPetName = "0",
-    UnitNameFriendlyGuardianName = "0",
-    UnitNameFriendlyTotemName = "0",
-    UnitNameFriendlyMinionName = "0",
-    UnitNameEnemyPlayerName = "0",
-    UnitNameEnemyPetName = "0",
-    UnitNameEnemyGuardianName = "0",
-    UnitNameEnemyTotemName = "0",
-    UnitNameEnemyMinionName = "0",
     nameplateShowFriendlyPlayers = "1",
     nameplateShowFriendlyPlayerPets = "1",
     nameplateShowFriendlyPlayerGuardians = "1",
@@ -191,6 +181,22 @@ local OVERHEAD_NAME_CVARS = {
     nameplateShowOnlyNameForFriendlyPlayerUnits = "1",
 }
 ns.OVERHEAD_NAME_CVARS = OVERHEAD_NAME_CVARS
+
+-- Version 1.0.35 briefly changed these CVars before it became clear that
+-- Blizzard also uses them to decide whether nameplate text may be shown.
+-- Restore any values captured by that version, then leave them alone.
+local LEGACY_WORLD_NAME_CVARS = {
+    "UnitNameFriendlyPlayerName",
+    "UnitNameFriendlyPetName",
+    "UnitNameFriendlyGuardianName",
+    "UnitNameFriendlyTotemName",
+    "UnitNameFriendlyMinionName",
+    "UnitNameEnemyPlayerName",
+    "UnitNameEnemyPetName",
+    "UnitNameEnemyGuardianName",
+    "UnitNameEnemyTotemName",
+    "UnitNameEnemyMinionName",
+}
 
 local function GetCVarValue(cvar)
     local getter = C_CVar and C_CVar.GetCVar or GetCVar
@@ -210,8 +216,19 @@ local function GetReplaceOverheadNamesEnabled()
     return EnsureDB().replaceOverheadNames
 end
 
+local function RestoreLegacyWorldNameSettings(db)
+    for _, cvar in ipairs(LEGACY_WORLD_NAME_CVARS) do
+        local value = db.overheadNameCVarOriginals[cvar]
+        if value ~= nil then
+            SetCVarValue(cvar, value)
+            db.overheadNameCVarOriginals[cvar] = nil
+        end
+    end
+end
+
 local function ApplyOverheadNameReplacement()
     local db = EnsureDB()
+    RestoreLegacyWorldNameSettings(db)
     if not db.stylingEnabled or not db.replaceOverheadNames then return end
 
     for cvar, value in pairs(OVERHEAD_NAME_CVARS) do
