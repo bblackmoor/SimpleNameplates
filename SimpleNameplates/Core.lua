@@ -89,13 +89,18 @@ end
 -- nameplate for every affected unit, so restore settings saved by that option
 -- once and remove its obsolete saved state.
 local function RemoveOverheadNameReplacement(db)
-    if type(db.overheadNameCVarOriginals) == "table" then
-        for cvar, value in pairs(db.overheadNameCVarOriginals) do
+    local originals = db.overheadNameCVarOriginals
+    db.replaceOverheadNames = nil
+    db.overheadNameCVarOriginals = nil
+
+    -- Clear the obsolete saved state before SetCVar fires CVAR_UPDATE. This
+    -- makes the one-time migration safe even if another event handler enters
+    -- the database while the original settings are being restored.
+    if type(originals) == "table" then
+        for cvar, value in pairs(originals) do
             SetCVarValue(cvar, value)
         end
     end
-    db.replaceOverheadNames = nil
-    db.overheadNameCVarOriginals = nil
 end
 
 local function EnsureDB()
@@ -129,12 +134,15 @@ local function EnsureDB()
     if type(db.stylingEnabled) ~= "boolean" then db.stylingEnabled = DEFAULT_STYLING_ENABLED end
     if type(db.showThreat) ~= "boolean" then db.showThreat = DEFAULT_SHOW_THREAT end
     if type(db.pcGlow) ~= "boolean" then db.pcGlow = false end
-    RemoveOverheadNameReplacement(db)
     if type(db.trp3) ~= "table" then db.trp3 = {} end
     for key, default in pairs(DEFAULT_TRP3) do
         if type(db.trp3[key]) ~= "boolean" then db.trp3[key] = default end
     end
+
+    -- CVar restoration below fires CVAR_UPDATE synchronously. Mark the
+    -- database ready first so those events cannot recursively initialize it.
     dbReady = true
+    RemoveOverheadNameReplacement(db)
     return db
 end
 

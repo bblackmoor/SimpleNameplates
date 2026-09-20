@@ -95,6 +95,10 @@ when WoW reports threat on you or your pet, or when the hostile player is
 targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.41
+- Prevented recursive database initialization during legacy CVar restoration.
+- Clears obsolete replacement-name state before restoring its saved WoW settings.
+
 1.0.40
 - Delayed overhead-font initialization until saved variables are available.
 - Added a safe Blizzard-font fallback for missing or invalid saved selections.

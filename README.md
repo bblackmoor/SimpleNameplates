@@ -91,6 +91,11 @@ NPC aggro uses WoW's threat information. PvP does not provide an equally complet
 
 ## Changelog
 
+### 1.0.41
+
+* Prevented recursive database initialization when legacy CVar restoration fires `CVAR_UPDATE`.
+* Clears obsolete replacement-name state before restoring its saved WoW settings.
+
 ### 1.0.40
 
 * Delayed overhead-font initialization until saved variables are available.
