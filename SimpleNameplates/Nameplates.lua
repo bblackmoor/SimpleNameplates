@@ -271,6 +271,10 @@ local function StyleName(frame, state)
     name:SetShadowOffset(1, -1)
     local nameR, nameG, nameB = 1, 1, 1
     if IsNameOnlyState(state) then nameR, nameG, nameB = ColorForState(state) end
+    -- Blizzard also tints nameplate text with UnitSelectionColor through the
+    -- FontString's vertex color. Keep that tint neutral so the configured
+    -- Simple Nameplates color is displayed exactly.
+    name:SetVertexColor(1, 1, 1, 1)
     name:SetTextColor(nameR, nameG, nameB, 1)
     name:Show()
     StyleFullTitle(frame, state, fullTitle, inside, baseSize, bar)
@@ -306,6 +310,16 @@ local function CachedNameHasDrifted(frame)
         return true
     end
 
+    local rawVertexR, rawVertexG, rawVertexB, rawVertexA = name:GetVertexColor()
+    local vertexR = AccessibleNumber(rawVertexR)
+    local vertexG = AccessibleNumber(rawVertexG)
+    local vertexB = AccessibleNumber(rawVertexB)
+    local vertexA = AccessibleNumber(rawVertexA)
+    if not NearlyEqual(vertexR, 1) or not NearlyEqual(vertexG, 1)
+        or not NearlyEqual(vertexB, 1) or not NearlyEqual(vertexA, 1) then
+        return true
+    end
+
     return false
 end
 
@@ -316,6 +330,7 @@ local function RepairCachedName(frame)
     name:SetFont(expected.font, expected.size, expected.flags)
     name:SetShadowColor(0, 0, 0, 1)
     name:SetShadowOffset(1, -1)
+    name:SetVertexColor(1, 1, 1, 1)
     name:SetTextColor(expected.r, expected.g, expected.b, 1)
     if expected.bar then
         name:ClearAllPoints()

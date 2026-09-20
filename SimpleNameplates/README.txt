@@ -5,14 +5,14 @@ PURPOSE
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
 DEFAULT COLOR LANGUAGE
-Light blue = friendly NPC
+Green      = friendly NPC
 Yellow     = unfriendly NPC / attackable but non-aggressive
 Orange     = hostile NPC / will attack but not attacking you or your controlled units
 Red        = NPC attacking you, your pet, guardian, or minion
-Green      = friendly PC, including your pets, guardians, and minions
-Yellow     = opposite-faction PC when neither side can attack (name only)
+Light blue = friendly PC, including your pets, guardians, and minions
+Turquoise  = opposite-faction PC when neither side can attack (name only)
 Yellow     = attackable opposite-faction PC not attacking you or your controlled units
-Red        = PC attacking you, your pet, guardian, or minion (best effort)
+Magenta    = PC attacking you, your pet, guardian, or minion (best effort)
 
 HOW IT WORKS
 Simple Nameplates no longer draws its own replacement nameplate. It keeps the
@@ -91,6 +91,10 @@ when WoW reports threat on you or your pet, or when the hostile player is
 targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.33
+- Neutralized Blizzard's additional vertex tint so configured name colors display accurately.
+- Updated all eight default colors to match the documented settings palette.
+
 1.0.32
 - Added a master styling switch that restores Blizzard nameplates and friendly-color settings when disabled.
 - Added /snp debug diagnostics for the current target.

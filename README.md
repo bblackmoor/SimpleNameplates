@@ -8,14 +8,14 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 
 | Unit state | Default color | Meaning |
 | --- | --- | --- |
-| Friendly NPC | Light blue | You cannot fight them |
+| Friendly NPC | Green | You cannot fight them |
 | Unfriendly NPC | Yellow | Attackable, but non-aggressive |
 | Hostile NPC | Orange | Will attack, but is not attacking you or one of your controlled units |
 | Attacking NPC | Red | Attacking you, your pet, guardian, or minion |
-| Friendly PC | Green | Same faction, including your pets, guardians, and minions |
-| Unfriendly PC | Yellow | Opposite faction, but neither side can attack; name only |
+| Friendly PC | Light blue | Same faction, including your pets, guardians, and minions |
+| Unfriendly PC | Turquoise | Opposite faction, but neither side can attack; name only |
 | Attackable PC | Yellow | Either side can attack, but the player is not attacking you or one of your controlled units |
-| Attacking PC | Red | Player targeting or generating threat on you or one of your controlled units |
+| Attacking PC | Magenta | Player targeting or generating threat on you or one of your controlled units |
 
 ## How It Works
 
@@ -87,6 +87,11 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
 ## Changelog
+
+### 1.0.33
+
+* Neutralized Blizzard's additional vertex tint so configured name colors display accurately.
+* Updated all eight default colors to match the documented settings palette.
 
 ### 1.0.32
 

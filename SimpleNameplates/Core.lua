@@ -10,15 +10,19 @@ ns.SOURCE_URL = "https://github.com/bblackmoor/SimpleNameplates"
 local issecretvalue = issecretvalue or function() return false end
 local canaccessvalue = canaccessvalue or function(v) return not issecretvalue(v) end
 
+local function RGB8(r, g, b)
+    return { r = r / 255, g = g / 255, b = b / 255 }
+end
+
 local DEFAULT_COLORS = {
-    friendlyNPC = { r = 0.25, g = 0.75, b = 1.00 },
-    unfriendlyNPC = { r = 1.00, g = 0.82, b = 0.12 },
-    hostileNPC = { r = 1.00, g = 0.48, b = 0.08 },
-    attackingNPC = { r = 1.00, g = 0.12, b = 0.10 },
-    friendlyPC = { r = 0.20, g = 0.85, b = 0.25 },
-    unfriendlyPC = { r = 1.00, g = 0.82, b = 0.12 },
-    attackablePC = { r = 1.00, g = 0.82, b = 0.12 },
-    attackingPC = { r = 1.00, g = 0.12, b = 0.10 },
+    friendlyNPC = RGB8(48, 221, 61),
+    unfriendlyNPC = RGB8(255, 212, 27),
+    hostileNPC = RGB8(255, 122, 16),
+    attackingNPC = RGB8(255, 27, 22),
+    friendlyPC = RGB8(61, 194, 255),
+    unfriendlyPC = RGB8(0, 255, 207),
+    attackablePC = RGB8(255, 212, 27),
+    attackingPC = RGB8(255, 34, 140),
 }
 ns.DEFAULT_COLORS = DEFAULT_COLORS
 
