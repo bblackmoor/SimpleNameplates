@@ -61,7 +61,7 @@ local function CreateAboutPanel()
     description:SetJustifyH("LEFT")
     description:SetText(
         "A deliberately simple standalone nameplate-color addon. " ..
-        "It keeps Blizzard's Midnight nameplates while providing separate, " ..
+        "It recolors addon-accessible Blizzard Midnight nameplates with " ..
         "customizable colors for NPC and player-character relationships."
     )
 
@@ -216,7 +216,7 @@ local function CreateTextPanel()
     note:SetPoint("TOPLEFT", 24, -370)
     note:SetWidth(600)
     note:SetJustifyH("LEFT")
-    note:SetText("Inside-bar names automatically shrink to fit the existing Blizzard bar. Name-only friendly and unattackable players are unaffected.")
+    note:SetText("Inside-bar names shrink to fit the existing Blizzard bar. Friendly name-only plates are unaffected; Blizzard overhead names have no nameplate frame to modify.")
 
     local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
@@ -375,7 +375,7 @@ local function RegisterSettingsPanel()
     local swatchRefreshers = {}
 
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
-        text = "Blizzard draws non-attackable opposing-faction players and all player-controlled pets, guardians, totems, and minions as engine-level overhead names rather than addon-accessible nameplate text.\n\nWoW can hide these names, but addons cannot recolor them, change their font, or draw replacement text at the same world position.\n\nI have spent months trying to change this one fucking text type. Apparently, it is simply impossible.",
+        text = "Blizzard draws non-attackable opposing-faction players and all player-controlled pets, guardians, totems, and minions as engine-level overhead names, usually lavender, rather than addon-accessible nameplate text.\n\nWoW's settings and addons can request friendly, enemy, and always-visible nameplates, but they cannot force the game to create a nameplate frame for these units. Without that frame, addons cannot recolor the name, change its font, or draw replacement text at the same world position.\n\nI have spent months trying to change this one fucking text type. Apparently, it is simply impossible.",
         button1 = OKAY or "Okay",
         timeout = 0,
         whileDead = true,
@@ -542,7 +542,7 @@ local function RegisterSettingsPanel()
 
     local attackingGlowLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     attackingGlowLabel:SetPoint("LEFT", attackingGlow, "RIGHT", 4, 0)
-    attackingGlowLabel:SetText("Glow units marked Attacking")
+    attackingGlowLabel:SetText("Glow attacking units")
 
     local attackingGlowNote = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     attackingGlowNote:SetPoint("TOPLEFT", 24, -450)

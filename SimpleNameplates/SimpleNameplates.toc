@@ -1,9 +1,9 @@
 ## Interface: 120100, 120105
 ## Title: Simple Nameplates
 ## Category: Unit Frames
-## Notes: Custom NPC and player nameplate colors while retaining Blizzard health and cast bars.
+## Notes: Custom colors for addon-accessible NPC and player nameplates while retaining Blizzard bars.
 ## Author: Brandon Blackmoor <bblackmoor@blackgate.net>
-## Version: 1.0.44
+## Version: 1.0.45
 ## OptionalDeps: totalRP3
 ## SavedVariables: SimpleNameplatesDB
 ## IconTexture: Interface\Icons\INV_Misc_Eye_01

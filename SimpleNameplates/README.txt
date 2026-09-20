@@ -10,14 +10,15 @@ Light blue = friendly same-faction PC name
 Yellow     = attackable but non-aggressive NPC health bar
 Orange     = aggressive NPC or PvP-enabled opposing PC health bar
 Red        = PC or NPC attacking you or one of your controlled units
-Lavender   = locked Blizzard overhead name; not editable by addons
+Lavender   = usual Blizzard overhead-name color; locked and not addon-editable
 
 HOW IT WORKS
 Simple Nameplates no longer draws its own replacement nameplate. It keeps the
 normal Blizzard Midnight nameplate and recolors its existing health bar and
-name. This means Blizzard remains responsible for health depletion, casting,
-channels, target treatment, classification, and the other normal nameplate
-behavior.
+name. Blizzard remains responsible for creating each nameplate and for health
+depletion, casting, channels, target treatment, classification, and the other
+normal nameplate behavior. Even when WoW is configured to show friendly,
+enemy, and always-visible nameplates, it may not create a frame for every unit.
 
 DISPLAYED
 - Normal Blizzard unit name and health bar
@@ -32,14 +33,16 @@ COLOR SETTINGS
 Open Options > AddOns > Simple Nameplates > Colors, or type /snp. Five colors
 can be changed and apply immediately. Each editable row says whether its color
 appears on the name or health bar and has its own Reset button. A locked row
-explains Blizzard-controlled lavender overhead names. The panel also includes
-Reset Colors, a master styling switch, and a Glow units marked Attacking
-toggle, disabled by default. The glow uses the configured Attacking color and
-applies to attacking PCs and NPCs. Units without health bars use the
+explains Blizzard-controlled overhead names, which are usually lavender. The
+panel also includes Reset Colors, a master styling switch, and a Glow attacking
+units toggle, disabled by default. The glow uses the configured Attacking color
+and applies to attacking PCs and NPCs. Units without health bars use the
 relationship color for their name. When a bar is present, the name stays white
-for contrast and the bar carries the relationship color. Blizzard's overhead names for non-attackable
-opposing PCs and player-controlled pets, guardians, totems, and minions cannot
-be recolored because they are not addon-accessible nameplate frames.
+for contrast and the bar carries the relationship color. Blizzard's overhead
+names for non-attackable opposing PCs and player-controlled pets, guardians,
+totems, and minions cannot be recolored because they are not addon-accessible
+nameplate frames. Enabling every relevant nameplate setting cannot force WoW
+to create those missing frames.
 
 TEXT SETTINGS
 Open Options > AddOns > Simple Nameplates > Text, or type /snp text. Choose a
@@ -47,8 +50,8 @@ unit-name font, a separate threat-percentage font, whether available threat
 percentages are shown, and whether names appear above or inside visible health
 bars. Both fonts default to Arial Narrow with a normal outline. Inside-bar names
 shrink to fit the existing bar and reserve space for threat percentage. The bar
-is not resized. Name-only friendly and unattackable plates are unaffected by
-name placement.
+is not resized. Friendly name-only plates and Blizzard-controlled overhead
+names without nameplate frames are unaffected by name placement.
 
 TRP3 SETTINGS
 Open Options > AddOns > Simple Nameplates > TRP3, or type /snp trp3. The page
@@ -92,6 +95,10 @@ best effort. It is used when WoW reports threat on you or your pet, or when the
 hostile player is targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.45
+- Clarified that addons can request nameplates but cannot force WoW to create them.
+- Simplified the attacking-glow label and corrected overhead-name descriptions.
+
 1.0.44
 - Changed the optional glow into an attacking-state indicator for PCs and NPCs.
 - The glow now always uses the configured Attacking color.

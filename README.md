@@ -13,15 +13,17 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | Unfriendly NPC | Yellow | Attackable, but non-aggressive; colored health bar |
 | Hostile opponent | Orange | Aggressive NPC or PvP-enabled opposing PC; colored health bar |
 | Attacking | Red | PC or NPC attacking you or one of your controlled units; colored health bar |
-| Blizzard overhead name | Lavender, locked | Non-attackable opposing PCs and all player-controlled pets, guardians, totems, and minions |
+| Blizzard overhead name | Usually lavender, locked | Non-attackable opposing PCs and all player-controlled pets, guardians, totems, and minions |
 
 ## How It Works
 
 Simple Nameplates does **not** draw replacement nameplates.
 
-Instead, it keeps Blizzard's normal Midnight nameplates and recolors their existing health bars and names. Blizzard remains responsible for health depletion, casting, channels, target treatment, classification, and other standard nameplate behavior.
+Instead, it keeps Blizzard's normal Midnight nameplates and recolors their existing health bars and names. Blizzard remains responsible for creating each nameplate and for health depletion, casting, channels, target treatment, classification, and other standard nameplate behavior.
 
 This avoids duplicate nameplates and preserves the normal Blizzard nameplate functionality.
+
+Even when WoW is configured to show friendly, enemy, and always-visible nameplates, it may not create a nameplate for every unit. If Blizzard supplies no addon-accessible nameplate frame, Simple Nameplates has nothing it can recolor or replace.
 
 ## What's Displayed
 
@@ -34,11 +36,11 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five colors. Each editable row identifies whether its color appears on the name or health bar and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled overhead names, which the game engine colors lavender and does not expose to addons. The panel also includes **Reset Colors**, a master styling switch, and an optional **Glow units marked Attacking** setting, disabled by default. The glow uses the configured Attacking color and applies to attacking PCs and NPCs.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five colors. Each editable row identifies whether its color appears on the name or health bar and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled overhead names, which are usually lavender and are not exposed to addons. The panel also includes **Reset Colors**, a master styling switch, and an optional **Glow attacking units** setting, disabled by default. The glow uses the configured Attacking color and applies to attacking PCs and NPCs.
 
 Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
 
-Blizzard's separate overhead world names cannot be recolored because they are not addon-accessible nameplate frames. This includes non-attackable opposing-faction PCs and player-controlled pets, guardians, totems, and minions.
+Blizzard's separate overhead world names cannot be recolored because they are not addon-accessible nameplate frames. This includes non-attackable opposing-faction PCs and player-controlled pets, guardians, totems, and minions. Enabling every relevant nameplate setting still cannot force those units to receive nameplates; only Blizzard decides whether to create the required frame.
 
 ## Text Settings
 
@@ -49,7 +51,7 @@ Open **Options → AddOns → Simple Nameplates → Text**, or type `/snp text`,
 * Whether names appear above or inside visible health bars.
 * Whether available threat percentages are displayed.
 
-Both fonts default to WoW's built-in **Arial Narrow** with a normal outline. Other standard Blizzard fonts are available without an external font library. Inside-bar names automatically shrink to fit the existing bar; the bar itself is not resized. Friendly and unattackable name-only plates are unaffected by the placement setting.
+Both fonts default to WoW's built-in **Arial Narrow** with a normal outline. Other standard Blizzard fonts are available without an external font library. Inside-bar names automatically shrink to fit the existing bar; the bar itself is not resized. Friendly name-only plates are unaffected by the placement setting, as are Blizzard-controlled overhead names that have no nameplate frame.
 
 ## TRP3 Integration
 
@@ -87,6 +89,11 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so applying the shared red attacking color to PCs is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
 ## Changelog
+
+### 1.0.45
+
+* Clarified that addons can request nameplates but cannot force Blizzard to create them.
+* Simplified the attacking-glow label and corrected descriptions of engine-controlled overhead names.
 
 ### 1.0.44
 
