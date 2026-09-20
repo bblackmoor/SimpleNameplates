@@ -14,8 +14,6 @@ local SetAppearanceSetting = ns.SetAppearanceSetting
 local ResetAppearance = ns.ResetAppearance
 local GetPCGlowEnabled = ns.GetPCGlowEnabled
 local SetPCGlowEnabled = ns.SetPCGlowEnabled
-local GetReplaceOverheadNamesEnabled = ns.GetReplaceOverheadNamesEnabled
-local SetReplaceOverheadNamesEnabled = ns.SetReplaceOverheadNamesEnabled
 local GetStylingEnabled = ns.GetStylingEnabled
 local SetStylingEnabled = ns.SetStylingEnabled
 local GetThreatEnabled = ns.GetThreatEnabled
@@ -126,7 +124,7 @@ local function CreateTextPanel()
     description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
     description:SetPoint("RIGHT", panel, "RIGHT", -20, 0)
     description:SetJustifyH("LEFT")
-    description:SetText("Choose the name and threat fonts and place names above or inside visible health bars.")
+    description:SetText("Choose fonts for nameplates and overhead world names, and place nameplate names above or inside visible health bars.")
 
     local refreshers = {}
 
@@ -187,8 +185,15 @@ local function CreateTextPanel()
         function(value) SetAppearanceSetting("threatFont", value) end
     )
     CreateDropdown(
-        "Health-bar name placement",
+        "Global overhead-name font",
         -252,
+        ns.OVERHEAD_FONT_OPTIONS,
+        function() return GetAppearanceSetting("overheadNameFont") end,
+        function(value) SetAppearanceSetting("overheadNameFont", value) end
+    )
+    CreateDropdown(
+        "Health-bar name placement",
+        -334,
         {
             { value = "ABOVE", label = "Above bar" },
             { value = "INSIDE", label = "Inside bar" },
@@ -199,7 +204,7 @@ local function CreateTextPanel()
 
     local threat = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
     threat:SetSize(26, 26)
-    threat:SetPoint("TOPLEFT", 20, -326)
+    threat:SetPoint("TOPLEFT", 20, -408)
     threat:SetHitRectInsets(0, -250, 0, 0)
 
     local threatLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
@@ -215,14 +220,14 @@ local function CreateTextPanel()
     end)
 
     local note = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    note:SetPoint("TOPLEFT", 24, -370)
+    note:SetPoint("TOPLEFT", 24, -452)
     note:SetWidth(600)
     note:SetJustifyH("LEFT")
-    note:SetText("Inside-bar names automatically shrink to fit the existing Blizzard bar. Name-only friendly and unattackable players are unaffected.")
+    note:SetText("The overhead-name font affects all engine-drawn world names, including names Simple Nameplates cannot recolor. Fully exit and restart WoW after changing it if the world does not update immediately. Inside-bar names automatically shrink to fit the existing Blizzard bar.")
 
     local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
-    reset:SetPoint("TOPLEFT", 24, -422)
+    reset:SetPoint("TOPLEFT", 24, -516)
     reset:SetText("Reset Text")
     reset:SetScript("OnClick", function()
         ResetAppearance()

@@ -48,10 +48,11 @@ Open **Options → AddOns → Simple Nameplates → Text**, or type `/snp text`,
 
 * The unit-name font.
 * A separate threat-percentage font.
+* A global font for Blizzard's engine-drawn overhead world names.
 * Whether names appear above or inside visible health bars.
 * Whether available threat percentages are displayed.
 
-Both fonts default to WoW's built-in **Arial Narrow** with a normal outline. Other standard Blizzard fonts are available without an external font library. Inside-bar names automatically shrink to fit the existing bar; the bar itself is not resized. Friendly and unattackable name-only plates are unaffected by the placement setting.
+The two nameplate fonts default to WoW's built-in **Arial Narrow** with a normal outline. The overhead-name font defaults to Blizzard's normal locale-appropriate font. Other standard Blizzard fonts are available without an external font library. The overhead selection affects all engine-drawn unit names globally, including names that Simple Nameplates cannot recolor, and may require fully exiting and restarting WoW before it appears. Inside-bar names automatically shrink to fit the existing bar; the bar itself is not resized. Friendly and unattackable name-only plates are unaffected by the placement setting.
 
 ## TRP3 Integration
 
@@ -89,6 +90,11 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
 ## Changelog
+
+### 1.0.39
+
+* Added a global font selector for Blizzard's engine-drawn overhead unit names.
+* Preserves Blizzard's locale-appropriate font by default and warns when a full restart may be needed.
 
 ### 1.0.38
 

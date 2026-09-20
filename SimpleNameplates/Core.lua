@@ -37,9 +37,19 @@ local FONT_OPTIONS = {
 local FONT_BY_VALUE = {}
 for _, option in ipairs(FONT_OPTIONS) do FONT_BY_VALUE[option.value] = option end
 
+local OVERHEAD_FONT_OPTIONS = {
+    { value = "DEFAULT", label = "Blizzard default" },
+}
+for _, option in ipairs(FONT_OPTIONS) do
+    OVERHEAD_FONT_OPTIONS[#OVERHEAD_FONT_OPTIONS + 1] = option
+end
+
+local BLIZZARD_UNIT_NAME_FONT = _G.UNIT_NAME_FONT
+
 local DEFAULT_APPEARANCE = {
     nameFont = "ARIALN",
     threatFont = "ARIALN",
+    overheadNameFont = "DEFAULT",
     namePlacement = "ABOVE",
 }
 
@@ -55,6 +65,7 @@ local DEFAULT_STYLING_ENABLED = true
 local DEFAULT_SHOW_THREAT = true
 
 ns.FONT_OPTIONS = FONT_OPTIONS
+ns.OVERHEAD_FONT_OPTIONS = OVERHEAD_FONT_OPTIONS
 ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
 
 local dbReady = false
@@ -108,6 +119,10 @@ local function EnsureDB()
     if not FONT_BY_VALUE[db.appearance.threatFont] then
         db.appearance.threatFont = DEFAULT_APPEARANCE.threatFont
     end
+    if db.appearance.overheadNameFont ~= "DEFAULT"
+        and not FONT_BY_VALUE[db.appearance.overheadNameFont] then
+        db.appearance.overheadNameFont = DEFAULT_APPEARANCE.overheadNameFont
+    end
     if db.appearance.namePlacement ~= "ABOVE" and db.appearance.namePlacement ~= "INSIDE" then
         db.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
     end
@@ -145,10 +160,22 @@ local function GetAppearanceSetting(key)
     return EnsureDB().appearance[key]
 end
 
+local function ApplyOverheadNameFont()
+    local value = EnsureDB().appearance.overheadNameFont
+    if value == "DEFAULT" then
+        _G.UNIT_NAME_FONT = BLIZZARD_UNIT_NAME_FONT
+    else
+        _G.UNIT_NAME_FONT = FONT_BY_VALUE[value].path
+    end
+end
+
 local function SetAppearanceSetting(key, value)
     local appearance = EnsureDB().appearance
     if (key == "nameFont" or key == "threatFont") and FONT_BY_VALUE[value] then
         appearance[key] = value
+    elseif key == "overheadNameFont" and (value == "DEFAULT" or FONT_BY_VALUE[value]) then
+        appearance[key] = value
+        ApplyOverheadNameFont()
     elseif key == "namePlacement" and (value == "ABOVE" or value == "INSIDE") then
         appearance[key] = value
     end
@@ -162,6 +189,7 @@ end
 local function ResetAppearance()
     local appearance = EnsureDB().appearance
     for key, value in pairs(DEFAULT_APPEARANCE) do appearance[key] = value end
+    ApplyOverheadNameFont()
 end
 
 local function ColorForState(state)
@@ -328,6 +356,7 @@ ns.GetThreatEnabled = GetThreatEnabled
 ns.SetThreatEnabled = SetThreatEnabled
 ns.GetAppearanceSetting = GetAppearanceSetting
 ns.SetAppearanceSetting = SetAppearanceSetting
+ns.ApplyOverheadNameFont = ApplyOverheadNameFont
 ns.FontPath = FontPath
 ns.ResetAppearance = ResetAppearance
 ns.GetTRP3Enabled = GetTRP3Enabled
@@ -340,3 +369,9 @@ ns.ShowNameplateConflictWarning = ShowNameplateConflictWarning
 ns.AccessibleNumber = AccessibleNumber
 ns.AccessibleBoolean = AccessibleBoolean
 ns.AccessibleValue = AccessibleValue
+
+-- Apply a saved custom font as early as this addon can. The engine may cache
+-- world-name fonts, so the settings page also warns that a restart can be needed.
+if GetAppearanceSetting("overheadNameFont") ~= "DEFAULT" then
+    ApplyOverheadNameFont()
+end
