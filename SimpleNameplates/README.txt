@@ -43,15 +43,12 @@ cannot be recolored because they are not addon-accessible nameplate frames.
 
 TEXT SETTINGS
 Open Options > AddOns > Simple Nameplates > Text, or type /snp text. Choose a
-unit-name font, a separate threat-percentage font, a global font for Blizzard's
-engine-drawn overhead world names, whether available threat percentages are
-shown, and whether names appear above or inside visible health bars. The two
-nameplate fonts default to Arial Narrow; the overhead font defaults to
-Blizzard's locale-appropriate choice. The overhead selection affects all world
-unit names globally and may require fully exiting and restarting WoW. Inside-bar
-names shrink to fit the existing bar and reserve space for threat percentage.
-The bar is not resized. Name-only friendly and unattackable plates are
-unaffected by name placement.
+unit-name font, a separate threat-percentage font, whether available threat
+percentages are shown, and whether names appear above or inside visible health
+bars. Both fonts default to Arial Narrow with a normal outline. Inside-bar names
+shrink to fit the existing bar and reserve space for threat percentage. The bar
+is not resized. Name-only friendly and unattackable plates are unaffected by
+name placement.
 
 TRP3 SETTINGS
 Open Options > AddOns > Simple Nameplates > TRP3, or type /snp trp3. The page
@@ -95,6 +92,9 @@ when WoW reports threat on you or your pet, or when the hostile player is
 targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.42
+- Removed the nonfunctional global overhead-name font setting and its saved value.
+
 1.0.41
 - Prevented recursive database initialization during legacy CVar restoration.
 - Clears obsolete replacement-name state before restoring its saved WoW settings.

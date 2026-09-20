@@ -581,16 +581,10 @@ events:SetScript("OnEvent", function(_, event, unit)
         if unit ~= addon then return end
         events:UnregisterEvent("ADDON_LOADED")
         ns.EnsureDB()
-        if ns.GetAppearanceSetting("overheadNameFont") ~= "DEFAULT" then
-            ns.ApplyOverheadNameFont()
-        end
         return
     end
     if event == "PLAYER_LOGIN" then
         ns.EnsureDB()
-        if ns.GetAppearanceSetting("overheadNameFont") ~= "DEFAULT" then
-            ns.ApplyOverheadNameFont()
-        end
         if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
         if ns.TRP3 and ns.TRP3.RegisterCallbacks then ns.TRP3.RegisterCallbacks() end
         if GetStylingEnabled() then
