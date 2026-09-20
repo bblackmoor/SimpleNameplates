@@ -75,6 +75,10 @@ Type `/snp debug` with a unit targeted to report its detected type, reaction, fa
 
 All four settings pages scroll when their contents do not fit the available window height.
 
+## Download
+
+Ready-to-install ZIP files are available from the [GitHub Releases](https://github.com/bblackmoor/SimpleNameplates/releases) page. Each release contains a versioned `SimpleNameplates-<version>.zip` archive.
+
 ## Installation
 
 1. Exit World of Warcraft.
