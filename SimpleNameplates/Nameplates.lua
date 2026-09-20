@@ -189,7 +189,9 @@ end
 
 local function EnsureFullTitleText(frame)
     if frame.SNPFullTitleText then return frame.SNPFullTitleText end
-    local fullTitle = frame:CreateFontString(nil, "OVERLAY")
+    -- Supply a template so the FontString is valid immediately, including
+    -- during TRP3 callbacks that refresh a plate in the frame it is created.
+    local fullTitle = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     fullTitle:SetJustifyH("LEFT")
     fullTitle:SetWordWrap(false)
     fullTitle:SetMaxLines(1)
@@ -205,8 +207,8 @@ local function StyleFullTitle(frame, state, text, nameInsideBar, baseNameSize, b
     end
 
     fullTitle = EnsureFullTitleText(frame)
-    fullTitle:SetText(text)
     fullTitle:SetFont(FontPath(GetAppearanceSetting("nameFont")), math.max(6, baseNameSize - 1), "OUTLINE")
+    fullTitle:SetText(text)
     fullTitle:SetShadowColor(0, 0, 0, 1)
     fullTitle:SetShadowOffset(1, -1)
     fullTitle:ClearAllPoints()

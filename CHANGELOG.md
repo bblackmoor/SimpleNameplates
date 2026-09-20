@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.50
+
+* Fixed TRP3 full-title refreshes attempting to set text before their custom FontString had a font.
+
 ## 1.0.49
 
 * Added a confirmed **Colorblind — Web Safe** preset for all editable colors.
