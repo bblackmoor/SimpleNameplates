@@ -14,15 +14,21 @@ local function RGB8(r, g, b)
     return { r = r / 255, g = g / 255, b = b / 255 }
 end
 
-local DEFAULT_COLORS = {
+local CURRENT_SCHEMA_VERSION = 1
+
+local DEFAULT_RELATIONSHIP_COLORS = {
     friendlyNPC = RGB8(51, 204, 51),
     friendlyPC = RGB8(51, 204, 255),
     unfriendlyNPC = RGB8(255, 204, 0),
     hostile = RGB8(255, 102, 0),
     attacking = RGB8(255, 0, 0),
+}
+local DEFAULT_EFFECT_COLORS = {
     interruptible = RGB8(0, 255, 255),
 }
-ns.DEFAULT_COLORS = DEFAULT_COLORS
+ns.CURRENT_SCHEMA_VERSION = CURRENT_SCHEMA_VERSION
+ns.DEFAULT_RELATIONSHIP_COLORS = DEFAULT_RELATIONSHIP_COLORS
+ns.DEFAULT_EFFECT_COLORS = DEFAULT_EFFECT_COLORS
 
 local FONT_OPTIONS = {
     { value = "ARIALN", label = "Arial Narrow", path = "Fonts\\ARIALN.TTF" },
@@ -66,7 +72,7 @@ local function CopyColor(color)
     return { r = color.r, g = color.g, b = color.b }
 end
 
-local function MigrateColors(colors)
+local function MigrateLegacyRelationshipColors(colors)
     -- The consolidated hostile and attacking colors inherit the former NPC
     -- values, preserving any customization rather than adopting a PC-specific
     -- color that no longer has a separate meaning.
@@ -82,6 +88,44 @@ local function MigrateColors(colors)
     colors.unfriendlyPC = nil
     colors.attackablePC = nil
     colors.attackingPC = nil
+end
+
+local function MigrateToSchema1(db)
+    local legacyColors = type(db.colors) == "table" and db.colors or {}
+    MigrateLegacyRelationshipColors(legacyColors)
+
+    if type(db.relationshipColors) ~= "table" then db.relationshipColors = {} end
+    for key in pairs(DEFAULT_RELATIONSHIP_COLORS) do
+        if not IsValidColor(db.relationshipColors[key]) and IsValidColor(legacyColors[key]) then
+            db.relationshipColors[key] = CopyColor(legacyColors[key])
+        end
+    end
+
+    if type(db.effectColors) ~= "table" then db.effectColors = {} end
+    if not IsValidColor(db.effectColors.interruptible) and IsValidColor(legacyColors.interruptible) then
+        db.effectColors.interruptible = CopyColor(legacyColors.interruptible)
+    end
+
+    db.colors = nil
+    if type(db.attackingGlow) ~= "boolean" and type(db.pcGlow) == "boolean" then
+        db.attackingGlow = db.pcGlow
+    end
+    db.pcGlow = nil
+    if type(db.appearance) == "table" then db.appearance.overheadNameFont = nil end
+end
+
+local SCHEMA_MIGRATIONS = {
+    [1] = MigrateToSchema1,
+}
+
+local function ApplySchemaMigrations(db)
+    local version = type(db.schemaVersion) == "number" and math.floor(db.schemaVersion) or 0
+    if version < 0 then version = 0 end
+    if version > CURRENT_SCHEMA_VERSION then return end
+    for nextVersion = version + 1, CURRENT_SCHEMA_VERSION do
+        SCHEMA_MIGRATIONS[nextVersion](db)
+        db.schemaVersion = nextVersion
+    end
 end
 
 local function GetCVarValue(cvar)
@@ -123,12 +167,19 @@ local function EnsureDB()
         SimpleNameplatesDB = {}
     end
     local db = SimpleNameplatesDB
-    if type(db.colors) ~= "table" then db.colors = {} end
-    MigrateColors(db.colors)
-    for key, default in pairs(DEFAULT_COLORS) do
-        local color = db.colors[key]
+    ApplySchemaMigrations(db)
+    if type(db.relationshipColors) ~= "table" then db.relationshipColors = {} end
+    for key, default in pairs(DEFAULT_RELATIONSHIP_COLORS) do
+        local color = db.relationshipColors[key]
         if not IsValidColor(color) then
-            db.colors[key] = CopyColor(default)
+            db.relationshipColors[key] = CopyColor(default)
+        end
+    end
+    if type(db.effectColors) ~= "table" then db.effectColors = {} end
+    for key, default in pairs(DEFAULT_EFFECT_COLORS) do
+        local color = db.effectColors[key]
+        if not IsValidColor(color) then
+            db.effectColors[key] = CopyColor(default)
         end
     end
     if type(db.appearance) ~= "table" then db.appearance = {} end
@@ -138,16 +189,12 @@ local function EnsureDB()
     if not FONT_BY_VALUE[db.appearance.threatFont] then
         db.appearance.threatFont = DEFAULT_APPEARANCE.threatFont
     end
-    db.appearance.overheadNameFont = nil
     if db.appearance.namePlacement ~= "ABOVE" and db.appearance.namePlacement ~= "INSIDE" then
         db.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
     end
     if type(db.stylingEnabled) ~= "boolean" then db.stylingEnabled = DEFAULT_STYLING_ENABLED end
     if type(db.showThreat) ~= "boolean" then db.showThreat = DEFAULT_SHOW_THREAT end
-    if type(db.attackingGlow) ~= "boolean" then
-        db.attackingGlow = type(db.pcGlow) == "boolean" and db.pcGlow or false
-    end
-    db.pcGlow = nil
+    if type(db.attackingGlow) ~= "boolean" then db.attackingGlow = false end
     if type(db.interruptibleHighlight) ~= "boolean" then db.interruptibleHighlight = false end
     if type(db.trp3) ~= "table" then db.trp3 = {} end
     for key, default in pairs(DEFAULT_TRP3) do
@@ -202,25 +249,51 @@ local function ResetAppearance()
     for key, value in pairs(DEFAULT_APPEARANCE) do appearance[key] = value end
 end
 
-local function ColorForState(state)
-    local color = EnsureDB().colors[state] or DEFAULT_COLORS[state] or DEFAULT_COLORS.friendlyNPC
+local function RelationshipColorForState(state)
+    local color = EnsureDB().relationshipColors[state]
+        or DEFAULT_RELATIONSHIP_COLORS[state]
+        or DEFAULT_RELATIONSHIP_COLORS.friendlyNPC
     return color.r, color.g, color.b
 end
 
-local function SetStateColor(state, r, g, b)
-    EnsureDB().colors[state] = { r = r, g = g, b = b }
+local function SetRelationshipColor(state, r, g, b)
+    if DEFAULT_RELATIONSHIP_COLORS[state] then
+        EnsureDB().relationshipColors[state] = { r = r, g = g, b = b }
+    end
 end
 
-local function ResetStateColor(state)
-    local default = DEFAULT_COLORS[state]
+local function ResetRelationshipColor(state)
+    local default = DEFAULT_RELATIONSHIP_COLORS[state]
     if not default then return end
-    EnsureDB().colors[state] = { r = default.r, g = default.g, b = default.b }
+    EnsureDB().relationshipColors[state] = CopyColor(default)
 end
 
-local function ResetStateColors()
-    local colors = EnsureDB().colors
-    for key, default in pairs(DEFAULT_COLORS) do
-        colors[key] = { r = default.r, g = default.g, b = default.b }
+local function EffectColor(effect)
+    local color = EnsureDB().effectColors[effect]
+        or DEFAULT_EFFECT_COLORS[effect]
+        or DEFAULT_EFFECT_COLORS.interruptible
+    return color.r, color.g, color.b
+end
+
+local function SetEffectColor(effect, r, g, b)
+    if DEFAULT_EFFECT_COLORS[effect] then
+        EnsureDB().effectColors[effect] = { r = r, g = g, b = b }
+    end
+end
+
+local function ResetEffectColor(effect)
+    local default = DEFAULT_EFFECT_COLORS[effect]
+    if not default then return end
+    EnsureDB().effectColors[effect] = CopyColor(default)
+end
+
+local function ResetAllColors()
+    local db = EnsureDB()
+    for key, default in pairs(DEFAULT_RELATIONSHIP_COLORS) do
+        db.relationshipColors[key] = CopyColor(default)
+    end
+    for key, default in pairs(DEFAULT_EFFECT_COLORS) do
+        db.effectColors[key] = CopyColor(default)
     end
 end
 
@@ -362,10 +435,13 @@ local function AccessibleValue(v)
 end
 
 ns.EnsureDB = EnsureDB
-ns.ColorForState = ColorForState
-ns.SetStateColor = SetStateColor
-ns.ResetStateColor = ResetStateColor
-ns.ResetStateColors = ResetStateColors
+ns.RelationshipColorForState = RelationshipColorForState
+ns.SetRelationshipColor = SetRelationshipColor
+ns.ResetRelationshipColor = ResetRelationshipColor
+ns.EffectColor = EffectColor
+ns.SetEffectColor = SetEffectColor
+ns.ResetEffectColor = ResetEffectColor
+ns.ResetAllColors = ResetAllColors
 ns.GetAttackingGlowEnabled = GetAttackingGlowEnabled
 ns.SetAttackingGlowEnabled = SetAttackingGlowEnabled
 ns.GetInterruptibleHighlightEnabled = GetInterruptibleHighlightEnabled

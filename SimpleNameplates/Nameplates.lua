@@ -25,7 +25,8 @@ local UnitName = UnitName
 local AccessibleNumber = ns.AccessibleNumber
 local AccessibleBoolean = ns.AccessibleBoolean
 local AccessibleValue = ns.AccessibleValue
-local ColorForState = ns.ColorForState
+local RelationshipColorForState = ns.RelationshipColorForState
+local EffectColor = ns.EffectColor
 local GetAppearanceSetting = ns.GetAppearanceSetting
 local GetTRP3Setting = ns.GetTRP3Setting
 local GetAttackingGlowEnabled = ns.GetAttackingGlowEnabled
@@ -215,7 +216,7 @@ local function StyleFullTitle(frame, state, text, nameInsideBar, baseNameSize, b
         fullTitle:SetPoint("BOTTOMLEFT", frame.name, "TOPLEFT", 0, 1)
     end
     if IsNameOnlyState(state) then
-        fullTitle:SetTextColor(ColorForState(state))
+        fullTitle:SetTextColor(RelationshipColorForState(state))
     else
         fullTitle:SetTextColor(1, 1, 1, 1)
     end
@@ -260,7 +261,7 @@ local function StyleName(frame, state)
     name:SetShadowColor(0, 0, 0, 1)
     name:SetShadowOffset(1, -1)
     local nameR, nameG, nameB = 1, 1, 1
-    if IsNameOnlyState(state) then nameR, nameG, nameB = ColorForState(state) end
+    if IsNameOnlyState(state) then nameR, nameG, nameB = RelationshipColorForState(state) end
     -- Blizzard also tints nameplate text with UnitSelectionColor through the
     -- FontString's vertex color. Keep that tint neutral so the configured
     -- Simple Nameplates color is displayed exactly.
@@ -421,11 +422,31 @@ local function SetInterruptibleHighlightShown(overlay, shown)
     if not ok then overlay:Hide() end
 end
 
+local function InstallInterruptibleHighlightHook(highlight)
+    local icon = highlight and highlight.castBar and highlight.castBar.Icon
+    if not icon then return false end
+    if highlight.hookedIcon == icon then return true end
+
+    local overlay = highlight.frame
+    local ok = pcall(hooksecurefunc, icon, "SetShown", function(_, shown)
+        if GetStylingEnabled() and GetInterruptibleHighlightEnabled() then
+            SetInterruptibleHighlightShown(overlay, shown)
+        else
+            overlay:Hide()
+        end
+    end)
+    if ok then highlight.hookedIcon = icon end
+    return ok
+end
+
 local function EnsureInterruptibleHighlight(frame)
     local castBar = GetCastBar(frame)
     if not castBar then return nil end
     local existing = frame.SNPInterruptibleHighlight
-    if existing and existing.castBar == castBar then return existing end
+    if existing and existing.castBar == castBar then
+        InstallInterruptibleHighlightHook(existing)
+        return existing
+    end
     if existing and existing.frame then existing.frame:Hide() end
 
     local overlay = CreateFrame("Frame", nil, castBar)
@@ -469,15 +490,7 @@ local function EnsureInterruptibleHighlight(frame)
     -- Blizzard already makes the secret-safe interruptibility decision and
     -- shows the ordinary spell icon only for interruptible modern nameplate
     -- casts. Mirror that resulting visibility without inspecting the secret.
-    if castBar.Icon then
-        hooksecurefunc(castBar.Icon, "SetShown", function(_, shown)
-            if GetStylingEnabled() and GetInterruptibleHighlightEnabled() then
-                SetInterruptibleHighlightShown(overlay, shown)
-            else
-                overlay:Hide()
-            end
-        end)
-    end
+    InstallInterruptibleHighlightHook(highlight)
 
     return highlight
 end
@@ -486,7 +499,7 @@ local function UpdateInterruptibleHighlight(frame)
     local highlight = EnsureInterruptibleHighlight(frame)
     if not highlight then return end
 
-    local r, g, b = ColorForState("interruptible")
+    local r, g, b = EffectColor("interruptible")
     highlight.top:SetColorTexture(r, g, b, 0.9)
     highlight.bottom:SetColorTexture(r, g, b, 0.9)
     highlight.left:SetColorTexture(r, g, b, 0.9)
@@ -522,7 +535,7 @@ local function ApplySimpleStyle(frame)
     local state = StateForUnit(frame.unit)
     frame.SNPState = state
     if state == "blizzardOverhead" then return end
-    local r, g, b = ColorForState(state)
+    local r, g, b = RelationshipColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyVisibility(frame, state)
     StyleName(frame, state)
@@ -543,7 +556,7 @@ local function RepairHealthColor(frame)
     local state = frame.SNPState or StateForUnit(frame.unit)
     frame.SNPState = state
     if state == "blizzardOverhead" then return end
-    local r, g, b = ColorForState(state)
+    local r, g, b = RelationshipColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyVisibility(frame, state)
     if not IsNameOnlyState(state) and bar then
@@ -775,7 +788,7 @@ local function DebugUnit(unit)
         display = "Blizzard-controlled overhead name"
         colorHex = "engine-controlled"
     else
-        local r, g, b = ColorForState(state)
+        local r, g, b = RelationshipColorForState(state)
         colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
         display = IsNameOnlyState(state) and "colored name only" or "white name with colored health bar"
     end
@@ -795,6 +808,22 @@ local function DebugUnit(unit)
     print("  Threat on you: " .. DebugValue(UnitThreatSituation("player", unit))
         .. "; threat on pet: " .. DebugValue(UnitThreatSituation("pet", unit))
         .. "; targeting your controlled unit: " .. (TargetsPlayerControlledUnit(unit) and "yes" or "no"))
+
+    local unitFrame = GetUnitFrame(unit)
+    local castBar = GetCastBar(unitFrame)
+    local highlight = unitFrame and EnsureInterruptibleHighlight(unitFrame) or nil
+    local icon = castBar and castBar.Icon or nil
+    local highlightShown = false
+    if highlight and highlight.frame then
+        local ok, shown = pcall(highlight.frame.IsShown, highlight.frame)
+        highlightShown = ok and shown == true
+    end
+    print("  Interruptible highlight: enabled "
+        .. (GetInterruptibleHighlightEnabled() and "yes" or "no")
+        .. "; cast bar found " .. (castBar and "yes" or "no")
+        .. "; cast icon found " .. (icon and "yes" or "no")
+        .. "; hook installed " .. (highlight and highlight.hookedIcon == icon and icon ~= nil and "yes" or "no")
+        .. "; highlight shown " .. (highlightShown and "yes" or "no"))
 end
 
 ns.RefreshAll = RefreshAll
