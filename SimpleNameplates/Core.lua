@@ -26,6 +26,20 @@ local DEFAULT_RELATIONSHIP_COLORS = {
 local DEFAULT_EFFECT_COLORS = {
     interruptible = RGB8(0, 255, 255),
 }
+local COLOR_PRESETS = {
+    colorblindWebSafe = {
+        relationshipColors = {
+            friendlyNPC = RGB8(0, 204, 153),
+            friendlyPC = RGB8(102, 204, 255),
+            unfriendlyNPC = RGB8(255, 255, 0),
+            hostile = RGB8(255, 153, 0),
+            attacking = RGB8(255, 0, 102),
+        },
+        effectColors = {
+            interruptible = RGB8(0, 255, 255),
+        },
+    },
+}
 ns.CURRENT_SCHEMA_VERSION = CURRENT_SCHEMA_VERSION
 ns.DEFAULT_RELATIONSHIP_COLORS = DEFAULT_RELATIONSHIP_COLORS
 ns.DEFAULT_EFFECT_COLORS = DEFAULT_EFFECT_COLORS
@@ -297,6 +311,24 @@ local function ResetAllColors()
     end
 end
 
+local function ApplyColorPreset(presetName)
+    local preset = COLOR_PRESETS[presetName]
+    if not preset then return false end
+
+    local db = EnsureDB()
+    for key, color in pairs(preset.relationshipColors or {}) do
+        if DEFAULT_RELATIONSHIP_COLORS[key] and IsValidColor(color) then
+            db.relationshipColors[key] = CopyColor(color)
+        end
+    end
+    for key, color in pairs(preset.effectColors or {}) do
+        if DEFAULT_EFFECT_COLORS[key] and IsValidColor(color) then
+            db.effectColors[key] = CopyColor(color)
+        end
+    end
+    return true
+end
+
 local function GetAttackingGlowEnabled()
     return EnsureDB().attackingGlow
 end
@@ -442,6 +474,7 @@ ns.EffectColor = EffectColor
 ns.SetEffectColor = SetEffectColor
 ns.ResetEffectColor = ResetEffectColor
 ns.ResetAllColors = ResetAllColors
+ns.ApplyColorPreset = ApplyColorPreset
 ns.GetAttackingGlowEnabled = GetAttackingGlowEnabled
 ns.SetAttackingGlowEnabled = SetAttackingGlowEnabled
 ns.GetInterruptibleHighlightEnabled = GetInterruptibleHighlightEnabled

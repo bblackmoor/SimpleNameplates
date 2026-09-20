@@ -9,6 +9,7 @@ local SetRelationshipColor = ns.SetRelationshipColor
 local ResetRelationshipColor = ns.ResetRelationshipColor
 local EffectColor, SetEffectColor, ResetEffectColor = ns.EffectColor, ns.SetEffectColor, ns.ResetEffectColor
 local ResetAllColors = ns.ResetAllColors
+local ApplyColorPreset = ns.ApplyColorPreset
 local GetAppearanceSetting, SetAppearanceSetting = ns.GetAppearanceSetting, ns.SetAppearanceSetting
 local ResetAppearance = ns.ResetAppearance
 local GetAttackingGlowEnabled, SetAttackingGlowEnabled = ns.GetAttackingGlowEnabled, ns.SetAttackingGlowEnabled
@@ -336,6 +337,18 @@ local function CreateColorsPanel()
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
+    StaticPopupDialogs["SNP_COLORBLIND_PRESET_CONFIRM"] = {
+        text = "Apply the Colorblind — Web Safe preset?\n\nThis replaces all six editable colors and enables the attacking glow. Blizzard's colorblind settings and filters will not be changed.",
+        button1 = "Apply",
+        button2 = CANCEL or "Cancel",
+        OnAccept = function(_, applyPreset)
+            if applyPreset then applyPreset() end
+        end,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true,
+        preferredIndex = 3,
+    }
 
     local function CreateSection(text)
         local label = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -517,14 +530,33 @@ local function CreateColorsPanel()
     interruptibleNote:SetText("Uses Blizzard's interruptibility result and is drawn above the attacking glow.")
     layout:Add(interruptibleNote, 24, 28, 8)
 
-    local reset = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+    local buttonRow = CreateFrame("Frame", nil, content)
+    buttonRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(buttonRow, 24, 24)
+
+    local preset = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
+    preset:SetSize(190, 24)
+    preset:SetPoint("LEFT")
+    preset:SetText("Colorblind — Web Safe")
+
+    local reset = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
+    reset:SetPoint("LEFT", preset, "RIGHT", 12, 0)
     reset:SetText("Reset Colors")
-    layout:Add(reset, 24, 24)
     reset:SetScript("OnClick", function()
         ResetAllColors()
         for _, refresh in ipairs(swatchRefreshers) do refresh() end
         RefreshNameplates()
+    end)
+    preset:SetScript("OnClick", function()
+        StaticPopup_Show("SNP_COLORBLIND_PRESET_CONFIRM", nil, nil, function()
+            if ApplyColorPreset("colorblindWebSafe") then
+                SetAttackingGlowEnabled(true)
+                RefreshAttackingGlow()
+                for _, refresh in ipairs(swatchRefreshers) do refresh() end
+                RefreshNameplates()
+            end
+        end)
     end)
     panel:SetScript("OnShow", function()
         RefreshEnabled()

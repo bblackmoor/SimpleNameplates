@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.49
+
+* Added a confirmed **Colorblind — Web Safe** preset for all editable colors.
+* Applying the accessibility preset also enables the attacking glow without changing Blizzard's colorblind settings.
+
 ## 1.0.48
 
 * Added cast-highlight state to `/snp debug`.

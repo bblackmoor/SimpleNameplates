@@ -40,6 +40,8 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 
 Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five relationship colors and the interruptible cast-bar highlight. Each editable row identifies where its color appears and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled periwinkle-blue overhead names, which are not exposed to addons. The panel also includes **Reset Colors**, a master styling switch, and two options disabled by default: **Glow attacking units** and **Highlight interruptible casts and channels**.
 
+The **Colorblind — Web Safe** preset replaces the editable colors with teal green `#00CC99`, sky blue `#66CCFF`, yellow `#FFFF00`, orange `#FF9900`, raspberry red `#FF0066`, and cyan `#00FFFF`. It also enables the attacking glow so the attacking state has a non-color cue. A confirmation explains both changes before the preset is applied. The preset does not alter WoW's own colorblind mode, filter type, or filter strength; Blizzard's global filter continues to affect the rendered addon normally.
+
 Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
 
 Blizzard's separate overhead world names cannot be recolored because they are not addon-accessible nameplate frames. This includes non-attackable opposing-faction PCs and player-controlled pets, guardians, totems, and minions. Enabling every relevant nameplate setting still cannot force those units to receive nameplates; only Blizzard decides whether to create the required frame.
