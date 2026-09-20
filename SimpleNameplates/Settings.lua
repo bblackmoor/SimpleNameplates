@@ -374,6 +374,15 @@ local function RegisterSettingsPanel()
 
     local swatchRefreshers = {}
 
+    StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
+        text = "Blizzard draws non-attackable opposing-faction players and all player-controlled pets, guardians, totems, and minions as engine-level overhead names rather than addon-accessible nameplate text.\n\nWoW can hide these names, but addons cannot recolor them, change their font, or draw replacement text at the same world position.\n\nI have spent months trying to change this one fucking text type. Apparently, it is simply impossible.",
+        button1 = OKAY or "Okay",
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true,
+        preferredIndex = 3,
+    }
+
     local function CreateSection(text, y)
         local label = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         label:SetPoint("TOPLEFT", 24, y)
@@ -462,21 +471,73 @@ local function RegisterSettingsPanel()
         display:SetText(displayText)
     end
 
-    CreateSection("NON-PLAYER CHARACTERS", -106)
-    CreateColorRow("Friendly NPC", "friendlyNPC", "Colored name", -132)
-    CreateColorRow("Unfriendly (attackable) NPC", "unfriendlyNPC", "Health bar", -168)
-    CreateColorRow("Hostile (will attack me) NPC", "hostileNPC", "Health bar", -204)
-    CreateColorRow("Attacking me or one of my controlled units", "attackingNPC", "Health bar", -240)
+    local function CreateLockedColorRow(text, y)
+        local row = CreateFrame("Frame", nil, panel)
+        row:SetPoint("TOPLEFT", 24, y)
+        row:SetPoint("RIGHT", panel, "RIGHT", -24, 0)
+        row:SetHeight(34)
 
-    CreateSection("PLAYER CHARACTERS", -282)
-    CreateColorRow("Friendly (same faction) PC", "friendlyPC", "Colored name", -308)
-    CreateColorRow("Unfriendly (opposite faction, cannot fight) PC", "unfriendlyPC", "Colored name", -344)
-    CreateColorRow("Attackable (not attacking) opposite-faction PC", "attackablePC", "Health bar", -380)
-    CreateColorRow("Attacking me or one of my controlled units", "attackingPC", "Health bar", -416)
+        local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        label:SetPoint("LEFT", 4, 0)
+        label:SetPoint("RIGHT", row, "RIGHT", -250, 0)
+        label:SetJustifyH("LEFT")
+        label:SetText(text)
+
+        local swatch = CreateFrame("Frame", nil, row, "BackdropTemplate")
+        swatch:SetSize(26, 26)
+        swatch:SetPoint("RIGHT", -4, 0)
+        swatch:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        swatch:SetBackdropColor(0.04, 0.04, 0.04, 1)
+        swatch:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
+
+        local fill = swatch:CreateTexture(nil, "ARTWORK")
+        fill:SetPoint("TOPLEFT", 3, -3)
+        fill:SetPoint("BOTTOMRIGHT", -3, 3)
+        fill:SetColorTexture(102 / 255, 102 / 255, 1, 1)
+
+        local info = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+        info:SetSize(24, 22)
+        info:SetPoint("RIGHT", swatch, "LEFT", -8, 0)
+        info:SetText("?")
+        info:SetScript("OnClick", function()
+            StaticPopup_Show("SNP_BLIZZARD_OVERHEAD_INFO")
+        end)
+
+        local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        display:SetPoint("RIGHT", info, "LEFT", -12, 0)
+        display:SetWidth(125)
+        display:SetJustifyH("RIGHT")
+        display:SetText("Engine-controlled")
+
+        row:EnableMouse(true)
+        row:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(text)
+            GameTooltip:AddLine("This color is chosen by Blizzard and cannot be edited.", 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    end
+
+    CreateSection("FRIENDLY", -106)
+    CreateColorRow("Friendly NPC", "friendlyNPC", "Colored name", -132)
+    CreateColorRow("Friendly same-faction PC", "friendlyPC", "Colored name", -168)
+
+    CreateSection("UNFRIENDLY", -210)
+    CreateColorRow("Attackable but non-aggressive NPC", "unfriendlyNPC", "Health bar", -236)
+    CreateColorRow("Aggressive NPC or PvP-enabled opposing PC", "hostile", "Health bar", -272)
+    CreateLockedColorRow("Blizzard-controlled overhead names", -308)
+
+    CreateSection("COMBAT OVERRIDE", -350)
+    CreateColorRow("Attacking me or one of my controlled units", "attacking", "Health bar", -376)
 
     local pcGlow = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
     pcGlow:SetSize(26, 26)
-    pcGlow:SetPoint("TOPLEFT", 20, -454)
+    pcGlow:SetPoint("TOPLEFT", 20, -418)
     pcGlow:SetHitRectInsets(0, -260, 0, 0)
 
     local pcGlowLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
@@ -484,7 +545,7 @@ local function RegisterSettingsPanel()
     pcGlowLabel:SetText("Glow PC health bars")
 
     local pcGlowNote = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    pcGlowNote:SetPoint("TOPLEFT", 24, -486)
+    pcGlowNote:SetPoint("TOPLEFT", 24, -450)
     pcGlowNote:SetWidth(600)
     pcGlowNote:SetJustifyH("LEFT")
     pcGlowNote:SetText("Only PCs with a visible health bar can glow. Name-only PCs have no bar to receive the effect.")
@@ -499,7 +560,7 @@ local function RegisterSettingsPanel()
 
     local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
-    reset:SetPoint("TOPLEFT", 24, -522)
+    reset:SetPoint("TOPLEFT", 24, -486)
     reset:SetText("Reset Colors")
     reset:SetScript("OnClick", function()
         ResetStateColors()

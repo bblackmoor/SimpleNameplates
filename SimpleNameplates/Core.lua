@@ -16,13 +16,10 @@ end
 
 local DEFAULT_COLORS = {
     friendlyNPC = RGB8(51, 204, 51),
-    unfriendlyNPC = RGB8(255, 204, 0),
-    hostileNPC = RGB8(255, 102, 0),
-    attackingNPC = RGB8(255, 0, 0),
     friendlyPC = RGB8(51, 204, 255),
-    unfriendlyPC = RGB8(0, 255, 204),
-    attackablePC = RGB8(255, 204, 0),
-    attackingPC = RGB8(255, 51, 153),
+    unfriendlyNPC = RGB8(255, 204, 0),
+    hostile = RGB8(255, 102, 0),
+    attacking = RGB8(255, 0, 0),
 }
 ns.DEFAULT_COLORS = DEFAULT_COLORS
 
@@ -58,6 +55,33 @@ ns.FONT_OPTIONS = FONT_OPTIONS
 ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
 
 local dbReady = false
+
+local function IsValidColor(color)
+    return type(color) == "table" and type(color.r) == "number"
+        and type(color.g) == "number" and type(color.b) == "number"
+end
+
+local function CopyColor(color)
+    return { r = color.r, g = color.g, b = color.b }
+end
+
+local function MigrateColors(colors)
+    -- The consolidated hostile and attacking colors inherit the former NPC
+    -- values, preserving any customization rather than adopting a PC-specific
+    -- color that no longer has a separate meaning.
+    if not IsValidColor(colors.hostile) and IsValidColor(colors.hostileNPC) then
+        colors.hostile = CopyColor(colors.hostileNPC)
+    end
+    if not IsValidColor(colors.attacking) and IsValidColor(colors.attackingNPC) then
+        colors.attacking = CopyColor(colors.attackingNPC)
+    end
+
+    colors.hostileNPC = nil
+    colors.attackingNPC = nil
+    colors.unfriendlyPC = nil
+    colors.attackablePC = nil
+    colors.attackingPC = nil
+end
 
 local function GetCVarValue(cvar)
     local getter = C_CVar and C_CVar.GetCVar or GetCVar
@@ -99,11 +123,11 @@ local function EnsureDB()
     end
     local db = SimpleNameplatesDB
     if type(db.colors) ~= "table" then db.colors = {} end
+    MigrateColors(db.colors)
     for key, default in pairs(DEFAULT_COLORS) do
         local color = db.colors[key]
-        if type(color) ~= "table" or type(color.r) ~= "number"
-            or type(color.g) ~= "number" or type(color.b) ~= "number" then
-            db.colors[key] = { r = default.r, g = default.g, b = default.b }
+        if not IsValidColor(color) then
+            db.colors[key] = CopyColor(default)
         end
     end
     if type(db.appearance) ~= "table" then db.appearance = {} end

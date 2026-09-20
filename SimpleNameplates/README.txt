@@ -5,14 +5,12 @@ PURPOSE
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
 DEFAULT COLOR LANGUAGE
-Green      = friendly NPC
-Yellow     = unfriendly NPC / attackable but non-aggressive
-Orange     = hostile NPC / will attack but not attacking you or your controlled units
-Red        = NPC attacking you, your pet, guardian, or minion
-Light blue = friendly PC, including your pets, guardians, and minions
-Turquoise  = opposite-faction PC when neither side can attack (name only)
-Yellow     = attackable opposite-faction PC not attacking you or your controlled units
-Magenta    = PC attacking you, your pet, guardian, or minion (best effort)
+Green      = friendly NPC name
+Light blue = friendly same-faction PC name
+Yellow     = attackable but non-aggressive NPC health bar
+Orange     = aggressive NPC or PvP-enabled opposing PC health bar
+Red        = PC or NPC attacking you or one of your controlled units
+Lavender   = locked Blizzard overhead name; not editable by addons
 
 HOW IT WORKS
 Simple Nameplates no longer draws its own replacement nameplate. It keeps the
@@ -31,15 +29,17 @@ DISPLAYED
 - Optional same-color glow around PC health bars
 
 COLOR SETTINGS
-Open Options > AddOns > Simple Nameplates > Colors, or type /snp. All eight
-colors can be changed and apply immediately. Each row says whether its color
-appears on the name or health bar and has its own Reset button. The panel also
-includes Reset Colors, a master styling switch, and a Glow PC health bars
-toggle, disabled by default. Name-only PCs cannot glow because they have no
-visible health bar. Units without health bars use the relationship color for
-their name. When a bar is present, the name stays white for contrast and the
-bar carries the relationship color. Blizzard's separate overhead world names
-cannot be recolored because they are not addon-accessible nameplate frames.
+Open Options > AddOns > Simple Nameplates > Colors, or type /snp. Five colors
+can be changed and apply immediately. Each editable row says whether its color
+appears on the name or health bar and has its own Reset button. A locked row
+explains Blizzard-controlled lavender overhead names. The panel also includes
+Reset Colors, a master styling switch, and a Glow PC health bars toggle,
+disabled by default. Name-only PCs cannot glow because they have no visible
+health bar. Units without health bars use the relationship color for their
+name. When a bar is present, the name stays white for contrast and the bar
+carries the relationship color. Blizzard's overhead names for non-attackable
+opposing PCs and player-controlled pets, guardians, totems, and minions cannot
+be recolored because they are not addon-accessible nameplate frames.
 
 TEXT SETTINGS
 Open Options > AddOns > Simple Nameplates > Text, or type /snp text. Choose a
@@ -87,11 +87,17 @@ attempt to inspect secret values. Threat percentage is shown only when WoW
 allows the value to be read.
 
 NPC aggro uses WoW's threat information. PvP does not expose an equally
-complete threat table, so the attacking-PC color is best effort. It is used
-when WoW reports threat on you or your pet, or when the hostile player is
-targeting you, your pet, guardian, or minion.
+complete threat table, so applying the shared red attacking color to PCs is
+best effort. It is used when WoW reports threat on you or your pet, or when the
+hostile player is targeting you, your pet, guardian, or minion.
 
 CHANGELOG
+1.0.43
+- Consolidated hostile NPCs and PvP-enabled opposing PCs into one orange setting.
+- Consolidated attacking PCs and NPCs into one red combat-override setting.
+- Added a locked informational row for Blizzard-controlled lavender overhead names.
+- Migrates customized NPC hostile and attacking colors and removes obsolete PC-specific colors.
+
 1.0.42
 - Removed the nonfunctional global overhead-name font setting and its saved value.
 

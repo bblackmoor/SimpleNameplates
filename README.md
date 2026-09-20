@@ -8,14 +8,12 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 
 | Unit state | Default color | Meaning |
 | --- | --- | --- |
-| Friendly NPC | Green | You cannot fight them |
-| Unfriendly NPC | Yellow | Attackable, but non-aggressive |
-| Hostile NPC | Orange | Will attack, but is not attacking you or one of your controlled units |
-| Attacking NPC | Red | Attacking you, your pet, guardian, or minion |
-| Friendly PC | Light blue | Same faction, including your pets, guardians, and minions |
-| Unfriendly PC | Turquoise | Opposite faction, but neither side can attack; name only |
-| Attackable PC | Yellow | Either side can attack, but the player is not attacking you or one of your controlled units |
-| Attacking PC | Magenta | Player targeting or generating threat on you or one of your controlled units |
+| Friendly NPC | Green | Friendly non-player character; colored name |
+| Friendly PC | Light blue | Friendly same-faction player; colored name |
+| Unfriendly NPC | Yellow | Attackable, but non-aggressive; colored health bar |
+| Hostile opponent | Orange | Aggressive NPC or PvP-enabled opposing PC; colored health bar |
+| Attacking | Red | PC or NPC attacking you or one of your controlled units; colored health bar |
+| Blizzard overhead name | Lavender, locked | Non-attackable opposing PCs and all player-controlled pets, guardians, totems, and minions |
 
 ## How It Works
 
@@ -36,11 +34,11 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize all eight colors. Each row identifies whether its color appears on the name or health bar and has its own reset button. Changes apply immediately and are saved between sessions. The panel also includes **Reset Colors**, a master styling switch, and an optional **Glow PC health bars** setting, disabled by default. Name-only PCs cannot glow because they have no visible health bar.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five colors. Each editable row identifies whether its color appears on the name or health bar and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled overhead names, which the game engine colors lavender and does not expose to addons. The panel also includes **Reset Colors**, a master styling switch, and an optional **Glow PC health bars** setting, disabled by default. Name-only PCs cannot glow because they have no visible health bar.
 
 Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
 
-Blizzard's separate overhead world names cannot be recolored because they are not addon-accessible nameplate frames.
+Blizzard's separate overhead world names cannot be recolored because they are not addon-accessible nameplate frames. This includes non-attackable opposing-faction PCs and player-controlled pets, guardians, totems, and minions.
 
 ## Text Settings
 
@@ -86,9 +84,16 @@ World of Warcraft: Midnight may mark some threat information as secret.
 
 Simple Nameplates does not attempt to inspect secret values. Threat percentage is displayed only when WoW allows the value to be read.
 
-NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so the attacking-PC color is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
+NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so applying the shared red attacking color to PCs is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
 ## Changelog
+
+### 1.0.43
+
+* Consolidated hostile NPCs and PvP-enabled opposing PCs into one orange setting.
+* Consolidated attacking PCs and NPCs into one red combat-override setting.
+* Added a locked informational row explaining Blizzard-controlled lavender overhead names.
+* Migrates customized NPC hostile and attacking colors and removes obsolete PC-specific colors.
 
 ### 1.0.42
 

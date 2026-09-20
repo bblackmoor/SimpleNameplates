@@ -1,6 +1,7 @@
 -- Simple Nameplates: unit classification, styling, and event handling.
--- Friendly units and unattackable opposite-faction players use colored names
--- only; attackable states use white names with colored full nameplates.
+-- Friendly units use colored names only; attackable states use white names
+-- with colored full nameplates. Some world names are drawn by the engine and
+-- are unavailable to addons.
 
 local addon, ns = ...
 if not ns.EnsureDB then return end
@@ -65,11 +66,6 @@ local function IsPlayerControlledUnit(unit)
     return AccessibleBoolean(UnitPlayerControlled(unit)) == true
 end
 
-local function IsOwnedOrControlledByPlayer(unit)
-    if not UnitIsOwnerOrControllerOfUnit then return false end
-    return AccessibleBoolean(UnitIsOwnerOrControllerOfUnit("player", unit)) == true
-end
-
 local function OpposingPlayerState(unit)
     local canAttackThem = AccessibleBoolean(UnitCanAttack("player", unit))
     local canAttackUs = AccessibleBoolean(UnitCanAttack(unit, "player"))
@@ -77,24 +73,23 @@ local function OpposingPlayerState(unit)
 
     if combatAvailable then
         if IsAttackingPlayerControlledUnit(unit) then
-            return "attackingPC"
+            return "attacking"
         end
-        return "attackablePC"
+        return "hostile"
     end
 
     if canAttackThem == false and canAttackUs == false then
-        return "unfriendlyPC"
+        return "blizzardOverhead"
     end
 
     -- Attackability can be secret. PvP state is only a fallback and does not
     -- attempt to distinguish War Mode from ordinary PvP flagging.
     local pvp = AccessibleBoolean(UnitIsPVP(unit))
     if pvp == true and IsAttackingPlayerControlledUnit(unit) then
-        return "attackingPC"
+        return "attacking"
     end
-    if pvp == true then return "attackablePC" end
-    if pvp == false then return "unfriendlyPC" end
-    return "unfriendlyPC"
+    if pvp == true then return "hostile" end
+    return "blizzardOverhead"
 end
 
 local function StateForUnit(unit)
@@ -114,34 +109,24 @@ local function StateForUnit(unit)
         return OpposingPlayerState(unit)
     end
 
-    -- Some temporary guardians do not report a useful reaction. Explicitly
-    -- recognize the player's own pets, guardians, minions, and vehicles first.
-    if IsOwnedOrControlledByPlayer(unit) then return "friendlyPC" end
-
-    -- Other player-controlled units follow the player-side color language
-    -- instead of being mistaken for ordinary NPCs.
+    -- Blizzard draws pets, guardians, totems, and minions as inaccessible
+    -- overhead world text rather than addon-accessible nameplate text.
     if IsPlayerControlledUnit(unit) then
-        if reaction and reaction >= 5 then return "friendlyPC" end
-        return OpposingPlayerState(unit)
+        return "blizzardOverhead"
     end
 
     if reaction and reaction >= 5 then return "friendlyNPC" end
-    if IsAttackingPlayerControlledUnit(unit) then return "attackingNPC" end
+    if IsAttackingPlayerControlledUnit(unit) then return "attacking" end
     if reaction == 4 then return "unfriendlyNPC" end
-    if reaction then return "hostileNPC" end
+    if reaction then return "hostile" end
 
     local attackable = AccessibleBoolean(UnitCanAttack("player", unit))
-    if attackable == true then return "hostileNPC" end
+    if attackable == true then return "hostile" end
     return "friendlyNPC"
 end
 
 local function IsNameOnlyState(state)
-    return state == "friendlyNPC" or state == "friendlyPC" or state == "unfriendlyPC"
-end
-
-local function IsPCState(state)
-    return state == "friendlyPC" or state == "unfriendlyPC"
-        or state == "attackablePC" or state == "attackingPC"
+    return state == "friendlyNPC" or state == "friendlyPC"
 end
 
 local function GetUnitFrame(unit)
@@ -415,7 +400,8 @@ end
 
 local function UpdatePCGlow(frame, state, r, g, b)
     local glow = frame.SNPPCGlow
-    local shown = GetPCGlowEnabled() and IsPCState(state) and not IsNameOnlyState(state)
+    local isPlayer = frame and frame.unit and AccessibleBoolean(UnitIsPlayer(frame.unit)) == true
+    local shown = GetPCGlowEnabled() and isPlayer and not IsNameOnlyState(state)
     if shown then glow = EnsurePCGlow(frame) end
     if not glow then return end
 
@@ -443,6 +429,7 @@ local function ApplySimpleStyle(frame)
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
     local state = StateForUnit(frame.unit)
     frame.SNPState = state
+    if state == "blizzardOverhead" then return end
     local r, g, b = ColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyVisibility(frame, state)
@@ -462,6 +449,7 @@ local function RepairHealthColor(frame)
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
     local state = frame.SNPState or StateForUnit(frame.unit)
     frame.SNPState = state
+    if state == "blizzardOverhead" then return end
     local r, g, b = ColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyVisibility(frame, state)
@@ -476,6 +464,7 @@ local function RepairName(frame)
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
     local state = frame.SNPState or StateForUnit(frame.unit)
     frame.SNPState = state
+    if state == "blizzardOverhead" then return end
     StyleName(frame, state)
 end
 
@@ -684,10 +673,16 @@ local function DebugUnit(unit)
     local name = DebugValue(UnitName(unit))
     local state = StateForUnit(unit)
     local reaction = AccessibleNumber(UnitReaction(unit, "player"))
-    local r, g, b = ColorForState(state)
-    local colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
-    local display = IsNameOnlyState(state) and "colored name only" or "white name with colored health bar"
     local hasNameplate = GetUnitFrame(unit) ~= nil
+    local display, colorHex
+    if state == "blizzardOverhead" then
+        display = "Blizzard-controlled overhead name"
+        colorHex = "engine-controlled"
+    else
+        local r, g, b = ColorForState(state)
+        colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
+        display = IsNameOnlyState(state) and "colored name only" or "white name with colored health bar"
+    end
 
     print("|cff0cd29fSimple Nameplates debug:|r " .. name)
     print("  Styling enabled: " .. (GetStylingEnabled() and "yes" or "no")
