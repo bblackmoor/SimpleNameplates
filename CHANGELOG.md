@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.56
+
+* Fixed some friendly-player names disappearing when name-only styling hid Blizzard's containing health-bar frame.
+* Expanded `/snp debug` with the name region's text, shown state, effective visibility, alpha, and immediate-parent visibility.
+
 ## 1.0.50
 
 * Fixed TRP3 full-title refreshes attempting to set text before their custom FontString had a font.

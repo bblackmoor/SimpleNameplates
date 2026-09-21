@@ -71,7 +71,7 @@ Each field has its own toggle. The normal WoW name is used whenever a cached TRP
 
 The main **Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
 
-Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting state, display treatment, and color. It also reports whether the interruptible highlight is enabled, the target's cast bar and icon were found, the visibility hook was installed, and the highlight is currently shown. Restricted Midnight values are identified rather than inspected.
+Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting state, display treatment, and color. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the visibility hook was installed, and the highlight is currently shown. Restricted Midnight values are identified rather than inspected.
 
 All four settings pages scroll when their contents do not fit the available window height.
 

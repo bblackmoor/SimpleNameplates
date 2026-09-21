@@ -522,7 +522,10 @@ local function ApplyVisibility(frame, state)
     local nameOnly = IsNameOnlyState(state)
     local bar = GetHealthBar(frame)
     SetShownSafe(bar, not nameOnly)
-    SetShownSafe(frame.HealthBarsContainer, not nameOnly)
+    -- Do not hide HealthBarsContainer itself. Some Blizzard friendly-player
+    -- layouts attach or otherwise couple the name to that container, so a
+    -- visible FontString can still disappear when its ancestor is hidden.
+    SetShownSafe(frame.HealthBarsContainer, true)
     SetShownSafe(frame.castBar, not nameOnly)
     SetShownSafe(frame.CastBar, not nameOnly)
     SetShownSafe(frame.castBarAnchor, not nameOnly)
@@ -775,6 +778,22 @@ local function DebugValue(value)
     return value == nil and "restricted/unavailable" or tostring(value)
 end
 
+local function DebugRegionValue(region, methodName, valueType)
+    if not region then return "not found" end
+    local method = region[methodName]
+    if type(method) ~= "function" then return "unavailable" end
+    local ok, value = pcall(method, region)
+    if not ok then return "unavailable" end
+
+    if valueType == "boolean" then
+        value = AccessibleBoolean(value)
+        if value == nil then return "restricted/unavailable" end
+        return value and "yes" or "no"
+    end
+
+    return DebugValue(value)
+end
+
 local function DebugUnit(unit)
     if AccessibleBoolean(UnitExists(unit)) ~= true then
         print("|cff0cd29fSimple Nameplates:|r No target selected.")
@@ -812,6 +831,17 @@ local function DebugUnit(unit)
         .. "; targeting your controlled unit: " .. (TargetsPlayerControlledUnit(unit) and "yes" or "no"))
 
     local unitFrame = GetUnitFrame(unit)
+    local nameRegion = unitFrame and unitFrame.name or nil
+    local nameParent = nameRegion and nameRegion.GetParent and nameRegion:GetParent() or nil
+    print("  Name region: " .. (nameRegion and "found" or "not found")
+        .. "; text: " .. DebugRegionValue(nameRegion, "GetText")
+        .. "; shown: " .. DebugRegionValue(nameRegion, "IsShown", "boolean")
+        .. "; visible: " .. DebugRegionValue(nameRegion, "IsVisible", "boolean")
+        .. "; alpha: " .. DebugRegionValue(nameRegion, "GetAlpha"))
+    print("  Name parent: " .. (nameParent and "found" or "not found")
+        .. "; shown: " .. DebugRegionValue(nameParent, "IsShown", "boolean")
+        .. "; visible: " .. DebugRegionValue(nameParent, "IsVisible", "boolean")
+        .. "; alpha: " .. DebugRegionValue(nameParent, "GetAlpha"))
     local castBar = GetCastBar(unitFrame)
     local highlight = unitFrame and EnsureInterruptibleHighlight(unitFrame) or nil
     local icon = castBar and castBar.Icon or nil
