@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.57
+
+* Centered friendly names and TRP3 full titles when their health bars are hidden.
+
 ## 1.0.56
 
 * Fixed some friendly-player names disappearing when name-only styling hid Blizzard's containing health-bar frame.

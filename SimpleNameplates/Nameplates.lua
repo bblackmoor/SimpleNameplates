@@ -212,10 +212,15 @@ local function StyleFullTitle(frame, state, text, nameInsideBar, baseNameSize, b
     fullTitle:SetShadowColor(0, 0, 0, 1)
     fullTitle:SetShadowOffset(1, -1)
     fullTitle:ClearAllPoints()
-    if nameInsideBar and bar then
+    if IsNameOnlyState(state) then
+        fullTitle:SetPoint("BOTTOM", frame.name, "TOP", 0, 1)
+        fullTitle:SetJustifyH("CENTER")
+    elseif nameInsideBar and bar then
         fullTitle:SetPoint("BOTTOMLEFT", bar, "TOPLEFT", 0, 2)
+        fullTitle:SetJustifyH("LEFT")
     else
         fullTitle:SetPoint("BOTTOMLEFT", frame.name, "TOPLEFT", 0, 1)
+        fullTitle:SetJustifyH("LEFT")
     end
     if IsNameOnlyState(state) then
         fullTitle:SetTextColor(RelationshipColorForState(state))
@@ -237,10 +242,19 @@ local function StyleName(frame, state)
     local baseSize = frame.SNPBaseNameSize or currentSize or 10
     local size = baseSize
     local bar = GetHealthBar(frame)
+    local nameOnly = IsNameOnlyState(state)
     local inside = GetAppearanceSetting("namePlacement") == "INSIDE"
-        and not IsNameOnlyState(state) and bar
+        and not nameOnly and bar
 
-    if inside then
+    if nameOnly then
+        name:ClearAllPoints()
+        if bar then
+            name:SetPoint("BOTTOM", bar, "TOP", 0, 2)
+        else
+            name:SetPoint("BOTTOM", frame, "TOP", 0, 2)
+        end
+        name:SetJustifyH("CENTER")
+    elseif inside then
         local rightInset = GetThreatEnabled() and -42 or -3
         local barHeight = bar:GetHeight()
         if type(barHeight) == "number" and barHeight > 0 then
@@ -279,9 +293,11 @@ local function StyleName(frame, state)
     expected.size = size
     expected.flags = "OUTLINE"
     expected.r, expected.g, expected.b = nameR, nameG, nameB
+    expected.nameOnly = nameOnly
     expected.inside = inside == true
     expected.rightInset = GetThreatEnabled() and -42 or -3
     expected.bar = bar
+    expected.frame = frame
 end
 
 local function NearlyEqual(a, b)
@@ -325,7 +341,14 @@ local function RepairCachedName(frame)
     name:SetShadowOffset(1, -1)
     name:SetVertexColor(1, 1, 1, 1)
     name:SetTextColor(expected.r, expected.g, expected.b, 1)
-    if expected.bar then
+    if expected.nameOnly then
+        name:ClearAllPoints()
+        if expected.bar then
+            name:SetPoint("BOTTOM", expected.bar, "TOP", 0, 2)
+        else
+            name:SetPoint("BOTTOM", expected.frame, "TOP", 0, 2)
+        end
+    elseif expected.bar then
         name:ClearAllPoints()
         if expected.inside then
             name:SetPoint("LEFT", expected.bar, "LEFT", 3, 0)
@@ -334,7 +357,7 @@ local function RepairCachedName(frame)
             name:SetPoint("BOTTOMLEFT", expected.bar, "TOPLEFT", 0, 2)
         end
     end
-    name:SetJustifyH("LEFT")
+    name:SetJustifyH(expected.nameOnly and "CENTER" or "LEFT")
     name:Show()
 end
 
