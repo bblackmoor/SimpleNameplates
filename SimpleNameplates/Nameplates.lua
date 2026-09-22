@@ -31,6 +31,7 @@ local GetAttackingGlowEnabled = ns.GetAttackingGlowEnabled
 local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
 local GetStylingEnabled = ns.GetStylingEnabled
 local GetThreatEnabled = ns.GetThreatEnabled
+local GetReplaceBlizzardOverheadNames = ns.GetReplaceBlizzardOverheadNames
 local FontPath = ns.FontPath
 
 local function UnitHasAggro(unitToken, hostileUnit)
@@ -79,7 +80,7 @@ local function OpposingPlayerState(unit)
     end
 
     if canAttackThem == false and canAttackUs == false then
-        return "blizzardOverhead"
+        return GetReplaceBlizzardOverheadNames() and "unfriendlyPC" or "blizzardOverhead"
     end
 
     -- Attackability can be secret. PvP state is only a fallback and does not
@@ -89,7 +90,7 @@ local function OpposingPlayerState(unit)
         return "attacking"
     end
     if pvp == true then return "hostile" end
-    return "blizzardOverhead"
+    return GetReplaceBlizzardOverheadNames() and "unfriendlyPC" or "blizzardOverhead"
 end
 
 local function StateForUnit(unit)
@@ -109,9 +110,15 @@ local function StateForUnit(unit)
         return OpposingPlayerState(unit)
     end
 
-    -- Blizzard draws pets, guardians, totems, and minions as inaccessible
-    -- overhead world text rather than addon-accessible nameplate text.
+    -- Ordinarily Blizzard draws these as inaccessible overhead world text.
+    -- Experimental replacement can style them when Blizzard supplies a plate.
     if IsPlayerControlledUnit(unit) then
+        if GetReplaceBlizzardOverheadNames() then
+            local ownedByPlayer = UnitIsOwnerOrControllerOfUnit
+                and AccessibleBoolean(UnitIsOwnerOrControllerOfUnit("player", unit)) == true
+            if ownedByPlayer or (reaction and reaction >= 5) then return "friendlyPC" end
+            return OpposingPlayerState(unit)
+        end
         return "blizzardOverhead"
     end
 
@@ -126,7 +133,7 @@ local function StateForUnit(unit)
 end
 
 local function IsNameOnlyState(state)
-    return state == "friendlyNPC" or state == "friendlyPC"
+    return state == "friendlyNPC" or state == "friendlyPC" or state == "unfriendlyPC"
 end
 
 local function GetUnitFrame(unit)
@@ -745,12 +752,16 @@ events:SetScript("OnEvent", function(_, event, unit)
         ns.EnsureDB()
         ns.ApplyBlizzardMinionNameVisibility()
         ns.ApplyCritterCompanionNameVisibility()
+        ns.ApplyOverheadNameReplacement()
         C_Timer.After(1, function()
             if ns.GetHideBlizzardMinionNames() then
                 ns.ApplyBlizzardMinionNameVisibility()
             end
             if ns.GetHideCritterCompanionNames() then
                 ns.ApplyCritterCompanionNameVisibility()
+            end
+            if ns.GetReplaceBlizzardOverheadNames() then
+                ns.ApplyOverheadNameReplacement()
             end
         end)
         if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
@@ -770,6 +781,13 @@ events:SetScript("OnEvent", function(_, event, unit)
         return
     end
     if event == "CVAR_UPDATE" then
+        if ns.GetReplaceBlizzardOverheadNames()
+            and type(unit) == "string"
+            and ns.OVERHEAD_REPLACEMENT_CVAR_SET[string.lower(unit)] then
+            ns.ApplyOverheadNameReplacement()
+            QueueRefreshAll()
+            return
+        end
         if ns.GetHideBlizzardMinionNames() then
             for _, cvar in ipairs(ns.BLIZZARD_MINION_NAME_CVARS) do
                 if unit == cvar then
@@ -887,6 +905,9 @@ local function DebugUnit(unit)
     if state == "blizzardOverhead" then
         display = "Blizzard-controlled overhead name"
         colorHex = "engine-controlled"
+    elseif not hasNameplate and GetReplaceBlizzardOverheadNames() then
+        display = "replacement requested; no nameplate frame"
+        colorHex = "not displayed by Simple Nameplates"
     else
         local r, g, b = RelationshipColorForState(state)
         colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
@@ -895,6 +916,7 @@ local function DebugUnit(unit)
 
     print("|cff0cd29fSimple Nameplates debug:|r " .. name)
     print("  Styling enabled: " .. (GetStylingEnabled() and "yes" or "no")
+        .. "; overhead replacement: " .. (GetReplaceBlizzardOverheadNames() and "yes" or "no")
         .. "; nameplate frame: " .. (hasNameplate and "yes" or "no")
         .. "; detected state: " .. state .. "; display: " .. display .. "; color: " .. colorHex)
     print("  Player: " .. DebugBoolean(UnitIsPlayer(unit))

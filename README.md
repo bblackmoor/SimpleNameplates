@@ -14,19 +14,19 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | Hostile opponent | Orange | Aggressive NPC or PvP-enabled opposing PC; colored health bar |
 | Attacking | Red | PC or NPC attacking you or one of your controlled units; colored health bar |
 | Interruptible cast | Cyan | Optional cast-bar outline for interruptible casts and channels |
-| Blizzard overhead name | Periwinkle blue, locked | Non-attackable opposing PCs and many player-controlled minions; minion, critter, and companion names can be hidden |
-| Interactive NPC overhead name | Yellow, locked | Interactive NPCs such as city guards; cannot be restyled by addons |
-| Vendor NPC overhead name | Green, locked | Vendor NPCs; cannot be restyled by addons |
+| Blizzard overhead name | Periwinkle blue, locked | Non-attackable opposing PCs and many player-controlled minions; experimental replacement available |
+| Interactive NPC overhead name | Yellow, locked | Interactive NPCs such as city guards; experimental replacement available |
+| Vendor NPC overhead name | Green, locked | Vendor NPCs; experimental replacement available |
 
 ## How It Works
 
-Simple Nameplates does **not** draw replacement nameplates.
+Simple Nameplates does **not** draw its own replacement nameplates.
 
 Instead, it keeps Blizzard's normal Midnight nameplates and recolors their existing health bars and names. Blizzard remains responsible for creating each nameplate and for health depletion, casting, channels, target treatment, classification, and other standard nameplate behavior.
 
 This avoids duplicate nameplates and preserves the normal Blizzard nameplate functionality.
 
-Even when WoW is configured to show friendly, enemy, and always-visible nameplates, it may not create a nameplate for every unit. If Blizzard supplies no addon-accessible nameplate frame, Simple Nameplates has nothing it can recolor or replace.
+Even when WoW is configured to show friendly, enemy, and always-visible nameplates, it may not create a nameplate for every unit. If Blizzard supplies no addon-accessible nameplate frame, Simple Nameplates has nothing it can recolor. The experimental replacement option can therefore leave a unit without a visible name and is disabled by default.
 
 ## What's Displayed
 
@@ -40,13 +40,17 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five relationship colors and the interruptible cast-bar highlight. Each editable row identifies where its color appears and has its own reset button. Changes apply immediately and are saved between sessions. Three locked informational rows explain Blizzard-controlled periwinkle-blue, yellow interactive-NPC, and green vendor-NPC overhead names. The **High Contrast** and **Reset Colors** buttons are at the top of the panel. Four options are disabled by default: **Hide Blizzard-controlled minion names**, **Hide critter and companion names**, **Glow attacking units**, and **Highlight interruptible casts and channels**.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five relationship colors and the interruptible cast-bar highlight. Each editable row identifies where its color appears and has its own reset button. Changes apply immediately and are saved between sessions. Three locked informational rows explain Blizzard-controlled periwinkle-blue, yellow interactive-NPC, and green vendor-NPC overhead names. The **High Contrast** and **Reset Colors** buttons are at the top of the panel. Five options are disabled by default: **Replace Blizzard overhead names (experimental)**, **Hide Blizzard-controlled minion names**, **Hide critter and companion names**, **Glow attacking units**, and **Highlight interruptible casts and channels**.
 
 The **High Contrast** preset replaces the editable colors with cyan `#00FFFF`, blue `#0066FF`, yellow `#FFFF00`, orange `#FF6600`, magenta `#FF00FF`, and white `#FFFFFF`. It avoids relying on a red/green distinction and enables the attacking glow so the attacking state also has a non-color cue. A confirmation explains both changes before the preset is applied. The preset does not alter WoW's own colorblind mode, filter type, or filter strength; Blizzard's global filter continues to affect the rendered addon normally.
 
 Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
 
-Blizzard's separate overhead world names cannot be recolored because they are not addon-accessible nameplate frames. Yellow interactive-NPC names, including city guards that offer directions, and green vendor-NPC names have the same limitation as the periwinkle names. The periwinkle category includes non-attackable opposing-faction PCs and many player-controlled pets, guardians, totems, and minions. **Hide Blizzard-controlled minion names** hides the friendly and enemy minion categories while leaving opposing-player names visible. Disabling the option restores the prior Blizzard name settings. **Hide critter and companion names** separately hides Blizzard's overhead names for noncombat critters and companions, and likewise restores the prior game setting when disabled.
+Blizzard's separate overhead world names cannot be recolored because they are not addon-accessible nameplate frames. Yellow interactive-NPC names, including city guards that offer directions, and green vendor-NPC names have the same limitation as the periwinkle names. The periwinkle category includes non-attackable opposing-faction PCs and many player-controlled pets, guardians, totems, and minions.
+
+**Replace Blizzard overhead names (experimental)** hides the affected player, minion, and NPC world-name categories while enabling Blizzard's corresponding nameplates, forcing their names to remain visible, and using Midnight's friendly-player name-only mode. Simple Nameplates also makes friendly-NPC and non-attackable opposing-player plates name-only. The previous WoW CVar values are restored when the option or Simple Nameplates styling is disabled. Blizzard still decides whether a unit receives a nameplate; when it does not, that unit may have no visible name while the experiment is enabled.
+
+**Hide Blizzard-controlled minion names** hides the friendly and enemy minion categories while leaving opposing-player names visible. Disabling the option restores the prior Blizzard name settings. **Hide critter and companion names** separately hides Blizzard's overhead names for noncombat critters and companions, and likewise restores the prior game setting when disabled.
 
 The interruptible highlight is a static outline around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to both ordinary casts and channels, preserves their different bar textures and progress directions, and is drawn above the optional attacking glow. Non-interruptible abilities retain Blizzard's normal shield treatment without the added outline.
 
@@ -74,7 +78,7 @@ Each field has its own toggle. To keep nameplates readable, roleplaying names ar
 
 The main **Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
 
-Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting state, display treatment, and color. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the visibility hook was installed, and the highlight is currently shown. Restricted Midnight values are identified rather than inspected.
+Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting state, display treatment, color, nameplate availability, and whether experimental overhead replacement is enabled. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the visibility hook was installed, and the highlight is currently shown. Restricted Midnight values are identified rather than inspected.
 
 All four settings pages scroll when their contents do not fit the available window height.
 

@@ -21,6 +21,8 @@ local GetHideBlizzardMinionNames = ns.GetHideBlizzardMinionNames
 local SetHideBlizzardMinionNames = ns.SetHideBlizzardMinionNames
 local GetHideCritterCompanionNames = ns.GetHideCritterCompanionNames
 local SetHideCritterCompanionNames = ns.SetHideCritterCompanionNames
+local GetReplaceBlizzardOverheadNames = ns.GetReplaceBlizzardOverheadNames
+local SetReplaceBlizzardOverheadNames = ns.SetReplaceBlizzardOverheadNames
 
 local settingsCategory, colorsSettingsCategory, textSettingsCategory, trp3SettingsCategory
 
@@ -383,24 +385,26 @@ local function CreateColorsPanel()
         SetStylingEnabled(isEnabled)
         if isEnabled then
             ns.DisableFriendlyClassColors()
+            ns.ApplyOverheadNameReplacement()
             RefreshNameplates()
         else
+            ns.RestoreOverheadNameSettings()
             ns.RestoreFriendlyClassColors()
             if ns.RestoreAll then ns.RestoreAll() end
         end
     end)
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
-        text = "Blizzard draws non-attackable opposing-faction players and many player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nWithout a nameplate frame, addons cannot recolor the name, change its font, or draw replacement text at the same world position. Minion names can be hidden with the option below; opposing-player names cannot be changed independently beyond Blizzard's global name settings.\n\nI have spent months trying to change this one fucking text type. Apparently, it is simply impossible.",
+        text = "Blizzard draws non-attackable opposing-faction players and many player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nThe experimental replacement option below hides those world-name categories and requests ordinary nameplates instead. It can only work when Blizzard creates a nameplate for the unit.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["SNP_BLIZZARD_INTERACTIVE_INFO"] = {
-        text = "Blizzard draws interactive NPCs, including city guards that offer directions, as engine-level yellow overhead names rather than as addon-accessible nameplate text. Like the periwinkle overhead names, addons cannot recolor these names, change their font, or replace them at the same world position.",
+        text = "Blizzard draws interactive NPCs, including city guards that offer directions, as engine-level yellow overhead names rather than as addon-accessible nameplate text. The experimental replacement option can restyle them only when Blizzard creates a friendly-NPC nameplate.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["SNP_BLIZZARD_VENDOR_INFO"] = {
-        text = "Blizzard draws vendor NPCs as engine-level green overhead names rather than as addon-accessible nameplate text. Like the periwinkle and yellow overhead names, addons cannot recolor these names, change their font, or replace them at the same world position.",
+        text = "Blizzard draws vendor NPCs as engine-level green overhead names rather than as addon-accessible nameplate text. The experimental replacement option can restyle them only when Blizzard creates a friendly-NPC nameplate.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
@@ -567,6 +571,26 @@ local function CreateColorsPanel()
         1, 1, 0, "SNP_BLIZZARD_INTERACTIVE_INFO")
     CreateLockedColorRow("Vendor NPC overhead names",
         0, 1, 0, "SNP_BLIZZARD_VENDOR_INFO")
+    local replaceOverheadNames = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
+    replaceOverheadNames:SetSize(26, 26)
+    replaceOverheadNames:SetHitRectInsets(0, -380, 0, 0)
+    layout:Add(replaceOverheadNames, 20, 30, 0)
+    local replaceOverheadNamesLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    replaceOverheadNamesLabel:SetPoint("LEFT", replaceOverheadNames, "RIGHT", 4, 0)
+    replaceOverheadNamesLabel:SetText("Replace Blizzard overhead names (experimental)")
+    local replaceOverheadNamesNote = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    replaceOverheadNamesNote:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    replaceOverheadNamesNote:SetJustifyH("LEFT")
+    replaceOverheadNamesNote:SetText("Requests name-only player, minion, and NPC plates, then hides the matching world names. A unit may have no visible name if Blizzard does not create a plate. Prior WoW settings are restored when disabled.")
+    layout:Add(replaceOverheadNamesNote, 24, 42, 8)
+    local function RefreshReplaceOverheadNames()
+        replaceOverheadNames:SetChecked(GetReplaceBlizzardOverheadNames())
+    end
+    replaceOverheadNames:SetScript("OnClick", function(self)
+        SetReplaceBlizzardOverheadNames(self:GetChecked() == true)
+        RefreshReplaceOverheadNames()
+        RefreshNameplates()
+    end)
     local hideMinionNames = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     hideMinionNames:SetSize(26, 26)
     hideMinionNames:SetHitRectInsets(0, -340, 0, 0)
@@ -657,12 +681,14 @@ local function CreateColorsPanel()
     panel:SetScript("OnShow", function()
         RefreshEnabled()
         RefreshAttackingGlow()
+        RefreshReplaceOverheadNames()
         RefreshHideMinionNames()
         RefreshHideCritterCompanionNames()
         for _, refresh in ipairs(toggleRefreshers) do refresh() end
     end)
     RefreshEnabled()
     RefreshAttackingGlow()
+    RefreshReplaceOverheadNames()
     RefreshHideMinionNames()
     RefreshHideCritterCompanionNames()
     layout:Finish()

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.70
+
+* Added an experimental toggle that hides selected Blizzard overhead player, minion, and NPC names while requesting colorable Blizzard nameplates in their place.
+* Combined Midnight's forced-name and friendly-player name-only CVars so hidden world-name settings do not also suppress replacement nameplate text.
+* Restores every affected WoW CVar when the experiment or Simple Nameplates styling is disabled.
+* Reports the replacement state through `/snp debug`.
+
 ## 1.0.69
 
 * Removed legacy SavedVariables migration and import behavior for the fresh-install release.

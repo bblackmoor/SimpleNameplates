@@ -73,6 +73,7 @@ local DEFAULT_STYLING_ENABLED = true
 local DEFAULT_SHOW_THREAT = true
 local DEFAULT_HIDE_BLIZZARD_MINION_NAMES = false
 local DEFAULT_HIDE_CRITTER_COMPANION_NAMES = false
+local DEFAULT_REPLACE_BLIZZARD_OVERHEAD_NAMES = false
 
 local BLIZZARD_MINION_NAME_CVARS = {
     "UnitNameFriendlyMinionName",
@@ -90,6 +91,53 @@ local BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {
     "UnitNameNonCombatCreatureName",
 }
 ns.BLIZZARD_CRITTER_COMPANION_NAME_CVARS = BLIZZARD_CRITTER_COMPANION_NAME_CVARS
+
+-- Experimental replacement hides selected engine-drawn world names and asks
+-- Blizzard to create ordinary nameplates in their place. ForceShowUnitName is
+-- required because the UnitName CVars otherwise hide the nameplate text too.
+local OVERHEAD_REPLACEMENT_CVAR_VALUES = {
+    UnitNameFriendlyPlayerName = "0",
+    UnitNameEnemyPlayerName = "0",
+    UnitNameFriendlyMinionName = "0",
+    UnitNameEnemyMinionName = "0",
+    UnitNameFriendlyPetName = "0",
+    UnitNameEnemyPetName = "0",
+    UnitNameFriendlyGuardianName = "0",
+    UnitNameEnemyGuardianName = "0",
+    UnitNameFriendlyTotemName = "0",
+    UnitNameEnemyTotemName = "0",
+    UnitNameFriendlySpecialNPCName = "0",
+    UnitNameInteractiveNPC = "0",
+    UnitNameHostleNPC = "0",
+    UnitNameNPC = "0",
+    nameplateShowAll = "1",
+    nameplateForceShowUnitName = "1",
+    nameplateShowFriendlyPlayers = "1",
+    nameplateShowFriendlyNpcs = "1",
+    nameplateShowFriendlyPlayerMinions = "1",
+    nameplateShowFriendlyPlayerPets = "1",
+    nameplateShowFriendlyPlayerGuardians = "1",
+    nameplateShowFriendlyPlayerTotems = "1",
+    nameplateShowFriendlyMinions = "1",
+    nameplateShowFriendlyPets = "1",
+    nameplateShowFriendlyGuardians = "1",
+    nameplateShowFriendlyTotems = "1",
+    nameplateShowEnemies = "1",
+    nameplateShowEnemyMinions = "1",
+    nameplateShowEnemyPets = "1",
+    nameplateShowEnemyGuardians = "1",
+    nameplateShowEnemyTotems = "1",
+    nameplateShowOnlyNameForFriendlyPlayerUnits = "1",
+}
+local OVERHEAD_REPLACEMENT_CVARS = {}
+local OVERHEAD_REPLACEMENT_CVAR_SET = {}
+for cvar in pairs(OVERHEAD_REPLACEMENT_CVAR_VALUES) do
+    OVERHEAD_REPLACEMENT_CVARS[#OVERHEAD_REPLACEMENT_CVARS + 1] = cvar
+    OVERHEAD_REPLACEMENT_CVAR_SET[string.lower(cvar)] = true
+end
+table.sort(OVERHEAD_REPLACEMENT_CVARS)
+ns.OVERHEAD_REPLACEMENT_CVARS = OVERHEAD_REPLACEMENT_CVARS
+ns.OVERHEAD_REPLACEMENT_CVAR_SET = OVERHEAD_REPLACEMENT_CVAR_SET
 
 ns.FONT_OPTIONS = FONT_OPTIONS
 ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
@@ -195,6 +243,8 @@ local function ValidatedDB(saved)
         DEFAULT_HIDE_BLIZZARD_MINION_NAMES)
     db.hideCritterCompanionNames = SavedBoolean(saved.hideCritterCompanionNames,
         DEFAULT_HIDE_CRITTER_COMPANION_NAMES)
+    db.replaceBlizzardOverheadNames = SavedBoolean(saved.replaceBlizzardOverheadNames,
+        DEFAULT_REPLACE_BLIZZARD_OVERHEAD_NAMES)
     db.attackingGlow = SavedBoolean(saved.attackingGlow, false)
     db.interruptibleHighlight = SavedBoolean(saved.interruptibleHighlight, false)
 
@@ -207,6 +257,8 @@ local function ValidatedDB(saved)
         saved.blizzardMinionNameCVarOriginals, BLIZZARD_MINION_NAME_CVARS)
     db.critterCompanionNameCVarOriginals = CopySavedCVarOriginals(
         saved.critterCompanionNameCVarOriginals, BLIZZARD_CRITTER_COMPANION_NAME_CVARS)
+    db.overheadReplacementCVarOriginals = CopySavedCVarOriginals(
+        saved.overheadReplacementCVarOriginals, OVERHEAD_REPLACEMENT_CVARS)
 
     return db
 end
@@ -263,8 +315,9 @@ local function ResetAppearance()
 end
 
 local function RelationshipColorForState(state)
-    local color = EnsureDB().relationshipColors[state]
-        or DEFAULT_RELATIONSHIP_COLORS[state]
+    local colorState = state == "unfriendlyPC" and "unfriendlyNPC" or state
+    local color = EnsureDB().relationshipColors[colorState]
+        or DEFAULT_RELATIONSHIP_COLORS[colorState]
         or DEFAULT_RELATIONSHIP_COLORS.friendlyNPC
     return color.r, color.g, color.b
 end
@@ -444,6 +497,57 @@ local function SetHideCritterCompanionNames(enabled)
     end
 end
 
+local applyingOverheadReplacement = false
+
+local function GetReplaceBlizzardOverheadNames()
+    return EnsureDB().replaceBlizzardOverheadNames
+end
+
+local function ApplyOverheadNameReplacement()
+    local db = EnsureDB()
+    if applyingOverheadReplacement or not db.stylingEnabled
+        or not db.replaceBlizzardOverheadNames then return end
+
+    applyingOverheadReplacement = true
+    if type(db.overheadReplacementCVarOriginals) ~= "table" then
+        db.overheadReplacementCVarOriginals = {}
+    end
+    local originals = db.overheadReplacementCVarOriginals
+    for _, cvar in ipairs(OVERHEAD_REPLACEMENT_CVARS) do
+        local current = GetCVarValue(cvar)
+        if current ~= nil then
+            if originals[cvar] == nil then originals[cvar] = current end
+            SetCVarValue(cvar, OVERHEAD_REPLACEMENT_CVAR_VALUES[cvar])
+        end
+    end
+    applyingOverheadReplacement = false
+end
+
+local function RestoreOverheadNameSettings()
+    local db = EnsureDB()
+    local originals = db.overheadReplacementCVarOriginals
+    db.overheadReplacementCVarOriginals = nil
+    if type(originals) ~= "table" then return end
+
+    applyingOverheadReplacement = true
+    for cvar, value in pairs(originals) do SetCVarValue(cvar, value) end
+    applyingOverheadReplacement = false
+
+    -- Preserve the two independent visibility choices if either remains on.
+    ApplyBlizzardMinionNameVisibility()
+    ApplyCritterCompanionNameVisibility()
+end
+
+local function SetReplaceBlizzardOverheadNames(enabled)
+    local db = EnsureDB()
+    db.replaceBlizzardOverheadNames = enabled == true
+    if db.replaceBlizzardOverheadNames then
+        ApplyOverheadNameReplacement()
+    else
+        RestoreOverheadNameSettings()
+    end
+end
+
 local FRIENDLY_COLOR_CVARS = {
     "nameplateUseClassColorForFriendlyPlayerUnitNames",
     "nameplateShowFriendlyClassColor",
@@ -572,6 +676,10 @@ ns.ApplyBlizzardMinionNameVisibility = ApplyBlizzardMinionNameVisibility
 ns.GetHideCritterCompanionNames = GetHideCritterCompanionNames
 ns.SetHideCritterCompanionNames = SetHideCritterCompanionNames
 ns.ApplyCritterCompanionNameVisibility = ApplyCritterCompanionNameVisibility
+ns.GetReplaceBlizzardOverheadNames = GetReplaceBlizzardOverheadNames
+ns.SetReplaceBlizzardOverheadNames = SetReplaceBlizzardOverheadNames
+ns.ApplyOverheadNameReplacement = ApplyOverheadNameReplacement
+ns.RestoreOverheadNameSettings = RestoreOverheadNameSettings
 ns.GetAppearanceSetting = GetAppearanceSetting
 ns.SetAppearanceSetting = SetAppearanceSetting
 ns.FontPath = FontPath
