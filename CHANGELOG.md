@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.71
+
+* Added 90-day development ZIP artifacts for every commit to `main`, identified by addon version and short commit SHA.
+* Reserved permanent, cleanly named GitHub Releases for matching version tags.
+
 ## 1.0.70
 
 * Added an experimental toggle that hides selected Blizzard overhead player, minion, and NPC names while requesting colorable Blizzard nameplates in their place.

@@ -1,15 +1,17 @@
-name: Publish addon release
+name: Build addon package
 
 on:
   push:
     branches:
       - main
+    tags:
+      - "v*"
 
 permissions:
   contents: write
 
 jobs:
-  release:
+  package:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -26,22 +28,52 @@ jobs:
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Name package
+        id: package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            expected_tag="v$VERSION"
+            if [ "$GITHUB_REF_NAME" != "$expected_tag" ]; then
+              echo "Tag $GITHUB_REF_NAME does not match addon version $VERSION" >&2
+              exit 1
+            fi
+            name="SimpleNameplates-$VERSION"
+          else
+            short_sha="${GITHUB_SHA::7}"
+            name="SimpleNameplates-$VERSION-dev-$short_sha"
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
       - name: Build installable ZIP
         shell: bash
         run: |
           mkdir -p dist
-          zip -qr "dist/SimpleNameplates-${{ steps.version.outputs.version }}.zip" SimpleNameplates
+          zip -qr "dist/${{ steps.package.outputs.name }}.zip" SimpleNameplates
+
+      - name: Store development build for 90 days
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.name }}
+          path: dist/${{ steps.package.outputs.name }}.zip
+          retention-days: 90
+          if-no-files-found: error
 
       - name: Publish GitHub Release
+        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
+          PACKAGE_NAME: ${{ steps.package.outputs.name }}
         shell: bash
         run: |
           tag="v$VERSION"
-          asset="dist/SimpleNameplates-$VERSION.zip"
+          asset="dist/$PACKAGE_NAME.zip"
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" --clobber
           else
-            gh release create "$tag" "$asset" --target "$GITHUB_SHA" --title "Simple Nameplates $VERSION" --generate-notes
+            gh release create "$tag" "$asset" --title "Simple Nameplates $VERSION" --generate-notes
           fi

@@ -84,7 +84,9 @@ All four settings pages scroll when their contents do not fit the available wind
 
 ## Download
 
-Ready-to-install ZIP files are available from the [GitHub Releases](https://github.com/bblackmoor/SimpleNameplates/releases) page. Each release contains a versioned `SimpleNameplates-<version>.zip` archive.
+Permanent, ready-to-install ZIP files are available from the [GitHub Releases](https://github.com/bblackmoor/SimpleNameplates/releases) page. Each release contains a `SimpleNameplates-<version>.zip` archive.
+
+Every commit to `main` also creates a development build under [GitHub Actions](https://github.com/bblackmoor/SimpleNameplates/actions/workflows/release.yml). Development archives are named `SimpleNameplates-<version>-dev-<commit>.zip` and retained for 90 days. A version tag such as `v1.0.71` publishes the corresponding permanent release.
 
 ## Installation
 
