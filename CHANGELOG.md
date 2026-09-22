@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.67
+
+* Fixed a Midnight secret-string error in the cached name-style reconciliation loop.
+
 ## 1.0.66
 
 * Added an option to hide Blizzard overhead names for noncombat critters and companions.

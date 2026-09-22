@@ -328,8 +328,8 @@ end
 local function CachedNameHasDrifted(frame)
     local name, expected = frame and frame.name, frame and frame.SNPNameStyle
     if not name or not expected then return false end
-    if name:GetText() ~= expected.text then return true end
-
+    -- FontString text can be a secret string in Midnight. Never read or compare
+    -- it here; the secure Blizzard name-update hook and unit events repair text.
     local font, size, flags = name:GetFont()
     if font ~= expected.font or not NearlyEqual(size, expected.size) or flags ~= expected.flags then
         return true
