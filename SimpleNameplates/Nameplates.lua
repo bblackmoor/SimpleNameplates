@@ -18,8 +18,6 @@ local UnitReaction = UnitReaction
 local UnitThreatSituation = UnitThreatSituation
 local UnitDetailedThreatSituation = UnitDetailedThreatSituation
 local UnitExists = UnitExists
-local UnitHealth = UnitHealth
-local UnitHealthMax = UnitHealthMax
 local UnitName = UnitName
 
 local AccessibleNumber = ns.AccessibleNumber
@@ -147,16 +145,6 @@ end
 local function SetShownSafe(region, shown)
     if not region then return end
     if shown then region:Show() else region:Hide() end
-end
-
-local function UpdateHealthValue(frame)
-    local bar, unit = GetHealthBar(frame), frame and frame.unit
-    if not bar or not unit then return end
-    local health, maxHealth = AccessibleNumber(UnitHealth(unit)), AccessibleNumber(UnitHealthMax(unit))
-    if health and maxHealth and maxHealth > 0 then
-        bar:SetMinMaxValues(0, maxHealth)
-        bar:SetValue(health)
-    end
 end
 
 local function UpdateNameText(frame)
@@ -609,7 +597,6 @@ local function ApplySimpleStyle(frame)
     ApplyVisibility(frame, state)
     StyleName(frame, state)
     if not IsNameOnlyState(state) and bar then
-        UpdateHealthValue(frame)
         bar:SetStatusBarColor(r, g, b, 1)
         UpdateThreatText(frame, state)
     elseif frame.SNPThreatText then
@@ -719,7 +706,7 @@ if hooksecurefunc and CompactUnitFrame_UpdateName then
 end
 
 local events = CreateFrame("Frame")
-for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","CVAR_UPDATE"}) do
+for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","CVAR_UPDATE"}) do
     events:RegisterEvent(event)
 end
 
@@ -833,16 +820,6 @@ events:SetScript("OnEvent", function(_, event, unit)
         return
     end
     if event == "PLAYER_TARGET_CHANGED" then QueueRefreshAll(); return end
-    if event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" then
-        -- These events also fire for tokens such as targettarget, which
-        -- C_NamePlate.GetNamePlateForUnit explicitly rejects. Only nameplate
-        -- unit tokens can identify a plate that needs its value refreshed.
-        if unit and tostring(unit):match("^nameplate%d+$") then
-            local frame = GetUnitFrame(unit)
-            if frame then UpdateHealthValue(frame) end
-        end
-        return
-    end
     if unit and tostring(unit):match("^nameplate%d+$") then QueueUnitRefresh(unit)
     elseif event == "UNIT_THREAT_SITUATION_UPDATE" or event == "UNIT_THREAT_LIST_UPDATE" then QueueRefreshAll() end
 end)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.68
+
+* Moved the High Contrast and Reset Colors buttons to the top of the Colors panel.
+* Added a locked green row documenting Blizzard-controlled vendor-NPC overhead names.
+* Stopped writing health and maximum-health values into Blizzard nameplate bars, preventing secret-number taint in Blizzard heal prediction.
+
 ## 1.0.67
 
 * Fixed a Midnight secret-string error in the cached name-style reconciliation loop.

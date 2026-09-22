@@ -353,6 +353,23 @@ local function CreateColorsPanel()
     local panel, content, layout = CreateScrollablePanel("Colors")
     AddTitle(content, layout, "Simple Nameplates — Colors")
     AddDescription(content, layout, "Each row shows where its color is applied.")
+
+    local swatchRefreshers, toggleRefreshers = {}, {}
+    local RefreshAttackingGlow
+    local buttonRow = CreateFrame("Frame", nil, content)
+    buttonRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(buttonRow, 24, 24, 8)
+
+    local preset = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
+    preset:SetSize(150, 24)
+    preset:SetPoint("LEFT")
+    preset:SetText("High Contrast")
+
+    local reset = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
+    reset:SetSize(150, 24)
+    reset:SetPoint("LEFT", preset, "RIGHT", 12, 0)
+    reset:SetText("Reset Colors")
+
     local enabled = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     enabled:SetSize(26, 26)
     enabled:SetHitRectInsets(0, -280, 0, 0)
@@ -372,8 +389,6 @@ local function CreateColorsPanel()
             if ns.RestoreAll then ns.RestoreAll() end
         end
     end)
-
-    local swatchRefreshers, toggleRefreshers = {}, {}
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
         text = "Blizzard draws non-attackable opposing-faction players and many player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nWithout a nameplate frame, addons cannot recolor the name, change its font, or draw replacement text at the same world position. Minion names can be hidden with the option below; opposing-player names cannot be changed independently beyond Blizzard's global name settings.\n\nI have spent months trying to change this one fucking text type. Apparently, it is simply impossible.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
@@ -381,6 +396,11 @@ local function CreateColorsPanel()
     }
     StaticPopupDialogs["SNP_BLIZZARD_INTERACTIVE_INFO"] = {
         text = "Blizzard draws interactive NPCs, including city guards that offer directions, as engine-level yellow overhead names rather than as addon-accessible nameplate text. Like the periwinkle overhead names, addons cannot recolor these names, change their font, or replace them at the same world position.",
+        button1 = OKAY or "Okay", timeout = 0, whileDead = true,
+        hideOnEscape = true, preferredIndex = 3,
+    }
+    StaticPopupDialogs["SNP_BLIZZARD_VENDOR_INFO"] = {
+        text = "Blizzard draws vendor NPCs as engine-level green overhead names rather than as addon-accessible nameplate text. Like the periwinkle and yellow overhead names, addons cannot recolor these names, change their font, or replace them at the same world position.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
@@ -545,6 +565,8 @@ local function CreateColorsPanel()
         102 / 255, 102 / 255, 1, "SNP_BLIZZARD_OVERHEAD_INFO")
     CreateLockedColorRow("Interactive NPC overhead names",
         1, 1, 0, "SNP_BLIZZARD_INTERACTIVE_INFO")
+    CreateLockedColorRow("Vendor NPC overhead names",
+        0, 1, 0, "SNP_BLIZZARD_VENDOR_INFO")
     local hideMinionNames = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     hideMinionNames:SetSize(26, 26)
     hideMinionNames:SetHitRectInsets(0, -340, 0, 0)
@@ -599,7 +621,7 @@ local function CreateColorsPanel()
     attackingGlowNote:SetJustifyH("LEFT")
     attackingGlowNote:SetText("Uses the configured Attacking color and applies to both PCs and NPCs.")
     layout:Add(attackingGlowNote, 24, 28, 8)
-    local function RefreshAttackingGlow() attackingGlow:SetChecked(GetAttackingGlowEnabled()) end
+    RefreshAttackingGlow = function() attackingGlow:SetChecked(GetAttackingGlowEnabled()) end
     attackingGlow:SetScript("OnClick", function(self)
         SetAttackingGlowEnabled(self:GetChecked() == true)
         RefreshNameplates()
@@ -617,19 +639,6 @@ local function CreateColorsPanel()
     interruptibleNote:SetText("Uses Blizzard's interruptibility result and is drawn above the attacking glow.")
     layout:Add(interruptibleNote, 24, 28, 8)
 
-    local buttonRow = CreateFrame("Frame", nil, content)
-    buttonRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    layout:Add(buttonRow, 24, 24)
-
-    local preset = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
-    preset:SetSize(150, 24)
-    preset:SetPoint("LEFT")
-    preset:SetText("High Contrast")
-
-    local reset = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
-    reset:SetSize(150, 24)
-    reset:SetPoint("LEFT", preset, "RIGHT", 12, 0)
-    reset:SetText("Reset Colors")
     reset:SetScript("OnClick", function()
         ResetAllColors()
         for _, refresh in ipairs(swatchRefreshers) do refresh() end
