@@ -64,9 +64,9 @@ Both fonts default to WoW's built-in **Arial Narrow** with a normal outline, and
 
 Open **Options → AddOns → Simple Nameplates → TRP3**, or type `/snp trp3`. The page begins with **Display TRP3 profile information**, which is disabled by default.
 
-When enabled, Simple Nameplates can use a character's TRP3 roleplaying full name, put the short title before the name, show the full title on a separate line above the name, and mark out-of-character profiles. If the OOC option is enabled, `[OOC]` replaces the short title; IC profiles receive no marker. Full titles always remain outside the health bar, even when the name itself is inside it.
+When enabled, Simple Nameplates can use a character's TRP3 roleplaying full name, put the short title before the name, show the long title on a separate line beneath the name, and mark out-of-character profiles. If the OOC option is enabled, `[OOC]` replaces the short title; IC profiles receive no marker. Long titles use 80% of the name size and are hidden for units with visible health bars.
 
-Each field has its own toggle. To keep nameplates readable, roleplaying names are limited to 32 characters, short titles to 20, and full titles to 48; longer values end with an ellipsis. The normal WoW name is used whenever a cached TRP3 profile or selected field is unavailable. `TRP3.lua` keeps the optional profile access isolated, and Simple Nameplates continues to work normally without TRP3.
+Each field has its own toggle. To keep nameplates readable, roleplaying names are limited to 32 characters, short titles to 20, and long titles to 48; longer values end with an ellipsis. The normal WoW name is used whenever a cached TRP3 profile or selected field is unavailable. `TRP3.lua` keeps the optional profile access isolated, and Simple Nameplates continues to work normally without TRP3.
 
 ## About and Diagnostics
 

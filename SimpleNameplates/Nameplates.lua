@@ -199,34 +199,25 @@ local function EnsureFullTitleText(frame)
     return fullTitle
 end
 
-local function StyleFullTitle(frame, state, text, nameInsideBar, baseNameSize, bar)
+local function StyleFullTitle(frame, state, text, baseNameSize)
     local fullTitle = frame.SNPFullTitleText
-    if not text then
+    -- Long titles are useful on name-only plates, but add too much visual
+    -- noise to units whose health bars are visible.
+    if not text or not IsNameOnlyState(state) then
         if fullTitle then fullTitle:SetText(""); fullTitle:Hide() end
         return
     end
 
     fullTitle = EnsureFullTitleText(frame)
-    fullTitle:SetFont(FontPath(GetAppearanceSetting("nameFont")), math.max(6, baseNameSize - 1), "OUTLINE")
+    local titleSize = math.max(6, math.floor(baseNameSize * 0.8 + 0.5))
+    fullTitle:SetFont(FontPath(GetAppearanceSetting("nameFont")), titleSize, "OUTLINE")
     fullTitle:SetText(text)
     fullTitle:SetShadowColor(0, 0, 0, 1)
     fullTitle:SetShadowOffset(1, -1)
     fullTitle:ClearAllPoints()
-    if IsNameOnlyState(state) then
-        fullTitle:SetPoint("BOTTOM", frame.name, "TOP", 0, 1)
-        fullTitle:SetJustifyH("CENTER")
-    elseif nameInsideBar and bar then
-        fullTitle:SetPoint("BOTTOMLEFT", bar, "TOPLEFT", 0, 2)
-        fullTitle:SetJustifyH("LEFT")
-    else
-        fullTitle:SetPoint("BOTTOMLEFT", frame.name, "TOPLEFT", 0, 1)
-        fullTitle:SetJustifyH("LEFT")
-    end
-    if IsNameOnlyState(state) then
-        fullTitle:SetTextColor(RelationshipColorForState(state))
-    else
-        fullTitle:SetTextColor(1, 1, 1, 1)
-    end
+    fullTitle:SetPoint("TOP", frame.name, "BOTTOM", 0, -1)
+    fullTitle:SetJustifyH("CENTER")
+    fullTitle:SetTextColor(RelationshipColorForState(state))
     fullTitle:Show()
 end
 
@@ -314,7 +305,7 @@ local function StyleName(frame, state)
     name:SetVertexColor(1, 1, 1, 1)
     name:SetTextColor(nameR, nameG, nameB, 1)
     name:Show()
-    StyleFullTitle(frame, state, fullTitle, inside, baseSize, bar)
+    StyleFullTitle(frame, state, fullTitle, baseSize)
 
     local expected = frame.SNPNameStyle or {}
     frame.SNPNameStyle = expected

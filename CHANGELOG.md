@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.65
+
+* Moved TRP3 long titles beneath names and sized them to 80% of the configured name size.
+* Hidden long titles for units with visible health bars.
+
 ## 1.0.64
 
 * Added an option to hide Blizzard-controlled friendly and enemy pet, guardian, totem, and minion names while leaving opposing-player names visible.
