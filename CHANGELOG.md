@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.64
+
+* Added an option to hide Blizzard-controlled friendly and enemy pet, guardian, totem, and minion names while leaving opposing-player names visible.
+* Restored the prior Blizzard name settings when the option is disabled.
+
 ## 1.0.63
 
 * Increased inside-bar name padding to two UI units above and below.

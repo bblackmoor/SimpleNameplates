@@ -74,6 +74,7 @@ local DEFAULT_TRP3 = {
 
 local DEFAULT_STYLING_ENABLED = true
 local DEFAULT_SHOW_THREAT = true
+local DEFAULT_HIDE_BLIZZARD_MINION_NAMES = false
 
 ns.FONT_OPTIONS = FONT_OPTIONS
 ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
@@ -219,6 +220,9 @@ local function EnsureDB()
     end
     if type(db.stylingEnabled) ~= "boolean" then db.stylingEnabled = DEFAULT_STYLING_ENABLED end
     if type(db.showThreat) ~= "boolean" then db.showThreat = DEFAULT_SHOW_THREAT end
+    if type(db.hideBlizzardMinionNames) ~= "boolean" then
+        db.hideBlizzardMinionNames = DEFAULT_HIDE_BLIZZARD_MINION_NAMES
+    end
     if type(db.attackingGlow) ~= "boolean" then db.attackingGlow = false end
     if type(db.interruptibleHighlight) ~= "boolean" then db.interruptibleHighlight = false end
     if type(db.trp3) ~= "table" then db.trp3 = {} end
@@ -375,6 +379,60 @@ local function SetThreatEnabled(enabled)
     EnsureDB().showThreat = enabled == true
 end
 
+local BLIZZARD_MINION_NAME_CVARS = {
+    "UnitNameFriendlyMinionName",
+    "UnitNameEnemyMinionName",
+    "UnitNameFriendlyPetName",
+    "UnitNameEnemyPetName",
+    "UnitNameFriendlyGuardianName",
+    "UnitNameEnemyGuardianName",
+    "UnitNameFriendlyTotemName",
+    "UnitNameEnemyTotemName",
+}
+ns.BLIZZARD_MINION_NAME_CVARS = BLIZZARD_MINION_NAME_CVARS
+
+local function ApplyBlizzardMinionNameVisibility()
+    local db = EnsureDB()
+    if not db.hideBlizzardMinionNames then return end
+
+    if type(db.blizzardMinionNameCVarOriginals) ~= "table" then
+        db.blizzardMinionNameCVarOriginals = {}
+    end
+    local originals = db.blizzardMinionNameCVarOriginals
+    for _, cvar in ipairs(BLIZZARD_MINION_NAME_CVARS) do
+        local current = GetCVarValue(cvar)
+        if current ~= nil then
+            if originals[cvar] == nil then originals[cvar] = current end
+            SetCVarValue(cvar, "0")
+        end
+    end
+end
+
+local function RestoreBlizzardMinionNameVisibility()
+    local db = EnsureDB()
+    local originals = db.blizzardMinionNameCVarOriginals
+    db.blizzardMinionNameCVarOriginals = nil
+    if type(originals) ~= "table" then return end
+
+    for cvar, value in pairs(originals) do
+        SetCVarValue(cvar, value)
+    end
+end
+
+local function GetHideBlizzardMinionNames()
+    return EnsureDB().hideBlizzardMinionNames
+end
+
+local function SetHideBlizzardMinionNames(enabled)
+    local db = EnsureDB()
+    db.hideBlizzardMinionNames = enabled == true
+    if db.hideBlizzardMinionNames then
+        ApplyBlizzardMinionNameVisibility()
+    else
+        RestoreBlizzardMinionNameVisibility()
+    end
+end
+
 local FRIENDLY_COLOR_CVARS = {
     "nameplateUseClassColorForFriendlyPlayerUnitNames",
     "nameplateShowFriendlyClassColor",
@@ -497,6 +555,9 @@ ns.GetStylingEnabled = GetStylingEnabled
 ns.SetStylingEnabled = SetStylingEnabled
 ns.GetThreatEnabled = GetThreatEnabled
 ns.SetThreatEnabled = SetThreatEnabled
+ns.GetHideBlizzardMinionNames = GetHideBlizzardMinionNames
+ns.SetHideBlizzardMinionNames = SetHideBlizzardMinionNames
+ns.ApplyBlizzardMinionNameVisibility = ApplyBlizzardMinionNameVisibility
 ns.GetAppearanceSetting = GetAppearanceSetting
 ns.SetAppearanceSetting = SetAppearanceSetting
 ns.FontPath = FontPath

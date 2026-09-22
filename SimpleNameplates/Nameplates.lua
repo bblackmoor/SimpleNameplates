@@ -765,6 +765,12 @@ events:SetScript("OnEvent", function(_, event, unit)
     end
     if event == "PLAYER_LOGIN" then
         ns.EnsureDB()
+        ns.ApplyBlizzardMinionNameVisibility()
+        C_Timer.After(1, function()
+            if ns.GetHideBlizzardMinionNames() then
+                ns.ApplyBlizzardMinionNameVisibility()
+            end
+        end)
         if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
         if ns.TRP3 and ns.TRP3.RegisterCallbacks then ns.TRP3.RegisterCallbacks() end
         if GetStylingEnabled() then
@@ -781,8 +787,16 @@ events:SetScript("OnEvent", function(_, event, unit)
         end
         return
     end
-    if not GetStylingEnabled() then return end
     if event == "CVAR_UPDATE" then
+        if ns.GetHideBlizzardMinionNames() then
+            for _, cvar in ipairs(ns.BLIZZARD_MINION_NAME_CVARS) do
+                if unit == cvar then
+                    ns.ApplyBlizzardMinionNameVisibility()
+                    return
+                end
+            end
+        end
+        if not GetStylingEnabled() then return end
         for _, cvar in ipairs(ns.FRIENDLY_COLOR_CVARS) do
             if unit == cvar then
                 ns.DisableFriendlyClassColors()
@@ -792,6 +806,7 @@ events:SetScript("OnEvent", function(_, event, unit)
         end
         return
     end
+    if not GetStylingEnabled() then return end
     if event == "NAME_PLATE_UNIT_ADDED" then
         RefreshUnit(unit)
         -- One delayed pass covers late nameplate initialization; the Blizzard

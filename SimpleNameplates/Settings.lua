@@ -17,6 +17,8 @@ local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
 local SetInterruptibleHighlightEnabled = ns.SetInterruptibleHighlightEnabled
 local GetStylingEnabled, SetStylingEnabled = ns.GetStylingEnabled, ns.SetStylingEnabled
 local GetThreatEnabled, SetThreatEnabled = ns.GetThreatEnabled, ns.SetThreatEnabled
+local GetHideBlizzardMinionNames = ns.GetHideBlizzardMinionNames
+local SetHideBlizzardMinionNames = ns.SetHideBlizzardMinionNames
 
 local settingsCategory, colorsSettingsCategory, textSettingsCategory, trp3SettingsCategory
 
@@ -371,7 +373,7 @@ local function CreateColorsPanel()
 
     local swatchRefreshers, toggleRefreshers = {}, {}
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
-        text = "Blizzard draws non-attackable opposing-faction players and all player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nWoW's settings and addons can request friendly, enemy, and always-visible nameplates, but they cannot force the game to create a nameplate frame for these units. Without that frame, addons cannot recolor the name, change its font, or draw replacement text at the same world position.\n\nI have spent months trying to change this one fucking text type. Apparently, it is simply impossible.",
+        text = "Blizzard draws non-attackable opposing-faction players and many player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nWithout a nameplate frame, addons cannot recolor the name, change its font, or draw replacement text at the same world position. Minion names can be hidden with the option below; opposing-player names cannot be changed independently beyond Blizzard's global name settings.\n\nI have spent months trying to change this one fucking text type. Apparently, it is simply impossible.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
@@ -533,6 +535,25 @@ local function CreateColorsPanel()
     CreateRelationshipRow("Attackable but non-aggressive NPC", "unfriendlyNPC", "Changes the health-bar color")
     CreateRelationshipRow("Aggressive NPC or PvP-enabled opposing PC", "hostile", "Changes the health-bar color")
     CreateLockedColorRow("Blizzard-controlled overhead names")
+    local hideMinionNames = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
+    hideMinionNames:SetSize(26, 26)
+    hideMinionNames:SetHitRectInsets(0, -340, 0, 0)
+    layout:Add(hideMinionNames, 20, 30, 0)
+    local hideMinionNamesLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    hideMinionNamesLabel:SetPoint("LEFT", hideMinionNames, "RIGHT", 4, 0)
+    hideMinionNamesLabel:SetText("Hide Blizzard-controlled minion names")
+    local hideMinionNamesNote = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    hideMinionNamesNote:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    hideMinionNamesNote:SetJustifyH("LEFT")
+    hideMinionNamesNote:SetText("Hides friendly and enemy pets, guardians, totems, and minions. Opposing-player names remain visible.")
+    layout:Add(hideMinionNamesNote, 24, 28, 8)
+    local function RefreshHideMinionNames()
+        hideMinionNames:SetChecked(GetHideBlizzardMinionNames())
+    end
+    hideMinionNames:SetScript("OnClick", function(self)
+        SetHideBlizzardMinionNames(self:GetChecked() == true)
+        RefreshHideMinionNames()
+    end)
     layout:Space(6)
     CreateSection("COMBAT OVERRIDE")
     CreateRelationshipRow("Attacking me or one of my controlled units", "attacking", "Changes the health-bar color")
@@ -598,10 +619,12 @@ local function CreateColorsPanel()
     panel:SetScript("OnShow", function()
         RefreshEnabled()
         RefreshAttackingGlow()
+        RefreshHideMinionNames()
         for _, refresh in ipairs(toggleRefreshers) do refresh() end
     end)
     RefreshEnabled()
     RefreshAttackingGlow()
+    RefreshHideMinionNames()
     layout:Finish()
     return panel
 end

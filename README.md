@@ -14,7 +14,7 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | Hostile opponent | Orange | Aggressive NPC or PvP-enabled opposing PC; colored health bar |
 | Attacking | Red | PC or NPC attacking you or one of your controlled units; colored health bar |
 | Interruptible cast | Cyan | Optional cast-bar outline for interruptible casts and channels |
-| Blizzard overhead name | Periwinkle blue, locked | Non-attackable opposing PCs and all player-controlled pets, guardians, totems, and minions |
+| Blizzard overhead name | Periwinkle blue, locked | Non-attackable opposing PCs and many player-controlled minions; minion names can be hidden |
 
 ## How It Works
 
@@ -38,13 +38,13 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five relationship colors and the interruptible cast-bar highlight. Each editable row identifies where its color appears and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled periwinkle-blue overhead names, which are not exposed to addons. The panel also includes **Reset Colors**, a master styling switch, and two options disabled by default: **Glow attacking units** and **Highlight interruptible casts and channels**.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five relationship colors and the interruptible cast-bar highlight. Each editable row identifies where its color appears and has its own reset button. Changes apply immediately and are saved between sessions. A locked informational row explains Blizzard-controlled periwinkle-blue overhead names. The panel also includes **Reset Colors**, a master styling switch, and three options disabled by default: **Hide Blizzard-controlled minion names**, **Glow attacking units**, and **Highlight interruptible casts and channels**.
 
 The **High Contrast** preset replaces the editable colors with cyan `#00FFFF`, blue `#0066FF`, yellow `#FFFF00`, orange `#FF6600`, magenta `#FF00FF`, and white `#FFFFFF`. It avoids relying on a red/green distinction and enables the attacking glow so the attacking state also has a non-color cue. A confirmation explains both changes before the preset is applied. The preset does not alter WoW's own colorblind mode, filter type, or filter strength; Blizzard's global filter continues to affect the rendered addon normally.
 
 Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
 
-Blizzard's separate overhead world names cannot be recolored because they are not addon-accessible nameplate frames. This includes non-attackable opposing-faction PCs and player-controlled pets, guardians, totems, and minions. Enabling every relevant nameplate setting still cannot force those units to receive nameplates; only Blizzard decides whether to create the required frame.
+Blizzard's separate overhead world names cannot be recolored because they are not addon-accessible nameplate frames. This includes non-attackable opposing-faction PCs and many player-controlled pets, guardians, totems, and minions. **Hide Blizzard-controlled minion names** hides the friendly and enemy minion categories while leaving opposing-player names visible. Disabling the option restores the prior Blizzard name settings.
 
 The interruptible highlight is a static outline around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to both ordinary casts and channels, preserves their different bar textures and progress directions, and is drawn above the optional attacking glow. Non-interruptible abilities retain Blizzard's normal shield treatment without the added outline.
 
