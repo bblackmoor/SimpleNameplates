@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.60
+
+* Replaced **Colorblind — Web Safe** with a brighter **High Contrast** preset that avoids relying on red versus green.
+* Moved each color's affected-element explanation beneath its relationship label so it no longer looks attached to the Reset button.
+* Fixed the preset and reset button row floating over the panel description.
+
 ## 1.0.59
 
 * Made inside-bar names 80% of the selected name size, rounded to the nearest point.

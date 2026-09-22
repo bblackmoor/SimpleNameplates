@@ -27,16 +27,16 @@ local DEFAULT_EFFECT_COLORS = {
     interruptible = RGB8(0, 255, 255),
 }
 local COLOR_PRESETS = {
-    colorblindWebSafe = {
+    highContrast = {
         relationshipColors = {
-            friendlyNPC = RGB8(0, 204, 153),
-            friendlyPC = RGB8(102, 204, 255),
+            friendlyNPC = RGB8(0, 255, 255),
+            friendlyPC = RGB8(0, 102, 255),
             unfriendlyNPC = RGB8(255, 255, 0),
-            hostile = RGB8(255, 153, 0),
-            attacking = RGB8(255, 0, 102),
+            hostile = RGB8(255, 102, 0),
+            attacking = RGB8(255, 0, 255),
         },
         effectColors = {
-            interruptible = RGB8(0, 255, 255),
+            interruptible = RGB8(255, 255, 255),
         },
     },
 }

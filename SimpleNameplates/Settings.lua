@@ -51,6 +51,7 @@ local function CreateScrollablePanel(name)
 
     local layout = { parent = content, offset = 18 }
     function layout:Add(region, x, height, gap)
+        if height and region.SetHeight then region:SetHeight(height) end
         region:SetPoint("TOPLEFT", self.parent, "TOPLEFT", x or 20, -self.offset)
         self.offset = self.offset + (height or 20) + (gap or 0)
         return region
@@ -374,8 +375,8 @@ local function CreateColorsPanel()
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
-    StaticPopupDialogs["SNP_COLORBLIND_PRESET_CONFIRM"] = {
-        text = "Apply the Colorblind — Web Safe preset?\n\nThis replaces all six editable colors and enables the attacking glow. Blizzard's colorblind settings and filters will not be changed.",
+    StaticPopupDialogs["SNP_HIGH_CONTRAST_PRESET_CONFIRM"] = {
+        text = "Apply the High Contrast preset?\n\nThis replaces all six editable colors and enables the attacking glow. Blizzard's colorblind settings and filters will not be changed.",
         button1 = "Apply",
         button2 = CANCEL or "Cancel",
         OnAccept = function(_, applyPreset)
@@ -396,8 +397,7 @@ local function CreateColorsPanel()
     local function CreateColorRow(text, displayText, getColor, setColor, resetColor, getEnabled, setEnabled)
         local row = CreateFrame("Frame", nil, content)
         row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
-        row:SetHeight(34)
-        layout:Add(row, 24, 34, 2)
+        layout:Add(row, 24, 40, 2)
         local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
         if getEnabled and setEnabled then
             local toggle = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
@@ -410,13 +410,19 @@ local function CreateColorsPanel()
             local function RefreshToggle() toggle:SetChecked(getEnabled()) end
             toggleRefreshers[#toggleRefreshers + 1] = RefreshToggle
             RefreshToggle()
-            label:SetPoint("LEFT", toggle, "RIGHT")
+            label:SetPoint("TOPLEFT", toggle, "TOPRIGHT", 0, -1)
         else
-            label:SetPoint("LEFT", 4, 0)
+            label:SetPoint("TOPLEFT", 4, -3)
         end
-        label:SetPoint("RIGHT", row, "RIGHT", -250, 0)
+        label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -104, -3)
         label:SetJustifyH("LEFT")
         label:SetText(text)
+
+        local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        display:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
+        display:SetPoint("RIGHT", row, "RIGHT", -104, 0)
+        display:SetJustifyH("LEFT")
+        display:SetText(displayText)
 
         local swatch = CreateFrame("Button", nil, row, "BackdropTemplate")
         swatch:SetSize(26, 26)
@@ -470,11 +476,6 @@ local function CreateColorsPanel()
             UpdateSwatch()
             RefreshNameplates()
         end)
-        local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        display:SetPoint("RIGHT", resetOne, "LEFT", -12, 0)
-        display:SetWidth(125)
-        display:SetJustifyH("RIGHT")
-        display:SetText(displayText)
     end
 
     local function CreateRelationshipRow(text, state, displayText)
@@ -487,13 +488,17 @@ local function CreateColorsPanel()
     local function CreateLockedColorRow(text)
         local row = CreateFrame("Frame", nil, content)
         row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
-        row:SetHeight(34)
-        layout:Add(row, 24, 34, 2)
+        layout:Add(row, 24, 40, 2)
         local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        label:SetPoint("LEFT", 4, 0)
-        label:SetPoint("RIGHT", row, "RIGHT", -250, 0)
+        label:SetPoint("TOPLEFT", 4, -3)
+        label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -104, -3)
         label:SetJustifyH("LEFT")
         label:SetText(text)
+        local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        display:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
+        display:SetPoint("RIGHT", row, "RIGHT", -104, 0)
+        display:SetJustifyH("LEFT")
+        display:SetText("Controlled by Blizzard; cannot be changed")
         local swatch = CreateFrame("Frame", nil, row, "BackdropTemplate")
         swatch:SetSize(26, 26)
         swatch:SetPoint("RIGHT", -4, 0)
@@ -510,11 +515,6 @@ local function CreateColorsPanel()
         info:SetPoint("RIGHT", swatch, "LEFT", -8, 0)
         info:SetText("?")
         info:SetScript("OnClick", function() StaticPopup_Show("SNP_BLIZZARD_OVERHEAD_INFO") end)
-        local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        display:SetPoint("RIGHT", info, "LEFT", -12, 0)
-        display:SetWidth(125)
-        display:SetJustifyH("RIGHT")
-        display:SetText("Engine-controlled")
         row:EnableMouse(true)
         row:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -526,16 +526,16 @@ local function CreateColorsPanel()
     end
 
     CreateSection("FRIENDLY")
-    CreateRelationshipRow("Friendly NPC", "friendlyNPC", "Colored name")
-    CreateRelationshipRow("Friendly same-faction PC", "friendlyPC", "Colored name")
+    CreateRelationshipRow("Friendly NPC", "friendlyNPC", "Changes the name color")
+    CreateRelationshipRow("Friendly same-faction PC", "friendlyPC", "Changes the name color")
     layout:Space(6)
     CreateSection("UNFRIENDLY")
-    CreateRelationshipRow("Attackable but non-aggressive NPC", "unfriendlyNPC", "Health bar")
-    CreateRelationshipRow("Aggressive NPC or PvP-enabled opposing PC", "hostile", "Health bar")
+    CreateRelationshipRow("Attackable but non-aggressive NPC", "unfriendlyNPC", "Changes the health-bar color")
+    CreateRelationshipRow("Aggressive NPC or PvP-enabled opposing PC", "hostile", "Changes the health-bar color")
     CreateLockedColorRow("Blizzard-controlled overhead names")
     layout:Space(6)
     CreateSection("COMBAT OVERRIDE")
-    CreateRelationshipRow("Attacking me or one of my controlled units", "attacking", "Health bar")
+    CreateRelationshipRow("Attacking me or one of my controlled units", "attacking", "Changes the health-bar color")
 
     local attackingGlow = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     attackingGlow:SetSize(26, 26)
@@ -556,7 +556,7 @@ local function CreateColorsPanel()
     end)
 
     CreateSection("CAST BARS")
-    CreateColorRow("Highlight interruptible casts and channels", "Cast-bar outline",
+    CreateColorRow("Highlight interruptible casts and channels", "Changes the cast-bar outline color",
         function() return EffectColor("interruptible") end,
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
         function() ResetEffectColor("interruptible") end,
@@ -572,9 +572,9 @@ local function CreateColorsPanel()
     layout:Add(buttonRow, 24, 24)
 
     local preset = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
-    preset:SetSize(190, 24)
+    preset:SetSize(150, 24)
     preset:SetPoint("LEFT")
-    preset:SetText("Colorblind — Web Safe")
+    preset:SetText("High Contrast")
 
     local reset = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
@@ -586,8 +586,8 @@ local function CreateColorsPanel()
         RefreshNameplates()
     end)
     preset:SetScript("OnClick", function()
-        StaticPopup_Show("SNP_COLORBLIND_PRESET_CONFIRM", nil, nil, function()
-            if ApplyColorPreset("colorblindWebSafe") then
+        StaticPopup_Show("SNP_HIGH_CONTRAST_PRESET_CONFIRM", nil, nil, function()
+            if ApplyColorPreset("highContrast") then
                 SetAttackingGlowEnabled(true)
                 RefreshAttackingGlow()
                 for _, refresh in ipairs(swatchRefreshers) do refresh() end
