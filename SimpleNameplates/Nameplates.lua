@@ -816,8 +816,13 @@ events:SetScript("OnEvent", function(_, event, unit)
     end
     if event == "PLAYER_TARGET_CHANGED" then QueueRefreshAll(); return end
     if event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" then
-        local frame = GetUnitFrame(unit)
-        if frame then UpdateHealthValue(frame) end
+        -- These events also fire for tokens such as targettarget, which
+        -- C_NamePlate.GetNamePlateForUnit explicitly rejects. Only nameplate
+        -- unit tokens can identify a plate that needs its value refreshed.
+        if unit and tostring(unit):match("^nameplate%d+$") then
+            local frame = GetUnitFrame(unit)
+            if frame then UpdateHealthValue(frame) end
+        end
         return
     end
     if unit and tostring(unit):match("^nameplate%d+$") then QueueUnitRefresh(unit)

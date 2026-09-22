@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.61
+
+* Prevented health events for forbidden target-of-target unit tokens from being passed to the nameplate API.
+
 ## 1.0.60
 
 * Replaced **Colorblind — Web Safe** with a brighter **High Contrast** preset that avoids relying on red versus green.
