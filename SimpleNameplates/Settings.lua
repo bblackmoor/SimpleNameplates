@@ -19,6 +19,8 @@ local GetStylingEnabled, SetStylingEnabled = ns.GetStylingEnabled, ns.SetStyling
 local GetThreatEnabled, SetThreatEnabled = ns.GetThreatEnabled, ns.SetThreatEnabled
 local GetHideBlizzardMinionNames = ns.GetHideBlizzardMinionNames
 local SetHideBlizzardMinionNames = ns.SetHideBlizzardMinionNames
+local GetHideCritterCompanionNames = ns.GetHideCritterCompanionNames
+local SetHideCritterCompanionNames = ns.SetHideCritterCompanionNames
 
 local settingsCategory, colorsSettingsCategory, textSettingsCategory, trp3SettingsCategory
 
@@ -377,6 +379,11 @@ local function CreateColorsPanel()
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
+    StaticPopupDialogs["SNP_BLIZZARD_INTERACTIVE_INFO"] = {
+        text = "Blizzard draws interactive NPCs, including city guards that offer directions, as engine-level yellow overhead names rather than as addon-accessible nameplate text. Like the periwinkle overhead names, addons cannot recolor these names, change their font, or replace them at the same world position.",
+        button1 = OKAY or "Okay", timeout = 0, whileDead = true,
+        hideOnEscape = true, preferredIndex = 3,
+    }
     StaticPopupDialogs["SNP_HIGH_CONTRAST_PRESET_CONFIRM"] = {
         text = "Apply the High Contrast preset?\n\nThis replaces all six editable colors and enables the attacking glow. Blizzard's colorblind settings and filters will not be changed.",
         button1 = "Apply",
@@ -487,7 +494,7 @@ local function CreateColorsPanel()
             function() ResetRelationshipColor(state) end)
     end
 
-    local function CreateLockedColorRow(text)
+    local function CreateLockedColorRow(text, r, g, b, popupKey)
         local row = CreateFrame("Frame", nil, content)
         row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
         layout:Add(row, 24, 40, 2)
@@ -511,12 +518,12 @@ local function CreateColorsPanel()
         local fill = swatch:CreateTexture(nil, "ARTWORK")
         fill:SetPoint("TOPLEFT", 3, -3)
         fill:SetPoint("BOTTOMRIGHT", -3, 3)
-        fill:SetColorTexture(102 / 255, 102 / 255, 1, 1)
+        fill:SetColorTexture(r, g, b, 1)
         local info = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
         info:SetSize(24, 22)
         info:SetPoint("RIGHT", swatch, "LEFT", -8, 0)
         info:SetText("?")
-        info:SetScript("OnClick", function() StaticPopup_Show("SNP_BLIZZARD_OVERHEAD_INFO") end)
+        info:SetScript("OnClick", function() StaticPopup_Show(popupKey) end)
         row:EnableMouse(true)
         row:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -534,7 +541,10 @@ local function CreateColorsPanel()
     CreateSection("UNFRIENDLY")
     CreateRelationshipRow("Attackable but non-aggressive NPC", "unfriendlyNPC", "Changes the health-bar color")
     CreateRelationshipRow("Aggressive NPC or PvP-enabled opposing PC", "hostile", "Changes the health-bar color")
-    CreateLockedColorRow("Blizzard-controlled overhead names")
+    CreateLockedColorRow("Blizzard overhead names (periwinkle)",
+        102 / 255, 102 / 255, 1, "SNP_BLIZZARD_OVERHEAD_INFO")
+    CreateLockedColorRow("Interactive NPC overhead names",
+        1, 1, 0, "SNP_BLIZZARD_INTERACTIVE_INFO")
     local hideMinionNames = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     hideMinionNames:SetSize(26, 26)
     hideMinionNames:SetHitRectInsets(0, -340, 0, 0)
@@ -553,6 +563,25 @@ local function CreateColorsPanel()
     hideMinionNames:SetScript("OnClick", function(self)
         SetHideBlizzardMinionNames(self:GetChecked() == true)
         RefreshHideMinionNames()
+    end)
+    local hideCritterCompanionNames = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
+    hideCritterCompanionNames:SetSize(26, 26)
+    hideCritterCompanionNames:SetHitRectInsets(0, -340, 0, 0)
+    layout:Add(hideCritterCompanionNames, 20, 30, 0)
+    local hideCritterCompanionNamesLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    hideCritterCompanionNamesLabel:SetPoint("LEFT", hideCritterCompanionNames, "RIGHT", 4, 0)
+    hideCritterCompanionNamesLabel:SetText("Hide critter and companion names")
+    local hideCritterCompanionNamesNote = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    hideCritterCompanionNamesNote:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    hideCritterCompanionNamesNote:SetJustifyH("LEFT")
+    hideCritterCompanionNamesNote:SetText("Hides Blizzard overhead names for noncombat critters and companions.")
+    layout:Add(hideCritterCompanionNamesNote, 24, 28, 8)
+    local function RefreshHideCritterCompanionNames()
+        hideCritterCompanionNames:SetChecked(GetHideCritterCompanionNames())
+    end
+    hideCritterCompanionNames:SetScript("OnClick", function(self)
+        SetHideCritterCompanionNames(self:GetChecked() == true)
+        RefreshHideCritterCompanionNames()
     end)
     layout:Space(6)
     CreateSection("COMBAT OVERRIDE")
@@ -620,11 +649,13 @@ local function CreateColorsPanel()
         RefreshEnabled()
         RefreshAttackingGlow()
         RefreshHideMinionNames()
+        RefreshHideCritterCompanionNames()
         for _, refresh in ipairs(toggleRefreshers) do refresh() end
     end)
     RefreshEnabled()
     RefreshAttackingGlow()
     RefreshHideMinionNames()
+    RefreshHideCritterCompanionNames()
     layout:Finish()
     return panel
 end

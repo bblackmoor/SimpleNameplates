@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.66
+
+* Added an option to hide Blizzard overhead names for noncombat critters and companions.
+* Added a locked yellow row documenting Blizzard-controlled interactive-NPC overhead names.
+* Restored the prior Blizzard name setting when the option is disabled.
+
 ## 1.0.65
 
 * Moved TRP3 long titles beneath names and sized them to 80% of the configured name size.

@@ -757,9 +757,13 @@ events:SetScript("OnEvent", function(_, event, unit)
     if event == "PLAYER_LOGIN" then
         ns.EnsureDB()
         ns.ApplyBlizzardMinionNameVisibility()
+        ns.ApplyCritterCompanionNameVisibility()
         C_Timer.After(1, function()
             if ns.GetHideBlizzardMinionNames() then
                 ns.ApplyBlizzardMinionNameVisibility()
+            end
+            if ns.GetHideCritterCompanionNames() then
+                ns.ApplyCritterCompanionNameVisibility()
             end
         end)
         if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
@@ -783,6 +787,14 @@ events:SetScript("OnEvent", function(_, event, unit)
             for _, cvar in ipairs(ns.BLIZZARD_MINION_NAME_CVARS) do
                 if unit == cvar then
                     ns.ApplyBlizzardMinionNameVisibility()
+                    return
+                end
+            end
+        end
+        if ns.GetHideCritterCompanionNames() then
+            for _, cvar in ipairs(ns.BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do
+                if unit == cvar then
+                    ns.ApplyCritterCompanionNameVisibility()
                     return
                 end
             end

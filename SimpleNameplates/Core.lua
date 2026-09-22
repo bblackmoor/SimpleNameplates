@@ -75,6 +75,7 @@ local DEFAULT_TRP3 = {
 local DEFAULT_STYLING_ENABLED = true
 local DEFAULT_SHOW_THREAT = true
 local DEFAULT_HIDE_BLIZZARD_MINION_NAMES = false
+local DEFAULT_HIDE_CRITTER_COMPANION_NAMES = false
 
 ns.FONT_OPTIONS = FONT_OPTIONS
 ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
@@ -222,6 +223,9 @@ local function EnsureDB()
     if type(db.showThreat) ~= "boolean" then db.showThreat = DEFAULT_SHOW_THREAT end
     if type(db.hideBlizzardMinionNames) ~= "boolean" then
         db.hideBlizzardMinionNames = DEFAULT_HIDE_BLIZZARD_MINION_NAMES
+    end
+    if type(db.hideCritterCompanionNames) ~= "boolean" then
+        db.hideCritterCompanionNames = DEFAULT_HIDE_CRITTER_COMPANION_NAMES
     end
     if type(db.attackingGlow) ~= "boolean" then db.attackingGlow = false end
     if type(db.interruptibleHighlight) ~= "boolean" then db.interruptibleHighlight = false end
@@ -433,6 +437,53 @@ local function SetHideBlizzardMinionNames(enabled)
     end
 end
 
+local BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {
+    "UnitNameNonCombatCreatureName",
+}
+ns.BLIZZARD_CRITTER_COMPANION_NAME_CVARS = BLIZZARD_CRITTER_COMPANION_NAME_CVARS
+
+local function ApplyCritterCompanionNameVisibility()
+    local db = EnsureDB()
+    if not db.hideCritterCompanionNames then return end
+
+    if type(db.critterCompanionNameCVarOriginals) ~= "table" then
+        db.critterCompanionNameCVarOriginals = {}
+    end
+    local originals = db.critterCompanionNameCVarOriginals
+    for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do
+        local current = GetCVarValue(cvar)
+        if current ~= nil then
+            if originals[cvar] == nil then originals[cvar] = current end
+            SetCVarValue(cvar, "0")
+        end
+    end
+end
+
+local function RestoreCritterCompanionNameVisibility()
+    local db = EnsureDB()
+    local originals = db.critterCompanionNameCVarOriginals
+    db.critterCompanionNameCVarOriginals = nil
+    if type(originals) ~= "table" then return end
+
+    for cvar, value in pairs(originals) do
+        SetCVarValue(cvar, value)
+    end
+end
+
+local function GetHideCritterCompanionNames()
+    return EnsureDB().hideCritterCompanionNames
+end
+
+local function SetHideCritterCompanionNames(enabled)
+    local db = EnsureDB()
+    db.hideCritterCompanionNames = enabled == true
+    if db.hideCritterCompanionNames then
+        ApplyCritterCompanionNameVisibility()
+    else
+        RestoreCritterCompanionNameVisibility()
+    end
+end
+
 local FRIENDLY_COLOR_CVARS = {
     "nameplateUseClassColorForFriendlyPlayerUnitNames",
     "nameplateShowFriendlyClassColor",
@@ -558,6 +609,9 @@ ns.SetThreatEnabled = SetThreatEnabled
 ns.GetHideBlizzardMinionNames = GetHideBlizzardMinionNames
 ns.SetHideBlizzardMinionNames = SetHideBlizzardMinionNames
 ns.ApplyBlizzardMinionNameVisibility = ApplyBlizzardMinionNameVisibility
+ns.GetHideCritterCompanionNames = GetHideCritterCompanionNames
+ns.SetHideCritterCompanionNames = SetHideCritterCompanionNames
+ns.ApplyCritterCompanionNameVisibility = ApplyCritterCompanionNameVisibility
 ns.GetAppearanceSetting = GetAppearanceSetting
 ns.SetAppearanceSetting = SetAppearanceSetting
 ns.FontPath = FontPath
