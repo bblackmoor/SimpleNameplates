@@ -61,8 +61,8 @@ local DEFAULT_APPEARANCE = {
     threatFont = "ARIALN",
     namePlacement = "ABOVE",
 }
-local MIN_NAME_SIZE = 6
-local MAX_NAME_SIZE = 24
+local MIN_NAME_SIZE = 8
+local MAX_NAME_SIZE = 36
 
 local DEFAULT_TRP3 = {
     enabled = false,

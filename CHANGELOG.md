@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.62
+
+* Expanded the shared name-size range to 8–36 points.
+
 ## 1.0.61
 
 * Prevented health events for forbidden target-of-target unit tokens from being passed to the nameplate API.

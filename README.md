@@ -53,7 +53,7 @@ The interruptible highlight is a static outline around Blizzard's existing cast 
 Open **Options → AddOns → Simple Nameplates → Text**, or type `/snp text`, to choose:
 
 * The unit-name font.
-* A shared 6–24 point size for addon-controlled floating names and names above health bars.
+* A shared 8–36 point size for addon-controlled floating names and names above health bars.
 * A separate threat-percentage font.
 * Whether names appear above or inside visible health bars.
 * Whether available threat percentages are displayed.
