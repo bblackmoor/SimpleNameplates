@@ -230,17 +230,57 @@ local function StyleFullTitle(frame, state, text, nameInsideBar, baseNameSize, b
     fullTitle:Show()
 end
 
+local function RestoreOriginalBarHeight(frame, bar)
+    if not frame then return end
+    if bar and frame.SNPOriginalBarHeight then
+        bar:SetHeight(frame.SNPOriginalBarHeight)
+    end
+    local container = frame.HealthBarsContainer
+    if container and frame.SNPOriginalHealthBarsContainerHeight then
+        container:SetHeight(frame.SNPOriginalHealthBarsContainerHeight)
+    end
+    frame.SNPOriginalBarHeight = nil
+    frame.SNPOriginalHealthBarsContainerHeight = nil
+end
+
+local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize)
+    local inside = GetAppearanceSetting("namePlacement") == "INSIDE"
+        and not IsNameOnlyState(state) and bar ~= nil
+    if not inside then
+        RestoreOriginalBarHeight(frame, bar)
+        return false, baseNameSize
+    end
+
+    if not frame.SNPOriginalBarHeight then
+        local originalHeight = bar:GetHeight()
+        if type(originalHeight) == "number" and originalHeight > 0 then
+            frame.SNPOriginalBarHeight = originalHeight
+        end
+    end
+    local container = frame.HealthBarsContainer
+    if container and not frame.SNPOriginalHealthBarsContainerHeight then
+        local originalHeight = container:GetHeight()
+        if type(originalHeight) == "number" and originalHeight > 0 then
+            frame.SNPOriginalHealthBarsContainerHeight = originalHeight
+        end
+    end
+
+    local insideNameSize = math.floor(baseNameSize * 0.8 + 0.5)
+    local barHeight = insideNameSize + 2
+    bar:SetHeight(barHeight)
+    if container then container:SetHeight(barHeight) end
+    return true, insideNameSize
+end
+
 local function StyleName(frame, state)
     local name = frame and frame.name
     if not name then return end
     local fullTitle, displayName = UpdateNameText(frame)
 
     local baseSize = GetAppearanceSetting("nameSize") or 12
-    local size = baseSize
     local bar = GetHealthBar(frame)
     local nameOnly = IsNameOnlyState(state)
-    local inside = GetAppearanceSetting("namePlacement") == "INSIDE"
-        and not nameOnly and bar
+    local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize)
 
     if nameOnly then
         name:ClearAllPoints()
@@ -252,12 +292,6 @@ local function StyleName(frame, state)
         name:SetJustifyH("CENTER")
     elseif inside then
         local rightInset = GetThreatEnabled() and -42 or -3
-        local barHeight = bar:GetHeight()
-        if type(barHeight) == "number" and barHeight > 0 then
-            size = math.max(6, math.min(size, math.floor(barHeight - 2)))
-        else
-            size = math.min(size, 9)
-        end
         name:ClearAllPoints()
         name:SetPoint("LEFT", bar, "LEFT", 3, 0)
         name:SetPoint("RIGHT", bar, "RIGHT", rightInset, 0)
@@ -309,6 +343,14 @@ local function CachedNameHasDrifted(frame)
     if font ~= expected.font or not NearlyEqual(size, expected.size) or flags ~= expected.flags then
         return true
     end
+    if expected.inside and expected.bar
+        and not NearlyEqual(expected.bar:GetHeight(), expected.size + 2) then
+        return true
+    end
+    if expected.inside and frame.HealthBarsContainer
+        and not NearlyEqual(frame.HealthBarsContainer:GetHeight(), expected.size + 2) then
+        return true
+    end
 
     local r, g, b = name:GetTextColor()
     if not NearlyEqual(r, expected.r) or not NearlyEqual(g, expected.g) or not NearlyEqual(b, expected.b) then
@@ -337,6 +379,10 @@ local function RepairCachedName(frame)
     name:SetShadowOffset(1, -1)
     name:SetVertexColor(1, 1, 1, 1)
     name:SetTextColor(expected.r, expected.g, expected.b, 1)
+    if expected.inside and expected.bar then
+        expected.bar:SetHeight(expected.size + 2)
+        if frame.HealthBarsContainer then frame.HealthBarsContainer:SetHeight(expected.size + 2) end
+    end
     if expected.nameOnly then
         name:ClearAllPoints()
         if expected.bar then
@@ -372,7 +418,12 @@ end
 local function UpdateThreatText(frame, state)
     local threatText = EnsureThreatText(frame)
     if not threatText then return end
-    threatText:SetFont(FontPath(GetAppearanceSetting("threatFont")), 9, "OUTLINE")
+    local threatSize = 9
+    if GetAppearanceSetting("namePlacement") == "INSIDE" then
+        local baseNameSize = GetAppearanceSetting("nameSize") or 12
+        threatSize = math.min(threatSize, math.floor(baseNameSize * 0.8 + 0.5))
+    end
+    threatText:SetFont(FontPath(GetAppearanceSetting("threatFont")), threatSize, "OUTLINE")
     if not GetThreatEnabled() then threatText:SetText(""); return end
     if IsNameOnlyState(state) then threatText:SetText(""); return end
     local _, _, scaled, raw = UnitDetailedThreatSituation("player", frame.unit)
@@ -558,7 +609,10 @@ local function ApplySimpleStyle(frame)
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
     local state = StateForUnit(frame.unit)
     frame.SNPState = state
-    if state == "blizzardOverhead" then return end
+    if state == "blizzardOverhead" then
+        RestoreOriginalBarHeight(frame, GetHealthBar(frame))
+        return
+    end
     local r, g, b = RelationshipColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyVisibility(frame, state)
@@ -579,9 +633,13 @@ local function RepairHealthColor(frame)
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
     local state = frame.SNPState or StateForUnit(frame.unit)
     frame.SNPState = state
-    if state == "blizzardOverhead" then return end
+    if state == "blizzardOverhead" then
+        RestoreOriginalBarHeight(frame, GetHealthBar(frame))
+        return
+    end
     local r, g, b = RelationshipColorForState(state)
     local bar = GetHealthBar(frame)
+    ApplyConfiguredBarHeight(frame, state, bar, GetAppearanceSetting("nameSize") or 12)
     ApplyVisibility(frame, state)
     if not IsNameOnlyState(state) and bar then
         bar:SetStatusBarColor(r, g, b, 1)
@@ -637,6 +695,7 @@ local function RestoreFrame(frame)
     if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
     frame.SNPNameStyle = nil
     frame.SNPState = nil
+    RestoreOriginalBarHeight(frame, GetHealthBar(frame))
 
     -- Restore anything hidden by name-only styling before asking Blizzard to
     -- rebuild the frame according to its own current settings.
@@ -743,6 +802,7 @@ events:SetScript("OnEvent", function(_, event, unit)
     if event == "NAME_PLATE_UNIT_REMOVED" then
         local frame = GetUnitFrame(unit)
         if frame then
+            RestoreOriginalBarHeight(frame, GetHealthBar(frame))
             if frame.name then frame.name:SetText("") end
             if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
             if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end

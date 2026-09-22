@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.59
+
+* Made inside-bar names 80% of the selected name size, rounded to the nearest point.
+* Resized inside-name health bars with one UI unit of vertical margin on each side and restored Blizzard's original height otherwise.
+
 ## 1.0.58
 
 * Added a shared 6–24 point name-size setting, defaulting to 12, for addon-controlled floating names and names above health bars.
