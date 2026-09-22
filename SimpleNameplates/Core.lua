@@ -57,9 +57,12 @@ for _, option in ipairs(FONT_OPTIONS) do FONT_BY_VALUE[option.value] = option en
 
 local DEFAULT_APPEARANCE = {
     nameFont = "ARIALN",
+    nameSize = 12,
     threatFont = "ARIALN",
     namePlacement = "ABOVE",
 }
+local MIN_NAME_SIZE = 6
+local MAX_NAME_SIZE = 24
 
 local DEFAULT_TRP3 = {
     enabled = false,
@@ -74,6 +77,8 @@ local DEFAULT_SHOW_THREAT = true
 
 ns.FONT_OPTIONS = FONT_OPTIONS
 ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
+ns.MIN_NAME_SIZE = MIN_NAME_SIZE
+ns.MAX_NAME_SIZE = MAX_NAME_SIZE
 
 local dbReady = false
 
@@ -200,6 +205,12 @@ local function EnsureDB()
     if not FONT_BY_VALUE[db.appearance.nameFont] then
         db.appearance.nameFont = DEFAULT_APPEARANCE.nameFont
     end
+    if type(db.appearance.nameSize) ~= "number" then
+        db.appearance.nameSize = DEFAULT_APPEARANCE.nameSize
+    else
+        db.appearance.nameSize = math.max(MIN_NAME_SIZE,
+            math.min(MAX_NAME_SIZE, math.floor(db.appearance.nameSize + 0.5)))
+    end
     if not FONT_BY_VALUE[db.appearance.threatFont] then
         db.appearance.threatFont = DEFAULT_APPEARANCE.threatFont
     end
@@ -248,6 +259,9 @@ local function SetAppearanceSetting(key, value)
     local appearance = EnsureDB().appearance
     if (key == "nameFont" or key == "threatFont") and FONT_BY_VALUE[value] then
         appearance[key] = value
+    elseif key == "nameSize" and type(value) == "number" then
+        appearance[key] = math.max(MIN_NAME_SIZE,
+            math.min(MAX_NAME_SIZE, math.floor(value + 0.5)))
     elseif key == "namePlacement" and (value == "ABOVE" or value == "INSIDE") then
         appearance[key] = value
     end

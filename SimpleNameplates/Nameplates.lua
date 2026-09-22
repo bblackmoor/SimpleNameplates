@@ -235,11 +235,7 @@ local function StyleName(frame, state)
     if not name then return end
     local fullTitle, displayName = UpdateNameText(frame)
 
-    local _, currentSize = name:GetFont()
-    if not frame.SNPBaseNameSize and type(currentSize) == "number" then
-        frame.SNPBaseNameSize = currentSize
-    end
-    local baseSize = frame.SNPBaseNameSize or currentSize or 10
+    local baseSize = GetAppearanceSetting("nameSize") or 12
     local size = baseSize
     local bar = GetHealthBar(frame)
     local nameOnly = IsNameOnlyState(state)

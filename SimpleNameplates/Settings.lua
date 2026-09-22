@@ -141,7 +141,7 @@ end
 local function CreateTextPanel()
     local panel, content, layout = CreateScrollablePanel("Text")
     AddTitle(content, layout, "Simple Nameplates — Text")
-    AddDescription(content, layout, "Choose the name and threat fonts and place names above or inside visible health bars.")
+    AddDescription(content, layout, "Choose the name size and fonts, and place names above or inside visible health bars.")
     local refreshers = {}
 
     local function OptionLabel(options, value)
@@ -187,6 +187,43 @@ local function CreateTextPanel()
     CreateDropdown("Name font", ns.FONT_OPTIONS,
         function() return GetAppearanceSetting("nameFont") end,
         function(value) SetAppearanceSetting("nameFont", value) end)
+
+    local sizeBlock = CreateFrame("Frame", nil, content)
+    sizeBlock:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(sizeBlock, 20, 66, 8)
+    local sizeLabel = sizeBlock:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    sizeLabel:SetPoint("TOPLEFT", 4, 0)
+    local sizeValue = sizeBlock:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    sizeValue:SetPoint("TOPRIGHT", -4, 0)
+    local sizeSlider = CreateFrame("Slider", "SimpleNameplatesNameSizeSlider", sizeBlock, "OptionsSliderTemplate")
+    sizeSlider:SetPoint("TOPLEFT", 8, -28)
+    sizeSlider:SetPoint("RIGHT", sizeBlock, "RIGHT", -8, 0)
+    sizeSlider:SetHeight(18)
+    sizeSlider:SetMinMaxValues(ns.MIN_NAME_SIZE, ns.MAX_NAME_SIZE)
+    sizeSlider:SetValueStep(1)
+    sizeSlider:SetObeyStepOnDrag(true)
+    sizeSlider.Low:SetText(tostring(ns.MIN_NAME_SIZE))
+    sizeSlider.High:SetText(tostring(ns.MAX_NAME_SIZE))
+    sizeSlider.Text:SetText("")
+    local refreshingSize = false
+    local function RefreshNameSize()
+        local value = GetAppearanceSetting("nameSize")
+        refreshingSize = true
+        sizeSlider:SetValue(value)
+        refreshingSize = false
+        sizeLabel:SetText("Name size")
+        sizeValue:SetText(tostring(value) .. " pt")
+    end
+    sizeSlider:SetScript("OnValueChanged", function(_, rawValue)
+        local value = math.floor(rawValue + 0.5)
+        sizeValue:SetText(tostring(value) .. " pt")
+        if refreshingSize or value == GetAppearanceSetting("nameSize") then return end
+        SetAppearanceSetting("nameSize", value)
+        RefreshNameplates()
+    end)
+    refreshers[#refreshers + 1] = RefreshNameSize
+    RefreshNameSize()
+
     CreateDropdown("Threat-percentage font", ns.FONT_OPTIONS,
         function() return GetAppearanceSetting("threatFont") end,
         function(value) SetAppearanceSetting("threatFont", value) end)
@@ -211,8 +248,8 @@ local function CreateTextPanel()
     local note = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     note:SetPoint("RIGHT", content, "RIGHT", -20, 0)
     note:SetJustifyH("LEFT")
-    note:SetText("Inside-bar names shrink to fit the existing Blizzard bar. Friendly name-only plates are unaffected; Blizzard overhead names have no nameplate frame to modify.")
-    layout:Add(note, 24, 40, 12)
+    note:SetText("Name size applies to addon-controlled floating names and names above health bars. Inside-bar names shrink when necessary to fit the existing Blizzard bar. Blizzard-controlled overhead names have no nameplate frame to modify.")
+    layout:Add(note, 24, 54, 12)
     local reset = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
     reset:SetText("Reset Text")

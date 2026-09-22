@@ -8,6 +8,9 @@ local _, ns = ...
 
 local TRP3 = {}
 local ROLEPLAY_STATUS_OUT_OF_CHARACTER = 2
+local ROLEPLAY_NAME_LIMIT = 32
+local SHORT_TITLE_LIMIT = 20
+local FULL_TITLE_LIMIT = 48
 local callbacksRegistered = false
 
 local function CleanText(value)
@@ -15,6 +18,37 @@ local function CleanText(value)
     value = value:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
     if value == "" then return nil end
     return value
+end
+
+local function Utf8Prefix(value, characterLimit)
+    local byteIndex, characters, lastByte = 1, 0, 0
+    local byteLength = #value
+    while byteIndex <= byteLength and characters < characterLimit do
+        local firstByte = value:byte(byteIndex)
+        local width = 1
+        if firstByte >= 0xF0 then
+            width = 4
+        elseif firstByte >= 0xE0 then
+            width = 3
+        elseif firstByte >= 0xC0 then
+            width = 2
+        end
+        if byteIndex + width - 1 > byteLength then width = 1 end
+        lastByte = byteIndex + width - 1
+        byteIndex = byteIndex + width
+        characters = characters + 1
+    end
+    return value:sub(1, lastByte), byteIndex <= byteLength
+end
+
+local function LimitText(value, characterLimit)
+    value = CleanText(value)
+    if not value then return nil end
+    local prefix, truncated = Utf8Prefix(value, characterLimit)
+    if not truncated then return value end
+    prefix = Utf8Prefix(value, characterLimit - 1)
+    prefix = prefix:gsub("%s+$", "")
+    return prefix .. "…"
 end
 
 function TRP3.IsAvailable()
@@ -66,9 +100,9 @@ function TRP3.GetDisplayInfo(unitToken)
 
     return {
         characterID = characterID,
-        roleplayingName = roleplayingName,
-        shortTitle = CleanText(characteristics.TI),
-        fullTitle = CleanText(characteristics.FT),
+        roleplayingName = LimitText(roleplayingName, ROLEPLAY_NAME_LIMIT),
+        shortTitle = LimitText(characteristics.TI, SHORT_TITLE_LIMIT),
+        fullTitle = LimitText(characteristics.FT, FULL_TITLE_LIMIT),
         isOutOfCharacter = character.RP == ROLEPLAY_STATUS_OUT_OF_CHARACTER,
     }
 end

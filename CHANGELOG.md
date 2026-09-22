@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.58
+
+* Added a shared 6–24 point name-size setting, defaulting to 12, for addon-controlled floating names and names above health bars.
+* Limited TRP3 roleplaying names to 32 characters, short titles to 20, and full titles to 48, adding an ellipsis when truncated.
+
 ## 1.0.57
 
 * Centered friendly names and TRP3 full titles when their health bars are hidden.

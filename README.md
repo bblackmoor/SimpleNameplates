@@ -53,11 +53,12 @@ The interruptible highlight is a static outline around Blizzard's existing cast 
 Open **Options → AddOns → Simple Nameplates → Text**, or type `/snp text`, to choose:
 
 * The unit-name font.
+* A shared 6–24 point size for addon-controlled floating names and names above health bars.
 * A separate threat-percentage font.
 * Whether names appear above or inside visible health bars.
 * Whether available threat percentages are displayed.
 
-Both fonts default to WoW's built-in **Arial Narrow** with a normal outline. Other standard Blizzard fonts are available without an external font library. Inside-bar names automatically shrink to fit the existing bar; the bar itself is not resized. Friendly name-only plates are unaffected by the placement setting, as are Blizzard-controlled overhead names that have no nameplate frame.
+Both fonts default to WoW's built-in **Arial Narrow** with a normal outline, and names default to 12 points. Other standard Blizzard fonts are available without an external font library. Inside-bar names automatically shrink to fit the existing bar; the bar itself is not resized. Friendly name-only plates are unaffected by the placement setting. Blizzard-controlled overhead names have no nameplate frame, so their size and font remain controlled by the game.
 
 ## TRP3 Integration
 
@@ -65,7 +66,7 @@ Open **Options → AddOns → Simple Nameplates → TRP3**, or type `/snp trp3`.
 
 When enabled, Simple Nameplates can use a character's TRP3 roleplaying full name, put the short title before the name, show the full title on a separate line above the name, and mark out-of-character profiles. If the OOC option is enabled, `[OOC]` replaces the short title; IC profiles receive no marker. Full titles always remain outside the health bar, even when the name itself is inside it.
 
-Each field has its own toggle. The normal WoW name is used whenever a cached TRP3 profile or selected field is unavailable. `TRP3.lua` keeps the optional profile access isolated, and Simple Nameplates continues to work normally without TRP3.
+Each field has its own toggle. To keep nameplates readable, roleplaying names are limited to 32 characters, short titles to 20, and full titles to 48; longer values end with an ellipsis. The normal WoW name is used whenever a cached TRP3 profile or selected field is unavailable. `TRP3.lua` keeps the optional profile access isolated, and Simple Nameplates continues to work normally without TRP3.
 
 ## About and Diagnostics
 
