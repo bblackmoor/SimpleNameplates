@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.69
+
+* Removed legacy SavedVariables migration and import behavior for the fresh-install release.
+* Kept recognized valid current settings while silently replacing invalid values with defaults and discarding unknown or obsolete saved fields.
+
 ## 1.0.68
 
 * Moved the High Contrast and Reset Colors buttons to the top of the Colors panel.

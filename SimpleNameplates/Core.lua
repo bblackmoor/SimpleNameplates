@@ -14,8 +14,6 @@ local function RGB8(r, g, b)
     return { r = r / 255, g = g / 255, b = b / 255 }
 end
 
-local CURRENT_SCHEMA_VERSION = 1
-
 local DEFAULT_RELATIONSHIP_COLORS = {
     friendlyNPC = RGB8(51, 204, 51),
     friendlyPC = RGB8(51, 204, 255),
@@ -40,7 +38,6 @@ local COLOR_PRESETS = {
         },
     },
 }
-ns.CURRENT_SCHEMA_VERSION = CURRENT_SCHEMA_VERSION
 ns.DEFAULT_RELATIONSHIP_COLORS = DEFAULT_RELATIONSHIP_COLORS
 ns.DEFAULT_EFFECT_COLORS = DEFAULT_EFFECT_COLORS
 
@@ -77,6 +74,23 @@ local DEFAULT_SHOW_THREAT = true
 local DEFAULT_HIDE_BLIZZARD_MINION_NAMES = false
 local DEFAULT_HIDE_CRITTER_COMPANION_NAMES = false
 
+local BLIZZARD_MINION_NAME_CVARS = {
+    "UnitNameFriendlyMinionName",
+    "UnitNameEnemyMinionName",
+    "UnitNameFriendlyPetName",
+    "UnitNameEnemyPetName",
+    "UnitNameFriendlyGuardianName",
+    "UnitNameEnemyGuardianName",
+    "UnitNameFriendlyTotemName",
+    "UnitNameEnemyTotemName",
+}
+ns.BLIZZARD_MINION_NAME_CVARS = BLIZZARD_MINION_NAME_CVARS
+
+local BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {
+    "UnitNameNonCombatCreatureName",
+}
+ns.BLIZZARD_CRITTER_COMPANION_NAME_CVARS = BLIZZARD_CRITTER_COMPANION_NAME_CVARS
+
 ns.FONT_OPTIONS = FONT_OPTIONS
 ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
 ns.MIN_NAME_SIZE = MIN_NAME_SIZE
@@ -84,69 +98,20 @@ ns.MAX_NAME_SIZE = MAX_NAME_SIZE
 
 local dbReady = false
 
+local function IsFiniteNumber(value)
+    return type(value) == "number" and value == value
+        and value ~= math.huge and value ~= -math.huge
+end
+
 local function IsValidColor(color)
-    return type(color) == "table" and type(color.r) == "number"
-        and type(color.g) == "number" and type(color.b) == "number"
+    return type(color) == "table"
+        and IsFiniteNumber(color.r) and color.r >= 0 and color.r <= 1
+        and IsFiniteNumber(color.g) and color.g >= 0 and color.g <= 1
+        and IsFiniteNumber(color.b) and color.b >= 0 and color.b <= 1
 end
 
 local function CopyColor(color)
     return { r = color.r, g = color.g, b = color.b }
-end
-
-local function MigrateLegacyRelationshipColors(colors)
-    -- The consolidated hostile and attacking colors inherit the former NPC
-    -- values, preserving any customization rather than adopting a PC-specific
-    -- color that no longer has a separate meaning.
-    if not IsValidColor(colors.hostile) and IsValidColor(colors.hostileNPC) then
-        colors.hostile = CopyColor(colors.hostileNPC)
-    end
-    if not IsValidColor(colors.attacking) and IsValidColor(colors.attackingNPC) then
-        colors.attacking = CopyColor(colors.attackingNPC)
-    end
-
-    colors.hostileNPC = nil
-    colors.attackingNPC = nil
-    colors.unfriendlyPC = nil
-    colors.attackablePC = nil
-    colors.attackingPC = nil
-end
-
-local function MigrateToSchema1(db)
-    local legacyColors = type(db.colors) == "table" and db.colors or {}
-    MigrateLegacyRelationshipColors(legacyColors)
-
-    if type(db.relationshipColors) ~= "table" then db.relationshipColors = {} end
-    for key in pairs(DEFAULT_RELATIONSHIP_COLORS) do
-        if not IsValidColor(db.relationshipColors[key]) and IsValidColor(legacyColors[key]) then
-            db.relationshipColors[key] = CopyColor(legacyColors[key])
-        end
-    end
-
-    if type(db.effectColors) ~= "table" then db.effectColors = {} end
-    if not IsValidColor(db.effectColors.interruptible) and IsValidColor(legacyColors.interruptible) then
-        db.effectColors.interruptible = CopyColor(legacyColors.interruptible)
-    end
-
-    db.colors = nil
-    if type(db.attackingGlow) ~= "boolean" and type(db.pcGlow) == "boolean" then
-        db.attackingGlow = db.pcGlow
-    end
-    db.pcGlow = nil
-    if type(db.appearance) == "table" then db.appearance.overheadNameFont = nil end
-end
-
-local SCHEMA_MIGRATIONS = {
-    [1] = MigrateToSchema1,
-}
-
-local function ApplySchemaMigrations(db)
-    local version = type(db.schemaVersion) == "number" and math.floor(db.schemaVersion) or 0
-    if version < 0 then version = 0 end
-    if version > CURRENT_SCHEMA_VERSION then return end
-    for nextVersion = version + 1, CURRENT_SCHEMA_VERSION do
-        SCHEMA_MIGRATIONS[nextVersion](db)
-        db.schemaVersion = nextVersion
-    end
 end
 
 local function GetCVarValue(cvar)
@@ -163,82 +128,94 @@ local function SetCVarValue(cvar, value)
     end
 end
 
--- Versions 1.0.35 through 1.0.37 offered an option that tried to replace
--- Blizzard's overhead names with nameplates. Midnight does not create a
--- nameplate for every affected unit, so restore settings saved by that option
--- once and remove its obsolete saved state.
-local function RemoveOverheadNameReplacement(db)
-    local originals = db.overheadNameCVarOriginals
-    db.replaceOverheadNames = nil
-    db.overheadNameCVarOriginals = nil
+local function SavedBoolean(value, default)
+    if type(value) == "boolean" then return value end
+    return default
+end
 
-    -- Clear the obsolete saved state before SetCVar fires CVAR_UPDATE. This
-    -- makes the one-time migration safe even if another event handler enters
-    -- the database while the original settings are being restored.
-    if type(originals) == "table" then
-        for cvar, value in pairs(originals) do
-            SetCVarValue(cvar, value)
+local function CopySavedCVarOriginals(source, allowedCVars)
+    if type(source) ~= "table" then return nil end
+
+    local copy
+    for _, cvar in ipairs(allowedCVars) do
+        local value = source[cvar]
+        local valueType = type(value)
+        if valueType == "string" or valueType == "number" or valueType == "boolean" then
+            copy = copy or {}
+            copy[cvar] = value
         end
     end
+    return copy
+end
+
+local function ValidatedDB(saved)
+    if type(saved) ~= "table" then saved = {} end
+
+    local db = {
+        relationshipColors = {},
+        effectColors = {},
+        appearance = {},
+        trp3 = {},
+    }
+
+    local savedRelationshipColors = type(saved.relationshipColors) == "table"
+        and saved.relationshipColors or {}
+    for key, default in pairs(DEFAULT_RELATIONSHIP_COLORS) do
+        local color = savedRelationshipColors[key]
+        db.relationshipColors[key] = CopyColor(IsValidColor(color) and color or default)
+    end
+
+    local savedEffectColors = type(saved.effectColors) == "table" and saved.effectColors or {}
+    for key, default in pairs(DEFAULT_EFFECT_COLORS) do
+        local color = savedEffectColors[key]
+        db.effectColors[key] = CopyColor(IsValidColor(color) and color or default)
+    end
+
+    local savedAppearance = type(saved.appearance) == "table" and saved.appearance or {}
+    db.appearance.nameFont = FONT_BY_VALUE[savedAppearance.nameFont]
+        and savedAppearance.nameFont or DEFAULT_APPEARANCE.nameFont
+    if IsFiniteNumber(savedAppearance.nameSize)
+        and savedAppearance.nameSize >= MIN_NAME_SIZE
+        and savedAppearance.nameSize <= MAX_NAME_SIZE then
+        db.appearance.nameSize = math.floor(savedAppearance.nameSize + 0.5)
+    else
+        db.appearance.nameSize = DEFAULT_APPEARANCE.nameSize
+    end
+    db.appearance.threatFont = FONT_BY_VALUE[savedAppearance.threatFont]
+        and savedAppearance.threatFont or DEFAULT_APPEARANCE.threatFont
+    if savedAppearance.namePlacement == "ABOVE" or savedAppearance.namePlacement == "INSIDE" then
+        db.appearance.namePlacement = savedAppearance.namePlacement
+    else
+        db.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
+    end
+
+    db.stylingEnabled = SavedBoolean(saved.stylingEnabled, DEFAULT_STYLING_ENABLED)
+    db.showThreat = SavedBoolean(saved.showThreat, DEFAULT_SHOW_THREAT)
+    db.hideBlizzardMinionNames = SavedBoolean(saved.hideBlizzardMinionNames,
+        DEFAULT_HIDE_BLIZZARD_MINION_NAMES)
+    db.hideCritterCompanionNames = SavedBoolean(saved.hideCritterCompanionNames,
+        DEFAULT_HIDE_CRITTER_COMPANION_NAMES)
+    db.attackingGlow = SavedBoolean(saved.attackingGlow, false)
+    db.interruptibleHighlight = SavedBoolean(saved.interruptibleHighlight, false)
+
+    local savedTRP3 = type(saved.trp3) == "table" and saved.trp3 or {}
+    for key, default in pairs(DEFAULT_TRP3) do
+        db.trp3[key] = SavedBoolean(savedTRP3[key], default)
+    end
+
+    db.blizzardMinionNameCVarOriginals = CopySavedCVarOriginals(
+        saved.blizzardMinionNameCVarOriginals, BLIZZARD_MINION_NAME_CVARS)
+    db.critterCompanionNameCVarOriginals = CopySavedCVarOriginals(
+        saved.critterCompanionNameCVarOriginals, BLIZZARD_CRITTER_COMPANION_NAME_CVARS)
+
+    return db
 end
 
 local function EnsureDB()
     if dbReady then return SimpleNameplatesDB end
-    if type(SimpleNameplatesDB) ~= "table" then
-        SimpleNameplatesDB = {}
-    end
-    local db = SimpleNameplatesDB
-    ApplySchemaMigrations(db)
-    if type(db.relationshipColors) ~= "table" then db.relationshipColors = {} end
-    for key, default in pairs(DEFAULT_RELATIONSHIP_COLORS) do
-        local color = db.relationshipColors[key]
-        if not IsValidColor(color) then
-            db.relationshipColors[key] = CopyColor(default)
-        end
-    end
-    if type(db.effectColors) ~= "table" then db.effectColors = {} end
-    for key, default in pairs(DEFAULT_EFFECT_COLORS) do
-        local color = db.effectColors[key]
-        if not IsValidColor(color) then
-            db.effectColors[key] = CopyColor(default)
-        end
-    end
-    if type(db.appearance) ~= "table" then db.appearance = {} end
-    if not FONT_BY_VALUE[db.appearance.nameFont] then
-        db.appearance.nameFont = DEFAULT_APPEARANCE.nameFont
-    end
-    if type(db.appearance.nameSize) ~= "number" then
-        db.appearance.nameSize = DEFAULT_APPEARANCE.nameSize
-    else
-        db.appearance.nameSize = math.max(MIN_NAME_SIZE,
-            math.min(MAX_NAME_SIZE, math.floor(db.appearance.nameSize + 0.5)))
-    end
-    if not FONT_BY_VALUE[db.appearance.threatFont] then
-        db.appearance.threatFont = DEFAULT_APPEARANCE.threatFont
-    end
-    if db.appearance.namePlacement ~= "ABOVE" and db.appearance.namePlacement ~= "INSIDE" then
-        db.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
-    end
-    if type(db.stylingEnabled) ~= "boolean" then db.stylingEnabled = DEFAULT_STYLING_ENABLED end
-    if type(db.showThreat) ~= "boolean" then db.showThreat = DEFAULT_SHOW_THREAT end
-    if type(db.hideBlizzardMinionNames) ~= "boolean" then
-        db.hideBlizzardMinionNames = DEFAULT_HIDE_BLIZZARD_MINION_NAMES
-    end
-    if type(db.hideCritterCompanionNames) ~= "boolean" then
-        db.hideCritterCompanionNames = DEFAULT_HIDE_CRITTER_COMPANION_NAMES
-    end
-    if type(db.attackingGlow) ~= "boolean" then db.attackingGlow = false end
-    if type(db.interruptibleHighlight) ~= "boolean" then db.interruptibleHighlight = false end
-    if type(db.trp3) ~= "table" then db.trp3 = {} end
-    for key, default in pairs(DEFAULT_TRP3) do
-        if type(db.trp3[key]) ~= "boolean" then db.trp3[key] = default end
-    end
-
-    -- CVar restoration below fires CVAR_UPDATE synchronously. Mark the
-    -- database ready first so those events cannot recursively initialize it.
+    SimpleNameplatesDB = ValidatedDB(SimpleNameplatesDB)
     dbReady = true
-    RemoveOverheadNameReplacement(db)
-    return db
+    return SimpleNameplatesDB
 end
 
 local function GetTRP3Enabled()
@@ -383,18 +360,6 @@ local function SetThreatEnabled(enabled)
     EnsureDB().showThreat = enabled == true
 end
 
-local BLIZZARD_MINION_NAME_CVARS = {
-    "UnitNameFriendlyMinionName",
-    "UnitNameEnemyMinionName",
-    "UnitNameFriendlyPetName",
-    "UnitNameEnemyPetName",
-    "UnitNameFriendlyGuardianName",
-    "UnitNameEnemyGuardianName",
-    "UnitNameFriendlyTotemName",
-    "UnitNameEnemyTotemName",
-}
-ns.BLIZZARD_MINION_NAME_CVARS = BLIZZARD_MINION_NAME_CVARS
-
 local function ApplyBlizzardMinionNameVisibility()
     local db = EnsureDB()
     if not db.hideBlizzardMinionNames then return end
@@ -436,11 +401,6 @@ local function SetHideBlizzardMinionNames(enabled)
         RestoreBlizzardMinionNameVisibility()
     end
 end
-
-local BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {
-    "UnitNameNonCombatCreatureName",
-}
-ns.BLIZZARD_CRITTER_COMPANION_NAME_CVARS = BLIZZARD_CRITTER_COMPANION_NAME_CVARS
 
 local function ApplyCritterCompanionNameVisibility()
     local db = EnsureDB()
