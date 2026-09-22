@@ -58,7 +58,7 @@ Open **Options → AddOns → Simple Nameplates → Text**, or type `/snp text`,
 * Whether names appear above or inside visible health bars.
 * Whether available threat percentages are displayed.
 
-Both fonts default to WoW's built-in **Arial Narrow** with a normal outline, and names default to 12 points. Other standard Blizzard fonts are available without an external font library. Inside-bar names use 80% of the selected size, rounded to the nearest point. Their health bars resize to leave one UI unit above and below the text, then return to Blizzard's original height when names move above the bar or Simple Nameplates styling is disabled. Friendly name-only plates are unaffected by the placement setting. Blizzard-controlled overhead names have no nameplate frame, so their size and font remain controlled by the game.
+Both fonts default to WoW's built-in **Arial Narrow** with a normal outline, and names default to 12 points. Other standard Blizzard fonts are available without an external font library. Inside-bar names use 80% of the selected size, rounded to the nearest point. Their health bars resize to leave two UI units above and below the text, then return to Blizzard's original height when names move above the bar or Simple Nameplates styling is disabled. Friendly name-only plates are unaffected by the placement setting. Blizzard-controlled overhead names have no nameplate frame, so their size and font remain controlled by the game.
 
 ## TRP3 Integration
 

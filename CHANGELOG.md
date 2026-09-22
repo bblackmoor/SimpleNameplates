@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.63
+
+* Increased inside-bar name padding to two UI units above and below.
+
 ## 1.0.62
 
 * Expanded the shared name-size range to 8–36 points.

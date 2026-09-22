@@ -266,7 +266,7 @@ local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize)
     end
 
     local insideNameSize = math.floor(baseNameSize * 0.8 + 0.5)
-    local barHeight = insideNameSize + 2
+    local barHeight = insideNameSize + 4
     bar:SetHeight(barHeight)
     if container then container:SetHeight(barHeight) end
     return true, insideNameSize
