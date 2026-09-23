@@ -1,13 +1,13 @@
 -- Simple Nameplates: About and settings pages.
 
 local _, ns = ...
-if not ns.RelationshipColorForState or not ns.EffectColor then return end
+if not ns.PriorityColorForState or not ns.EffectColor then return end
 
 local VERSION, SOURCE_URL = ns.VERSION, ns.SOURCE_URL
-local RelationshipColorForState = ns.RelationshipColorForState
+local PriorityColorForState = ns.PriorityColorForState
 local GetCategoryMode, SetCategoryMode = ns.GetCategoryMode, ns.SetCategoryMode
-local SetRelationshipColor = ns.SetRelationshipColor
-local ResetRelationshipColor = ns.ResetRelationshipColor
+local SetPriorityColor = ns.SetPriorityColor
+local ResetPriorityColor = ns.ResetPriorityColor
 local EffectColor, SetEffectColor, ResetEffectColor = ns.EffectColor, ns.SetEffectColor, ns.ResetEffectColor
 local ResetAllColors = ns.ResetAllColors
 local ApplyColorPreset = ns.ApplyColorPreset
@@ -104,7 +104,7 @@ local function CreateAboutPanel()
     AddTitle(content, layout, "Simple Nameplates — About")
     AddDescription(content, layout,
         "A deliberately simple standalone nameplate-color addon. It recolors addon-accessible " ..
-        "Blizzard Midnight nameplates with customizable relationship colors and an optional " ..
+        "Blizzard Midnight nameplates with customizable Priority Colors and an optional " ..
         "interruptible cast highlight.")
 
     local details = content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -355,7 +355,7 @@ end
 local function CreateColorsPanel()
     local panel, content, layout = CreateScrollablePanel("Colors")
     AddTitle(content, layout, "Simple Nameplates — Colors")
-    AddDescription(content, layout, "Categories are evaluated from 1 through 6. Active applies the configured color; Inactive leaves Blizzard's display unchanged; Hide conceals names and nameplates wherever Blizzard permits it.")
+    AddDescription(content, layout, "Priority Colors are evaluated from top to bottom. The first matching category wins. Active applies that color; Inactive leaves Blizzard's display unchanged; Hide conceals names and nameplates wherever Blizzard permits it.")
 
     local swatchRefreshers, toggleRefreshers = {}, {}
     local RefreshAttackingGlow
@@ -410,7 +410,7 @@ local function CreateColorsPanel()
         hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["SNP_HIGH_CONTRAST_PRESET_CONFIRM"] = {
-        text = "Apply the High Contrast preset?\n\nThis replaces all six relationship colors, changes the cast-highlight color, and enables the attacking glow. Blizzard's colorblind settings and filters will not be changed.",
+        text = "Apply the High Contrast preset?\n\nThis replaces all six Priority Colors, changes the cast-highlight color, and enables the attacking glow. Blizzard's colorblind settings and filters will not be changed.",
         button1 = "Apply",
         button2 = CANCEL or "Cancel",
         OnAccept = function(_, applyPreset)
@@ -558,11 +558,11 @@ local function CreateColorsPanel()
         end
     end
 
-    local function CreateRelationshipRow(text, state, displayText)
+    local function CreatePriorityRow(text, state, displayText)
         CreateColorRow(text, displayText,
-            function() return RelationshipColorForState(state) end,
-            function(r, g, b) SetRelationshipColor(state, r, g, b) end,
-            function() ResetRelationshipColor(state) end,
+            function() return PriorityColorForState(state) end,
+            function(r, g, b) SetPriorityColor(state, r, g, b) end,
+            function() ResetPriorityColor(state) end,
             nil, nil,
             function() return GetCategoryMode(state) end,
             function(mode) SetCategoryMode(state, mode) end)
@@ -608,18 +608,18 @@ local function CreateColorsPanel()
         row:SetScript("OnLeave", function() GameTooltip:Hide() end)
     end
 
-    CreateSection("PRIORITIZED COLORS")
-    CreateRelationshipRow("1. Attacking me", "attacking",
+    CreateSection("PRIORITY COLORS")
+    CreatePriorityRow("1. Attacking me", "attacking",
         "Health bar; includes attacks on pets, guardians, and minions; overrides 2–6")
-    CreateRelationshipRow("2. Will attack me if it notices me", "hostile",
+    CreatePriorityRow("2. Will attack me if it notices me", "hostile",
         "Health bar for aggressive units not currently attacking me")
-    CreateRelationshipRow("3. Attackable by me, but not hostile", "unfriendlyNPC",
+    CreatePriorityRow("3. Attackable by me, but not hostile", "unfriendlyNPC",
         "Health bar for units that will not initiate combat")
-    CreateRelationshipRow("4. Opposite-faction PC", "unfriendlyPC",
+    CreatePriorityRow("4. Opposite-faction PC", "unfriendlyPC",
         "Name when not attackable; attackable opponents use 1 or 2")
-    CreateRelationshipRow("5. My-faction PC", "friendlyPC",
+    CreatePriorityRow("5. My-faction PC", "friendlyPC",
         "Name of same-faction player characters")
-    CreateRelationshipRow("6. Anything else Simple Nameplates can color", "other",
+    CreatePriorityRow("6. Anything else Simple Nameplates can color", "other",
         "Name of friendly NPCs and other unmatched colorable units")
 
     layout:Space(6)
@@ -701,7 +701,7 @@ local function CreateColorsPanel()
     local attackingGlowNote = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     attackingGlowNote:SetPoint("RIGHT", content, "RIGHT", -20, 0)
     attackingGlowNote:SetJustifyH("LEFT")
-    attackingGlowNote:SetText("Uses prioritized color 1 and applies to both PCs and NPCs.")
+    attackingGlowNote:SetText("Uses Priority Color 1 and applies to both PCs and NPCs.")
     layout:Add(attackingGlowNote, 24, 28, 8)
     RefreshAttackingGlow = function() attackingGlow:SetChecked(GetAttackingGlowEnabled()) end
     attackingGlow:SetScript("OnClick", function(self)

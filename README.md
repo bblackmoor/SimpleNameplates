@@ -39,17 +39,17 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`. The six relationship categories are evaluated in the numbered order above. Every category has its own color and behavior selector:
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`. The six **Priority Colors** are evaluated from top to bottom. The first matching category wins. Every row has its own color and behavior selector:
 
-* **Active** applies Simple Nameplates styling, including threat percentage when Midnight exposes a readable value.
+* **Active** applies its Priority Color and Simple Nameplates styling, including threat percentage when Midnight exposes a readable value.
 * **Inactive** leaves Blizzard's display unchanged for that category.
 * **Hide** conceals that category's addon-accessible names and nameplates, and also hides matching Blizzard overhead-name categories where WoW permits it.
 
 Color controls are available only while a category is Active. Changes apply immediately and are saved between sessions. Three locked rows document Blizzard-controlled periwinkle-blue opposing-player/minion names, yellow interactive-NPC names, and green vendor-NPC names.
 
-The **High Contrast** preset changes priorities 1–6 to magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, blue `#0066FF`, cyan `#00FFFF`, and white `#FFFFFF`; changes the interruptible cast highlight to green `#00FF00`; and enables the attacking glow. It does not change the six category modes or WoW's colorblind settings.
+The **High Contrast** preset changes Priority Colors 1–6 to magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, blue `#0066FF`, cyan `#00FFFF`, and white `#FFFFFF`; changes the interruptible cast highlight to green `#00FF00`; and enables the attacking glow. It does not change the six category modes or WoW's colorblind settings.
 
-Categories 1–3 put their color on visible health bars and leave the name white for contrast. Categories 4–6 are name-only whenever Simple Nameplates can style an addon-accessible frame.
+Priority Colors 1–3 put their color on visible health bars and leave the name white for contrast. Priority Colors 4–6 are name-only whenever Simple Nameplates can style an addon-accessible frame.
 
 Blizzard's separate overhead world names are not addon-accessible and cannot be recolored directly. **Replace Blizzard overhead names (experimental)** hides selected world-name categories and requests corresponding Blizzard nameplates so priorities 4–6 can style them. Blizzard still decides whether a unit receives a nameplate, so the experiment can leave a unit without a visible name. Any WoW CVar changed by the addon is restored when no current option needs it or Simple Nameplates styling is disabled.
 
@@ -89,7 +89,7 @@ All four settings pages scroll when their contents do not fit the available wind
 
 Permanent, ready-to-install ZIP files are available from the [GitHub Releases](https://github.com/bblackmoor/SimpleNameplates/releases) page. Each release contains a `SimpleNameplates-<version>.zip` archive.
 
-Every commit to `main` also creates a development build under [GitHub Actions](https://github.com/bblackmoor/SimpleNameplates/actions/workflows/release.yml). Development archives are named `SimpleNameplates-<version>-dev-<commit>.zip` and retained for 90 days. A version tag such as `v1.0.72` publishes the corresponding permanent release.
+Every commit to `main` also creates a development build under [GitHub Actions](https://github.com/bblackmoor/SimpleNameplates/actions/workflows/release.yml). Development archives are named `SimpleNameplates-<version>-dev-<commit>.zip` and retained for 90 days. A version tag such as `v1.0.73` publishes the corresponding permanent release.
 
 ## Installation
 

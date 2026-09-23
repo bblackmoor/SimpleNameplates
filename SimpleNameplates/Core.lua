@@ -14,7 +14,7 @@ local function RGB8(r, g, b)
     return { r = r / 255, g = g / 255, b = b / 255 }
 end
 
-local DEFAULT_RELATIONSHIP_COLORS = {
+local DEFAULT_PRIORITY_COLORS = {
     attacking = RGB8(255, 0, 0),
     hostile = RGB8(255, 102, 0),
     unfriendlyNPC = RGB8(255, 204, 0),
@@ -35,7 +35,7 @@ local DEFAULT_EFFECT_COLORS = {
 }
 local COLOR_PRESETS = {
     highContrast = {
-        relationshipColors = {
+        priorityColors = {
             attacking = RGB8(255, 0, 255),
             hostile = RGB8(255, 102, 0),
             unfriendlyNPC = RGB8(255, 255, 0),
@@ -48,7 +48,7 @@ local COLOR_PRESETS = {
         },
     },
 }
-ns.DEFAULT_RELATIONSHIP_COLORS = DEFAULT_RELATIONSHIP_COLORS
+ns.DEFAULT_PRIORITY_COLORS = DEFAULT_PRIORITY_COLORS
 ns.DEFAULT_EFFECT_COLORS = DEFAULT_EFFECT_COLORS
 
 local FONT_OPTIONS = {
@@ -267,18 +267,18 @@ local function ValidatedDB(saved)
     if type(saved) ~= "table" then saved = {} end
 
     local db = {
-        relationshipColors = {},
+        priorityColors = {},
         categoryModes = {},
         effectColors = {},
         appearance = {},
         trp3 = {},
     }
 
-    local savedRelationshipColors = type(saved.relationshipColors) == "table"
-        and saved.relationshipColors or {}
-    for key, default in pairs(DEFAULT_RELATIONSHIP_COLORS) do
-        local color = savedRelationshipColors[key]
-        db.relationshipColors[key] = CopyColor(IsValidColor(color) and color or default)
+    local savedPriorityColors = type(saved.priorityColors) == "table"
+        and saved.priorityColors or {}
+    for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
+        local color = savedPriorityColors[key]
+        db.priorityColors[key] = CopyColor(IsValidColor(color) and color or default)
     end
     local savedCategoryModes = type(saved.categoryModes) == "table" and saved.categoryModes or {}
     for key, default in pairs(DEFAULT_CATEGORY_MODES) do
@@ -386,10 +386,10 @@ end
 
 local ApplyManagedNameSettings
 
-local function RelationshipColorForState(state)
-    local color = EnsureDB().relationshipColors[state]
-        or DEFAULT_RELATIONSHIP_COLORS[state]
-        or DEFAULT_RELATIONSHIP_COLORS.other
+local function PriorityColorForState(state)
+    local color = EnsureDB().priorityColors[state]
+        or DEFAULT_PRIORITY_COLORS[state]
+        or DEFAULT_PRIORITY_COLORS.other
     return color.r, color.g, color.b
 end
 
@@ -404,16 +404,16 @@ local function SetCategoryMode(state, mode)
     if ApplyManagedNameSettings then ApplyManagedNameSettings() end
 end
 
-local function SetRelationshipColor(state, r, g, b)
-    if DEFAULT_RELATIONSHIP_COLORS[state] then
-        EnsureDB().relationshipColors[state] = { r = r, g = g, b = b }
+local function SetPriorityColor(state, r, g, b)
+    if DEFAULT_PRIORITY_COLORS[state] then
+        EnsureDB().priorityColors[state] = { r = r, g = g, b = b }
     end
 end
 
-local function ResetRelationshipColor(state)
-    local default = DEFAULT_RELATIONSHIP_COLORS[state]
+local function ResetPriorityColor(state)
+    local default = DEFAULT_PRIORITY_COLORS[state]
     if not default then return end
-    EnsureDB().relationshipColors[state] = CopyColor(default)
+    EnsureDB().priorityColors[state] = CopyColor(default)
 end
 
 local function EffectColor(effect)
@@ -437,8 +437,8 @@ end
 
 local function ResetAllColors()
     local db = EnsureDB()
-    for key, default in pairs(DEFAULT_RELATIONSHIP_COLORS) do
-        db.relationshipColors[key] = CopyColor(default)
+    for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
+        db.priorityColors[key] = CopyColor(default)
     end
     for key, default in pairs(DEFAULT_EFFECT_COLORS) do
         db.effectColors[key] = CopyColor(default)
@@ -450,9 +450,9 @@ local function ApplyColorPreset(presetName)
     if not preset then return false end
 
     local db = EnsureDB()
-    for key, color in pairs(preset.relationshipColors or {}) do
-        if DEFAULT_RELATIONSHIP_COLORS[key] and IsValidColor(color) then
-            db.relationshipColors[key] = CopyColor(color)
+    for key, color in pairs(preset.priorityColors or {}) do
+        if DEFAULT_PRIORITY_COLORS[key] and IsValidColor(color) then
+            db.priorityColors[key] = CopyColor(color)
         end
     end
     for key, color in pairs(preset.effectColors or {}) do
@@ -734,11 +734,11 @@ local function AccessibleValue(v)
 end
 
 ns.EnsureDB = EnsureDB
-ns.RelationshipColorForState = RelationshipColorForState
+ns.PriorityColorForState = PriorityColorForState
 ns.GetCategoryMode = GetCategoryMode
 ns.SetCategoryMode = SetCategoryMode
-ns.SetRelationshipColor = SetRelationshipColor
-ns.ResetRelationshipColor = ResetRelationshipColor
+ns.SetPriorityColor = SetPriorityColor
+ns.ResetPriorityColor = ResetPriorityColor
 ns.EffectColor = EffectColor
 ns.SetEffectColor = SetEffectColor
 ns.ResetEffectColor = ResetEffectColor

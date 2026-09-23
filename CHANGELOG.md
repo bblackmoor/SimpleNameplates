@@ -1,8 +1,15 @@
 # Changelog
 
+## 1.0.73
+
+* Renamed the six-color system and its saved setting to **Priority Colors** and `priorityColors`.
+* Clarified that rows are evaluated from top to bottom and the first matching category wins.
+* Kept the rows ordered from immediate danger through friendly and least-consequential units.
+* Does not import the obsolete `relationshipColors` key; only the exact current `priorityColors` setting is accepted.
+
 ## 1.0.72
 
-* Replaced the former relationship colors with six explicitly prioritized categories: attacking, aggressive, neutral-attackable, opposing PC, same-faction PC, and all other colorable units.
+* Replaced the former color model with six explicitly prioritized categories: attacking, aggressive, neutral-attackable, opposing PC, same-faction PC, and all other colorable units.
 * Added an Active, Inactive, or Hide behavior selector to every prioritized category.
 * Limited Simple Nameplates coloring, threat text, and effects to Active categories; Inactive categories restore Blizzard's presentation.
 * Added best-effort category hiding for addon-accessible frames and matching Blizzard overhead-name CVars, with prior game settings restored when released.
@@ -101,7 +108,7 @@
 ## 1.0.48
 
 * Added cast-highlight state to `/snp debug`.
-* Added versioned SavedVariables migrations and separated relationship colors from effect colors internally.
+* Added versioned SavedVariables migrations and separated unit-state colors from effect colors internally.
 * Made every settings page scrollable and replaced fixed vertical coordinates with a layout cursor.
 * Moved release history out of the README and removed the redundant packaged `README.txt`.
 

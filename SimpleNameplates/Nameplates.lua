@@ -23,7 +23,7 @@ local UnitName = UnitName
 local AccessibleNumber = ns.AccessibleNumber
 local AccessibleBoolean = ns.AccessibleBoolean
 local AccessibleValue = ns.AccessibleValue
-local RelationshipColorForState = ns.RelationshipColorForState
+local PriorityColorForState = ns.PriorityColorForState
 local GetCategoryMode = ns.GetCategoryMode
 local EffectColor = ns.EffectColor
 local GetAppearanceSetting = ns.GetAppearanceSetting
@@ -212,7 +212,7 @@ local function StyleFullTitle(frame, state, text, baseNameSize)
     fullTitle:ClearAllPoints()
     fullTitle:SetPoint("TOP", frame.name, "BOTTOM", 0, -1)
     fullTitle:SetJustifyH("CENTER")
-    fullTitle:SetTextColor(RelationshipColorForState(state))
+    fullTitle:SetTextColor(PriorityColorForState(state))
     fullTitle:Show()
 end
 
@@ -293,7 +293,7 @@ local function StyleName(frame, state)
     name:SetShadowColor(0, 0, 0, 1)
     name:SetShadowOffset(1, -1)
     local nameR, nameG, nameB = 1, 1, 1
-    if IsNameOnlyState(state) then nameR, nameG, nameB = RelationshipColorForState(state) end
+    if IsNameOnlyState(state) then nameR, nameG, nameB = PriorityColorForState(state) end
     -- Blizzard also tints nameplate text with UnitSelectionColor through the
     -- FontString's vertex color. Keep that tint neutral so the configured
     -- Simple Nameplates color is displayed exactly.
@@ -625,7 +625,7 @@ local function ApplySimpleStyle(frame)
     end
     frame.SNPState = state
     frame.SNPHidden = nil
-    local r, g, b = RelationshipColorForState(state)
+    local r, g, b = PriorityColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyVisibility(frame, state)
     StyleName(frame, state)
@@ -654,7 +654,7 @@ local function RepairHealthColor(frame)
     end
     frame.SNPState = state
     frame.SNPHidden = nil
-    local r, g, b = RelationshipColorForState(state)
+    local r, g, b = PriorityColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyConfiguredBarHeight(frame, state, bar, GetAppearanceSetting("nameSize") or 12)
     ApplyVisibility(frame, state)
@@ -955,7 +955,7 @@ local function DebugUnit(unit)
         display = "replacement requested; no nameplate frame"
         colorHex = "not displayed by Simple Nameplates"
     else
-        local r, g, b = RelationshipColorForState(state)
+        local r, g, b = PriorityColorForState(state)
         colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
         display = IsNameOnlyState(state) and "colored name only" or "white name with colored health bar"
     end
