@@ -15,11 +15,20 @@ local function RGB8(r, g, b)
 end
 
 local DEFAULT_RELATIONSHIP_COLORS = {
-    friendlyNPC = RGB8(51, 204, 51),
-    friendlyPC = RGB8(51, 204, 255),
-    unfriendlyNPC = RGB8(255, 204, 0),
-    hostile = RGB8(255, 102, 0),
     attacking = RGB8(255, 0, 0),
+    hostile = RGB8(255, 102, 0),
+    unfriendlyNPC = RGB8(255, 204, 0),
+    unfriendlyPC = RGB8(102, 102, 255),
+    friendlyPC = RGB8(51, 204, 51),
+    other = RGB8(51, 204, 255),
+}
+local DEFAULT_CATEGORY_MODES = {
+    attacking = "active",
+    hostile = "active",
+    unfriendlyNPC = "active",
+    unfriendlyPC = "active",
+    friendlyPC = "active",
+    other = "active",
 }
 local DEFAULT_EFFECT_COLORS = {
     interruptible = RGB8(0, 255, 255),
@@ -27,14 +36,15 @@ local DEFAULT_EFFECT_COLORS = {
 local COLOR_PRESETS = {
     highContrast = {
         relationshipColors = {
-            friendlyNPC = RGB8(0, 255, 255),
-            friendlyPC = RGB8(0, 102, 255),
-            unfriendlyNPC = RGB8(255, 255, 0),
-            hostile = RGB8(255, 102, 0),
             attacking = RGB8(255, 0, 255),
+            hostile = RGB8(255, 102, 0),
+            unfriendlyNPC = RGB8(255, 255, 0),
+            unfriendlyPC = RGB8(0, 102, 255),
+            friendlyPC = RGB8(0, 255, 255),
+            other = RGB8(255, 255, 255),
         },
         effectColors = {
-            interruptible = RGB8(255, 255, 255),
+            interruptible = RGB8(0, 255, 0),
         },
     },
 }
@@ -92,52 +102,109 @@ local BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {
 }
 ns.BLIZZARD_CRITTER_COMPANION_NAME_CVARS = BLIZZARD_CRITTER_COMPANION_NAME_CVARS
 
--- Experimental replacement hides selected engine-drawn world names and asks
--- Blizzard to create ordinary nameplates in their place. ForceShowUnitName is
--- required because the UnitName CVars otherwise hide the nameplate text too.
-local OVERHEAD_REPLACEMENT_CVAR_VALUES = {
-    UnitNameFriendlyPlayerName = "0",
-    UnitNameEnemyPlayerName = "0",
-    UnitNameFriendlyMinionName = "0",
-    UnitNameEnemyMinionName = "0",
-    UnitNameFriendlyPetName = "0",
-    UnitNameEnemyPetName = "0",
-    UnitNameFriendlyGuardianName = "0",
-    UnitNameEnemyGuardianName = "0",
-    UnitNameFriendlyTotemName = "0",
-    UnitNameEnemyTotemName = "0",
-    UnitNameFriendlySpecialNPCName = "0",
-    UnitNameInteractiveNPC = "0",
-    UnitNameHostleNPC = "0",
-    UnitNameNPC = "0",
+-- Category-aware world-name management. Each CVar is captured once, may be
+-- claimed by several options, and is restored only when nothing still needs it.
+local CATEGORY_REPLACEMENT_CVAR_VALUES = {
+    hostile = {
+        UnitNameHostleNPC = "0",
+        nameplateShowEnemies = "1",
+    },
+    unfriendlyPC = {
+        UnitNameEnemyPlayerName = "0",
+        nameplateShowEnemies = "1",
+    },
+    friendlyPC = {
+        UnitNameFriendlyPlayerName = "0",
+        nameplateShowFriendlyPlayers = "1",
+        nameplateShowOnlyNameForFriendlyPlayerUnits = "1",
+    },
+    other = {
+        UnitNameFriendlyMinionName = "0",
+        UnitNameEnemyMinionName = "0",
+        UnitNameFriendlyPetName = "0",
+        UnitNameEnemyPetName = "0",
+        UnitNameFriendlyGuardianName = "0",
+        UnitNameEnemyGuardianName = "0",
+        UnitNameFriendlyTotemName = "0",
+        UnitNameEnemyTotemName = "0",
+        UnitNameFriendlySpecialNPCName = "0",
+        UnitNameInteractiveNPC = "0",
+        UnitNameNPC = "0",
+        nameplateShowFriendlyNpcs = "1",
+        nameplateShowFriendlyPlayerMinions = "1",
+        nameplateShowFriendlyPlayerPets = "1",
+        nameplateShowFriendlyPlayerGuardians = "1",
+        nameplateShowFriendlyPlayerTotems = "1",
+        nameplateShowFriendlyMinions = "1",
+        nameplateShowFriendlyPets = "1",
+        nameplateShowFriendlyGuardians = "1",
+        nameplateShowFriendlyTotems = "1",
+        nameplateShowEnemyMinions = "1",
+        nameplateShowEnemyPets = "1",
+        nameplateShowEnemyGuardians = "1",
+        nameplateShowEnemyTotems = "1",
+    },
+}
+local CATEGORY_HIDE_CVAR_VALUES = {
+    hostile = {
+        UnitNameHostleNPC = "0",
+    },
+    unfriendlyPC = {
+        UnitNameEnemyPlayerName = "0",
+    },
+    friendlyPC = {
+        UnitNameFriendlyPlayerName = "0",
+        nameplateShowFriendlyPlayers = "0",
+    },
+    other = {
+        UnitNameFriendlyMinionName = "0",
+        UnitNameEnemyMinionName = "0",
+        UnitNameFriendlyPetName = "0",
+        UnitNameEnemyPetName = "0",
+        UnitNameFriendlyGuardianName = "0",
+        UnitNameEnemyGuardianName = "0",
+        UnitNameFriendlyTotemName = "0",
+        UnitNameEnemyTotemName = "0",
+        UnitNameFriendlySpecialNPCName = "0",
+        UnitNameInteractiveNPC = "0",
+        UnitNameNPC = "0",
+        nameplateShowFriendlyNpcs = "0",
+        nameplateShowFriendlyPlayerMinions = "0",
+        nameplateShowFriendlyPlayerPets = "0",
+        nameplateShowFriendlyPlayerGuardians = "0",
+        nameplateShowFriendlyPlayerTotems = "0",
+        nameplateShowFriendlyMinions = "0",
+        nameplateShowFriendlyPets = "0",
+        nameplateShowFriendlyGuardians = "0",
+        nameplateShowFriendlyTotems = "0",
+        nameplateShowEnemyMinions = "0",
+        nameplateShowEnemyPets = "0",
+        nameplateShowEnemyGuardians = "0",
+        nameplateShowEnemyTotems = "0",
+    },
+}
+local SHARED_REPLACEMENT_CVAR_VALUES = {
     nameplateShowAll = "1",
     nameplateForceShowUnitName = "1",
-    nameplateShowFriendlyPlayers = "1",
-    nameplateShowFriendlyNpcs = "1",
-    nameplateShowFriendlyPlayerMinions = "1",
-    nameplateShowFriendlyPlayerPets = "1",
-    nameplateShowFriendlyPlayerGuardians = "1",
-    nameplateShowFriendlyPlayerTotems = "1",
-    nameplateShowFriendlyMinions = "1",
-    nameplateShowFriendlyPets = "1",
-    nameplateShowFriendlyGuardians = "1",
-    nameplateShowFriendlyTotems = "1",
-    nameplateShowEnemies = "1",
-    nameplateShowEnemyMinions = "1",
-    nameplateShowEnemyPets = "1",
-    nameplateShowEnemyGuardians = "1",
-    nameplateShowEnemyTotems = "1",
-    nameplateShowOnlyNameForFriendlyPlayerUnits = "1",
 }
-local OVERHEAD_REPLACEMENT_CVARS = {}
-local OVERHEAD_REPLACEMENT_CVAR_SET = {}
-for cvar in pairs(OVERHEAD_REPLACEMENT_CVAR_VALUES) do
-    OVERHEAD_REPLACEMENT_CVARS[#OVERHEAD_REPLACEMENT_CVARS + 1] = cvar
-    OVERHEAD_REPLACEMENT_CVAR_SET[string.lower(cvar)] = true
+local MANAGED_NAME_CVARS, MANAGED_NAME_CVAR_SET = {}, {}
+local function RegisterManagedCVars(values)
+    for cvar in pairs(values) do
+        if not MANAGED_NAME_CVAR_SET[cvar] then
+            MANAGED_NAME_CVAR_SET[cvar] = true
+            MANAGED_NAME_CVAR_SET[string.lower(cvar)] = true
+            MANAGED_NAME_CVARS[#MANAGED_NAME_CVARS + 1] = cvar
+        end
+    end
 end
-table.sort(OVERHEAD_REPLACEMENT_CVARS)
-ns.OVERHEAD_REPLACEMENT_CVARS = OVERHEAD_REPLACEMENT_CVARS
-ns.OVERHEAD_REPLACEMENT_CVAR_SET = OVERHEAD_REPLACEMENT_CVAR_SET
+RegisterManagedCVars(SHARED_REPLACEMENT_CVAR_VALUES)
+for _, values in pairs(CATEGORY_REPLACEMENT_CVAR_VALUES) do RegisterManagedCVars(values) end
+for _, values in pairs(CATEGORY_HIDE_CVAR_VALUES) do RegisterManagedCVars(values) end
+for _, cvar in ipairs(BLIZZARD_MINION_NAME_CVARS) do RegisterManagedCVars({ [cvar] = "0" }) end
+for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do RegisterManagedCVars({ [cvar] = "0" }) end
+table.sort(MANAGED_NAME_CVARS)
+ns.OVERHEAD_REPLACEMENT_CVARS = MANAGED_NAME_CVARS
+ns.OVERHEAD_REPLACEMENT_CVAR_SET = MANAGED_NAME_CVAR_SET
 
 ns.FONT_OPTIONS = FONT_OPTIONS
 ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
@@ -201,6 +268,7 @@ local function ValidatedDB(saved)
 
     local db = {
         relationshipColors = {},
+        categoryModes = {},
         effectColors = {},
         appearance = {},
         trp3 = {},
@@ -211,6 +279,12 @@ local function ValidatedDB(saved)
     for key, default in pairs(DEFAULT_RELATIONSHIP_COLORS) do
         local color = savedRelationshipColors[key]
         db.relationshipColors[key] = CopyColor(IsValidColor(color) and color or default)
+    end
+    local savedCategoryModes = type(saved.categoryModes) == "table" and saved.categoryModes or {}
+    for key, default in pairs(DEFAULT_CATEGORY_MODES) do
+        local mode = savedCategoryModes[key]
+        db.categoryModes[key] = (mode == "active" or mode == "inactive" or mode == "hide")
+            and mode or default
     end
 
     local savedEffectColors = type(saved.effectColors) == "table" and saved.effectColors or {}
@@ -253,12 +327,8 @@ local function ValidatedDB(saved)
         db.trp3[key] = SavedBoolean(savedTRP3[key], default)
     end
 
-    db.blizzardMinionNameCVarOriginals = CopySavedCVarOriginals(
-        saved.blizzardMinionNameCVarOriginals, BLIZZARD_MINION_NAME_CVARS)
-    db.critterCompanionNameCVarOriginals = CopySavedCVarOriginals(
-        saved.critterCompanionNameCVarOriginals, BLIZZARD_CRITTER_COMPANION_NAME_CVARS)
-    db.overheadReplacementCVarOriginals = CopySavedCVarOriginals(
-        saved.overheadReplacementCVarOriginals, OVERHEAD_REPLACEMENT_CVARS)
+    db.managedNameCVarOriginals = CopySavedCVarOriginals(
+        saved.managedNameCVarOriginals, MANAGED_NAME_CVARS) or {}
 
     return db
 end
@@ -314,12 +384,24 @@ local function ResetAppearance()
     for key, value in pairs(DEFAULT_APPEARANCE) do appearance[key] = value end
 end
 
+local ApplyManagedNameSettings
+
 local function RelationshipColorForState(state)
-    local colorState = state == "unfriendlyPC" and "unfriendlyNPC" or state
-    local color = EnsureDB().relationshipColors[colorState]
-        or DEFAULT_RELATIONSHIP_COLORS[colorState]
-        or DEFAULT_RELATIONSHIP_COLORS.friendlyNPC
+    local color = EnsureDB().relationshipColors[state]
+        or DEFAULT_RELATIONSHIP_COLORS[state]
+        or DEFAULT_RELATIONSHIP_COLORS.other
     return color.r, color.g, color.b
+end
+
+local function GetCategoryMode(state)
+    return EnsureDB().categoryModes[state] or "active"
+end
+
+local function SetCategoryMode(state, mode)
+    if not DEFAULT_CATEGORY_MODES[state]
+        or (mode ~= "active" and mode ~= "inactive" and mode ~= "hide") then return end
+    EnsureDB().categoryModes[state] = mode
+    if ApplyManagedNameSettings then ApplyManagedNameSettings() end
 end
 
 local function SetRelationshipColor(state, r, g, b)
@@ -413,32 +495,82 @@ local function SetThreatEnabled(enabled)
     EnsureDB().showThreat = enabled == true
 end
 
-local function ApplyBlizzardMinionNameVisibility()
-    local db = EnsureDB()
-    if not db.hideBlizzardMinionNames then return end
+local applyingManagedNameSettings = false
+local managedNameSettingsPending = false
 
-    if type(db.blizzardMinionNameCVarOriginals) ~= "table" then
-        db.blizzardMinionNameCVarOriginals = {}
+local function MergeCVarValues(target, source)
+    for cvar, value in pairs(source or {}) do target[cvar] = value end
+end
+
+local function DesiredManagedNameSettings(db)
+    local desired = {}
+    if not db.stylingEnabled then return desired end
+
+    if db.replaceBlizzardOverheadNames then
+        local replacementActive
+        for _, state in ipairs({ "hostile", "unfriendlyPC", "friendlyPC", "other" }) do
+            if db.categoryModes[state] == "active" then
+                MergeCVarValues(desired, CATEGORY_REPLACEMENT_CVAR_VALUES[state])
+                replacementActive = true
+            end
+        end
+        if replacementActive then MergeCVarValues(desired, SHARED_REPLACEMENT_CVAR_VALUES) end
     end
-    local originals = db.blizzardMinionNameCVarOriginals
-    for _, cvar in ipairs(BLIZZARD_MINION_NAME_CVARS) do
+
+    for _, state in ipairs({ "unfriendlyPC", "friendlyPC", "other" }) do
+        if db.categoryModes[state] == "hide" then
+            MergeCVarValues(desired, CATEGORY_HIDE_CVAR_VALUES[state])
+        end
+    end
+    if db.hideBlizzardMinionNames then
+        for _, cvar in ipairs(BLIZZARD_MINION_NAME_CVARS) do desired[cvar] = "0" end
+    end
+    if db.hideCritterCompanionNames then
+        for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do desired[cvar] = "0" end
+    end
+    return desired
+end
+
+ApplyManagedNameSettings = function()
+    local db = EnsureDB()
+    if applyingManagedNameSettings then return end
+    if InCombatLockdown and InCombatLockdown() then
+        managedNameSettingsPending = true
+        return
+    end
+
+    applyingManagedNameSettings = true
+    managedNameSettingsPending = false
+    db.managedNameCVarOriginals = type(db.managedNameCVarOriginals) == "table"
+        and db.managedNameCVarOriginals or {}
+    local originals = db.managedNameCVarOriginals
+    local desired = DesiredManagedNameSettings(db)
+
+    for cvar, original in pairs(originals) do
+        if desired[cvar] == nil then
+            SetCVarValue(cvar, original)
+            originals[cvar] = nil
+        end
+    end
+    for cvar, value in pairs(desired) do
         local current = GetCVarValue(cvar)
         if current ~= nil then
             if originals[cvar] == nil then originals[cvar] = current end
-            SetCVarValue(cvar, "0")
+            SetCVarValue(cvar, value)
         end
     end
+    applyingManagedNameSettings = false
 end
 
-local function RestoreBlizzardMinionNameVisibility()
+local function RestoreAllManagedNameSettings()
     local db = EnsureDB()
-    local originals = db.blizzardMinionNameCVarOriginals
-    db.blizzardMinionNameCVarOriginals = nil
+    local originals = db.managedNameCVarOriginals
+    db.managedNameCVarOriginals = {}
+    managedNameSettingsPending = false
     if type(originals) ~= "table" then return end
-
-    for cvar, value in pairs(originals) do
-        SetCVarValue(cvar, value)
-    end
+    applyingManagedNameSettings = true
+    for cvar, value in pairs(originals) do SetCVarValue(cvar, value) end
+    applyingManagedNameSettings = false
 end
 
 local function GetHideBlizzardMinionNames()
@@ -446,41 +578,12 @@ local function GetHideBlizzardMinionNames()
 end
 
 local function SetHideBlizzardMinionNames(enabled)
-    local db = EnsureDB()
-    db.hideBlizzardMinionNames = enabled == true
-    if db.hideBlizzardMinionNames then
-        ApplyBlizzardMinionNameVisibility()
-    else
-        RestoreBlizzardMinionNameVisibility()
-    end
+    EnsureDB().hideBlizzardMinionNames = enabled == true
+    ApplyManagedNameSettings()
 end
 
-local function ApplyCritterCompanionNameVisibility()
-    local db = EnsureDB()
-    if not db.hideCritterCompanionNames then return end
-
-    if type(db.critterCompanionNameCVarOriginals) ~= "table" then
-        db.critterCompanionNameCVarOriginals = {}
-    end
-    local originals = db.critterCompanionNameCVarOriginals
-    for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do
-        local current = GetCVarValue(cvar)
-        if current ~= nil then
-            if originals[cvar] == nil then originals[cvar] = current end
-            SetCVarValue(cvar, "0")
-        end
-    end
-end
-
-local function RestoreCritterCompanionNameVisibility()
-    local db = EnsureDB()
-    local originals = db.critterCompanionNameCVarOriginals
-    db.critterCompanionNameCVarOriginals = nil
-    if type(originals) ~= "table" then return end
-
-    for cvar, value in pairs(originals) do
-        SetCVarValue(cvar, value)
-    end
+local function ApplyBlizzardMinionNameVisibility()
+    ApplyManagedNameSettings()
 end
 
 local function GetHideCritterCompanionNames()
@@ -488,64 +591,33 @@ local function GetHideCritterCompanionNames()
 end
 
 local function SetHideCritterCompanionNames(enabled)
-    local db = EnsureDB()
-    db.hideCritterCompanionNames = enabled == true
-    if db.hideCritterCompanionNames then
-        ApplyCritterCompanionNameVisibility()
-    else
-        RestoreCritterCompanionNameVisibility()
-    end
+    EnsureDB().hideCritterCompanionNames = enabled == true
+    ApplyManagedNameSettings()
 end
 
-local applyingOverheadReplacement = false
+local function ApplyCritterCompanionNameVisibility()
+    ApplyManagedNameSettings()
+end
 
 local function GetReplaceBlizzardOverheadNames()
     return EnsureDB().replaceBlizzardOverheadNames
 end
 
-local function ApplyOverheadNameReplacement()
-    local db = EnsureDB()
-    if applyingOverheadReplacement or not db.stylingEnabled
-        or not db.replaceBlizzardOverheadNames then return end
+local function SetReplaceBlizzardOverheadNames(enabled)
+    EnsureDB().replaceBlizzardOverheadNames = enabled == true
+    ApplyManagedNameSettings()
+end
 
-    applyingOverheadReplacement = true
-    if type(db.overheadReplacementCVarOriginals) ~= "table" then
-        db.overheadReplacementCVarOriginals = {}
-    end
-    local originals = db.overheadReplacementCVarOriginals
-    for _, cvar in ipairs(OVERHEAD_REPLACEMENT_CVARS) do
-        local current = GetCVarValue(cvar)
-        if current ~= nil then
-            if originals[cvar] == nil then originals[cvar] = current end
-            SetCVarValue(cvar, OVERHEAD_REPLACEMENT_CVAR_VALUES[cvar])
-        end
-    end
-    applyingOverheadReplacement = false
+local function ApplyOverheadNameReplacement()
+    ApplyManagedNameSettings()
 end
 
 local function RestoreOverheadNameSettings()
-    local db = EnsureDB()
-    local originals = db.overheadReplacementCVarOriginals
-    db.overheadReplacementCVarOriginals = nil
-    if type(originals) ~= "table" then return end
-
-    applyingOverheadReplacement = true
-    for cvar, value in pairs(originals) do SetCVarValue(cvar, value) end
-    applyingOverheadReplacement = false
-
-    -- Preserve the two independent visibility choices if either remains on.
-    ApplyBlizzardMinionNameVisibility()
-    ApplyCritterCompanionNameVisibility()
+    RestoreAllManagedNameSettings()
 end
 
-local function SetReplaceBlizzardOverheadNames(enabled)
-    local db = EnsureDB()
-    db.replaceBlizzardOverheadNames = enabled == true
-    if db.replaceBlizzardOverheadNames then
-        ApplyOverheadNameReplacement()
-    else
-        RestoreOverheadNameSettings()
-    end
+local function ApplyPendingManagedNameSettings()
+    if managedNameSettingsPending then ApplyManagedNameSettings() end
 end
 
 local FRIENDLY_COLOR_CVARS = {
@@ -557,7 +629,13 @@ ns.FRIENDLY_COLOR_CVARS = FRIENDLY_COLOR_CVARS
 local friendlyColorCVarOriginals = {}
 local friendlyColorCVarsCaptured = false
 
+local RestoreFriendlyClassColors
+
 local function DisableFriendlyClassColors()
+    if GetCategoryMode("friendlyPC") ~= "active" then
+        RestoreFriendlyClassColors()
+        return
+    end
     -- Midnight has separate CVars for friendly player name text and health-bar
     -- class coloring. Disable all known variants: Blizzard or another addon can update
     -- these independently, and leaving the name-text CVar enabled produces the
@@ -576,7 +654,7 @@ local function DisableFriendlyClassColors()
     friendlyColorCVarsCaptured = true
 end
 
-local function RestoreFriendlyClassColors()
+RestoreFriendlyClassColors = function()
     if not friendlyColorCVarsCaptured then return end
     for _, cvar in ipairs(FRIENDLY_COLOR_CVARS) do
         local value = friendlyColorCVarOriginals[cvar]
@@ -588,6 +666,8 @@ local function RestoreFriendlyClassColors()
             end
         end
     end
+    wipe(friendlyColorCVarOriginals)
+    friendlyColorCVarsCaptured = false
 end
 
 local function AddOnEnabled(name)
@@ -655,6 +735,8 @@ end
 
 ns.EnsureDB = EnsureDB
 ns.RelationshipColorForState = RelationshipColorForState
+ns.GetCategoryMode = GetCategoryMode
+ns.SetCategoryMode = SetCategoryMode
 ns.SetRelationshipColor = SetRelationshipColor
 ns.ResetRelationshipColor = ResetRelationshipColor
 ns.EffectColor = EffectColor
@@ -679,6 +761,8 @@ ns.ApplyCritterCompanionNameVisibility = ApplyCritterCompanionNameVisibility
 ns.GetReplaceBlizzardOverheadNames = GetReplaceBlizzardOverheadNames
 ns.SetReplaceBlizzardOverheadNames = SetReplaceBlizzardOverheadNames
 ns.ApplyOverheadNameReplacement = ApplyOverheadNameReplacement
+ns.ApplyManagedNameSettings = ApplyManagedNameSettings
+ns.ApplyPendingManagedNameSettings = ApplyPendingManagedNameSettings
 ns.RestoreOverheadNameSettings = RestoreOverheadNameSettings
 ns.GetAppearanceSetting = GetAppearanceSetting
 ns.SetAppearanceSetting = SetAppearanceSetting

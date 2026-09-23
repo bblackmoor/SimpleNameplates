@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.72
+
+* Replaced the former relationship colors with six explicitly prioritized categories: attacking, aggressive, neutral-attackable, opposing PC, same-faction PC, and all other colorable units.
+* Added an Active, Inactive, or Hide behavior selector to every prioritized category.
+* Limited Simple Nameplates coloring, threat text, and effects to Active categories; Inactive categories restore Blizzard's presentation.
+* Added best-effort category hiding for addon-accessible frames and matching Blizzard overhead-name CVars, with prior game settings restored when released.
+* Preserved only previous settings whose names and values exactly match current valid settings; no renamed or legacy setting aliases are imported.
+* Updated the defaults, High Contrast preset, settings descriptions, diagnostics, and documentation for the six-category model.
+
 ## 1.0.71
 
 * Added 90-day development ZIP artifacts for every commit to `main`, identified by addon version and short commit SHA.

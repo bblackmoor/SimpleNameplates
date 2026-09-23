@@ -24,6 +24,7 @@ local AccessibleNumber = ns.AccessibleNumber
 local AccessibleBoolean = ns.AccessibleBoolean
 local AccessibleValue = ns.AccessibleValue
 local RelationshipColorForState = ns.RelationshipColorForState
+local GetCategoryMode = ns.GetCategoryMode
 local EffectColor = ns.EffectColor
 local GetAppearanceSetting = ns.GetAppearanceSetting
 local GetTRP3Setting = ns.GetTRP3Setting
@@ -67,30 +68,25 @@ local function IsPlayerControlledUnit(unit)
     return AccessibleBoolean(UnitPlayerControlled(unit)) == true
 end
 
-local function OpposingPlayerState(unit)
+local function UnitCombatAvailable(unit)
     local canAttackThem = AccessibleBoolean(UnitCanAttack("player", unit))
     local canAttackUs = AccessibleBoolean(UnitCanAttack(unit, "player"))
-    local combatAvailable = canAttackThem == true or canAttackUs == true
+    return canAttackThem == true or canAttackUs == true
+end
 
-    if combatAvailable then
-        if IsAttackingPlayerControlledUnit(unit) then
-            return "attacking"
-        end
+local function OpposingPlayerState(unit)
+    if UnitCombatAvailable(unit) then
+        if IsAttackingPlayerControlledUnit(unit) then return "attacking" end
         return "hostile"
     end
 
-    if canAttackThem == false and canAttackUs == false then
-        return GetReplaceBlizzardOverheadNames() and "unfriendlyPC" or "blizzardOverhead"
-    end
-
-    -- Attackability can be secret. PvP state is only a fallback and does not
-    -- attempt to distinguish War Mode from ordinary PvP flagging.
+    -- A readable false/false result is the ordinary sanctuary/non-PvP case.
+    -- Restricted attackability also falls back to the opposing-PC category
+    -- unless WoW exposes a usable PvP signal.
     local pvp = AccessibleBoolean(UnitIsPVP(unit))
-    if pvp == true and IsAttackingPlayerControlledUnit(unit) then
-        return "attacking"
-    end
+    if pvp == true and IsAttackingPlayerControlledUnit(unit) then return "attacking" end
     if pvp == true then return "hostile" end
-    return GetReplaceBlizzardOverheadNames() and "unfriendlyPC" or "blizzardOverhead"
+    return "unfriendlyPC"
 end
 
 local function StateForUnit(unit)
@@ -100,40 +96,44 @@ local function StateForUnit(unit)
         local playerFaction = AccessibleValue(UnitFactionGroup("player"))
         local unitFaction = AccessibleValue(UnitFactionGroup(unit))
         if playerFaction and unitFaction then
-            if playerFaction == unitFaction then return "friendlyPC" end
-            return OpposingPlayerState(unit)
+            if playerFaction ~= unitFaction then return OpposingPlayerState(unit) end
+            -- Duels and other same-faction combat still obey the higher combat
+            -- priorities instead of being flattened into My-faction PC.
+            if UnitCombatAvailable(unit) then
+                if IsAttackingPlayerControlledUnit(unit) then return "attacking" end
+                return "hostile"
+            end
+            return "friendlyPC"
         end
 
-        -- If faction information is restricted, retain reaction as the safest
-        -- available same-side signal.
-        if reaction and reaction >= 5 then return "friendlyPC" end
+        if reaction and reaction >= 5 and not UnitCombatAvailable(unit) then
+            return "friendlyPC"
+        end
         return OpposingPlayerState(unit)
     end
 
-    -- Ordinarily Blizzard draws these as inaccessible overhead world text.
-    -- Experimental replacement can style them when Blizzard supplies a plate.
+    -- Player-controlled pets, guardians, totems, and minions are category 6,
+    -- except while attackability or active combat promotes them to 1 or 2.
     if IsPlayerControlledUnit(unit) then
-        if GetReplaceBlizzardOverheadNames() then
-            local ownedByPlayer = UnitIsOwnerOrControllerOfUnit
-                and AccessibleBoolean(UnitIsOwnerOrControllerOfUnit("player", unit)) == true
-            if ownedByPlayer or (reaction and reaction >= 5) then return "friendlyPC" end
-            return OpposingPlayerState(unit)
+        if UnitCombatAvailable(unit) then
+            if IsAttackingPlayerControlledUnit(unit) then return "attacking" end
+            return "hostile"
         end
-        return "blizzardOverhead"
+        return "other"
     end
 
-    if reaction and reaction >= 5 then return "friendlyNPC" end
+    if reaction and reaction >= 5 then return "other" end
     if IsAttackingPlayerControlledUnit(unit) then return "attacking" end
     if reaction == 4 then return "unfriendlyNPC" end
     if reaction then return "hostile" end
 
     local attackable = AccessibleBoolean(UnitCanAttack("player", unit))
     if attackable == true then return "hostile" end
-    return "friendlyNPC"
+    return "other"
 end
 
 local function IsNameOnlyState(state)
-    return state == "friendlyNPC" or state == "friendlyPC" or state == "unfriendlyPC"
+    return state == "friendlyPC" or state == "unfriendlyPC" or state == "other"
 end
 
 local function GetUnitFrame(unit)
@@ -590,15 +590,41 @@ local function ApplyVisibility(frame, state)
     SetShownSafe(frame.selectionHighlight, not nameOnly)
 end
 
+local RestoreFrame
+
+local function ApplyHiddenStyle(frame, state)
+    frame.SNPState = state
+    frame.SNPHidden = true
+    RestoreOriginalBarHeight(frame, GetHealthBar(frame))
+    if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
+    if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
+    if frame.SNPAttackingGlow then UpdateAttackingGlow(frame, "", 1, 1, 1) end
+    if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
+    SetShownSafe(frame.name, false)
+    SetShownSafe(GetHealthBar(frame), false)
+    SetShownSafe(frame.HealthBarsContainer, false)
+    SetShownSafe(frame.castBar, false)
+    SetShownSafe(frame.CastBar, false)
+    SetShownSafe(frame.castBarAnchor, false)
+    SetShownSafe(frame.classificationIndicator, false)
+    SetShownSafe(frame.ClassificationFrame, false)
+    SetShownSafe(frame.selectionHighlight, false)
+end
+
 local function ApplySimpleStyle(frame)
     if not GetStylingEnabled() then return end
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
     local state = StateForUnit(frame.unit)
-    frame.SNPState = state
-    if state == "blizzardOverhead" then
-        RestoreOriginalBarHeight(frame, GetHealthBar(frame))
+    local mode = GetCategoryMode(state)
+    if mode == "inactive" then
+        RestoreFrame(frame)
+        return
+    elseif mode == "hide" then
+        ApplyHiddenStyle(frame, state)
         return
     end
+    frame.SNPState = state
+    frame.SNPHidden = nil
     local r, g, b = RelationshipColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyVisibility(frame, state)
@@ -616,12 +642,18 @@ end
 local function RepairHealthColor(frame)
     if not GetStylingEnabled() then return end
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
-    local state = frame.SNPState or StateForUnit(frame.unit)
-    frame.SNPState = state
-    if state == "blizzardOverhead" then
-        RestoreOriginalBarHeight(frame, GetHealthBar(frame))
+    if frame.SNPRestoring then return end
+    local state = StateForUnit(frame.unit)
+    local mode = GetCategoryMode(state)
+    if mode == "inactive" then
+        RestoreFrame(frame)
+        return
+    elseif mode == "hide" then
+        ApplyHiddenStyle(frame, state)
         return
     end
+    frame.SNPState = state
+    frame.SNPHidden = nil
     local r, g, b = RelationshipColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyConfiguredBarHeight(frame, state, bar, GetAppearanceSetting("nameSize") or 12)
@@ -636,9 +668,18 @@ end
 local function RepairName(frame)
     if not GetStylingEnabled() then return end
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
-    local state = frame.SNPState or StateForUnit(frame.unit)
+    if frame.SNPRestoring then return end
+    local state = StateForUnit(frame.unit)
+    local mode = GetCategoryMode(state)
+    if mode == "inactive" then
+        RestoreFrame(frame)
+        return
+    elseif mode == "hide" then
+        ApplyHiddenStyle(frame, state)
+        return
+    end
     frame.SNPState = state
-    if state == "blizzardOverhead" then return end
+    frame.SNPHidden = nil
     StyleName(frame, state)
 end
 
@@ -672,18 +713,21 @@ local function RefreshAll()
     end
 end
 
-local function RestoreFrame(frame)
-    if not frame then return end
+RestoreFrame = function(frame)
+    if not frame or frame.SNPRestoring then return end
+    frame.SNPRestoring = true
     if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
     if frame.SNPAttackingGlow then UpdateAttackingGlow(frame, "", 1, 1, 1) end
     if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
     frame.SNPNameStyle = nil
     frame.SNPState = nil
+    frame.SNPHidden = nil
     RestoreOriginalBarHeight(frame, GetHealthBar(frame))
 
     -- Restore anything hidden by name-only styling before asking Blizzard to
     -- rebuild the frame according to its own current settings.
+    SetShownSafe(frame.name, true)
     SetShownSafe(GetHealthBar(frame), true)
     SetShownSafe(frame.HealthBarsContainer, true)
     if CompactUnitFrame_UpdateAll then
@@ -692,6 +736,7 @@ local function RestoreFrame(frame)
         if CompactUnitFrame_UpdateName then CompactUnitFrame_UpdateName(frame) end
         if CompactUnitFrame_UpdateHealthColor then CompactUnitFrame_UpdateHealthColor(frame) end
     end
+    frame.SNPRestoring = nil
 end
 
 local function RestoreAll()
@@ -713,7 +758,7 @@ if hooksecurefunc and CompactUnitFrame_UpdateName then
 end
 
 local events = CreateFrame("Frame")
-for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","CVAR_UPDATE"}) do
+for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_REGEN_ENABLED","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","CVAR_UPDATE"}) do
     events:RegisterEvent(event)
 end
 
@@ -780,11 +825,15 @@ events:SetScript("OnEvent", function(_, event, unit)
         end
         return
     end
+    if event == "PLAYER_REGEN_ENABLED" then
+        if ns.ApplyPendingManagedNameSettings then ns.ApplyPendingManagedNameSettings() end
+        QueueRefreshAll()
+        return
+    end
     if event == "CVAR_UPDATE" then
-        if ns.GetReplaceBlizzardOverheadNames()
-            and type(unit) == "string"
+        if type(unit) == "string"
             and ns.OVERHEAD_REPLACEMENT_CVAR_SET[string.lower(unit)] then
-            ns.ApplyOverheadNameReplacement()
+            if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
             QueueRefreshAll()
             return
         end
@@ -902,10 +951,7 @@ local function DebugUnit(unit)
     local reaction = AccessibleNumber(UnitReaction(unit, "player"))
     local hasNameplate = GetUnitFrame(unit) ~= nil
     local display, colorHex
-    if state == "blizzardOverhead" then
-        display = "Blizzard-controlled overhead name"
-        colorHex = "engine-controlled"
-    elseif not hasNameplate and GetReplaceBlizzardOverheadNames() then
+    if not hasNameplate and GetReplaceBlizzardOverheadNames() then
         display = "replacement requested; no nameplate frame"
         colorHex = "not displayed by Simple Nameplates"
     else
@@ -918,7 +964,8 @@ local function DebugUnit(unit)
     print("  Styling enabled: " .. (GetStylingEnabled() and "yes" or "no")
         .. "; overhead replacement: " .. (GetReplaceBlizzardOverheadNames() and "yes" or "no")
         .. "; nameplate frame: " .. (hasNameplate and "yes" or "no")
-        .. "; detected state: " .. state .. "; display: " .. display .. "; color: " .. colorHex)
+        .. "; detected state: " .. state .. "; mode: " .. GetCategoryMode(state)
+        .. "; display: " .. display .. "; color: " .. colorHex)
     print("  Player: " .. DebugBoolean(UnitIsPlayer(unit))
         .. "; player-controlled: " .. DebugBoolean(UnitPlayerControlled(unit))
         .. "; owned/controlled by you: " .. DebugBoolean(UnitIsOwnerOrControllerOfUnit and UnitIsOwnerOrControllerOfUnit("player", unit)))

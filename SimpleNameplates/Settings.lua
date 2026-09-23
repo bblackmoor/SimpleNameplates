@@ -5,6 +5,7 @@ if not ns.RelationshipColorForState or not ns.EffectColor then return end
 
 local VERSION, SOURCE_URL = ns.VERSION, ns.SOURCE_URL
 local RelationshipColorForState = ns.RelationshipColorForState
+local GetCategoryMode, SetCategoryMode = ns.GetCategoryMode, ns.SetCategoryMode
 local SetRelationshipColor = ns.SetRelationshipColor
 local ResetRelationshipColor = ns.ResetRelationshipColor
 local EffectColor, SetEffectColor, ResetEffectColor = ns.EffectColor, ns.SetEffectColor, ns.ResetEffectColor
@@ -354,7 +355,7 @@ end
 local function CreateColorsPanel()
     local panel, content, layout = CreateScrollablePanel("Colors")
     AddTitle(content, layout, "Simple Nameplates — Colors")
-    AddDescription(content, layout, "Each row shows where its color is applied.")
+    AddDescription(content, layout, "Categories are evaluated from 1 through 6. Active applies the configured color; Inactive leaves Blizzard's display unchanged; Hide conceals names and nameplates wherever Blizzard permits it.")
 
     local swatchRefreshers, toggleRefreshers = {}, {}
     local RefreshAttackingGlow
@@ -409,7 +410,7 @@ local function CreateColorsPanel()
         hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["SNP_HIGH_CONTRAST_PRESET_CONFIRM"] = {
-        text = "Apply the High Contrast preset?\n\nThis replaces all six editable colors and enables the attacking glow. Blizzard's colorblind settings and filters will not be changed.",
+        text = "Apply the High Contrast preset?\n\nThis replaces all six relationship colors, changes the cast-highlight color, and enables the attacking glow. Blizzard's colorblind settings and filters will not be changed.",
         button1 = "Apply",
         button2 = CANCEL or "Cancel",
         OnAccept = function(_, applyPreset)
@@ -427,11 +428,17 @@ local function CreateColorsPanel()
         layout:Add(label, 24, 20, 2)
     end
 
-    local function CreateColorRow(text, displayText, getColor, setColor, resetColor, getEnabled, setEnabled)
+    local function CreateColorRow(text, displayText, getColor, setColor, resetColor, getEnabled, setEnabled, getMode, setMode)
         local row = CreateFrame("Frame", nil, content)
         row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
         layout:Add(row, 24, 40, 2)
         local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        local modeDropdown
+        if getMode and setMode then
+            modeDropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
+            modeDropdown:SetPoint("LEFT", -18, 0)
+            UIDropDownMenu_SetWidth(modeDropdown, 82)
+        end
         if getEnabled and setEnabled then
             local toggle = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
             toggle:SetSize(26, 26)
@@ -444,6 +451,8 @@ local function CreateColorsPanel()
             toggleRefreshers[#toggleRefreshers + 1] = RefreshToggle
             RefreshToggle()
             label:SetPoint("TOPLEFT", toggle, "TOPRIGHT", 0, -1)
+        elseif modeDropdown then
+            label:SetPoint("TOPLEFT", modeDropdown, "TOPRIGHT", -6, -3)
         else
             label:SetPoint("TOPLEFT", 4, -3)
         end
@@ -509,13 +518,54 @@ local function CreateColorsPanel()
             UpdateSwatch()
             RefreshNameplates()
         end)
+
+        if modeDropdown then
+            local modes = {
+                { value = "active", label = "Active" },
+                { value = "inactive", label = "Inactive" },
+                { value = "hide", label = "Hide" },
+            }
+            local function RefreshMode()
+                local mode = getMode()
+                UIDropDownMenu_SetSelectedValue(modeDropdown, mode)
+                for _, option in ipairs(modes) do
+                    if option.value == mode then UIDropDownMenu_SetText(modeDropdown, option.label) end
+                end
+                local active = mode == "active"
+                swatch:SetEnabled(active)
+                resetOne:SetEnabled(active)
+                swatch:SetAlpha(active and 1 or 0.25)
+                resetOne:SetAlpha(active and 1 or 0.4)
+            end
+            UIDropDownMenu_Initialize(modeDropdown, function(_, level)
+                for _, option in ipairs(modes) do
+                    local value = option.value
+                    local info = UIDropDownMenu_CreateInfo()
+                    info.text = option.label
+                    info.value = value
+                    info.checked = getMode() == value
+                    info.func = function()
+                        setMode(value)
+                        if ns.DisableFriendlyClassColors then ns.DisableFriendlyClassColors() end
+                        RefreshMode()
+                        RefreshNameplates()
+                    end
+                    UIDropDownMenu_AddButton(info, level)
+                end
+            end)
+            toggleRefreshers[#toggleRefreshers + 1] = RefreshMode
+            RefreshMode()
+        end
     end
 
     local function CreateRelationshipRow(text, state, displayText)
         CreateColorRow(text, displayText,
             function() return RelationshipColorForState(state) end,
             function(r, g, b) SetRelationshipColor(state, r, g, b) end,
-            function() ResetRelationshipColor(state) end)
+            function() ResetRelationshipColor(state) end,
+            nil, nil,
+            function() return GetCategoryMode(state) end,
+            function(mode) SetCategoryMode(state, mode) end)
     end
 
     local function CreateLockedColorRow(text, r, g, b, popupKey)
@@ -558,18 +608,27 @@ local function CreateColorsPanel()
         row:SetScript("OnLeave", function() GameTooltip:Hide() end)
     end
 
-    CreateSection("FRIENDLY")
-    CreateRelationshipRow("Friendly NPC", "friendlyNPC", "Changes the name color")
-    CreateRelationshipRow("Friendly same-faction PC", "friendlyPC", "Changes the name color")
+    CreateSection("PRIORITIZED COLORS")
+    CreateRelationshipRow("1. Attacking me", "attacking",
+        "Health bar; includes attacks on pets, guardians, and minions; overrides 2–6")
+    CreateRelationshipRow("2. Will attack me if it notices me", "hostile",
+        "Health bar for aggressive units not currently attacking me")
+    CreateRelationshipRow("3. Attackable by me, but not hostile", "unfriendlyNPC",
+        "Health bar for units that will not initiate combat")
+    CreateRelationshipRow("4. Opposite-faction PC", "unfriendlyPC",
+        "Name when not attackable; attackable opponents use 1 or 2")
+    CreateRelationshipRow("5. My-faction PC", "friendlyPC",
+        "Name of same-faction player characters")
+    CreateRelationshipRow("6. Anything else Simple Nameplates can color", "other",
+        "Name of friendly NPCs and other unmatched colorable units")
+
     layout:Space(6)
-    CreateSection("UNFRIENDLY")
-    CreateRelationshipRow("Attackable but non-aggressive NPC", "unfriendlyNPC", "Changes the health-bar color")
-    CreateRelationshipRow("Aggressive NPC or PvP-enabled opposing PC", "hostile", "Changes the health-bar color")
-    CreateLockedColorRow("Blizzard overhead names (periwinkle)",
+    CreateSection("BLIZZARD-CONTROLLED OVERHEAD NAMES")
+    CreateLockedColorRow("Opposite-faction PCs and player-controlled minions",
         102 / 255, 102 / 255, 1, "SNP_BLIZZARD_OVERHEAD_INFO")
-    CreateLockedColorRow("Interactive NPC overhead names",
+    CreateLockedColorRow("Interactive NPCs",
         1, 1, 0, "SNP_BLIZZARD_INTERACTIVE_INFO")
-    CreateLockedColorRow("Vendor NPC overhead names",
+    CreateLockedColorRow("Vendor NPCs",
         0, 1, 0, "SNP_BLIZZARD_VENDOR_INFO")
     local replaceOverheadNames = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     replaceOverheadNames:SetSize(26, 26)
@@ -630,8 +689,7 @@ local function CreateColorsPanel()
         RefreshHideCritterCompanionNames()
     end)
     layout:Space(6)
-    CreateSection("COMBAT OVERRIDE")
-    CreateRelationshipRow("Attacking me or one of my controlled units", "attacking", "Changes the health-bar color")
+    CreateSection("ATTACKING INDICATOR")
 
     local attackingGlow = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     attackingGlow:SetSize(26, 26)
@@ -643,7 +701,7 @@ local function CreateColorsPanel()
     local attackingGlowNote = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     attackingGlowNote:SetPoint("RIGHT", content, "RIGHT", -20, 0)
     attackingGlowNote:SetJustifyH("LEFT")
-    attackingGlowNote:SetText("Uses the configured Attacking color and applies to both PCs and NPCs.")
+    attackingGlowNote:SetText("Uses prioritized color 1 and applies to both PCs and NPCs.")
     layout:Add(attackingGlowNote, 24, 28, 8)
     RefreshAttackingGlow = function() attackingGlow:SetChecked(GetAttackingGlowEnabled()) end
     attackingGlow:SetScript("OnClick", function(self)

@@ -6,17 +6,16 @@ A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
 Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs and player characters separate, customizable color languages:
 
-| State or indicator | Default color | Meaning |
-| --- | --- | --- |
-| Friendly NPC | Green | Friendly non-player character; colored name |
-| Friendly PC | Light blue | Friendly same-faction player; colored name |
-| Unfriendly NPC | Yellow | Attackable, but non-aggressive; colored health bar |
-| Hostile opponent | Orange | Aggressive NPC or PvP-enabled opposing PC; colored health bar |
-| Attacking | Red | PC or NPC attacking you or one of your controlled units; colored health bar |
-| Interruptible cast | Cyan | Optional cast-bar outline for interruptible casts and channels |
-| Blizzard overhead name | Periwinkle blue, locked | Non-attackable opposing PCs and many player-controlled minions; experimental replacement available |
-| Interactive NPC overhead name | Yellow, locked | Interactive NPCs such as city guards; experimental replacement available |
-| Vendor NPC overhead name | Green, locked | Vendor NPCs; experimental replacement available |
+| Priority | Category | Default color | Display |
+| --- | --- | --- | --- |
+| 1 | Attacking me | Red | Health bar; includes attacks on your controlled units |
+| 2 | Will attack me if it notices me | Orange | Health bar |
+| 3 | Attackable by me, but not hostile | Yellow | Health bar |
+| 4 | Opposite-faction PC | Periwinkle blue | Name when not attackable; attackable opponents use priority 1 or 2 |
+| 5 | My-faction PC | Green | Name |
+| 6 | Anything else Simple Nameplates can color | Light blue | Name; includes friendly NPCs and unmatched colorable units |
+| — | Interruptible cast | Cyan | Optional cast-bar outline |
+| — | Blizzard-controlled overhead names | Locked | Some opposing PCs, minions, interactive NPCs, and vendors |
 
 ## How It Works
 
@@ -40,19 +39,23 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 
 ## Color Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`, to customize five relationship colors and the interruptible cast-bar highlight. Each editable row identifies where its color appears and has its own reset button. Changes apply immediately and are saved between sessions. Three locked informational rows explain Blizzard-controlled periwinkle-blue, yellow interactive-NPC, and green vendor-NPC overhead names. The **High Contrast** and **Reset Colors** buttons are at the top of the panel. Five options are disabled by default: **Replace Blizzard overhead names (experimental)**, **Hide Blizzard-controlled minion names**, **Hide critter and companion names**, **Glow attacking units**, and **Highlight interruptible casts and channels**.
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`. The six relationship categories are evaluated in the numbered order above. Every category has its own color and behavior selector:
 
-The **High Contrast** preset replaces the editable colors with cyan `#00FFFF`, blue `#0066FF`, yellow `#FFFF00`, orange `#FF6600`, magenta `#FF00FF`, and white `#FFFFFF`. It avoids relying on a red/green distinction and enables the attacking glow so the attacking state also has a non-color cue. A confirmation explains both changes before the preset is applied. The preset does not alter WoW's own colorblind mode, filter type, or filter strength; Blizzard's global filter continues to affect the rendered addon normally.
+* **Active** applies Simple Nameplates styling, including threat percentage when Midnight exposes a readable value.
+* **Inactive** leaves Blizzard's display unchanged for that category.
+* **Hide** conceals that category's addon-accessible names and nameplates, and also hides matching Blizzard overhead-name categories where WoW permits it.
 
-Units without health bars display their relationship color on the name. When a health bar is present, the name remains white for contrast and the bar carries the relationship color.
+Color controls are available only while a category is Active. Changes apply immediately and are saved between sessions. Three locked rows document Blizzard-controlled periwinkle-blue opposing-player/minion names, yellow interactive-NPC names, and green vendor-NPC names.
 
-Blizzard's separate overhead world names cannot be recolored because they are not addon-accessible nameplate frames. Yellow interactive-NPC names, including city guards that offer directions, and green vendor-NPC names have the same limitation as the periwinkle names. The periwinkle category includes non-attackable opposing-faction PCs and many player-controlled pets, guardians, totems, and minions.
+The **High Contrast** preset changes priorities 1–6 to magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, blue `#0066FF`, cyan `#00FFFF`, and white `#FFFFFF`; changes the interruptible cast highlight to green `#00FF00`; and enables the attacking glow. It does not change the six category modes or WoW's colorblind settings.
 
-**Replace Blizzard overhead names (experimental)** hides the affected player, minion, and NPC world-name categories while enabling Blizzard's corresponding nameplates, forcing their names to remain visible, and using Midnight's friendly-player name-only mode. Simple Nameplates also makes friendly-NPC and non-attackable opposing-player plates name-only. The previous WoW CVar values are restored when the option or Simple Nameplates styling is disabled. Blizzard still decides whether a unit receives a nameplate; when it does not, that unit may have no visible name while the experiment is enabled.
+Categories 1–3 put their color on visible health bars and leave the name white for contrast. Categories 4–6 are name-only whenever Simple Nameplates can style an addon-accessible frame.
 
-**Hide Blizzard-controlled minion names** hides the friendly and enemy minion categories while leaving opposing-player names visible. Disabling the option restores the prior Blizzard name settings. **Hide critter and companion names** separately hides Blizzard's overhead names for noncombat critters and companions, and likewise restores the prior game setting when disabled.
+Blizzard's separate overhead world names are not addon-accessible and cannot be recolored directly. **Replace Blizzard overhead names (experimental)** hides selected world-name categories and requests corresponding Blizzard nameplates so priorities 4–6 can style them. Blizzard still decides whether a unit receives a nameplate, so the experiment can leave a unit without a visible name. Any WoW CVar changed by the addon is restored when no current option needs it or Simple Nameplates styling is disabled.
 
-The interruptible highlight is a static outline around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to both ordinary casts and channels, preserves their different bar textures and progress directions, and is drawn above the optional attacking glow. Non-interruptible abilities retain Blizzard's normal shield treatment without the added outline.
+**Hide Blizzard-controlled minion names** and **Hide critter and companion names** remain independent narrow controls. Their prior WoW settings are restored when disabled.
+
+The interruptible highlight is a static outline around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to casts and channels, and preserves Blizzard's normal non-interruptible shield treatment.
 
 ## Text Settings
 
@@ -78,7 +81,7 @@ Each field has its own toggle. To keep nameplates readable, roleplaying names ar
 
 The main **Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
 
-Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting state, display treatment, color, nameplate availability, and whether experimental overhead replacement is enabled. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the visibility hook was installed, and the highlight is currently shown. Restricted Midnight values are identified rather than inspected.
+Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting priority category, category mode, display treatment, color, nameplate availability, and whether experimental overhead replacement is enabled. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the visibility hook was installed, and the highlight is currently shown. Restricted Midnight values are identified rather than inspected.
 
 All four settings pages scroll when their contents do not fit the available window height.
 
@@ -86,7 +89,7 @@ All four settings pages scroll when their contents do not fit the available wind
 
 Permanent, ready-to-install ZIP files are available from the [GitHub Releases](https://github.com/bblackmoor/SimpleNameplates/releases) page. Each release contains a `SimpleNameplates-<version>.zip` archive.
 
-Every commit to `main` also creates a development build under [GitHub Actions](https://github.com/bblackmoor/SimpleNameplates/actions/workflows/release.yml). Development archives are named `SimpleNameplates-<version>-dev-<commit>.zip` and retained for 90 days. A version tag such as `v1.0.71` publishes the corresponding permanent release.
+Every commit to `main` also creates a development build under [GitHub Actions](https://github.com/bblackmoor/SimpleNameplates/actions/workflows/release.yml). Development archives are named `SimpleNameplates-<version>-dev-<commit>.zip` and retained for 90 days. A version tag such as `v1.0.72` publishes the corresponding permanent release.
 
 ## Installation
 
