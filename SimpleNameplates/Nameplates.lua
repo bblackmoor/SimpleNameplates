@@ -283,6 +283,41 @@ local function PositionName(frame, name, bar, nameOnly, inside, rightInset)
     end
 end
 
+local function GetInsideName(frame, bar)
+    local insideName = frame.SNPInsideName
+    if insideName and frame.SNPInsideNameBar == bar then return insideName end
+    if insideName then insideName:Hide() end
+    insideName = bar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    insideName:SetDrawLayer("OVERLAY", 7)
+    insideName:SetWordWrap(false)
+    insideName:SetMaxLines(1)
+    frame.SNPInsideName = insideName
+    frame.SNPInsideNameBar = bar
+    return insideName
+end
+
+local function ShowInsideName(frame, bar, text, fontPath, size, rightInset)
+    local insideName = GetInsideName(frame, bar)
+    insideName:SetText(text)
+    insideName:SetFont(fontPath, size, "OUTLINE")
+    insideName:SetShadowColor(0, 0, 0, 1)
+    insideName:SetShadowOffset(1, -1)
+    insideName:SetTextColor(1, 1, 1, 1)
+    insideName:ClearAllPoints()
+    insideName:SetPoint("LEFT", bar, "LEFT", 3, 0)
+    insideName:SetPoint("RIGHT", bar, "RIGHT", rightInset, 0)
+    insideName:SetJustifyH("LEFT")
+    insideName:Show()
+    -- Leave Blizzard's name shown for its health-text visibility logic, but
+    -- avoid drawing a second copy behind the bar.
+    frame.name:SetAlpha(0)
+end
+
+local function RestoreNameDisplay(frame)
+    if frame.SNPInsideName then frame.SNPInsideName:Hide() end
+    if frame.name then frame.name:SetAlpha(1) end
+end
+
 local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
         nameOnly, inside, rightInset, bar)
     local expected = frame.SNPNameStyle or {}
@@ -322,6 +357,11 @@ local function StyleName(frame, state)
     name:SetVertexColor(1, 1, 1, 1)
     name:SetTextColor(nameR, nameG, nameB, 1)
     name:Show()
+    if inside then
+        ShowInsideName(frame, bar, displayName, fontPath, size, rightInset)
+    else
+        RestoreNameDisplay(frame)
+    end
     StyleFullTitle(frame, state, fullTitle, baseSize)
     CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
         nameOnly, inside, rightInset, bar)
@@ -341,11 +381,19 @@ local function CachedNameHasDrifted(frame)
         return true
     end
     if expected.inside and expected.bar
-        and not NearlyEqual(expected.bar:GetHeight(), expected.size + 2) then
+        and not NearlyEqual(expected.bar:GetHeight(), expected.size + 4) then
         return true
     end
     if expected.inside and frame.HealthBarsContainer
-        and not NearlyEqual(frame.HealthBarsContainer:GetHeight(), expected.size + 2) then
+        and not NearlyEqual(frame.HealthBarsContainer:GetHeight(), expected.size + 4) then
+        return true
+    end
+    if expected.inside then
+        local insideName = frame.SNPInsideName
+        if not insideName or not insideName:IsShown() or not NearlyEqual(name:GetAlpha(), 0) then
+            return true
+        end
+    elseif not NearlyEqual(name:GetAlpha(), 1) then
         return true
     end
 
@@ -377,8 +425,8 @@ local function RepairCachedName(frame)
     name:SetVertexColor(1, 1, 1, 1)
     name:SetTextColor(expected.r, expected.g, expected.b, 1)
     if expected.inside and expected.bar then
-        expected.bar:SetHeight(expected.size + 2)
-        if frame.HealthBarsContainer then frame.HealthBarsContainer:SetHeight(expected.size + 2) end
+        expected.bar:SetHeight(expected.size + 4)
+        if frame.HealthBarsContainer then frame.HealthBarsContainer:SetHeight(expected.size + 4) end
     end
     if expected.nameOnly then
         name:ClearAllPoints()
@@ -398,6 +446,12 @@ local function RepairCachedName(frame)
     end
     name:SetJustifyH(expected.nameOnly and "CENTER" or "LEFT")
     name:Show()
+    if expected.inside and expected.bar then
+        ShowInsideName(frame, expected.bar, expected.text, expected.font,
+            expected.size, expected.rightInset or -3)
+    else
+        RestoreNameDisplay(frame)
+    end
 end
 
 local function EnsureThreatText(frame)
@@ -566,6 +620,7 @@ local function ApplyHiddenStyle(frame, state)
     RestoreOriginalBarHeight(frame, GetHealthBar(frame))
     if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
+    RestoreNameDisplay(frame)
     if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
     SetShownSafe(frame.name, false)
     SetShownSafe(GetHealthBar(frame), false)
@@ -683,6 +738,7 @@ RestoreFrame = function(frame)
     frame.SNPRestoring = true
     if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
+    RestoreNameDisplay(frame)
     if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
     frame.SNPNameStyle = nil
     frame.SNPState = nil
@@ -816,6 +872,7 @@ local function CleanupRemovedNameplate(unit)
         if frame.name then frame.name:SetText("") end
         if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
         if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
+        RestoreNameDisplay(frame)
         frame.SNPNameStyle = nil
         frame.SNPState = nil
         if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end

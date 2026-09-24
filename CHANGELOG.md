@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.78
+
+* Render inside-bar names on the health bar's overlay layer so the bar cannot cover them.
+* Corrected the inside-bar height check to match the configured two-unit padding above and below the name.
+
 ## 1.0.77
 
 * Removed the attacking glow, its appearance control, and its saved profile field.
