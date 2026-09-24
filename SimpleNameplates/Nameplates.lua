@@ -89,39 +89,37 @@ local function OpposingPlayerState(unit)
     return "unfriendlyPC"
 end
 
-local function StateForUnit(unit)
-    local reaction = AccessibleNumber(UnitReaction(unit, "player"))
-
-    if AccessibleBoolean(UnitIsPlayer(unit)) == true then
-        local playerFaction = AccessibleValue(UnitFactionGroup("player"))
-        local unitFaction = AccessibleValue(UnitFactionGroup(unit))
-        if playerFaction and unitFaction then
-            if playerFaction ~= unitFaction then return OpposingPlayerState(unit) end
-            -- Duels and other same-faction combat still obey the higher combat
-            -- priorities instead of being flattened into My-faction PC.
-            if UnitCombatAvailable(unit) then
-                if IsAttackingPlayerControlledUnit(unit) then return "attacking" end
-                return "hostile"
-            end
-            return "friendlyPC"
-        end
-
-        if reaction and reaction >= 5 and not UnitCombatAvailable(unit) then
-            return "friendlyPC"
-        end
-        return OpposingPlayerState(unit)
-    end
-
-    -- Player-controlled pets, guardians, totems, and minions are category 6,
-    -- except while attackability or active combat promotes them to 1 or 2.
-    if IsPlayerControlledUnit(unit) then
+local function PlayerState(unit, reaction)
+    local playerFaction = AccessibleValue(UnitFactionGroup("player"))
+    local unitFaction = AccessibleValue(UnitFactionGroup(unit))
+    if playerFaction and unitFaction then
+        if playerFaction ~= unitFaction then return OpposingPlayerState(unit) end
+        -- Duels and other same-faction combat still obey the higher combat
+        -- priorities instead of being flattened into My-faction PC.
         if UnitCombatAvailable(unit) then
             if IsAttackingPlayerControlledUnit(unit) then return "attacking" end
             return "hostile"
         end
-        return "other"
+        return "friendlyPC"
     end
 
+    if reaction and reaction >= 5 and not UnitCombatAvailable(unit) then
+        return "friendlyPC"
+    end
+    return OpposingPlayerState(unit)
+end
+
+local function PlayerControlledUnitState(unit)
+    -- Player-controlled pets, guardians, totems, and minions are category 6,
+    -- except while attackability or active combat promotes them to 1 or 2.
+    if UnitCombatAvailable(unit) then
+        if IsAttackingPlayerControlledUnit(unit) then return "attacking" end
+        return "hostile"
+    end
+    return "other"
+end
+
+local function NonPlayerState(unit, reaction)
     if reaction and reaction >= 5 then return "other" end
     if IsAttackingPlayerControlledUnit(unit) then return "attacking" end
     if reaction == 4 then return "unfriendlyNPC" end
@@ -130,6 +128,13 @@ local function StateForUnit(unit)
     local attackable = AccessibleBoolean(UnitCanAttack("player", unit))
     if attackable == true then return "hostile" end
     return "other"
+end
+
+local function StateForUnit(unit)
+    local reaction = AccessibleNumber(UnitReaction(unit, "player"))
+    if AccessibleBoolean(UnitIsPlayer(unit)) == true then return PlayerState(unit, reaction) end
+    if IsPlayerControlledUnit(unit) then return PlayerControlledUnitState(unit) end
+    return NonPlayerState(unit, reaction)
 end
 
 local function IsNameOnlyState(state)
@@ -258,18 +263,9 @@ local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize)
     return true, insideNameSize
 end
 
-local function StyleName(frame, state)
-    local name = frame and frame.name
-    if not name then return end
-    local fullTitle, displayName = UpdateNameText(frame)
-
-    local baseSize = GetAppearanceSetting("nameSize") or 12
-    local bar = GetHealthBar(frame)
-    local nameOnly = IsNameOnlyState(state)
-    local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize)
-
+local function PositionName(frame, name, bar, nameOnly, inside, rightInset)
+    name:ClearAllPoints()
     if nameOnly then
-        name:ClearAllPoints()
         if bar then
             name:SetPoint("BOTTOM", bar, "TOP", 0, 2)
         else
@@ -277,31 +273,17 @@ local function StyleName(frame, state)
         end
         name:SetJustifyH("CENTER")
     elseif inside then
-        local rightInset = GetThreatEnabled() and -42 or -3
-        name:ClearAllPoints()
         name:SetPoint("LEFT", bar, "LEFT", 3, 0)
         name:SetPoint("RIGHT", bar, "RIGHT", rightInset, 0)
         name:SetJustifyH("LEFT")
     elseif bar then
-        name:ClearAllPoints()
         name:SetPoint("BOTTOMLEFT", bar, "TOPLEFT", 0, 2)
         name:SetJustifyH("LEFT")
     end
+end
 
-    local fontPath = FontPath(GetAppearanceSetting("nameFont"))
-    name:SetFont(fontPath, size, "OUTLINE")
-    name:SetShadowColor(0, 0, 0, 1)
-    name:SetShadowOffset(1, -1)
-    local nameR, nameG, nameB = 1, 1, 1
-    if IsNameOnlyState(state) then nameR, nameG, nameB = PriorityColorForState(state) end
-    -- Blizzard also tints nameplate text with UnitSelectionColor through the
-    -- FontString's vertex color. Keep that tint neutral so the configured
-    -- Simple Nameplates color is displayed exactly.
-    name:SetVertexColor(1, 1, 1, 1)
-    name:SetTextColor(nameR, nameG, nameB, 1)
-    name:Show()
-    StyleFullTitle(frame, state, fullTitle, baseSize)
-
+local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
+        nameOnly, inside, rightInset, bar)
     local expected = frame.SNPNameStyle or {}
     frame.SNPNameStyle = expected
     expected.text = displayName
@@ -311,9 +293,37 @@ local function StyleName(frame, state)
     expected.r, expected.g, expected.b = nameR, nameG, nameB
     expected.nameOnly = nameOnly
     expected.inside = inside == true
-    expected.rightInset = GetThreatEnabled() and -42 or -3
+    expected.rightInset = rightInset
     expected.bar = bar
     expected.frame = frame
+end
+
+local function StyleName(frame, state)
+    local name = frame and frame.name
+    if not name then return end
+    local fullTitle, displayName = UpdateNameText(frame)
+    local baseSize = GetAppearanceSetting("nameSize") or 12
+    local bar = GetHealthBar(frame)
+    local nameOnly = IsNameOnlyState(state)
+    local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize)
+    local rightInset = GetThreatEnabled() and -42 or -3
+    PositionName(frame, name, bar, nameOnly, inside, rightInset)
+
+    local fontPath = FontPath(GetAppearanceSetting("nameFont"))
+    name:SetFont(fontPath, size, "OUTLINE")
+    name:SetShadowColor(0, 0, 0, 1)
+    name:SetShadowOffset(1, -1)
+    local nameR, nameG, nameB = 1, 1, 1
+    if nameOnly then nameR, nameG, nameB = PriorityColorForState(state) end
+    -- Blizzard also tints nameplate text with UnitSelectionColor through the
+    -- FontString's vertex color. Keep that tint neutral so the configured
+    -- Simple Nameplates color is displayed exactly.
+    name:SetVertexColor(1, 1, 1, 1)
+    name:SetTextColor(nameR, nameG, nameB, 1)
+    name:Show()
+    StyleFullTitle(frame, state, fullTitle, baseSize)
+    CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
+        nameOnly, inside, rightInset, bar)
 end
 
 local function NearlyEqual(a, b)
@@ -417,25 +427,25 @@ local function UpdateThreatText(frame, state)
     if percent then threatText:SetFormattedText("%.0f%%", percent) else threatText:SetText("") end
 end
 
+local function CreateGlowEdge(bar)
+    local edge = bar:CreateTexture(nil, "OVERLAY")
+    edge:SetColorTexture(1, 1, 1, 0.7)
+    edge:SetBlendMode("ADD")
+    edge:Hide()
+    return edge
+end
+
 local function EnsureAttackingGlow(frame)
     local bar = GetHealthBar(frame)
     if not bar then return nil end
     if frame.SNPAttackingGlow and frame.SNPAttackingGlow.bar == bar then return frame.SNPAttackingGlow end
 
-    local function CreateEdge()
-        local edge = bar:CreateTexture(nil, "OVERLAY")
-        edge:SetColorTexture(1, 1, 1, 0.7)
-        edge:SetBlendMode("ADD")
-        edge:Hide()
-        return edge
-    end
-
     local glow = {
         bar = bar,
-        top = CreateEdge(),
-        bottom = CreateEdge(),
-        left = CreateEdge(),
-        right = CreateEdge(),
+        top = CreateGlowEdge(bar),
+        bottom = CreateGlowEdge(bar),
+        left = CreateGlowEdge(bar),
+        right = CreateGlowEdge(bar),
     }
     glow.top:SetPoint("BOTTOMLEFT", bar, "TOPLEFT", -2, -1)
     glow.top:SetPoint("BOTTOMRIGHT", bar, "TOPRIGHT", 2, -1)
@@ -786,110 +796,118 @@ local function FlushQueuedRefreshes()
     end
 end
 
-events:SetScript("OnEvent", function(_, event, unit)
+local function HandlePlayerLogin()
+    ns.EnsureDB()
+    ns.ApplyBlizzardMinionNameVisibility()
+    ns.ApplyCritterCompanionNameVisibility()
+    ns.ApplyOverheadNameReplacement()
+    C_Timer.After(1, function()
+        if ns.GetHideBlizzardMinionNames() then ns.ApplyBlizzardMinionNameVisibility() end
+        if ns.GetHideCritterCompanionNames() then ns.ApplyCritterCompanionNameVisibility() end
+        if ns.GetReplaceBlizzardOverheadNames() then ns.ApplyOverheadNameReplacement() end
+    end)
+    if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
+    if ns.TRP3 and ns.TRP3.RegisterCallbacks then ns.TRP3.RegisterCallbacks() end
+    if GetStylingEnabled() then
+        ns.DisableFriendlyClassColors()
+        -- Blizzard or another addon can restore CVars shortly after login.
+        C_Timer.After(1, function()
+            if GetStylingEnabled() then
+                ns.DisableFriendlyClassColors()
+                RefreshAll()
+            end
+        end)
+        C_Timer.After(0.5, ns.ShowNameplateConflictWarning)
+        C_Timer.After(0, RefreshAll)
+    end
+end
+
+local function HandleCVarUpdate(cvarName)
+    if type(cvarName) == "string"
+        and ns.OVERHEAD_REPLACEMENT_CVAR_SET[string.lower(cvarName)] then
+        if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
+        QueueRefreshAll()
+        return
+    end
+    if ns.GetHideBlizzardMinionNames() then
+        for _, cvar in ipairs(ns.BLIZZARD_MINION_NAME_CVARS) do
+            if cvarName == cvar then
+                ns.ApplyBlizzardMinionNameVisibility()
+                return
+            end
+        end
+    end
+    if ns.GetHideCritterCompanionNames() then
+        for _, cvar in ipairs(ns.BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do
+            if cvarName == cvar then
+                ns.ApplyCritterCompanionNameVisibility()
+                return
+            end
+        end
+    end
+    if not GetStylingEnabled() then return end
+    for _, cvar in ipairs(ns.FRIENDLY_COLOR_CVARS) do
+        if cvarName == cvar then
+            ns.DisableFriendlyClassColors()
+            QueueRefreshAll()
+            return
+        end
+    end
+end
+
+local function CleanupRemovedNameplate(unit)
+    local frame = GetUnitFrame(unit)
+    if frame then
+        RestoreOriginalBarHeight(frame, GetHealthBar(frame))
+        if frame.name then frame.name:SetText("") end
+        if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
+        if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
+        frame.SNPNameStyle = nil
+        frame.SNPState = nil
+        UpdateAttackingGlow(frame, "", 1, 1, 1)
+        if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
+    end
+    dirtyUnits[unit] = nil
+end
+
+local function HandleNameplateEvent(event, unit)
+    if event == "NAME_PLATE_UNIT_ADDED" then
+        RefreshUnit(unit)
+        -- One delayed pass covers late nameplate initialization; the Blizzard
+        -- hooks and cached drift check handle subsequent changes.
+        C_Timer.After(0.50, function() RefreshUnit(unit) end)
+        return true
+    end
+    if event == "NAME_PLATE_UNIT_REMOVED" then
+        CleanupRemovedNameplate(unit)
+        return true
+    end
+    return false
+end
+
+local function HandleEvent(_, event, unit)
     if event == "ADDON_LOADED" then
         if unit ~= addon then return end
         events:UnregisterEvent("ADDON_LOADED")
         ns.EnsureDB()
         return
     end
-    if event == "PLAYER_LOGIN" then
-        ns.EnsureDB()
-        ns.ApplyBlizzardMinionNameVisibility()
-        ns.ApplyCritterCompanionNameVisibility()
-        ns.ApplyOverheadNameReplacement()
-        C_Timer.After(1, function()
-            if ns.GetHideBlizzardMinionNames() then
-                ns.ApplyBlizzardMinionNameVisibility()
-            end
-            if ns.GetHideCritterCompanionNames() then
-                ns.ApplyCritterCompanionNameVisibility()
-            end
-            if ns.GetReplaceBlizzardOverheadNames() then
-                ns.ApplyOverheadNameReplacement()
-            end
-        end)
-        if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
-        if ns.TRP3 and ns.TRP3.RegisterCallbacks then ns.TRP3.RegisterCallbacks() end
-        if GetStylingEnabled() then
-            ns.DisableFriendlyClassColors()
-            -- Blizzard or another addon can restore CVars shortly after login.
-            C_Timer.After(1, function()
-                if GetStylingEnabled() then
-                    ns.DisableFriendlyClassColors()
-                    RefreshAll()
-                end
-            end)
-            C_Timer.After(0.5, ns.ShowNameplateConflictWarning)
-            C_Timer.After(0, RefreshAll)
-        end
-        return
-    end
+    if event == "PLAYER_LOGIN" then HandlePlayerLogin(); return end
     if event == "PLAYER_REGEN_ENABLED" then
         if ns.ApplyPendingManagedNameSettings then ns.ApplyPendingManagedNameSettings() end
         QueueRefreshAll()
         return
     end
-    if event == "CVAR_UPDATE" then
-        if type(unit) == "string"
-            and ns.OVERHEAD_REPLACEMENT_CVAR_SET[string.lower(unit)] then
-            if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
-            QueueRefreshAll()
-            return
-        end
-        if ns.GetHideBlizzardMinionNames() then
-            for _, cvar in ipairs(ns.BLIZZARD_MINION_NAME_CVARS) do
-                if unit == cvar then
-                    ns.ApplyBlizzardMinionNameVisibility()
-                    return
-                end
-            end
-        end
-        if ns.GetHideCritterCompanionNames() then
-            for _, cvar in ipairs(ns.BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do
-                if unit == cvar then
-                    ns.ApplyCritterCompanionNameVisibility()
-                    return
-                end
-            end
-        end
-        if not GetStylingEnabled() then return end
-        for _, cvar in ipairs(ns.FRIENDLY_COLOR_CVARS) do
-            if unit == cvar then
-                ns.DisableFriendlyClassColors()
-                QueueRefreshAll()
-                return
-            end
-        end
-        return
-    end
+    if event == "CVAR_UPDATE" then HandleCVarUpdate(unit); return end
     if not GetStylingEnabled() then return end
-    if event == "NAME_PLATE_UNIT_ADDED" then
-        RefreshUnit(unit)
-        -- One delayed pass covers late nameplate initialization; the Blizzard
-        -- hooks and cached drift check handle subsequent changes.
-        C_Timer.After(0.50, function() RefreshUnit(unit) end)
-        return
-    end
-    if event == "NAME_PLATE_UNIT_REMOVED" then
-        local frame = GetUnitFrame(unit)
-        if frame then
-            RestoreOriginalBarHeight(frame, GetHealthBar(frame))
-            if frame.name then frame.name:SetText("") end
-            if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
-            if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
-            frame.SNPNameStyle = nil
-            frame.SNPState = nil
-            UpdateAttackingGlow(frame, "", 1, 1, 1)
-            if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
-        end
-        dirtyUnits[unit] = nil
-        return
-    end
+    if HandleNameplateEvent(event, unit) then return end
     if event == "PLAYER_TARGET_CHANGED" then QueueRefreshAll(); return end
     if unit and tostring(unit):match("^nameplate%d+$") then QueueUnitRefresh(unit)
     elseif event == "UNIT_THREAT_SITUATION_UPDATE" or event == "UNIT_THREAT_LIST_UPDATE" then QueueRefreshAll() end
-end)
+end
+
+events:SetScript("OnEvent", HandleEvent)
+
 
 -- Blizzard sometimes changes name text, font, or color without calling either
 -- compact unit-frame update path. Compare safe cached properties twice per
@@ -940,32 +958,25 @@ local function DebugRegionValue(region, methodName, valueType)
     return DebugValue(value)
 end
 
-local function DebugUnit(unit)
-    if AccessibleBoolean(UnitExists(unit)) ~= true then
-        print("|cff0cd29fSimple Nameplates:|r No target selected.")
-        return
-    end
-
-    local name = DebugValue(UnitName(unit))
-    local state = StateForUnit(unit)
-    local reaction = AccessibleNumber(UnitReaction(unit, "player"))
-    local hasNameplate = GetUnitFrame(unit) ~= nil
+local function DebugClassification(unit, state, hasNameplate)
     local display, colorHex
     if not hasNameplate and GetReplaceBlizzardOverheadNames() then
         display = "replacement requested; no nameplate frame"
         colorHex = "not displayed by Simple Nameplates"
     else
         local r, g, b = PriorityColorForState(state)
-        colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
+        colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5),
+            math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
         display = IsNameOnlyState(state) and "colored name only" or "white name with colored health bar"
     end
-
-    print("|cff0cd29fSimple Nameplates debug:|r " .. name)
     print("  Styling enabled: " .. (GetStylingEnabled() and "yes" or "no")
         .. "; overhead replacement: " .. (GetReplaceBlizzardOverheadNames() and "yes" or "no")
         .. "; nameplate frame: " .. (hasNameplate and "yes" or "no")
         .. "; detected state: " .. state .. "; mode: " .. GetCategoryMode(state)
         .. "; display: " .. display .. "; color: " .. colorHex)
+end
+
+local function DebugUnitRelationships(unit, reaction)
     print("  Player: " .. DebugBoolean(UnitIsPlayer(unit))
         .. "; player-controlled: " .. DebugBoolean(UnitPlayerControlled(unit))
         .. "; owned/controlled by you: " .. DebugBoolean(UnitIsOwnerOrControllerOfUnit and UnitIsOwnerOrControllerOfUnit("player", unit)))
@@ -977,8 +988,9 @@ local function DebugUnit(unit)
     print("  Threat on you: " .. DebugValue(UnitThreatSituation("player", unit))
         .. "; threat on pet: " .. DebugValue(UnitThreatSituation("pet", unit))
         .. "; targeting your controlled unit: " .. (TargetsPlayerControlledUnit(unit) and "yes" or "no"))
+end
 
-    local unitFrame = GetUnitFrame(unit)
+local function DebugNameRegion(unitFrame)
     local nameRegion = unitFrame and unitFrame.name or nil
     local nameParent = nameRegion and nameRegion.GetParent and nameRegion:GetParent() or nil
     print("  Name region: " .. (nameRegion and "found" or "not found")
@@ -990,6 +1002,9 @@ local function DebugUnit(unit)
         .. "; shown: " .. DebugRegionValue(nameParent, "IsShown", "boolean")
         .. "; visible: " .. DebugRegionValue(nameParent, "IsVisible", "boolean")
         .. "; alpha: " .. DebugRegionValue(nameParent, "GetAlpha"))
+end
+
+local function DebugInterruptibleHighlight(unitFrame)
     local castBar = GetCastBar(unitFrame)
     local highlight = unitFrame and EnsureInterruptibleHighlight(unitFrame) or nil
     local icon = castBar and castBar.Icon or nil
@@ -1004,6 +1019,23 @@ local function DebugUnit(unit)
         .. "; cast icon found " .. (icon and "yes" or "no")
         .. "; hook installed " .. (highlight and highlight.hookedIcon == icon and icon ~= nil and "yes" or "no")
         .. "; highlight shown " .. (highlightShown and "yes" or "no"))
+end
+
+local function DebugUnit(unit)
+    if AccessibleBoolean(UnitExists(unit)) ~= true then
+        print("|cff0cd29fSimple Nameplates:|r No target selected.")
+        return
+    end
+
+    local name = DebugValue(UnitName(unit))
+    local state = StateForUnit(unit)
+    local reaction = AccessibleNumber(UnitReaction(unit, "player"))
+    local unitFrame = GetUnitFrame(unit)
+    print("|cff0cd29fSimple Nameplates debug:|r " .. name)
+    DebugClassification(unit, state, unitFrame ~= nil)
+    DebugUnitRelationships(unit, reaction)
+    DebugNameRegion(unitFrame)
+    DebugInterruptibleHighlight(unitFrame)
 end
 
 ns.RefreshAll = RefreshAll
