@@ -155,12 +155,12 @@ end
 local function CreateAppearanceDropdown(content, layout, refreshers, labelText, options, getter, setter)
     local block = CreateFrame("Frame", nil, content)
     block:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    layout:Add(block, 20, 70, 8)
+    layout:Add(block, 20, 38, 4)
     local label = block:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    label:SetPoint("TOPLEFT", 4, 0)
+    label:SetPoint("TOPLEFT", 4, -12)
     label:SetText(labelText)
     local dropdown = CreateFrame("Frame", nil, block, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("TOPLEFT", -12, -18)
+    dropdown:SetPoint("TOPLEFT", 164, 0)
     UIDropDownMenu_SetWidth(dropdown, 190)
 
     local function Refresh()
@@ -189,15 +189,14 @@ end
 local function AddNameSizeControl(content, layout, refreshers)
     local sizeBlock = CreateFrame("Frame", nil, content)
     sizeBlock:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    layout:Add(sizeBlock, 20, 66, 8)
+    layout:Add(sizeBlock, 20, 48, 6)
     local sizeLabel = sizeBlock:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    sizeLabel:SetPoint("TOPLEFT", 4, 0)
+    sizeLabel:SetPoint("TOPLEFT", 4, -12)
     local sizeValue = sizeBlock:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    sizeValue:SetPoint("TOPRIGHT", -4, 0)
+    sizeValue:SetPoint("TOPLEFT", 460, -12)
     local sizeSlider = CreateFrame("Slider", "SimpleNameplatesNameSizeSlider", sizeBlock, "OptionsSliderTemplate")
-    sizeSlider:SetPoint("TOPLEFT", 8, -28)
-    sizeSlider:SetPoint("RIGHT", sizeBlock, "RIGHT", -8, 0)
-    sizeSlider:SetHeight(18)
+    sizeSlider:SetPoint("TOPLEFT", 194, -10)
+    sizeSlider:SetSize(230, 18)
     sizeSlider:SetMinMaxValues(ns.MIN_NAME_SIZE, ns.MAX_NAME_SIZE)
     sizeSlider:SetValueStep(1)
     sizeSlider:SetObeyStepOnDrag(true)
@@ -229,7 +228,7 @@ local function AddThreatControl(content, layout, refreshers)
     local threat = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     threat:SetSize(26, 26)
     threat:SetHitRectInsets(0, -250, 0, 0)
-    layout:Add(threat, 20, 30, 8)
+    layout:Add(threat, 20, 30, 4)
     local threatLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     threatLabel:SetPoint("LEFT", threat, "RIGHT", 4, 0)
     threatLabel:SetText("Show threat percentage when available")
@@ -243,34 +242,41 @@ local function AddThreatControl(content, layout, refreshers)
     RefreshThreat()
 end
 
-local function AddAppearanceResetControl(content, layout, refreshers)
+local function AddNameSizeNote(content, layout)
     local note = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     note:SetPoint("RIGHT", content, "RIGHT", -20, 0)
     note:SetJustifyH("LEFT")
-    note:SetText("Name size applies to addon-controlled floating names and names above health bars. Inside-bar names use 80% of that size, rounded to the nearest point; the bar expands to leave two UI units above and below. Blizzard-controlled overhead names have no nameplate frame to modify.")
-    layout:Add(note, 24, 54, 12)
+    note:SetText("Name size applies to addon-controlled floating names and names above health bars. Inside-bar names use 80% of that size, rounded, with two UI units of padding above and below. Blizzard-controlled overhead names cannot be resized.")
+    layout:Add(note, 24, 42, 6)
+end
 
-    local reset = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+local function AddSectionResetButton(content, layout, title, buttonText, onClick)
+    local row = CreateFrame("Frame", nil, content)
+    row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
+    layout:Add(row, 24, 26, 8)
+    local heading = row:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    heading:SetPoint("LEFT", 0, 0)
+    heading:SetText(title)
+    local reset = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
-    reset:SetText("Reset Appearance")
-    layout:Add(reset, 24, 24)
-    reset:SetScript("OnClick", function()
+    reset:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+    reset:SetText(buttonText)
+    reset:SetScript("OnClick", onClick)
+end
+
+local function AddTextAndLayoutControls(content, layout, refreshers)
+    AddSectionResetButton(content, layout, "TEXT AND LAYOUT", "Reset Appearance", function()
         ResetAppearance()
         SetThreatEnabled(true)
         for _, refresh in ipairs(refreshers) do refresh() end
         RefreshNameplates()
     end)
-end
-
-local function AddTextAndLayoutControls(content, layout, refreshers)
-    local section = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    section:SetText("TEXT AND LAYOUT")
-    layout:Add(section, 24, 20, 2)
 
     CreateAppearanceDropdown(content, layout, refreshers, "Name font", ns.FONT_OPTIONS,
         function() return GetAppearanceSetting("nameFont") end,
         function(value) SetAppearanceSetting("nameFont", value) end)
     AddNameSizeControl(content, layout, refreshers)
+    AddNameSizeNote(content, layout)
     CreateAppearanceDropdown(content, layout, refreshers, "Threat-percentage font", ns.FONT_OPTIONS,
         function() return GetAppearanceSetting("threatFont") end,
         function(value) SetAppearanceSetting("threatFont", value) end)
@@ -279,7 +285,6 @@ local function AddTextAndLayoutControls(content, layout, refreshers)
     }, function() return GetAppearanceSetting("namePlacement") end,
         function(value) SetAppearanceSetting("namePlacement", value) end)
     AddThreatControl(content, layout, refreshers)
-    AddAppearanceResetControl(content, layout, refreshers)
 end
 
 local function RegisterProfileDialogs()
@@ -794,11 +799,11 @@ local function CreateLockedColorRow(context, text, r, g, b, popupKey)
 end
 
 local function AddPriorityColorControls(context)
-    AddSection(context.content, context.layout, "PRIORITY COLORS")
-    local resetColors = CreateFrame("Button", nil, context.content, "UIPanelButtonTemplate")
-    resetColors:SetSize(150, 24)
-    resetColors:SetText("Reset Colors")
-    context.layout:Add(resetColors, 24, 24, 8)
+    AddSectionResetButton(context.content, context.layout, "PRIORITY COLORS", "Reset Colors", function()
+        ResetAllColors()
+        RunRefreshers(context.swatchRefreshers)
+        RefreshNameplates()
+    end)
 
     CreatePriorityColorRow(context, "1. Attacking me", "attacking",
         "Health bar; includes attacks on pets, guardians, and minions; overrides 2–6")
@@ -812,12 +817,6 @@ local function AddPriorityColorControls(context)
         "Name of same-faction player characters")
     CreatePriorityColorRow(context, "6. Anything else Simple Nameplates can color", "other",
         "Name of friendly NPCs and other unmatched colorable units")
-
-    resetColors:SetScript("OnClick", function()
-        ResetAllColors()
-        RunRefreshers(context.swatchRefreshers)
-        RefreshNameplates()
-    end)
 end
 
 local function AddLockedColorControls(context)

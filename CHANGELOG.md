@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.76
+
+* Aligned Appearance labels and controls in compact rows and narrowed the name-size slider.
+* Moved the name-size explanation beside its control and placed section reset buttons on their heading rows.
+
 ## 1.0.75
 
 * Added named appearance profiles shared account-wide with per-character active-profile selection.
