@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.74
+
+* Split saved settings into a validated global section for addon behavior and user preferences and an appearance profile for colors, visual effects, fonts, sizing, placement, and threat display.
+* Added a Behavior settings page, renamed Text to Appearance, and reordered the settings pages as Behavior, Appearance, Colors, and TRP3.
+* Moved category modes and Blizzard overhead-name controls out of Colors and into Behavior.
+* Added a schema version and intentionally ignore older or incompatible saved layouts instead of carrying one-off migration code.
+
 ## 1.0.73
 
 * Renamed the six-color system and its saved setting to **Priority Colors** and `priorityColors`.

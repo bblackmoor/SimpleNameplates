@@ -37,15 +37,19 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 * Optional attacking-color glow around the health bars of attacking PCs and NPCs
 * Optional cyan outline around interruptible cast bars
 
-## Color Settings
+## Behavior Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp`. The six **Priority Colors** are evaluated from top to bottom. The first matching category wins. Every row has its own color and behavior selector:
+Open **Options → AddOns → Simple Nameplates → Behavior**, or type `/snp`. This page contains global addon behavior and user preferences: the master styling toggle, category handling, and Blizzard overhead-name controls.
+
+The six categories are evaluated from top to bottom. The first matching category wins. Every category has a behavior selector:
 
 * **Active** applies its Priority Color and Simple Nameplates styling, including threat percentage when Midnight exposes a readable value.
 * **Inactive** leaves Blizzard's display unchanged for that category.
 * **Hide** conceals that category's addon-accessible names and nameplates, and also hides matching Blizzard overhead-name categories where WoW permits it.
 
-Color controls are available only while a category is Active. Changes apply immediately and are saved between sessions. Three locked rows document Blizzard-controlled periwinkle-blue opposing-player/minion names, yellow interactive-NPC names, and green vendor-NPC names.
+## Color Settings
+
+Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp colors`. Colors and visual effects are appearance-profile settings. Changes apply immediately and are saved between sessions. Three locked rows document Blizzard-controlled periwinkle-blue opposing-player/minion names, yellow interactive-NPC names, and green vendor-NPC names.
 
 The **High Contrast** preset changes Priority Colors 1–6 to magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, blue `#0066FF`, cyan `#00FFFF`, and white `#FFFFFF`; changes the interruptible cast highlight to green `#00FF00`; and enables the attacking glow. It does not change the six category modes or WoW's colorblind settings.
 
@@ -57,9 +61,9 @@ Blizzard's separate overhead world names are not addon-accessible and cannot be 
 
 The interruptible highlight is a static outline around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to casts and channels, and preserves Blizzard's normal non-interruptible shield treatment.
 
-## Text Settings
+## Appearance Settings
 
-Open **Options → AddOns → Simple Nameplates → Text**, or type `/snp text`, to choose:
+Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp appearance`, to choose:
 
 * The unit-name font.
 * A shared 8–36 point size for addon-controlled floating names and names above health bars.
@@ -77,13 +81,19 @@ When enabled, Simple Nameplates can use a character's TRP3 roleplaying full name
 
 Each field has its own toggle. To keep nameplates readable, roleplaying names are limited to 32 characters, short titles to 20, and long titles to 48; longer values end with an ellipsis. The normal WoW name is used whenever a cached TRP3 profile or selected field is unavailable. `TRP3.lua` keeps the optional profile access isolated, and Simple Nameplates continues to work normally without TRP3.
 
+## Saved Settings
+
+Look-and-feel settings are stored in the appearance profile: Priority Colors, effect colors and toggles, fonts, sizing, placement, and threat display. Addon behavior and user preferences are global: styling enablement, category handling, Blizzard overhead-name controls, and TRP3 integration.
+
+Saved data is validated against the current schema. Data from older or incompatible schemas is ignored and replaced with current defaults; the addon does not retain one-off migration code.
+
 ## About and Diagnostics
 
 The main **Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
 
 Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting priority category, category mode, display treatment, color, nameplate availability, and whether experimental overhead replacement is enabled. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the visibility hook was installed, and the highlight is currently shown. Restricted Midnight values are identified rather than inspected.
 
-All four settings pages scroll when their contents do not fit the available window height.
+All settings pages scroll when their contents do not fit the available window height.
 
 ## Download
 

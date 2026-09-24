@@ -212,6 +212,7 @@ ns.MIN_NAME_SIZE = MIN_NAME_SIZE
 ns.MAX_NAME_SIZE = MAX_NAME_SIZE
 
 local dbReady = false
+local DB_SCHEMA_VERSION = 1
 
 local function IsFiniteNumber(value)
     return type(value) == "number" and value == value
@@ -264,71 +265,84 @@ local function CopySavedCVarOriginals(source, allowedCVars)
 end
 
 local function ValidatedDB(saved)
-    if type(saved) ~= "table" then saved = {} end
+    -- Saved data from another schema is intentionally ignored. Keeping schema
+    -- changes here avoids permanent one-off migration code and prevents stale
+    -- or misplaced settings from leaking into the current configuration.
+    if type(saved) ~= "table" or saved.schemaVersion ~= DB_SCHEMA_VERSION then saved = {} end
+
+    local savedGlobal = type(saved.global) == "table" and saved.global or {}
+    local savedProfile = type(saved.profile) == "table" and saved.profile or {}
 
     local db = {
-        priorityColors = {},
-        categoryModes = {},
-        effectColors = {},
-        appearance = {},
-        trp3 = {},
+        schemaVersion = DB_SCHEMA_VERSION,
+        global = {
+            categoryModes = {},
+            trp3 = {},
+        },
+        profile = {
+            priorityColors = {},
+            effectColors = {},
+            appearance = {},
+        },
     }
 
-    local savedPriorityColors = type(saved.priorityColors) == "table"
-        and saved.priorityColors or {}
+    local savedPriorityColors = type(savedProfile.priorityColors) == "table"
+        and savedProfile.priorityColors or {}
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
         local color = savedPriorityColors[key]
-        db.priorityColors[key] = CopyColor(IsValidColor(color) and color or default)
+        db.profile.priorityColors[key] = CopyColor(IsValidColor(color) and color or default)
     end
-    local savedCategoryModes = type(saved.categoryModes) == "table" and saved.categoryModes or {}
+    local savedCategoryModes = type(savedGlobal.categoryModes) == "table"
+        and savedGlobal.categoryModes or {}
     for key, default in pairs(DEFAULT_CATEGORY_MODES) do
         local mode = savedCategoryModes[key]
-        db.categoryModes[key] = (mode == "active" or mode == "inactive" or mode == "hide")
+        db.global.categoryModes[key] = (mode == "active" or mode == "inactive" or mode == "hide")
             and mode or default
     end
 
-    local savedEffectColors = type(saved.effectColors) == "table" and saved.effectColors or {}
+    local savedEffectColors = type(savedProfile.effectColors) == "table"
+        and savedProfile.effectColors or {}
     for key, default in pairs(DEFAULT_EFFECT_COLORS) do
         local color = savedEffectColors[key]
-        db.effectColors[key] = CopyColor(IsValidColor(color) and color or default)
+        db.profile.effectColors[key] = CopyColor(IsValidColor(color) and color or default)
     end
 
-    local savedAppearance = type(saved.appearance) == "table" and saved.appearance or {}
-    db.appearance.nameFont = FONT_BY_VALUE[savedAppearance.nameFont]
+    local savedAppearance = type(savedProfile.appearance) == "table" and savedProfile.appearance or {}
+    db.profile.appearance.nameFont = FONT_BY_VALUE[savedAppearance.nameFont]
         and savedAppearance.nameFont or DEFAULT_APPEARANCE.nameFont
     if IsFiniteNumber(savedAppearance.nameSize)
         and savedAppearance.nameSize >= MIN_NAME_SIZE
         and savedAppearance.nameSize <= MAX_NAME_SIZE then
-        db.appearance.nameSize = math.floor(savedAppearance.nameSize + 0.5)
+        db.profile.appearance.nameSize = math.floor(savedAppearance.nameSize + 0.5)
     else
-        db.appearance.nameSize = DEFAULT_APPEARANCE.nameSize
+        db.profile.appearance.nameSize = DEFAULT_APPEARANCE.nameSize
     end
-    db.appearance.threatFont = FONT_BY_VALUE[savedAppearance.threatFont]
+    db.profile.appearance.threatFont = FONT_BY_VALUE[savedAppearance.threatFont]
         and savedAppearance.threatFont or DEFAULT_APPEARANCE.threatFont
     if savedAppearance.namePlacement == "ABOVE" or savedAppearance.namePlacement == "INSIDE" then
-        db.appearance.namePlacement = savedAppearance.namePlacement
+        db.profile.appearance.namePlacement = savedAppearance.namePlacement
     else
-        db.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
+        db.profile.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
     end
 
-    db.stylingEnabled = SavedBoolean(saved.stylingEnabled, DEFAULT_STYLING_ENABLED)
-    db.showThreat = SavedBoolean(saved.showThreat, DEFAULT_SHOW_THREAT)
-    db.hideBlizzardMinionNames = SavedBoolean(saved.hideBlizzardMinionNames,
+    db.global.stylingEnabled = SavedBoolean(savedGlobal.stylingEnabled, DEFAULT_STYLING_ENABLED)
+    db.global.hideBlizzardMinionNames = SavedBoolean(savedGlobal.hideBlizzardMinionNames,
         DEFAULT_HIDE_BLIZZARD_MINION_NAMES)
-    db.hideCritterCompanionNames = SavedBoolean(saved.hideCritterCompanionNames,
+    db.global.hideCritterCompanionNames = SavedBoolean(savedGlobal.hideCritterCompanionNames,
         DEFAULT_HIDE_CRITTER_COMPANION_NAMES)
-    db.replaceBlizzardOverheadNames = SavedBoolean(saved.replaceBlizzardOverheadNames,
+    db.global.replaceBlizzardOverheadNames = SavedBoolean(savedGlobal.replaceBlizzardOverheadNames,
         DEFAULT_REPLACE_BLIZZARD_OVERHEAD_NAMES)
-    db.attackingGlow = SavedBoolean(saved.attackingGlow, false)
-    db.interruptibleHighlight = SavedBoolean(saved.interruptibleHighlight, false)
+    db.profile.showThreat = SavedBoolean(savedProfile.showThreat, DEFAULT_SHOW_THREAT)
+    db.profile.attackingGlow = SavedBoolean(savedProfile.attackingGlow, false)
+    db.profile.interruptibleHighlight = SavedBoolean(savedProfile.interruptibleHighlight, false)
 
-    local savedTRP3 = type(saved.trp3) == "table" and saved.trp3 or {}
+    local savedTRP3 = type(savedGlobal.trp3) == "table" and savedGlobal.trp3 or {}
     for key, default in pairs(DEFAULT_TRP3) do
-        db.trp3[key] = SavedBoolean(savedTRP3[key], default)
+        db.global.trp3[key] = SavedBoolean(savedTRP3[key], default)
     end
 
-    db.managedNameCVarOriginals = CopySavedCVarOriginals(
-        saved.managedNameCVarOriginals, MANAGED_NAME_CVARS) or {}
+    db.global.managedNameCVarOriginals = CopySavedCVarOriginals(
+        savedGlobal.managedNameCVarOriginals, MANAGED_NAME_CVARS) or {}
 
     return db
 end
@@ -341,29 +355,29 @@ local function EnsureDB()
 end
 
 local function GetTRP3Enabled()
-    return EnsureDB().trp3.enabled
+    return EnsureDB().global.trp3.enabled
 end
 
 local function SetTRP3Enabled(enabled)
-    EnsureDB().trp3.enabled = enabled == true
+    EnsureDB().global.trp3.enabled = enabled == true
 end
 
 local function GetTRP3Setting(key)
-    return EnsureDB().trp3[key]
+    return EnsureDB().global.trp3[key]
 end
 
 local function SetTRP3Setting(key, enabled)
     if DEFAULT_TRP3[key] ~= nil then
-        EnsureDB().trp3[key] = enabled == true
+        EnsureDB().global.trp3[key] = enabled == true
     end
 end
 
 local function GetAppearanceSetting(key)
-    return EnsureDB().appearance[key]
+    return EnsureDB().profile.appearance[key]
 end
 
 local function SetAppearanceSetting(key, value)
-    local appearance = EnsureDB().appearance
+    local appearance = EnsureDB().profile.appearance
     if (key == "nameFont" or key == "threatFont") and FONT_BY_VALUE[value] then
         appearance[key] = value
     elseif key == "nameSize" and type(value) == "number" then
@@ -380,44 +394,44 @@ local function FontPath(value)
 end
 
 local function ResetAppearance()
-    local appearance = EnsureDB().appearance
+    local appearance = EnsureDB().profile.appearance
     for key, value in pairs(DEFAULT_APPEARANCE) do appearance[key] = value end
 end
 
 local ApplyManagedNameSettings
 
 local function PriorityColorForState(state)
-    local color = EnsureDB().priorityColors[state]
+    local color = EnsureDB().profile.priorityColors[state]
         or DEFAULT_PRIORITY_COLORS[state]
         or DEFAULT_PRIORITY_COLORS.other
     return color.r, color.g, color.b
 end
 
 local function GetCategoryMode(state)
-    return EnsureDB().categoryModes[state] or "active"
+    return EnsureDB().global.categoryModes[state] or "active"
 end
 
 local function SetCategoryMode(state, mode)
     if not DEFAULT_CATEGORY_MODES[state]
         or (mode ~= "active" and mode ~= "inactive" and mode ~= "hide") then return end
-    EnsureDB().categoryModes[state] = mode
+    EnsureDB().global.categoryModes[state] = mode
     if ApplyManagedNameSettings then ApplyManagedNameSettings() end
 end
 
 local function SetPriorityColor(state, r, g, b)
     if DEFAULT_PRIORITY_COLORS[state] then
-        EnsureDB().priorityColors[state] = { r = r, g = g, b = b }
+        EnsureDB().profile.priorityColors[state] = { r = r, g = g, b = b }
     end
 end
 
 local function ResetPriorityColor(state)
     local default = DEFAULT_PRIORITY_COLORS[state]
     if not default then return end
-    EnsureDB().priorityColors[state] = CopyColor(default)
+    EnsureDB().profile.priorityColors[state] = CopyColor(default)
 end
 
 local function EffectColor(effect)
-    local color = EnsureDB().effectColors[effect]
+    local color = EnsureDB().profile.effectColors[effect]
         or DEFAULT_EFFECT_COLORS[effect]
         or DEFAULT_EFFECT_COLORS.interruptible
     return color.r, color.g, color.b
@@ -425,23 +439,23 @@ end
 
 local function SetEffectColor(effect, r, g, b)
     if DEFAULT_EFFECT_COLORS[effect] then
-        EnsureDB().effectColors[effect] = { r = r, g = g, b = b }
+        EnsureDB().profile.effectColors[effect] = { r = r, g = g, b = b }
     end
 end
 
 local function ResetEffectColor(effect)
     local default = DEFAULT_EFFECT_COLORS[effect]
     if not default then return end
-    EnsureDB().effectColors[effect] = CopyColor(default)
+    EnsureDB().profile.effectColors[effect] = CopyColor(default)
 end
 
 local function ResetAllColors()
-    local db = EnsureDB()
+    local profile = EnsureDB().profile
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
-        db.priorityColors[key] = CopyColor(default)
+        profile.priorityColors[key] = CopyColor(default)
     end
     for key, default in pairs(DEFAULT_EFFECT_COLORS) do
-        db.effectColors[key] = CopyColor(default)
+        profile.effectColors[key] = CopyColor(default)
     end
 end
 
@@ -449,50 +463,50 @@ local function ApplyColorPreset(presetName)
     local preset = COLOR_PRESETS[presetName]
     if not preset then return false end
 
-    local db = EnsureDB()
+    local profile = EnsureDB().profile
     for key, color in pairs(preset.priorityColors or {}) do
         if DEFAULT_PRIORITY_COLORS[key] and IsValidColor(color) then
-            db.priorityColors[key] = CopyColor(color)
+            profile.priorityColors[key] = CopyColor(color)
         end
     end
     for key, color in pairs(preset.effectColors or {}) do
         if DEFAULT_EFFECT_COLORS[key] and IsValidColor(color) then
-            db.effectColors[key] = CopyColor(color)
+            profile.effectColors[key] = CopyColor(color)
         end
     end
     return true
 end
 
 local function GetAttackingGlowEnabled()
-    return EnsureDB().attackingGlow
+    return EnsureDB().profile.attackingGlow
 end
 
 local function SetAttackingGlowEnabled(enabled)
-    EnsureDB().attackingGlow = enabled == true
+    EnsureDB().profile.attackingGlow = enabled == true
 end
 
 local function GetInterruptibleHighlightEnabled()
-    return EnsureDB().interruptibleHighlight
+    return EnsureDB().profile.interruptibleHighlight
 end
 
 local function SetInterruptibleHighlightEnabled(enabled)
-    EnsureDB().interruptibleHighlight = enabled == true
+    EnsureDB().profile.interruptibleHighlight = enabled == true
 end
 
 local function GetStylingEnabled()
-    return EnsureDB().stylingEnabled
+    return EnsureDB().global.stylingEnabled
 end
 
 local function SetStylingEnabled(enabled)
-    EnsureDB().stylingEnabled = enabled == true
+    EnsureDB().global.stylingEnabled = enabled == true
 end
 
 local function GetThreatEnabled()
-    return EnsureDB().showThreat
+    return EnsureDB().profile.showThreat
 end
 
 local function SetThreatEnabled(enabled)
-    EnsureDB().showThreat = enabled == true
+    EnsureDB().profile.showThreat = enabled == true
 end
 
 local applyingManagedNameSettings = false
@@ -504,12 +518,13 @@ end
 
 local function DesiredManagedNameSettings(db)
     local desired = {}
-    if not db.stylingEnabled then return desired end
+    local global = db.global
+    if not global.stylingEnabled then return desired end
 
-    if db.replaceBlizzardOverheadNames then
+    if global.replaceBlizzardOverheadNames then
         local replacementActive
         for _, state in ipairs({ "hostile", "unfriendlyPC", "friendlyPC", "other" }) do
-            if db.categoryModes[state] == "active" then
+            if global.categoryModes[state] == "active" then
                 MergeCVarValues(desired, CATEGORY_REPLACEMENT_CVAR_VALUES[state])
                 replacementActive = true
             end
@@ -518,14 +533,14 @@ local function DesiredManagedNameSettings(db)
     end
 
     for _, state in ipairs({ "unfriendlyPC", "friendlyPC", "other" }) do
-        if db.categoryModes[state] == "hide" then
+        if global.categoryModes[state] == "hide" then
             MergeCVarValues(desired, CATEGORY_HIDE_CVAR_VALUES[state])
         end
     end
-    if db.hideBlizzardMinionNames then
+    if global.hideBlizzardMinionNames then
         for _, cvar in ipairs(BLIZZARD_MINION_NAME_CVARS) do desired[cvar] = "0" end
     end
-    if db.hideCritterCompanionNames then
+    if global.hideCritterCompanionNames then
         for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do desired[cvar] = "0" end
     end
     return desired
@@ -541,9 +556,9 @@ ApplyManagedNameSettings = function()
 
     applyingManagedNameSettings = true
     managedNameSettingsPending = false
-    db.managedNameCVarOriginals = type(db.managedNameCVarOriginals) == "table"
-        and db.managedNameCVarOriginals or {}
-    local originals = db.managedNameCVarOriginals
+    db.global.managedNameCVarOriginals = type(db.global.managedNameCVarOriginals) == "table"
+        and db.global.managedNameCVarOriginals or {}
+    local originals = db.global.managedNameCVarOriginals
     local desired = DesiredManagedNameSettings(db)
 
     for cvar, original in pairs(originals) do
@@ -564,8 +579,8 @@ end
 
 local function RestoreAllManagedNameSettings()
     local db = EnsureDB()
-    local originals = db.managedNameCVarOriginals
-    db.managedNameCVarOriginals = {}
+    local originals = db.global.managedNameCVarOriginals
+    db.global.managedNameCVarOriginals = {}
     managedNameSettingsPending = false
     if type(originals) ~= "table" then return end
     applyingManagedNameSettings = true
@@ -574,11 +589,11 @@ local function RestoreAllManagedNameSettings()
 end
 
 local function GetHideBlizzardMinionNames()
-    return EnsureDB().hideBlizzardMinionNames
+    return EnsureDB().global.hideBlizzardMinionNames
 end
 
 local function SetHideBlizzardMinionNames(enabled)
-    EnsureDB().hideBlizzardMinionNames = enabled == true
+    EnsureDB().global.hideBlizzardMinionNames = enabled == true
     ApplyManagedNameSettings()
 end
 
@@ -587,11 +602,11 @@ local function ApplyBlizzardMinionNameVisibility()
 end
 
 local function GetHideCritterCompanionNames()
-    return EnsureDB().hideCritterCompanionNames
+    return EnsureDB().global.hideCritterCompanionNames
 end
 
 local function SetHideCritterCompanionNames(enabled)
-    EnsureDB().hideCritterCompanionNames = enabled == true
+    EnsureDB().global.hideCritterCompanionNames = enabled == true
     ApplyManagedNameSettings()
 end
 
@@ -600,11 +615,11 @@ local function ApplyCritterCompanionNameVisibility()
 end
 
 local function GetReplaceBlizzardOverheadNames()
-    return EnsureDB().replaceBlizzardOverheadNames
+    return EnsureDB().global.replaceBlizzardOverheadNames
 end
 
 local function SetReplaceBlizzardOverheadNames(enabled)
-    EnsureDB().replaceBlizzardOverheadNames = enabled == true
+    EnsureDB().global.replaceBlizzardOverheadNames = enabled == true
     ApplyManagedNameSettings()
 end
 

@@ -25,7 +25,8 @@ local SetHideCritterCompanionNames = ns.SetHideCritterCompanionNames
 local GetReplaceBlizzardOverheadNames = ns.GetReplaceBlizzardOverheadNames
 local SetReplaceBlizzardOverheadNames = ns.SetReplaceBlizzardOverheadNames
 
-local settingsCategory, colorsSettingsCategory, textSettingsCategory, trp3SettingsCategory
+local settingsCategory, behaviorSettingsCategory, colorsSettingsCategory
+local appearanceSettingsCategory, trp3SettingsCategory
 
 local function RefreshNameplates()
     if ns.RefreshAll then ns.RefreshAll() end
@@ -135,9 +136,10 @@ local function CreateAboutPanel()
     information:SetJustifyH("LEFT")
     information:SetText(
         "License   GPL-3.0\n\nSlash commands\n" ..
-        "    /snp - Open the color settings.\n" ..
+        "    /snp - Open the behavior settings.\n" ..
+        "    /snp behavior - Open the behavior settings.\n" ..
         "    /snp colors - Open the color settings.\n" ..
-        "    /snp text - Open the text settings.\n" ..
+        "    /snp appearance - Open the appearance settings.\n" ..
         "    /snp trp3 - Open the TRP3 settings.\n" ..
         "    /snp debug - Explain the current target and cast-highlight state.\n" ..
         "    /snp about - Open this About page.")
@@ -146,10 +148,10 @@ local function CreateAboutPanel()
     return panel
 end
 
-local function CreateTextPanel()
-    local panel, content, layout = CreateScrollablePanel("Text")
-    AddTitle(content, layout, "Simple Nameplates — Text")
-    AddDescription(content, layout, "Choose the name size and fonts, and place names above or inside visible health bars.")
+local function CreateAppearancePanel()
+    local panel, content, layout = CreateScrollablePanel("Appearance")
+    AddTitle(content, layout, "Simple Nameplates — Appearance")
+    AddDescription(content, layout, "Profile settings for fonts, sizing, placement, and threat text.")
     local refreshers = {}
 
     local function OptionLabel(options, value)
@@ -260,7 +262,7 @@ local function CreateTextPanel()
     layout:Add(note, 24, 54, 12)
     local reset = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
-    reset:SetText("Reset Text")
+    reset:SetText("Reset Appearance")
     layout:Add(reset, 24, 24)
     reset:SetScript("OnClick", function()
         ResetAppearance()
@@ -352,10 +354,145 @@ local function CreateTRP3Panel()
     return panel
 end
 
+local CATEGORY_ROWS = {
+    { "1. Attacking me", "attacking", "Includes attacks on pets, guardians, and minions; overrides 2–6" },
+    { "2. Will attack me if it notices me", "hostile", "Aggressive units not currently attacking me" },
+    { "3. Attackable by me, but not hostile", "unfriendlyNPC", "Units that will not initiate combat" },
+    { "4. Opposite-faction PC", "unfriendlyPC", "Non-attackable opponents; attackable opponents use 1 or 2" },
+    { "5. My-faction PC", "friendlyPC", "Same-faction player characters" },
+    { "6. Anything else Simple Nameplates can color", "other", "Friendly NPCs and other unmatched colorable units" },
+}
+
+local function CreateBehaviorPanel()
+    local panel, content, layout = CreateScrollablePanel("Behavior")
+    AddTitle(content, layout, "Simple Nameplates — Behavior")
+    AddDescription(content, layout,
+        "Global addon behavior and user preferences. These settings do not change with the appearance profile.")
+    local refreshers = {}
+
+    local function CreateSection(text)
+        local label = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        label:SetText(text)
+        layout:Add(label, 24, 20, 2)
+    end
+
+    local function CreateToggle(labelText, noteText, getter, setter, onChanged)
+        local toggle = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
+        toggle:SetSize(26, 26)
+        toggle:SetHitRectInsets(0, -390, 0, 0)
+        layout:Add(toggle, 20, 30, 0)
+        local label = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        label:SetPoint("LEFT", toggle, "RIGHT", 4, 0)
+        label:SetText(labelText)
+        if noteText then
+            local note = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+            note:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+            note:SetJustifyH("LEFT")
+            note:SetText(noteText)
+            layout:Add(note, 24, 34, 8)
+        else
+            layout:Space(6)
+        end
+        local function Refresh() toggle:SetChecked(getter()) end
+        toggle:SetScript("OnClick", function(self)
+            setter(self:GetChecked() == true)
+            if onChanged then onChanged(self:GetChecked() == true) end
+            Refresh()
+        end)
+        refreshers[#refreshers + 1] = Refresh
+        Refresh()
+    end
+
+    CreateSection("ADDON")
+    CreateToggle("Enable Simple Nameplates styling", nil, GetStylingEnabled, SetStylingEnabled,
+        function(enabled)
+            if enabled then
+                ns.DisableFriendlyClassColors()
+                ns.ApplyOverheadNameReplacement()
+                RefreshNameplates()
+            else
+                ns.RestoreOverheadNameSettings()
+                ns.RestoreFriendlyClassColors()
+                if ns.RestoreAll then ns.RestoreAll() end
+            end
+        end)
+
+    CreateSection("CATEGORY HANDLING")
+    AddDescription(content, layout,
+        "Active lets Simple Nameplates style the category. Inactive leaves Blizzard's display unchanged. Hide conceals it wherever Blizzard permits.")
+    local modes = {
+        { value = "active", label = "Active" },
+        { value = "inactive", label = "Inactive" },
+        { value = "hide", label = "Hide" },
+    }
+    for _, rowData in ipairs(CATEGORY_ROWS) do
+        local labelText, state, noteText = rowData[1], rowData[2], rowData[3]
+        local row = CreateFrame("Frame", nil, content)
+        row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
+        layout:Add(row, 24, 44, 2)
+        local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
+        dropdown:SetPoint("LEFT", -18, 0)
+        UIDropDownMenu_SetWidth(dropdown, 82)
+        local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        label:SetPoint("TOPLEFT", dropdown, "TOPRIGHT", -6, -3)
+        label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -4, -3)
+        label:SetJustifyH("LEFT")
+        label:SetText(labelText)
+        local note = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        note:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
+        note:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+        note:SetJustifyH("LEFT")
+        note:SetText(noteText)
+        local function Refresh()
+            local mode = GetCategoryMode(state)
+            UIDropDownMenu_SetSelectedValue(dropdown, mode)
+            for _, option in ipairs(modes) do
+                if option.value == mode then UIDropDownMenu_SetText(dropdown, option.label) end
+            end
+        end
+        UIDropDownMenu_Initialize(dropdown, function(_, level)
+            for _, option in ipairs(modes) do
+                local value, optionLabel = option.value, option.label
+                local info = UIDropDownMenu_CreateInfo()
+                info.text, info.value = optionLabel, value
+                info.checked = GetCategoryMode(state) == value
+                info.func = function()
+                    SetCategoryMode(state, value)
+                    ns.DisableFriendlyClassColors()
+                    Refresh()
+                    RefreshNameplates()
+                end
+                UIDropDownMenu_AddButton(info, level)
+            end
+        end)
+        refreshers[#refreshers + 1] = Refresh
+        Refresh()
+    end
+
+    layout:Space(6)
+    CreateSection("BLIZZARD OVERHEAD NAMES")
+    CreateToggle("Replace Blizzard overhead names (experimental)",
+        "Requests name-only player, minion, and NPC plates, then hides matching world names. A unit may have no visible name if Blizzard does not create a plate.",
+        GetReplaceBlizzardOverheadNames, SetReplaceBlizzardOverheadNames, RefreshNameplates)
+    CreateToggle("Hide Blizzard-controlled minion names",
+        "Hides friendly and enemy pets, guardians, totems, and minions. Opposing-player names remain visible.",
+        GetHideBlizzardMinionNames, SetHideBlizzardMinionNames)
+    CreateToggle("Hide critter and companion names",
+        "Hides Blizzard overhead names for noncombat critters and companions.",
+        GetHideCritterCompanionNames, SetHideCritterCompanionNames)
+
+    panel:SetScript("OnShow", function()
+        for _, refresh in ipairs(refreshers) do refresh() end
+    end)
+    layout:Finish()
+    return panel
+end
+
 local function CreateColorsPanel()
     local panel, content, layout = CreateScrollablePanel("Colors")
     AddTitle(content, layout, "Simple Nameplates — Colors")
-    AddDescription(content, layout, "Priority Colors are evaluated from top to bottom. The first matching category wins. Active applies that color; Inactive leaves Blizzard's display unchanged; Hide conceals names and nameplates wherever Blizzard permits it.")
+    AddDescription(content, layout,
+        "Profile settings for Priority Colors and visual effects. Categories are evaluated from top to bottom; the first match wins.")
 
     local swatchRefreshers, toggleRefreshers = {}, {}
     local RefreshAttackingGlow
@@ -373,29 +510,8 @@ local function CreateColorsPanel()
     reset:SetPoint("LEFT", preset, "RIGHT", 12, 0)
     reset:SetText("Reset Colors")
 
-    local enabled = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
-    enabled:SetSize(26, 26)
-    enabled:SetHitRectInsets(0, -280, 0, 0)
-    layout:Add(enabled, 20, 30, 8)
-    local enabledLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    enabledLabel:SetPoint("LEFT", enabled, "RIGHT", 4, 0)
-    enabledLabel:SetText("Enable Simple Nameplates styling")
-    local function RefreshEnabled() enabled:SetChecked(GetStylingEnabled()) end
-    enabled:SetScript("OnClick", function(self)
-        local isEnabled = self:GetChecked() == true
-        SetStylingEnabled(isEnabled)
-        if isEnabled then
-            ns.DisableFriendlyClassColors()
-            ns.ApplyOverheadNameReplacement()
-            RefreshNameplates()
-        else
-            ns.RestoreOverheadNameSettings()
-            ns.RestoreFriendlyClassColors()
-            if ns.RestoreAll then ns.RestoreAll() end
-        end
-    end)
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
-        text = "Blizzard draws non-attackable opposing-faction players and many player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nThe experimental replacement option below hides those world-name categories and requests ordinary nameplates instead. It can only work when Blizzard creates a nameplate for the unit.",
+        text = "Blizzard draws non-attackable opposing-faction players and many player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nThe experimental replacement option on the Behavior page hides those world-name categories and requests ordinary nameplates instead. It can only work when Blizzard creates a nameplate for the unit.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
@@ -428,17 +544,11 @@ local function CreateColorsPanel()
         layout:Add(label, 24, 20, 2)
     end
 
-    local function CreateColorRow(text, displayText, getColor, setColor, resetColor, getEnabled, setEnabled, getMode, setMode)
+    local function CreateColorRow(text, displayText, getColor, setColor, resetColor, getEnabled, setEnabled)
         local row = CreateFrame("Frame", nil, content)
         row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
         layout:Add(row, 24, 40, 2)
         local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        local modeDropdown
-        if getMode and setMode then
-            modeDropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
-            modeDropdown:SetPoint("LEFT", -18, 0)
-            UIDropDownMenu_SetWidth(modeDropdown, 82)
-        end
         if getEnabled and setEnabled then
             local toggle = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
             toggle:SetSize(26, 26)
@@ -451,8 +561,6 @@ local function CreateColorsPanel()
             toggleRefreshers[#toggleRefreshers + 1] = RefreshToggle
             RefreshToggle()
             label:SetPoint("TOPLEFT", toggle, "TOPRIGHT", 0, -1)
-        elseif modeDropdown then
-            label:SetPoint("TOPLEFT", modeDropdown, "TOPRIGHT", -6, -3)
         else
             label:SetPoint("TOPLEFT", 4, -3)
         end
@@ -518,54 +626,13 @@ local function CreateColorsPanel()
             UpdateSwatch()
             RefreshNameplates()
         end)
-
-        if modeDropdown then
-            local modes = {
-                { value = "active", label = "Active" },
-                { value = "inactive", label = "Inactive" },
-                { value = "hide", label = "Hide" },
-            }
-            local function RefreshMode()
-                local mode = getMode()
-                UIDropDownMenu_SetSelectedValue(modeDropdown, mode)
-                for _, option in ipairs(modes) do
-                    if option.value == mode then UIDropDownMenu_SetText(modeDropdown, option.label) end
-                end
-                local active = mode == "active"
-                swatch:SetEnabled(active)
-                resetOne:SetEnabled(active)
-                swatch:SetAlpha(active and 1 or 0.25)
-                resetOne:SetAlpha(active and 1 or 0.4)
-            end
-            UIDropDownMenu_Initialize(modeDropdown, function(_, level)
-                for _, option in ipairs(modes) do
-                    local value = option.value
-                    local info = UIDropDownMenu_CreateInfo()
-                    info.text = option.label
-                    info.value = value
-                    info.checked = getMode() == value
-                    info.func = function()
-                        setMode(value)
-                        if ns.DisableFriendlyClassColors then ns.DisableFriendlyClassColors() end
-                        RefreshMode()
-                        RefreshNameplates()
-                    end
-                    UIDropDownMenu_AddButton(info, level)
-                end
-            end)
-            toggleRefreshers[#toggleRefreshers + 1] = RefreshMode
-            RefreshMode()
-        end
     end
 
     local function CreatePriorityRow(text, state, displayText)
         CreateColorRow(text, displayText,
             function() return PriorityColorForState(state) end,
             function(r, g, b) SetPriorityColor(state, r, g, b) end,
-            function() ResetPriorityColor(state) end,
-            nil, nil,
-            function() return GetCategoryMode(state) end,
-            function(mode) SetCategoryMode(state, mode) end)
+            function() ResetPriorityColor(state) end)
     end
 
     local function CreateLockedColorRow(text, r, g, b, popupKey)
@@ -630,64 +697,6 @@ local function CreateColorsPanel()
         1, 1, 0, "SNP_BLIZZARD_INTERACTIVE_INFO")
     CreateLockedColorRow("Vendor NPCs",
         0, 1, 0, "SNP_BLIZZARD_VENDOR_INFO")
-    local replaceOverheadNames = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
-    replaceOverheadNames:SetSize(26, 26)
-    replaceOverheadNames:SetHitRectInsets(0, -380, 0, 0)
-    layout:Add(replaceOverheadNames, 20, 30, 0)
-    local replaceOverheadNamesLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    replaceOverheadNamesLabel:SetPoint("LEFT", replaceOverheadNames, "RIGHT", 4, 0)
-    replaceOverheadNamesLabel:SetText("Replace Blizzard overhead names (experimental)")
-    local replaceOverheadNamesNote = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    replaceOverheadNamesNote:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    replaceOverheadNamesNote:SetJustifyH("LEFT")
-    replaceOverheadNamesNote:SetText("Requests name-only player, minion, and NPC plates, then hides the matching world names. A unit may have no visible name if Blizzard does not create a plate. Prior WoW settings are restored when disabled.")
-    layout:Add(replaceOverheadNamesNote, 24, 42, 8)
-    local function RefreshReplaceOverheadNames()
-        replaceOverheadNames:SetChecked(GetReplaceBlizzardOverheadNames())
-    end
-    replaceOverheadNames:SetScript("OnClick", function(self)
-        SetReplaceBlizzardOverheadNames(self:GetChecked() == true)
-        RefreshReplaceOverheadNames()
-        RefreshNameplates()
-    end)
-    local hideMinionNames = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
-    hideMinionNames:SetSize(26, 26)
-    hideMinionNames:SetHitRectInsets(0, -340, 0, 0)
-    layout:Add(hideMinionNames, 20, 30, 0)
-    local hideMinionNamesLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    hideMinionNamesLabel:SetPoint("LEFT", hideMinionNames, "RIGHT", 4, 0)
-    hideMinionNamesLabel:SetText("Hide Blizzard-controlled minion names")
-    local hideMinionNamesNote = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    hideMinionNamesNote:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    hideMinionNamesNote:SetJustifyH("LEFT")
-    hideMinionNamesNote:SetText("Hides friendly and enemy pets, guardians, totems, and minions. Opposing-player names remain visible.")
-    layout:Add(hideMinionNamesNote, 24, 28, 8)
-    local function RefreshHideMinionNames()
-        hideMinionNames:SetChecked(GetHideBlizzardMinionNames())
-    end
-    hideMinionNames:SetScript("OnClick", function(self)
-        SetHideBlizzardMinionNames(self:GetChecked() == true)
-        RefreshHideMinionNames()
-    end)
-    local hideCritterCompanionNames = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
-    hideCritterCompanionNames:SetSize(26, 26)
-    hideCritterCompanionNames:SetHitRectInsets(0, -340, 0, 0)
-    layout:Add(hideCritterCompanionNames, 20, 30, 0)
-    local hideCritterCompanionNamesLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    hideCritterCompanionNamesLabel:SetPoint("LEFT", hideCritterCompanionNames, "RIGHT", 4, 0)
-    hideCritterCompanionNamesLabel:SetText("Hide critter and companion names")
-    local hideCritterCompanionNamesNote = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    hideCritterCompanionNamesNote:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    hideCritterCompanionNamesNote:SetJustifyH("LEFT")
-    hideCritterCompanionNamesNote:SetText("Hides Blizzard overhead names for noncombat critters and companions.")
-    layout:Add(hideCritterCompanionNamesNote, 24, 28, 8)
-    local function RefreshHideCritterCompanionNames()
-        hideCritterCompanionNames:SetChecked(GetHideCritterCompanionNames())
-    end
-    hideCritterCompanionNames:SetScript("OnClick", function(self)
-        SetHideCritterCompanionNames(self:GetChecked() == true)
-        RefreshHideCritterCompanionNames()
-    end)
     layout:Space(6)
     CreateSection("ATTACKING INDICATOR")
 
@@ -737,18 +746,10 @@ local function CreateColorsPanel()
         end)
     end)
     panel:SetScript("OnShow", function()
-        RefreshEnabled()
         RefreshAttackingGlow()
-        RefreshReplaceOverheadNames()
-        RefreshHideMinionNames()
-        RefreshHideCritterCompanionNames()
         for _, refresh in ipairs(toggleRefreshers) do refresh() end
     end)
-    RefreshEnabled()
     RefreshAttackingGlow()
-    RefreshReplaceOverheadNames()
-    RefreshHideMinionNames()
-    RefreshHideCritterCompanionNames()
     layout:Finish()
     return panel
 end
@@ -759,8 +760,9 @@ local function RegisterSettingsPanel()
     local aboutPanel = CreateAboutPanel()
     settingsCategory = Settings.RegisterCanvasLayoutCategory(aboutPanel, "Simple Nameplates")
     Settings.RegisterAddOnCategory(settingsCategory)
+    behaviorSettingsCategory = Settings.RegisterCanvasLayoutSubcategory(settingsCategory, CreateBehaviorPanel(), "Behavior")
+    appearanceSettingsCategory = Settings.RegisterCanvasLayoutSubcategory(settingsCategory, CreateAppearancePanel(), "Appearance")
     colorsSettingsCategory = Settings.RegisterCanvasLayoutSubcategory(settingsCategory, CreateColorsPanel(), "Colors")
-    textSettingsCategory = Settings.RegisterCanvasLayoutSubcategory(settingsCategory, CreateTextPanel(), "Text")
     trp3SettingsCategory = Settings.RegisterCanvasLayoutSubcategory(settingsCategory, CreateTRP3Panel(), "TRP3")
 
     SLASH_SNP1 = "/snp"
@@ -776,15 +778,18 @@ local function RegisterSettingsPanel()
         end
         if command == "about" then
             Settings.OpenToCategory(settingsCategory:GetID())
-        elseif command == "text" or command == "font" or command == "fonts" then
-            Settings.OpenToCategory(textSettingsCategory:GetID())
+        elseif command == "text" or command == "font" or command == "fonts"
+            or command == "appearance" then
+            Settings.OpenToCategory(appearanceSettingsCategory:GetID())
+        elseif command == "colors" or command == "color" then
+            Settings.OpenToCategory(colorsSettingsCategory:GetID())
         elseif command == "trp3" or command == "rp" then
             Settings.OpenToCategory(trp3SettingsCategory:GetID())
-        elseif command == "" or command == "colors" or command == "config"
+        elseif command == "" or command == "behavior" or command == "general" or command == "config"
             or command == "options" or command == "settings" then
-            Settings.OpenToCategory(colorsSettingsCategory:GetID())
+            Settings.OpenToCategory(behaviorSettingsCategory:GetID())
         else
-            print("|cff0cd29fSimple Nameplates:|r /snp, /snp colors, /snp text, /snp trp3, /snp debug, /snp about")
+            print("|cff0cd29fSimple Nameplates:|r /snp, /snp behavior, /snp appearance, /snp colors, /snp trp3, /snp debug, /snp about")
         end
     end
 end
