@@ -264,8 +264,8 @@ local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize)
 end
 
 local function PositionName(frame, name, bar, nameOnly, inside, rightInset)
-    name:ClearAllPoints()
     if nameOnly then
+        name:ClearAllPoints()
         if bar then
             name:SetPoint("BOTTOM", bar, "TOP", 0, 2)
         else
@@ -273,10 +273,12 @@ local function PositionName(frame, name, bar, nameOnly, inside, rightInset)
         end
         name:SetJustifyH("CENTER")
     elseif inside then
+        name:ClearAllPoints()
         name:SetPoint("LEFT", bar, "LEFT", 3, 0)
         name:SetPoint("RIGHT", bar, "RIGHT", rightInset, 0)
         name:SetJustifyH("LEFT")
     elseif bar then
+        name:ClearAllPoints()
         name:SetPoint("BOTTOMLEFT", bar, "TOPLEFT", 0, 2)
         name:SetJustifyH("LEFT")
     end
