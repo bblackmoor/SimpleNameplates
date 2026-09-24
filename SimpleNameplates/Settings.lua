@@ -145,55 +145,48 @@ local function CreateAboutPanel()
     return panel
 end
 
-local function AddTextAndLayoutControls(content, layout, refreshers)
-    local section = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    section:SetText("TEXT AND LAYOUT")
-    layout:Add(section, 24, 20, 2)
+local function OptionLabel(options, value)
+    for _, option in ipairs(options) do
+        if option.value == value then return option.label end
+    end
+    return ""
+end
 
-    local function OptionLabel(options, value)
+local function CreateAppearanceDropdown(content, layout, refreshers, labelText, options, getter, setter)
+    local block = CreateFrame("Frame", nil, content)
+    block:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(block, 20, 70, 8)
+    local label = block:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    label:SetPoint("TOPLEFT", 4, 0)
+    label:SetText(labelText)
+    local dropdown = CreateFrame("Frame", nil, block, "UIDropDownMenuTemplate")
+    dropdown:SetPoint("TOPLEFT", -12, -18)
+    UIDropDownMenu_SetWidth(dropdown, 190)
+
+    local function Refresh()
+        local value = getter()
+        UIDropDownMenu_SetSelectedValue(dropdown, value)
+        UIDropDownMenu_SetText(dropdown, OptionLabel(options, value))
+    end
+    UIDropDownMenu_Initialize(dropdown, function(_, level)
         for _, option in ipairs(options) do
-            if option.value == value then return option.label end
-        end
-        return ""
-    end
-
-    local function CreateDropdown(labelText, options, getter, setter)
-        local block = CreateFrame("Frame", nil, content)
-        block:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-        layout:Add(block, 20, 70, 8)
-        local label = block:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        label:SetPoint("TOPLEFT", 4, 0)
-        label:SetText(labelText)
-        local dropdown = CreateFrame("Frame", nil, block, "UIDropDownMenuTemplate")
-        dropdown:SetPoint("TOPLEFT", -12, -18)
-        UIDropDownMenu_SetWidth(dropdown, 190)
-        local function Refresh()
-            local value = getter()
-            UIDropDownMenu_SetSelectedValue(dropdown, value)
-            UIDropDownMenu_SetText(dropdown, OptionLabel(options, value))
-        end
-        UIDropDownMenu_Initialize(dropdown, function(_, level)
-            for _, option in ipairs(options) do
-                local value, optionLabel = option.value, option.label
-                local info = UIDropDownMenu_CreateInfo()
-                info.text, info.value = optionLabel, value
-                info.checked = getter() == value
-                info.func = function()
-                    setter(value)
-                    Refresh()
-                    RefreshNameplates()
-                end
-                UIDropDownMenu_AddButton(info, level)
+            local value, optionLabel = option.value, option.label
+            local info = UIDropDownMenu_CreateInfo()
+            info.text, info.value = optionLabel, value
+            info.checked = getter() == value
+            info.func = function()
+                setter(value)
+                Refresh()
+                RefreshNameplates()
             end
-        end)
-        refreshers[#refreshers + 1] = Refresh
-        Refresh()
-    end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    refreshers[#refreshers + 1] = Refresh
+    Refresh()
+end
 
-    CreateDropdown("Name font", ns.FONT_OPTIONS,
-        function() return GetAppearanceSetting("nameFont") end,
-        function(value) SetAppearanceSetting("nameFont", value) end)
-
+local function AddNameSizeControl(content, layout, refreshers)
     local sizeBlock = CreateFrame("Frame", nil, content)
     sizeBlock:SetPoint("RIGHT", content, "RIGHT", -20, 0)
     layout:Add(sizeBlock, 20, 66, 8)
@@ -211,6 +204,7 @@ local function AddTextAndLayoutControls(content, layout, refreshers)
     sizeSlider.Low:SetText(tostring(ns.MIN_NAME_SIZE))
     sizeSlider.High:SetText(tostring(ns.MAX_NAME_SIZE))
     sizeSlider.Text:SetText("")
+
     local refreshingSize = false
     local function RefreshNameSize()
         local value = GetAppearanceSetting("nameSize")
@@ -229,15 +223,9 @@ local function AddTextAndLayoutControls(content, layout, refreshers)
     end)
     refreshers[#refreshers + 1] = RefreshNameSize
     RefreshNameSize()
+end
 
-    CreateDropdown("Threat-percentage font", ns.FONT_OPTIONS,
-        function() return GetAppearanceSetting("threatFont") end,
-        function(value) SetAppearanceSetting("threatFont", value) end)
-    CreateDropdown("Health-bar name placement", {
-        { value = "ABOVE", label = "Above bar" }, { value = "INSIDE", label = "Inside bar" },
-    }, function() return GetAppearanceSetting("namePlacement") end,
-        function(value) SetAppearanceSetting("namePlacement", value) end)
-
+local function AddThreatControl(content, layout, refreshers)
     local threat = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     threat:SetSize(26, 26)
     threat:SetHitRectInsets(0, -250, 0, 0)
@@ -245,18 +233,23 @@ local function AddTextAndLayoutControls(content, layout, refreshers)
     local threatLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     threatLabel:SetPoint("LEFT", threat, "RIGHT", 4, 0)
     threatLabel:SetText("Show threat percentage when available")
+
     local function RefreshThreat() threat:SetChecked(GetThreatEnabled()) end
     refreshers[#refreshers + 1] = RefreshThreat
     threat:SetScript("OnClick", function(self)
         SetThreatEnabled(self:GetChecked() == true)
         RefreshNameplates()
     end)
+    RefreshThreat()
+end
 
+local function AddAppearanceResetControl(content, layout, refreshers)
     local note = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     note:SetPoint("RIGHT", content, "RIGHT", -20, 0)
     note:SetJustifyH("LEFT")
     note:SetText("Name size applies to addon-controlled floating names and names above health bars. Inside-bar names use 80% of that size, rounded to the nearest point; the bar expands to leave two UI units above and below. Blizzard-controlled overhead names have no nameplate frame to modify.")
     layout:Add(note, 24, 54, 12)
+
     local reset = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
     reset:SetText("Reset Appearance")
@@ -267,10 +260,29 @@ local function AddTextAndLayoutControls(content, layout, refreshers)
         for _, refresh in ipairs(refreshers) do refresh() end
         RefreshNameplates()
     end)
-    RefreshThreat()
 end
 
-local function AddProfileControls(content, layout, refreshers, onChanged)
+local function AddTextAndLayoutControls(content, layout, refreshers)
+    local section = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    section:SetText("TEXT AND LAYOUT")
+    layout:Add(section, 24, 20, 2)
+
+    CreateAppearanceDropdown(content, layout, refreshers, "Name font", ns.FONT_OPTIONS,
+        function() return GetAppearanceSetting("nameFont") end,
+        function(value) SetAppearanceSetting("nameFont", value) end)
+    AddNameSizeControl(content, layout, refreshers)
+    CreateAppearanceDropdown(content, layout, refreshers, "Threat-percentage font", ns.FONT_OPTIONS,
+        function() return GetAppearanceSetting("threatFont") end,
+        function(value) SetAppearanceSetting("threatFont", value) end)
+    CreateAppearanceDropdown(content, layout, refreshers, "Health-bar name placement", {
+        { value = "ABOVE", label = "Above bar" }, { value = "INSIDE", label = "Inside bar" },
+    }, function() return GetAppearanceSetting("namePlacement") end,
+        function(value) SetAppearanceSetting("namePlacement", value) end)
+    AddThreatControl(content, layout, refreshers)
+    AddAppearanceResetControl(content, layout, refreshers)
+end
+
+local function RegisterProfileDialogs()
     StaticPopupDialogs["SNP_PROFILE_NAME"] = {
         text = "Enter a profile name.", button1 = ACCEPT or "Accept",
         button2 = CANCEL or "Cancel", hasEditBox = true, maxLetters = 64,
@@ -313,17 +325,9 @@ local function AddProfileControls(content, layout, refreshers, onChanged)
         end,
         timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
     }
+end
 
-    local section = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    section:SetText("PROFILES")
-    layout:Add(section, 24, 20, 2)
-    local profileRow = CreateFrame("Frame", nil, content)
-    profileRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    layout:Add(profileRow, 20, 46, 4)
-    local profileDropdown = CreateFrame("Frame", nil, profileRow, "UIDropDownMenuTemplate")
-    profileDropdown:SetPoint("TOPLEFT", -14, 0)
-    UIDropDownMenu_SetWidth(profileDropdown, 240)
-
+local function CreateProfileButtons(content, layout)
     local buttonRow = CreateFrame("Frame", nil, content)
     buttonRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
     layout:Add(buttonRow, 24, 24, 8)
@@ -339,16 +343,15 @@ local function AddProfileControls(content, layout, refreshers, onChanged)
         button:SetText(definition[1])
         buttons[index] = button
     end
+    return buttons
+end
+
+local function InstallProfileButtonScripts(buttons, changed)
     local create, copy, rename, delete, restore =
         buttons[1], buttons[2], buttons[3], buttons[4], buttons[5]
-
-    local function Changed()
-        onChanged()
-        RefreshNameplates()
-    end
     local function OpenNameDialog(action, initial)
         StaticPopup_Show("SNP_PROFILE_NAME", nil, nil,
-            { action = action, initial = initial, onChanged = Changed })
+            { action = action, initial = initial, onChanged = changed })
     end
     create:SetScript("OnClick", function() OpenNameDialog(ns.CreateProfile, "") end)
     copy:SetScript("OnClick", function()
@@ -359,12 +362,34 @@ local function AddProfileControls(content, layout, refreshers, onChanged)
     end)
     delete:SetScript("OnClick", function()
         StaticPopup_Show("SNP_DELETE_PROFILE", ns.GetActiveProfileName(), nil,
-            { onChanged = Changed })
+            { onChanged = changed })
     end)
     restore:SetScript("OnClick", function()
         StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil,
-            { onChanged = Changed })
+            { onChanged = changed })
     end)
+end
+
+local function AddProfileControls(content, layout, refreshers, onChanged)
+    RegisterProfileDialogs()
+    local section = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    section:SetText("PROFILES")
+    layout:Add(section, 24, 20, 2)
+
+    local profileRow = CreateFrame("Frame", nil, content)
+    profileRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(profileRow, 20, 46, 4)
+    local profileDropdown = CreateFrame("Frame", nil, profileRow, "UIDropDownMenuTemplate")
+    profileDropdown:SetPoint("TOPLEFT", -14, 0)
+    UIDropDownMenu_SetWidth(profileDropdown, 240)
+
+    local buttons = CreateProfileButtons(content, layout)
+    local rename, delete = buttons[3], buttons[4]
+    local function Changed()
+        onChanged()
+        RefreshNameplates()
+    end
+    InstallProfileButtonScripts(buttons, Changed)
 
     local function Refresh()
         local active = ns.GetActiveProfileName()
@@ -474,140 +499,149 @@ local CATEGORY_ROWS = {
     { "6. Anything else Simple Nameplates can color", "other", "Friendly NPCs and other unmatched colorable units" },
 }
 
+local function AddSection(content, layout, text)
+    local label = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    label:SetText(text)
+    layout:Add(label, 24, 20, 2)
+end
+
+local function RunRefreshers(refreshers)
+    for _, refresh in ipairs(refreshers) do refresh() end
+end
+
+local function CreateBehaviorToggle(context, labelText, noteText, getter, setter, onChanged)
+    local content, layout = context.content, context.layout
+    local toggle = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
+    toggle:SetSize(26, 26)
+    toggle:SetHitRectInsets(0, -390, 0, 0)
+    layout:Add(toggle, 20, 30, 0)
+    local label = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT", toggle, "RIGHT", 4, 0)
+    label:SetText(labelText)
+    if noteText then
+        local note = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        note:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+        note:SetJustifyH("LEFT")
+        note:SetText(noteText)
+        layout:Add(note, 24, 34, 8)
+    else
+        layout:Space(6)
+    end
+
+    local function Refresh() toggle:SetChecked(getter()) end
+    toggle:SetScript("OnClick", function(self)
+        setter(self:GetChecked() == true)
+        if onChanged then onChanged(self:GetChecked() == true) end
+        Refresh()
+    end)
+    context.refreshers[#context.refreshers + 1] = Refresh
+    Refresh()
+end
+
+local function HandleStylingChanged(enabled)
+    if enabled then
+        ns.DisableFriendlyClassColors()
+        ns.ApplyOverheadNameReplacement()
+        RefreshNameplates()
+    else
+        ns.RestoreOverheadNameSettings()
+        ns.RestoreFriendlyClassColors()
+        if ns.RestoreAll then ns.RestoreAll() end
+    end
+end
+
+local CATEGORY_MODES = {
+    { value = "active", label = "Active" },
+    { value = "inactive", label = "Inactive" },
+    { value = "hide", label = "Hide" },
+}
+
+local function CreateCategoryModeRow(context, rowData)
+    local content, layout = context.content, context.layout
+    local labelText, state, noteText = rowData[1], rowData[2], rowData[3]
+    local row = CreateFrame("Frame", nil, content)
+    row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
+    layout:Add(row, 24, 44, 2)
+    local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
+    dropdown:SetPoint("LEFT", -18, 0)
+    UIDropDownMenu_SetWidth(dropdown, 82)
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("TOPLEFT", dropdown, "TOPRIGHT", -6, -3)
+    label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -4, -3)
+    label:SetJustifyH("LEFT")
+    label:SetText(labelText)
+    local note = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    note:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
+    note:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+    note:SetJustifyH("LEFT")
+    note:SetText(noteText)
+
+    local function Refresh()
+        local mode = GetCategoryMode(state)
+        UIDropDownMenu_SetSelectedValue(dropdown, mode)
+        for _, option in ipairs(CATEGORY_MODES) do
+            if option.value == mode then UIDropDownMenu_SetText(dropdown, option.label) end
+        end
+    end
+    UIDropDownMenu_Initialize(dropdown, function(_, level)
+        for _, option in ipairs(CATEGORY_MODES) do
+            local value, optionLabel = option.value, option.label
+            local info = UIDropDownMenu_CreateInfo()
+            info.text, info.value = optionLabel, value
+            info.checked = GetCategoryMode(state) == value
+            info.func = function()
+                SetCategoryMode(state, value)
+                ns.DisableFriendlyClassColors()
+                Refresh()
+                RefreshNameplates()
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    context.refreshers[#context.refreshers + 1] = Refresh
+    Refresh()
+end
+
+local function AddBehaviorCategoryControls(context)
+    AddSection(context.content, context.layout, "CATEGORY HANDLING")
+    AddDescription(context.content, context.layout,
+        "Active lets Simple Nameplates style the category. Inactive leaves Blizzard's display unchanged. Hide conceals it wherever Blizzard permits.")
+    for _, rowData in ipairs(CATEGORY_ROWS) do CreateCategoryModeRow(context, rowData) end
+end
+
+local function AddBehaviorOverheadNameControls(context)
+    context.layout:Space(6)
+    AddSection(context.content, context.layout, "BLIZZARD OVERHEAD NAMES")
+    CreateBehaviorToggle(context, "Replace Blizzard overhead names (experimental)",
+        "Requests name-only player, minion, and NPC plates, then hides matching world names. A unit may have no visible name if Blizzard does not create a plate.",
+        GetReplaceBlizzardOverheadNames, SetReplaceBlizzardOverheadNames, RefreshNameplates)
+    CreateBehaviorToggle(context, "Hide Blizzard-controlled minion names",
+        "Hides friendly and enemy pets, guardians, totems, and minions. Opposing-player names remain visible.",
+        GetHideBlizzardMinionNames, SetHideBlizzardMinionNames)
+    CreateBehaviorToggle(context, "Hide critter and companion names",
+        "Hides Blizzard overhead names for noncombat critters and companions.",
+        GetHideCritterCompanionNames, SetHideCritterCompanionNames)
+end
+
 local function CreateBehaviorPanel()
     local panel, content, layout = CreateScrollablePanel("Behavior")
     AddTitle(content, layout, "Simple Nameplates — Behavior")
     AddDescription(content, layout,
         "Global addon behavior and user preferences. These settings do not change with the appearance profile.")
-    local refreshers = {}
 
-    local function CreateSection(text)
-        local label = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        label:SetText(text)
-        layout:Add(label, 24, 20, 2)
-    end
+    local context = { content = content, layout = layout, refreshers = {} }
+    AddSection(content, layout, "ADDON")
+    CreateBehaviorToggle(context, "Enable Simple Nameplates styling", nil,
+        GetStylingEnabled, SetStylingEnabled, HandleStylingChanged)
+    AddBehaviorCategoryControls(context)
+    AddBehaviorOverheadNameControls(context)
 
-    local function CreateToggle(labelText, noteText, getter, setter, onChanged)
-        local toggle = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
-        toggle:SetSize(26, 26)
-        toggle:SetHitRectInsets(0, -390, 0, 0)
-        layout:Add(toggle, 20, 30, 0)
-        local label = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        label:SetPoint("LEFT", toggle, "RIGHT", 4, 0)
-        label:SetText(labelText)
-        if noteText then
-            local note = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-            note:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-            note:SetJustifyH("LEFT")
-            note:SetText(noteText)
-            layout:Add(note, 24, 34, 8)
-        else
-            layout:Space(6)
-        end
-        local function Refresh() toggle:SetChecked(getter()) end
-        toggle:SetScript("OnClick", function(self)
-            setter(self:GetChecked() == true)
-            if onChanged then onChanged(self:GetChecked() == true) end
-            Refresh()
-        end)
-        refreshers[#refreshers + 1] = Refresh
-        Refresh()
-    end
-
-    CreateSection("ADDON")
-    CreateToggle("Enable Simple Nameplates styling", nil, GetStylingEnabled, SetStylingEnabled,
-        function(enabled)
-            if enabled then
-                ns.DisableFriendlyClassColors()
-                ns.ApplyOverheadNameReplacement()
-                RefreshNameplates()
-            else
-                ns.RestoreOverheadNameSettings()
-                ns.RestoreFriendlyClassColors()
-                if ns.RestoreAll then ns.RestoreAll() end
-            end
-        end)
-
-    CreateSection("CATEGORY HANDLING")
-    AddDescription(content, layout,
-        "Active lets Simple Nameplates style the category. Inactive leaves Blizzard's display unchanged. Hide conceals it wherever Blizzard permits.")
-    local modes = {
-        { value = "active", label = "Active" },
-        { value = "inactive", label = "Inactive" },
-        { value = "hide", label = "Hide" },
-    }
-    for _, rowData in ipairs(CATEGORY_ROWS) do
-        local labelText, state, noteText = rowData[1], rowData[2], rowData[3]
-        local row = CreateFrame("Frame", nil, content)
-        row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
-        layout:Add(row, 24, 44, 2)
-        local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
-        dropdown:SetPoint("LEFT", -18, 0)
-        UIDropDownMenu_SetWidth(dropdown, 82)
-        local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        label:SetPoint("TOPLEFT", dropdown, "TOPRIGHT", -6, -3)
-        label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -4, -3)
-        label:SetJustifyH("LEFT")
-        label:SetText(labelText)
-        local note = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        note:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
-        note:SetPoint("RIGHT", row, "RIGHT", -4, 0)
-        note:SetJustifyH("LEFT")
-        note:SetText(noteText)
-        local function Refresh()
-            local mode = GetCategoryMode(state)
-            UIDropDownMenu_SetSelectedValue(dropdown, mode)
-            for _, option in ipairs(modes) do
-                if option.value == mode then UIDropDownMenu_SetText(dropdown, option.label) end
-            end
-        end
-        UIDropDownMenu_Initialize(dropdown, function(_, level)
-            for _, option in ipairs(modes) do
-                local value, optionLabel = option.value, option.label
-                local info = UIDropDownMenu_CreateInfo()
-                info.text, info.value = optionLabel, value
-                info.checked = GetCategoryMode(state) == value
-                info.func = function()
-                    SetCategoryMode(state, value)
-                    ns.DisableFriendlyClassColors()
-                    Refresh()
-                    RefreshNameplates()
-                end
-                UIDropDownMenu_AddButton(info, level)
-            end
-        end)
-        refreshers[#refreshers + 1] = Refresh
-        Refresh()
-    end
-
-    layout:Space(6)
-    CreateSection("BLIZZARD OVERHEAD NAMES")
-    CreateToggle("Replace Blizzard overhead names (experimental)",
-        "Requests name-only player, minion, and NPC plates, then hides matching world names. A unit may have no visible name if Blizzard does not create a plate.",
-        GetReplaceBlizzardOverheadNames, SetReplaceBlizzardOverheadNames, RefreshNameplates)
-    CreateToggle("Hide Blizzard-controlled minion names",
-        "Hides friendly and enemy pets, guardians, totems, and minions. Opposing-player names remain visible.",
-        GetHideBlizzardMinionNames, SetHideBlizzardMinionNames)
-    CreateToggle("Hide critter and companion names",
-        "Hides Blizzard overhead names for noncombat critters and companions.",
-        GetHideCritterCompanionNames, SetHideCritterCompanionNames)
-
-    panel:SetScript("OnShow", function()
-        for _, refresh in ipairs(refreshers) do refresh() end
-    end)
+    panel:SetScript("OnShow", function() RunRefreshers(context.refreshers) end)
     layout:Finish()
     return panel
 end
 
-local function CreateAppearancePanel()
-    local panel, content, layout = CreateScrollablePanel("Appearance")
-    AddTitle(content, layout, "Simple Nameplates — Appearance")
-    AddDescription(content, layout,
-        "Profiles contain every look-and-feel setting. Profiles are shared account-wide; each character remembers its selection.")
-
-    local swatchRefreshers, toggleRefreshers = {}, {}
-    local RefreshAttackingGlow, RefreshAllControls
-
+local function RegisterAppearancePopups()
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
         text = "Blizzard draws non-attackable opposing-faction players and many player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nThe experimental replacement option on the Behavior page hides those world-name categories and requests ordinary nameplates instead. It can only work when Blizzard creates a nameplate for the unit.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
@@ -623,221 +657,249 @@ local function CreateAppearancePanel()
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
-    local function CreateSection(text)
-        local label = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        label:SetText(text)
-        layout:Add(label, 24, 20, 2)
-    end
+end
 
-    AddProfileControls(content, layout, toggleRefreshers, function()
-        if RefreshAllControls then RefreshAllControls() end
-    end)
-    layout:Space(8)
-    AddTextAndLayoutControls(content, layout, toggleRefreshers)
-    layout:Space(8)
-
-    local function CreateColorRow(text, displayText, getColor, setColor, resetColor, getEnabled, setEnabled)
-        local row = CreateFrame("Frame", nil, content)
-        row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
-        layout:Add(row, 24, 40, 2)
-        local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        if getEnabled and setEnabled then
-            local toggle = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
-            toggle:SetSize(26, 26)
-            toggle:SetPoint("LEFT", -4, 0)
-            toggle:SetScript("OnClick", function(self)
-                setEnabled(self:GetChecked() == true)
-                RefreshNameplates()
-            end)
-            local function RefreshToggle() toggle:SetChecked(getEnabled()) end
-            toggleRefreshers[#toggleRefreshers + 1] = RefreshToggle
-            RefreshToggle()
-            label:SetPoint("TOPLEFT", toggle, "TOPRIGHT", 0, -1)
-        else
-            label:SetPoint("TOPLEFT", 4, -3)
-        end
-        label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -104, -3)
-        label:SetJustifyH("LEFT")
-        label:SetText(text)
-
-        local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        display:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
-        display:SetPoint("RIGHT", row, "RIGHT", -104, 0)
-        display:SetJustifyH("LEFT")
-        display:SetText(displayText)
-
-        local swatch = CreateFrame("Button", nil, row, "BackdropTemplate")
-        swatch:SetSize(26, 26)
-        swatch:SetPoint("RIGHT", -4, 0)
-        swatch:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-        swatch:SetBackdropColor(0.04, 0.04, 0.04, 1)
-        swatch:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
-        local fill = swatch:CreateTexture(nil, "ARTWORK")
-        fill:SetPoint("TOPLEFT", 3, -3)
-        fill:SetPoint("BOTTOMRIGHT", -3, 3)
-        local function UpdateSwatch() fill:SetColorTexture(getColor()) end
-        swatchRefreshers[#swatchRefreshers + 1] = UpdateSwatch
-        UpdateSwatch()
-        swatch:SetScript("OnEnter", function(self)
-            self:SetBackdropBorderColor(1, 1, 1, 1)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText(text)
-            GameTooltip:AddLine("Click to choose a color.", 1, 1, 1)
-            GameTooltip:Show()
-        end)
-        swatch:SetScript("OnLeave", function(self)
-            self:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
-            GameTooltip:Hide()
-        end)
-        swatch:SetScript("OnClick", function()
-            local oldR, oldG, oldB = getColor()
-            local function ApplyPickerColor()
-                local r, g, b = ColorPickerFrame:GetColorRGB()
-                setColor(r, g, b)
-                UpdateSwatch()
-                RefreshNameplates()
-            end
-            ColorPickerFrame:SetupColorPickerAndShow({
-                r = oldR, g = oldG, b = oldB, hasOpacity = false,
-                swatchFunc = ApplyPickerColor,
-                cancelFunc = function()
-                    setColor(oldR, oldG, oldB)
-                    UpdateSwatch()
-                    RefreshNameplates()
-                end,
-            })
-        end)
-
-        local resetOne = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        resetOne:SetSize(54, 22)
-        resetOne:SetPoint("RIGHT", swatch, "LEFT", -8, 0)
-        resetOne:SetText("Reset")
-        resetOne:SetScript("OnClick", function()
-            resetColor()
-            UpdateSwatch()
+local function CreateColorRow(context, text, displayText, getColor, setColor, resetColor, getEnabled, setEnabled)
+    local content, layout = context.content, context.layout
+    local row = CreateFrame("Frame", nil, content)
+    row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
+    layout:Add(row, 24, 40, 2)
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    if getEnabled and setEnabled then
+        local toggle = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
+        toggle:SetSize(26, 26)
+        toggle:SetPoint("LEFT", -4, 0)
+        toggle:SetScript("OnClick", function(self)
+            setEnabled(self:GetChecked() == true)
             RefreshNameplates()
         end)
-    end
-
-    local function CreatePriorityRow(text, state, displayText)
-        CreateColorRow(text, displayText,
-            function() return PriorityColorForState(state) end,
-            function(r, g, b) SetPriorityColor(state, r, g, b) end,
-            function() ResetPriorityColor(state) end)
-    end
-
-    local function CreateLockedColorRow(text, r, g, b, popupKey)
-        local row = CreateFrame("Frame", nil, content)
-        row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
-        layout:Add(row, 24, 40, 2)
-        local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        local function RefreshToggle() toggle:SetChecked(getEnabled()) end
+        context.toggleRefreshers[#context.toggleRefreshers + 1] = RefreshToggle
+        RefreshToggle()
+        label:SetPoint("TOPLEFT", toggle, "TOPRIGHT", 0, -1)
+    else
         label:SetPoint("TOPLEFT", 4, -3)
-        label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -104, -3)
-        label:SetJustifyH("LEFT")
-        label:SetText(text)
-        local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        display:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
-        display:SetPoint("RIGHT", row, "RIGHT", -104, 0)
-        display:SetJustifyH("LEFT")
-        display:SetText("Controlled by Blizzard; cannot be changed")
-        local swatch = CreateFrame("Frame", nil, row, "BackdropTemplate")
-        swatch:SetSize(26, 26)
-        swatch:SetPoint("RIGHT", -4, 0)
-        swatch:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-        swatch:SetBackdropColor(0.04, 0.04, 0.04, 1)
-        swatch:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
-        local fill = swatch:CreateTexture(nil, "ARTWORK")
-        fill:SetPoint("TOPLEFT", 3, -3)
-        fill:SetPoint("BOTTOMRIGHT", -3, 3)
-        fill:SetColorTexture(r, g, b, 1)
-        local info = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        info:SetSize(24, 22)
-        info:SetPoint("RIGHT", swatch, "LEFT", -8, 0)
-        info:SetText("?")
-        info:SetScript("OnClick", function() StaticPopup_Show(popupKey) end)
-        row:EnableMouse(true)
-        row:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText(text)
-            GameTooltip:AddLine("This color is chosen by Blizzard and cannot be edited.", 1, 1, 1, true)
-            GameTooltip:Show()
-        end)
-        row:SetScript("OnLeave", function() GameTooltip:Hide() end)
     end
+    label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -104, -3)
+    label:SetJustifyH("LEFT")
+    label:SetText(text)
 
-    CreateSection("PRIORITY COLORS")
-    local resetColors = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+    local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    display:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
+    display:SetPoint("RIGHT", row, "RIGHT", -104, 0)
+    display:SetJustifyH("LEFT")
+    display:SetText(displayText)
+
+    local swatch = CreateFrame("Button", nil, row, "BackdropTemplate")
+    swatch:SetSize(26, 26)
+    swatch:SetPoint("RIGHT", -4, 0)
+    swatch:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+    swatch:SetBackdropColor(0.04, 0.04, 0.04, 1)
+    swatch:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
+    local fill = swatch:CreateTexture(nil, "ARTWORK")
+    fill:SetPoint("TOPLEFT", 3, -3)
+    fill:SetPoint("BOTTOMRIGHT", -3, 3)
+    local function UpdateSwatch() fill:SetColorTexture(getColor()) end
+    context.swatchRefreshers[#context.swatchRefreshers + 1] = UpdateSwatch
+    UpdateSwatch()
+
+    swatch:SetScript("OnEnter", function(self)
+        self:SetBackdropBorderColor(1, 1, 1, 1)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(text)
+        GameTooltip:AddLine("Click to choose a color.", 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    swatch:SetScript("OnLeave", function(self)
+        self:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
+        GameTooltip:Hide()
+    end)
+    swatch:SetScript("OnClick", function()
+        local oldR, oldG, oldB = getColor()
+        local function ApplyPickerColor()
+            local r, g, b = ColorPickerFrame:GetColorRGB()
+            setColor(r, g, b)
+            UpdateSwatch()
+            RefreshNameplates()
+        end
+        ColorPickerFrame:SetupColorPickerAndShow({
+            r = oldR, g = oldG, b = oldB, hasOpacity = false,
+            swatchFunc = ApplyPickerColor,
+            cancelFunc = function()
+                setColor(oldR, oldG, oldB)
+                UpdateSwatch()
+                RefreshNameplates()
+            end,
+        })
+    end)
+
+    local resetOne = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+    resetOne:SetSize(54, 22)
+    resetOne:SetPoint("RIGHT", swatch, "LEFT", -8, 0)
+    resetOne:SetText("Reset")
+    resetOne:SetScript("OnClick", function()
+        resetColor()
+        UpdateSwatch()
+        RefreshNameplates()
+    end)
+end
+
+local function CreatePriorityColorRow(context, text, state, displayText)
+    CreateColorRow(context, text, displayText,
+        function() return PriorityColorForState(state) end,
+        function(r, g, b) SetPriorityColor(state, r, g, b) end,
+        function() ResetPriorityColor(state) end)
+end
+
+local function CreateLockedColorRow(context, text, r, g, b, popupKey)
+    local content, layout = context.content, context.layout
+    local row = CreateFrame("Frame", nil, content)
+    row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
+    layout:Add(row, 24, 40, 2)
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("TOPLEFT", 4, -3)
+    label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -104, -3)
+    label:SetJustifyH("LEFT")
+    label:SetText(text)
+    local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    display:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
+    display:SetPoint("RIGHT", row, "RIGHT", -104, 0)
+    display:SetJustifyH("LEFT")
+    display:SetText("Controlled by Blizzard; cannot be changed")
+    local swatch = CreateFrame("Frame", nil, row, "BackdropTemplate")
+    swatch:SetSize(26, 26)
+    swatch:SetPoint("RIGHT", -4, 0)
+    swatch:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+    swatch:SetBackdropColor(0.04, 0.04, 0.04, 1)
+    swatch:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
+    local fill = swatch:CreateTexture(nil, "ARTWORK")
+    fill:SetPoint("TOPLEFT", 3, -3)
+    fill:SetPoint("BOTTOMRIGHT", -3, 3)
+    fill:SetColorTexture(r, g, b, 1)
+    local info = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+    info:SetSize(24, 22)
+    info:SetPoint("RIGHT", swatch, "LEFT", -8, 0)
+    info:SetText("?")
+    info:SetScript("OnClick", function() StaticPopup_Show(popupKey) end)
+    row:EnableMouse(true)
+    row:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(text)
+        GameTooltip:AddLine("This color is chosen by Blizzard and cannot be edited.", 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
+local function AddPriorityColorControls(context)
+    AddSection(context.content, context.layout, "PRIORITY COLORS")
+    local resetColors = CreateFrame("Button", nil, context.content, "UIPanelButtonTemplate")
     resetColors:SetSize(150, 24)
     resetColors:SetText("Reset Colors")
-    layout:Add(resetColors, 24, 24, 8)
-    CreatePriorityRow("1. Attacking me", "attacking",
+    context.layout:Add(resetColors, 24, 24, 8)
+
+    CreatePriorityColorRow(context, "1. Attacking me", "attacking",
         "Health bar; includes attacks on pets, guardians, and minions; overrides 2–6")
-    CreatePriorityRow("2. Will attack me if it notices me", "hostile",
+    CreatePriorityColorRow(context, "2. Will attack me if it notices me", "hostile",
         "Health bar for aggressive units not currently attacking me")
-    CreatePriorityRow("3. Attackable by me, but not hostile", "unfriendlyNPC",
+    CreatePriorityColorRow(context, "3. Attackable by me, but not hostile", "unfriendlyNPC",
         "Health bar for units that will not initiate combat")
-    CreatePriorityRow("4. Opposite-faction PC", "unfriendlyPC",
+    CreatePriorityColorRow(context, "4. Opposite-faction PC", "unfriendlyPC",
         "Name when not attackable; attackable opponents use 1 or 2")
-    CreatePriorityRow("5. My-faction PC", "friendlyPC",
+    CreatePriorityColorRow(context, "5. My-faction PC", "friendlyPC",
         "Name of same-faction player characters")
-    CreatePriorityRow("6. Anything else Simple Nameplates can color", "other",
+    CreatePriorityColorRow(context, "6. Anything else Simple Nameplates can color", "other",
         "Name of friendly NPCs and other unmatched colorable units")
 
-    layout:Space(6)
-    CreateSection("BLIZZARD-CONTROLLED OVERHEAD NAMES")
-    CreateLockedColorRow("Opposite-faction PCs and player-controlled minions",
-        102 / 255, 102 / 255, 1, "SNP_BLIZZARD_OVERHEAD_INFO")
-    CreateLockedColorRow("Interactive NPCs",
-        1, 1, 0, "SNP_BLIZZARD_INTERACTIVE_INFO")
-    CreateLockedColorRow("Vendor NPCs",
-        0, 1, 0, "SNP_BLIZZARD_VENDOR_INFO")
-    layout:Space(6)
-    CreateSection("ATTACKING INDICATOR")
+    resetColors:SetScript("OnClick", function()
+        ResetAllColors()
+        RunRefreshers(context.swatchRefreshers)
+        RefreshNameplates()
+    end)
+end
 
-    local attackingGlow = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
+local function AddLockedColorControls(context)
+    context.layout:Space(6)
+    AddSection(context.content, context.layout, "BLIZZARD-CONTROLLED OVERHEAD NAMES")
+    CreateLockedColorRow(context, "Opposite-faction PCs and player-controlled minions",
+        102 / 255, 102 / 255, 1, "SNP_BLIZZARD_OVERHEAD_INFO")
+    CreateLockedColorRow(context, "Interactive NPCs",
+        1, 1, 0, "SNP_BLIZZARD_INTERACTIVE_INFO")
+    CreateLockedColorRow(context, "Vendor NPCs",
+        0, 1, 0, "SNP_BLIZZARD_VENDOR_INFO")
+end
+
+local function AddAttackingIndicatorControls(context)
+    context.layout:Space(6)
+    AddSection(context.content, context.layout, "ATTACKING INDICATOR")
+    local attackingGlow = CreateFrame("CheckButton", nil, context.content, "UICheckButtonTemplate")
     attackingGlow:SetSize(26, 26)
     attackingGlow:SetHitRectInsets(0, -320, 0, 0)
-    layout:Add(attackingGlow, 20, 30, 2)
-    local attackingGlowLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    attackingGlowLabel:SetPoint("LEFT", attackingGlow, "RIGHT", 4, 0)
-    attackingGlowLabel:SetText("Glow attacking units")
-    local attackingGlowNote = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    attackingGlowNote:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    attackingGlowNote:SetJustifyH("LEFT")
-    attackingGlowNote:SetText("Uses Priority Color 1 and applies to both PCs and NPCs.")
-    layout:Add(attackingGlowNote, 24, 28, 8)
-    RefreshAttackingGlow = function() attackingGlow:SetChecked(GetAttackingGlowEnabled()) end
+    context.layout:Add(attackingGlow, 20, 30, 2)
+    local label = context.content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT", attackingGlow, "RIGHT", 4, 0)
+    label:SetText("Glow attacking units")
+    local note = context.content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    note:SetPoint("RIGHT", context.content, "RIGHT", -20, 0)
+    note:SetJustifyH("LEFT")
+    note:SetText("Uses Priority Color 1 and applies to both PCs and NPCs.")
+    context.layout:Add(note, 24, 28, 8)
+
+    local function Refresh() attackingGlow:SetChecked(GetAttackingGlowEnabled()) end
+    context.toggleRefreshers[#context.toggleRefreshers + 1] = Refresh
     attackingGlow:SetScript("OnClick", function(self)
         SetAttackingGlowEnabled(self:GetChecked() == true)
         RefreshNameplates()
     end)
+end
 
-    CreateSection("CAST BARS")
-    CreateColorRow("Highlight interruptible casts and channels", "Changes the cast-bar outline color",
+local function AddCastBarControls(context)
+    AddSection(context.content, context.layout, "CAST BARS")
+    CreateColorRow(context, "Highlight interruptible casts and channels",
+        "Changes the cast-bar outline color",
         function() return EffectColor("interruptible") end,
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
         function() ResetEffectColor("interruptible") end,
         GetInterruptibleHighlightEnabled, SetInterruptibleHighlightEnabled)
-    local interruptibleNote = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    interruptibleNote:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    interruptibleNote:SetJustifyH("LEFT")
-    interruptibleNote:SetText("Uses Blizzard's interruptibility result and is drawn above the attacking glow.")
-    layout:Add(interruptibleNote, 24, 28, 8)
+    local note = context.content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    note:SetPoint("RIGHT", context.content, "RIGHT", -20, 0)
+    note:SetJustifyH("LEFT")
+    note:SetText("Uses Blizzard's interruptibility result and is drawn above the attacking glow.")
+    context.layout:Add(note, 24, 28, 8)
+end
 
-    resetColors:SetScript("OnClick", function()
-        ResetAllColors()
-        for _, refresh in ipairs(swatchRefreshers) do refresh() end
-        RefreshNameplates()
-    end)
-    RefreshAllControls = function()
-        RefreshAttackingGlow()
-        for _, refresh in ipairs(swatchRefreshers) do refresh() end
-        for _, refresh in ipairs(toggleRefreshers) do refresh() end
-    end
-    panel:SetScript("OnShow", RefreshAllControls)
-    RefreshAllControls()
+local function RefreshAppearanceControls(context)
+    RunRefreshers(context.swatchRefreshers)
+    RunRefreshers(context.toggleRefreshers)
+end
+
+local function CreateAppearancePanel()
+    local panel, content, layout = CreateScrollablePanel("Appearance")
+    AddTitle(content, layout, "Simple Nameplates — Appearance")
+    AddDescription(content, layout,
+        "Profiles contain every look-and-feel setting. Profiles are shared account-wide; each character remembers its selection.")
+    RegisterAppearancePopups()
+
+    local context = {
+        content = content,
+        layout = layout,
+        swatchRefreshers = {},
+        toggleRefreshers = {},
+    }
+    AddProfileControls(content, layout, context.toggleRefreshers,
+        function() RefreshAppearanceControls(context) end)
+    layout:Space(8)
+    AddTextAndLayoutControls(content, layout, context.toggleRefreshers)
+    layout:Space(8)
+    AddPriorityColorControls(context)
+    AddLockedColorControls(context)
+    AddAttackingIndicatorControls(context)
+    AddCastBarControls(context)
+
+    panel:SetScript("OnShow", function() RefreshAppearanceControls(context) end)
+    RefreshAppearanceControls(context)
     layout:Finish()
     return panel
 end
