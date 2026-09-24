@@ -289,20 +289,22 @@ local function NewProfile(presetName)
     return profile
 end
 
-local function ValidatedProfile(saved, presetName)
-    if type(saved) ~= "table" then saved = {} end
-    local profile = NewProfile(presetName)
+local function ValidateProfileColors(profile, saved)
     local savedPriorityColors = type(saved.priorityColors) == "table"
         and saved.priorityColors or {}
     for key, default in pairs(profile.priorityColors) do
         local color = savedPriorityColors[key]
         profile.priorityColors[key] = CopyColor(IsValidColor(color) and color or default)
     end
+
     local savedEffectColors = type(saved.effectColors) == "table" and saved.effectColors or {}
     for key, default in pairs(profile.effectColors) do
         local color = savedEffectColors[key]
         profile.effectColors[key] = CopyColor(IsValidColor(color) and color or default)
     end
+end
+
+local function ValidateProfileAppearance(profile, saved)
     local savedAppearance = type(saved.appearance) == "table" and saved.appearance or {}
     profile.appearance.nameFont = FONT_BY_VALUE[savedAppearance.nameFont]
         and savedAppearance.nameFont or profile.appearance.nameFont
@@ -316,10 +318,21 @@ local function ValidatedProfile(saved, presetName)
     if savedAppearance.namePlacement == "ABOVE" or savedAppearance.namePlacement == "INSIDE" then
         profile.appearance.namePlacement = savedAppearance.namePlacement
     end
+end
+
+local function ValidateProfileToggles(profile, saved)
     profile.showThreat = SavedBoolean(saved.showThreat, profile.showThreat)
     profile.attackingGlow = SavedBoolean(saved.attackingGlow, profile.attackingGlow)
     profile.interruptibleHighlight = SavedBoolean(saved.interruptibleHighlight,
         profile.interruptibleHighlight)
+end
+
+local function ValidatedProfile(saved, presetName)
+    if type(saved) ~= "table" then saved = {} end
+    local profile = NewProfile(presetName)
+    ValidateProfileColors(profile, saved)
+    ValidateProfileAppearance(profile, saved)
+    ValidateProfileToggles(profile, saved)
     return profile
 end
 
@@ -337,16 +350,8 @@ local function CharacterKey()
     return "Unknown"
 end
 
-local function ValidatedDB(saved)
-    -- Saved data from another schema is intentionally ignored. Keeping schema
-    -- changes here avoids permanent one-off migration code and prevents stale
-    -- or misplaced settings from leaking into the current configuration.
-    if type(saved) ~= "table" or saved.schemaVersion ~= DB_SCHEMA_VERSION then saved = {} end
-
-    local savedGlobal = type(saved.global) == "table" and saved.global or {}
-    local savedProfiles = type(saved.profiles) == "table" and saved.profiles or {}
-
-    local db = {
+local function CreateValidatedDB()
+    return {
         schemaVersion = DB_SCHEMA_VERSION,
         global = {
             categoryModes = {},
@@ -355,7 +360,9 @@ local function ValidatedDB(saved)
         profiles = {},
         profileKeys = {},
     }
+end
 
+local function ValidateProfiles(db, savedProfiles)
     db.profiles[DEFAULT_PROFILE_NAME] = ValidatedProfile(savedProfiles[DEFAULT_PROFILE_NAME])
     if savedProfiles[HIGH_CONTRAST_PROFILE_NAME] == nil then
         db.profiles[HIGH_CONTRAST_PROFILE_NAME] = NewProfile("highContrast")
@@ -363,6 +370,7 @@ local function ValidatedDB(saved)
         db.profiles[HIGH_CONTRAST_PROFILE_NAME] = ValidatedProfile(
             savedProfiles[HIGH_CONTRAST_PROFILE_NAME], "highContrast")
     end
+
     local knownProfileNames = {
         [string.lower(DEFAULT_PROFILE_NAME)] = true,
         [string.lower(HIGH_CONTRAST_PROFILE_NAME)] = true,
@@ -376,15 +384,19 @@ local function ValidatedDB(saved)
             knownProfileNames[lowerName] = true
         end
     end
+end
 
-    local savedProfileKeys = type(saved.profileKeys) == "table" and saved.profileKeys or {}
+local function ValidateProfileKeys(db, savedProfileKeys)
+    savedProfileKeys = type(savedProfileKeys) == "table" and savedProfileKeys or {}
     for character, profileName in pairs(savedProfileKeys) do
         if type(character) == "string" and type(profileName) == "string"
             and db.profiles[profileName] then
             db.profileKeys[character] = profileName
         end
     end
+end
 
+local function ValidateCategoryModes(db, savedGlobal)
     local savedCategoryModes = type(savedGlobal.categoryModes) == "table"
         and savedGlobal.categoryModes or {}
     for key, default in pairs(DEFAULT_CATEGORY_MODES) do
@@ -392,7 +404,9 @@ local function ValidatedDB(saved)
         db.global.categoryModes[key] = (mode == "active" or mode == "inactive" or mode == "hide")
             and mode or default
     end
+end
 
+local function ValidateGlobalToggles(db, savedGlobal)
     db.global.stylingEnabled = SavedBoolean(savedGlobal.stylingEnabled, DEFAULT_STYLING_ENABLED)
     db.global.hideBlizzardMinionNames = SavedBoolean(savedGlobal.hideBlizzardMinionNames,
         DEFAULT_HIDE_BLIZZARD_MINION_NAMES)
@@ -400,14 +414,32 @@ local function ValidatedDB(saved)
         DEFAULT_HIDE_CRITTER_COMPANION_NAMES)
     db.global.replaceBlizzardOverheadNames = SavedBoolean(savedGlobal.replaceBlizzardOverheadNames,
         DEFAULT_REPLACE_BLIZZARD_OVERHEAD_NAMES)
+end
+
+local function ValidateTRP3Settings(db, savedGlobal)
     local savedTRP3 = type(savedGlobal.trp3) == "table" and savedGlobal.trp3 or {}
     for key, default in pairs(DEFAULT_TRP3) do
         db.global.trp3[key] = SavedBoolean(savedTRP3[key], default)
     end
+end
 
+local function ValidatedDB(saved)
+    -- Saved data from another schema is intentionally ignored. Keeping schema
+    -- changes here avoids permanent one-off migration code and prevents stale
+    -- or misplaced settings from leaking into the current configuration.
+    if type(saved) ~= "table" or saved.schemaVersion ~= DB_SCHEMA_VERSION then saved = {} end
+
+    local savedGlobal = type(saved.global) == "table" and saved.global or {}
+    local savedProfiles = type(saved.profiles) == "table" and saved.profiles or {}
+    local db = CreateValidatedDB()
+
+    ValidateProfiles(db, savedProfiles)
+    ValidateProfileKeys(db, saved.profileKeys)
+    ValidateCategoryModes(db, savedGlobal)
+    ValidateGlobalToggles(db, savedGlobal)
+    ValidateTRP3Settings(db, savedGlobal)
     db.global.managedNameCVarOriginals = CopySavedCVarOriginals(
         savedGlobal.managedNameCVarOriginals, MANAGED_NAME_CVARS) or {}
-
     return db
 end
 
@@ -672,34 +704,62 @@ local function MergeCVarValues(target, source)
     for cvar, value in pairs(source or {}) do target[cvar] = value end
 end
 
-local function DesiredManagedNameSettings(db)
-    local desired = {}
-    local global = db.global
-    if not global.stylingEnabled then return desired end
-
-    if global.replaceBlizzardOverheadNames then
-        local replacementActive
-        for _, state in ipairs({ "hostile", "unfriendlyPC", "friendlyPC", "other" }) do
-            if global.categoryModes[state] == "active" then
-                MergeCVarValues(desired, CATEGORY_REPLACEMENT_CVAR_VALUES[state])
-                replacementActive = true
-            end
+local function AddReplacementCVarSettings(desired, global)
+    if not global.replaceBlizzardOverheadNames then return end
+    local replacementActive
+    for _, state in ipairs({ "hostile", "unfriendlyPC", "friendlyPC", "other" }) do
+        if global.categoryModes[state] == "active" then
+            MergeCVarValues(desired, CATEGORY_REPLACEMENT_CVAR_VALUES[state])
+            replacementActive = true
         end
-        if replacementActive then MergeCVarValues(desired, SHARED_REPLACEMENT_CVAR_VALUES) end
     end
+    if replacementActive then MergeCVarValues(desired, SHARED_REPLACEMENT_CVAR_VALUES) end
+end
 
+local function AddHiddenCategoryCVarSettings(desired, global)
     for _, state in ipairs({ "unfriendlyPC", "friendlyPC", "other" }) do
         if global.categoryModes[state] == "hide" then
             MergeCVarValues(desired, CATEGORY_HIDE_CVAR_VALUES[state])
         end
     end
+end
+
+local function AddExplicitHiddenNameCVarSettings(desired, global)
     if global.hideBlizzardMinionNames then
         for _, cvar in ipairs(BLIZZARD_MINION_NAME_CVARS) do desired[cvar] = "0" end
     end
     if global.hideCritterCompanionNames then
         for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do desired[cvar] = "0" end
     end
+end
+
+local function DesiredManagedNameSettings(db)
+    local desired = {}
+    local global = db.global
+    if not global.stylingEnabled then return desired end
+    AddReplacementCVarSettings(desired, global)
+    AddHiddenCategoryCVarSettings(desired, global)
+    AddExplicitHiddenNameCVarSettings(desired, global)
     return desired
+end
+
+local function RestoreUnmanagedCVars(originals, desired)
+    for cvar, original in pairs(originals) do
+        if desired[cvar] == nil then
+            SetCVarValue(cvar, original)
+            originals[cvar] = nil
+        end
+    end
+end
+
+local function ApplyDesiredCVars(originals, desired)
+    for cvar, value in pairs(desired) do
+        local current = GetCVarValue(cvar)
+        if current ~= nil then
+            if originals[cvar] == nil then originals[cvar] = current end
+            SetCVarValue(cvar, value)
+        end
+    end
 end
 
 ApplyManagedNameSettings = function()
@@ -716,20 +776,8 @@ ApplyManagedNameSettings = function()
         and db.global.managedNameCVarOriginals or {}
     local originals = db.global.managedNameCVarOriginals
     local desired = DesiredManagedNameSettings(db)
-
-    for cvar, original in pairs(originals) do
-        if desired[cvar] == nil then
-            SetCVarValue(cvar, original)
-            originals[cvar] = nil
-        end
-    end
-    for cvar, value in pairs(desired) do
-        local current = GetCVarValue(cvar)
-        if current ~= nil then
-            if originals[cvar] == nil then originals[cvar] = current end
-            SetCVarValue(cvar, value)
-        end
-    end
+    RestoreUnmanagedCVars(originals, desired)
+    ApplyDesiredCVars(originals, desired)
     applyingManagedNameSettings = false
 end
 
