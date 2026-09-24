@@ -10,7 +10,6 @@ local SetPriorityColor = ns.SetPriorityColor
 local ResetPriorityColor = ns.ResetPriorityColor
 local EffectColor, SetEffectColor, ResetEffectColor = ns.EffectColor, ns.SetEffectColor, ns.ResetEffectColor
 local ResetAllColors = ns.ResetAllColors
-local ApplyColorPreset = ns.ApplyColorPreset
 local GetAppearanceSetting, SetAppearanceSetting = ns.GetAppearanceSetting, ns.SetAppearanceSetting
 local ResetAppearance = ns.ResetAppearance
 local GetAttackingGlowEnabled, SetAttackingGlowEnabled = ns.GetAttackingGlowEnabled, ns.SetAttackingGlowEnabled
@@ -25,8 +24,7 @@ local SetHideCritterCompanionNames = ns.SetHideCritterCompanionNames
 local GetReplaceBlizzardOverheadNames = ns.GetReplaceBlizzardOverheadNames
 local SetReplaceBlizzardOverheadNames = ns.SetReplaceBlizzardOverheadNames
 
-local settingsCategory, behaviorSettingsCategory, colorsSettingsCategory
-local appearanceSettingsCategory, trp3SettingsCategory
+local settingsCategory, behaviorSettingsCategory, appearanceSettingsCategory, trp3SettingsCategory
 
 local function RefreshNameplates()
     if ns.RefreshAll then ns.RefreshAll() end
@@ -138,8 +136,7 @@ local function CreateAboutPanel()
         "License   GPL-3.0\n\nSlash commands\n" ..
         "    /snp - Open the behavior settings.\n" ..
         "    /snp behavior - Open the behavior settings.\n" ..
-        "    /snp colors - Open the color settings.\n" ..
-        "    /snp appearance - Open the appearance settings.\n" ..
+        "    /snp appearance (or colors) - Open the appearance settings.\n" ..
         "    /snp trp3 - Open the TRP3 settings.\n" ..
         "    /snp debug - Explain the current target and cast-highlight state.\n" ..
         "    /snp about - Open this About page.")
@@ -148,11 +145,10 @@ local function CreateAboutPanel()
     return panel
 end
 
-local function CreateAppearancePanel()
-    local panel, content, layout = CreateScrollablePanel("Appearance")
-    AddTitle(content, layout, "Simple Nameplates — Appearance")
-    AddDescription(content, layout, "Profile settings for fonts, sizing, placement, and threat text.")
-    local refreshers = {}
+local function AddTextAndLayoutControls(content, layout, refreshers)
+    local section = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    section:SetText("TEXT AND LAYOUT")
+    layout:Add(section, 24, 20, 2)
 
     local function OptionLabel(options, value)
         for _, option in ipairs(options) do
@@ -250,6 +246,7 @@ local function CreateAppearancePanel()
     threatLabel:SetPoint("LEFT", threat, "RIGHT", 4, 0)
     threatLabel:SetText("Show threat percentage when available")
     local function RefreshThreat() threat:SetChecked(GetThreatEnabled()) end
+    refreshers[#refreshers + 1] = RefreshThreat
     threat:SetScript("OnClick", function(self)
         SetThreatEnabled(self:GetChecked() == true)
         RefreshNameplates()
@@ -268,16 +265,130 @@ local function CreateAppearancePanel()
         ResetAppearance()
         SetThreatEnabled(true)
         for _, refresh in ipairs(refreshers) do refresh() end
-        RefreshThreat()
         RefreshNameplates()
     end)
-    panel:SetScript("OnShow", function()
-        for _, refresh in ipairs(refreshers) do refresh() end
-        RefreshThreat()
-    end)
     RefreshThreat()
-    layout:Finish()
-    return panel
+end
+
+local function AddProfileControls(content, layout, refreshers, onChanged)
+    StaticPopupDialogs["SNP_PROFILE_NAME"] = {
+        text = "Enter a profile name.", button1 = ACCEPT or "Accept",
+        button2 = CANCEL or "Cancel", hasEditBox = true, maxLetters = 64,
+        editBoxWidth = 260,
+        OnShow = function(self, data)
+            local editBox = self.GetEditBox and self:GetEditBox() or self.editBox
+            editBox:SetText(data and data.initial or "")
+            editBox:SetFocus()
+            editBox:HighlightText()
+        end,
+        OnAccept = function(self, data)
+            local editBox = self.GetEditBox and self:GetEditBox() or self.editBox
+            local ok, message = data.action(editBox:GetText())
+            if not ok and message then print("|cff0cd29fSimple Nameplates:|r " .. message) end
+            if ok then data.onChanged() end
+        end,
+        EditBoxOnEnterPressed = function(self)
+            local dialog = self:GetParent()
+            if dialog.button1 then dialog.button1:Click() end
+        end,
+        EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+    }
+    StaticPopupDialogs["SNP_DELETE_PROFILE"] = {
+        text = "Delete the profile |cffffffff%s|r? Characters using it will switch to Default.",
+        button1 = DELETE or "Delete", button2 = CANCEL or "Cancel",
+        OnAccept = function(_, data)
+            local ok, message = ns.DeleteActiveProfile()
+            if not ok and message then print("|cff0cd29fSimple Nameplates:|r " .. message) end
+            if ok then data.onChanged() end
+        end,
+        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+    }
+    StaticPopupDialogs["SNP_RESTORE_BUNDLED_PROFILES"] = {
+        text = "Restore the bundled Default and High Contrast profiles? This replaces their current appearance settings and recreates High Contrast if it was deleted or renamed.",
+        button1 = "Restore", button2 = CANCEL or "Cancel",
+        OnAccept = function(_, data)
+            ns.RestoreBundledProfiles()
+            data.onChanged()
+        end,
+        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+    }
+
+    local section = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    section:SetText("PROFILES")
+    layout:Add(section, 24, 20, 2)
+    local profileRow = CreateFrame("Frame", nil, content)
+    profileRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(profileRow, 20, 46, 4)
+    local profileDropdown = CreateFrame("Frame", nil, profileRow, "UIDropDownMenuTemplate")
+    profileDropdown:SetPoint("TOPLEFT", -14, 0)
+    UIDropDownMenu_SetWidth(profileDropdown, 240)
+
+    local buttonRow = CreateFrame("Frame", nil, content)
+    buttonRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(buttonRow, 24, 24, 8)
+    local buttons = {}
+    for index, definition in ipairs({
+        { "Create", 82 }, { "Copy", 82 }, { "Rename", 82 },
+        { "Delete", 82 }, { "Restore Bundled Profiles", 172 },
+    }) do
+        local button = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
+        button:SetSize(definition[2], 24)
+        if index == 1 then button:SetPoint("LEFT")
+        else button:SetPoint("LEFT", buttons[index - 1], "RIGHT", 8, 0) end
+        button:SetText(definition[1])
+        buttons[index] = button
+    end
+    local create, copy, rename, delete, restore =
+        buttons[1], buttons[2], buttons[3], buttons[4], buttons[5]
+
+    local function Changed()
+        onChanged()
+        RefreshNameplates()
+    end
+    local function OpenNameDialog(action, initial)
+        StaticPopup_Show("SNP_PROFILE_NAME", nil, nil,
+            { action = action, initial = initial, onChanged = Changed })
+    end
+    create:SetScript("OnClick", function() OpenNameDialog(ns.CreateProfile, "") end)
+    copy:SetScript("OnClick", function()
+        OpenNameDialog(ns.CopyActiveProfile, ns.GetActiveProfileName() .. " Copy")
+    end)
+    rename:SetScript("OnClick", function()
+        OpenNameDialog(ns.RenameActiveProfile, ns.GetActiveProfileName())
+    end)
+    delete:SetScript("OnClick", function()
+        StaticPopup_Show("SNP_DELETE_PROFILE", ns.GetActiveProfileName(), nil,
+            { onChanged = Changed })
+    end)
+    restore:SetScript("OnClick", function()
+        StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil,
+            { onChanged = Changed })
+    end)
+
+    local function Refresh()
+        local active = ns.GetActiveProfileName()
+        UIDropDownMenu_SetSelectedValue(profileDropdown, active)
+        UIDropDownMenu_SetText(profileDropdown, active)
+        local protected = active == ns.DEFAULT_PROFILE_NAME
+        rename:SetEnabled(not protected)
+        delete:SetEnabled(not protected)
+    end
+    UIDropDownMenu_Initialize(profileDropdown, function(_, level)
+        for _, profileName in ipairs(ns.GetProfileNames()) do
+            local name = profileName
+            local info = UIDropDownMenu_CreateInfo()
+            info.text, info.value = name, name
+            info.checked = ns.GetActiveProfileName() == name
+            info.func = function()
+                ns.SetActiveProfileName(name)
+                Changed()
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    refreshers[#refreshers + 1] = Refresh
+    Refresh()
 end
 
 local function CreateTRP3Panel()
@@ -488,27 +599,14 @@ local function CreateBehaviorPanel()
     return panel
 end
 
-local function CreateColorsPanel()
-    local panel, content, layout = CreateScrollablePanel("Colors")
-    AddTitle(content, layout, "Simple Nameplates — Colors")
+local function CreateAppearancePanel()
+    local panel, content, layout = CreateScrollablePanel("Appearance")
+    AddTitle(content, layout, "Simple Nameplates — Appearance")
     AddDescription(content, layout,
-        "Profile settings for Priority Colors and visual effects. Categories are evaluated from top to bottom; the first match wins.")
+        "Profiles contain every look-and-feel setting. Profiles are shared account-wide; each character remembers its selection.")
 
     local swatchRefreshers, toggleRefreshers = {}, {}
-    local RefreshAttackingGlow
-    local buttonRow = CreateFrame("Frame", nil, content)
-    buttonRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    layout:Add(buttonRow, 24, 24, 8)
-
-    local preset = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
-    preset:SetSize(150, 24)
-    preset:SetPoint("LEFT")
-    preset:SetText("High Contrast")
-
-    local reset = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
-    reset:SetSize(150, 24)
-    reset:SetPoint("LEFT", preset, "RIGHT", 12, 0)
-    reset:SetText("Reset Colors")
+    local RefreshAttackingGlow, RefreshAllControls
 
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
         text = "Blizzard draws non-attackable opposing-faction players and many player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nThe experimental replacement option on the Behavior page hides those world-name categories and requests ordinary nameplates instead. It can only work when Blizzard creates a nameplate for the unit.",
@@ -525,24 +623,18 @@ local function CreateColorsPanel()
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
-    StaticPopupDialogs["SNP_HIGH_CONTRAST_PRESET_CONFIRM"] = {
-        text = "Apply the High Contrast preset?\n\nThis replaces all six Priority Colors, changes the cast-highlight color, and enables the attacking glow. Blizzard's colorblind settings and filters will not be changed.",
-        button1 = "Apply",
-        button2 = CANCEL or "Cancel",
-        OnAccept = function(_, applyPreset)
-            if applyPreset then applyPreset() end
-        end,
-        timeout = 0,
-        whileDead = true,
-        hideOnEscape = true,
-        preferredIndex = 3,
-    }
-
     local function CreateSection(text)
         local label = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         label:SetText(text)
         layout:Add(label, 24, 20, 2)
     end
+
+    AddProfileControls(content, layout, toggleRefreshers, function()
+        if RefreshAllControls then RefreshAllControls() end
+    end)
+    layout:Space(8)
+    AddTextAndLayoutControls(content, layout, toggleRefreshers)
+    layout:Space(8)
 
     local function CreateColorRow(text, displayText, getColor, setColor, resetColor, getEnabled, setEnabled)
         local row = CreateFrame("Frame", nil, content)
@@ -676,6 +768,10 @@ local function CreateColorsPanel()
     end
 
     CreateSection("PRIORITY COLORS")
+    local resetColors = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+    resetColors:SetSize(150, 24)
+    resetColors:SetText("Reset Colors")
+    layout:Add(resetColors, 24, 24, 8)
     CreatePriorityRow("1. Attacking me", "attacking",
         "Health bar; includes attacks on pets, guardians, and minions; overrides 2–6")
     CreatePriorityRow("2. Will attack me if it notices me", "hostile",
@@ -730,26 +826,18 @@ local function CreateColorsPanel()
     interruptibleNote:SetText("Uses Blizzard's interruptibility result and is drawn above the attacking glow.")
     layout:Add(interruptibleNote, 24, 28, 8)
 
-    reset:SetScript("OnClick", function()
+    resetColors:SetScript("OnClick", function()
         ResetAllColors()
         for _, refresh in ipairs(swatchRefreshers) do refresh() end
         RefreshNameplates()
     end)
-    preset:SetScript("OnClick", function()
-        StaticPopup_Show("SNP_HIGH_CONTRAST_PRESET_CONFIRM", nil, nil, function()
-            if ApplyColorPreset("highContrast") then
-                SetAttackingGlowEnabled(true)
-                RefreshAttackingGlow()
-                for _, refresh in ipairs(swatchRefreshers) do refresh() end
-                RefreshNameplates()
-            end
-        end)
-    end)
-    panel:SetScript("OnShow", function()
+    RefreshAllControls = function()
         RefreshAttackingGlow()
+        for _, refresh in ipairs(swatchRefreshers) do refresh() end
         for _, refresh in ipairs(toggleRefreshers) do refresh() end
-    end)
-    RefreshAttackingGlow()
+    end
+    panel:SetScript("OnShow", RefreshAllControls)
+    RefreshAllControls()
     layout:Finish()
     return panel
 end
@@ -762,7 +850,6 @@ local function RegisterSettingsPanel()
     Settings.RegisterAddOnCategory(settingsCategory)
     behaviorSettingsCategory = Settings.RegisterCanvasLayoutSubcategory(settingsCategory, CreateBehaviorPanel(), "Behavior")
     appearanceSettingsCategory = Settings.RegisterCanvasLayoutSubcategory(settingsCategory, CreateAppearancePanel(), "Appearance")
-    colorsSettingsCategory = Settings.RegisterCanvasLayoutSubcategory(settingsCategory, CreateColorsPanel(), "Colors")
     trp3SettingsCategory = Settings.RegisterCanvasLayoutSubcategory(settingsCategory, CreateTRP3Panel(), "TRP3")
 
     SLASH_SNP1 = "/snp"
@@ -782,7 +869,7 @@ local function RegisterSettingsPanel()
             or command == "appearance" then
             Settings.OpenToCategory(appearanceSettingsCategory:GetID())
         elseif command == "colors" or command == "color" then
-            Settings.OpenToCategory(colorsSettingsCategory:GetID())
+            Settings.OpenToCategory(appearanceSettingsCategory:GetID())
         elseif command == "trp3" or command == "rp" then
             Settings.OpenToCategory(trp3SettingsCategory:GetID())
         elseif command == "" or command == "behavior" or command == "general" or command == "config"

@@ -212,7 +212,10 @@ ns.MIN_NAME_SIZE = MIN_NAME_SIZE
 ns.MAX_NAME_SIZE = MAX_NAME_SIZE
 
 local dbReady = false
-local DB_SCHEMA_VERSION = 1
+local DB_SCHEMA_VERSION = 2
+local DEFAULT_PROFILE_NAME = "Default"
+local HIGH_CONTRAST_PROFILE_NAME = "High Contrast"
+local MAX_PROFILE_NAME_LENGTH = 64
 
 local function IsFiniteNumber(value)
     return type(value) == "number" and value == value
@@ -264,6 +267,76 @@ local function CopySavedCVarOriginals(source, allowedCVars)
     return copy
 end
 
+local function NewProfile(presetName)
+    local preset = presetName and COLOR_PRESETS[presetName] or nil
+    local profile = {
+        priorityColors = {},
+        effectColors = {},
+        appearance = {},
+        showThreat = DEFAULT_SHOW_THREAT,
+        attackingGlow = presetName == "highContrast",
+        interruptibleHighlight = false,
+    }
+    for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
+        local color = preset and preset.priorityColors and preset.priorityColors[key] or default
+        profile.priorityColors[key] = CopyColor(color)
+    end
+    for key, default in pairs(DEFAULT_EFFECT_COLORS) do
+        local color = preset and preset.effectColors and preset.effectColors[key] or default
+        profile.effectColors[key] = CopyColor(color)
+    end
+    for key, value in pairs(DEFAULT_APPEARANCE) do profile.appearance[key] = value end
+    return profile
+end
+
+local function ValidatedProfile(saved, presetName)
+    if type(saved) ~= "table" then saved = {} end
+    local profile = NewProfile(presetName)
+    local savedPriorityColors = type(saved.priorityColors) == "table"
+        and saved.priorityColors or {}
+    for key, default in pairs(profile.priorityColors) do
+        local color = savedPriorityColors[key]
+        profile.priorityColors[key] = CopyColor(IsValidColor(color) and color or default)
+    end
+    local savedEffectColors = type(saved.effectColors) == "table" and saved.effectColors or {}
+    for key, default in pairs(profile.effectColors) do
+        local color = savedEffectColors[key]
+        profile.effectColors[key] = CopyColor(IsValidColor(color) and color or default)
+    end
+    local savedAppearance = type(saved.appearance) == "table" and saved.appearance or {}
+    profile.appearance.nameFont = FONT_BY_VALUE[savedAppearance.nameFont]
+        and savedAppearance.nameFont or profile.appearance.nameFont
+    if IsFiniteNumber(savedAppearance.nameSize)
+        and savedAppearance.nameSize >= MIN_NAME_SIZE
+        and savedAppearance.nameSize <= MAX_NAME_SIZE then
+        profile.appearance.nameSize = math.floor(savedAppearance.nameSize + 0.5)
+    end
+    profile.appearance.threatFont = FONT_BY_VALUE[savedAppearance.threatFont]
+        and savedAppearance.threatFont or profile.appearance.threatFont
+    if savedAppearance.namePlacement == "ABOVE" or savedAppearance.namePlacement == "INSIDE" then
+        profile.appearance.namePlacement = savedAppearance.namePlacement
+    end
+    profile.showThreat = SavedBoolean(saved.showThreat, profile.showThreat)
+    profile.attackingGlow = SavedBoolean(saved.attackingGlow, profile.attackingGlow)
+    profile.interruptibleHighlight = SavedBoolean(saved.interruptibleHighlight,
+        profile.interruptibleHighlight)
+    return profile
+end
+
+local function CopyProfile(profile)
+    return ValidatedProfile(profile)
+end
+
+local function CharacterKey()
+    local guid = UnitGUID and UnitGUID("player")
+    if type(guid) == "string" and guid ~= "" then return guid end
+    local name, realm = UnitFullName and UnitFullName("player")
+    if type(name) == "string" and name ~= "" then
+        return name .. "-" .. ((type(realm) == "string" and realm ~= "") and realm or "Unknown")
+    end
+    return "Unknown"
+end
+
 local function ValidatedDB(saved)
     -- Saved data from another schema is intentionally ignored. Keeping schema
     -- changes here avoids permanent one-off migration code and prevents stale
@@ -271,7 +344,7 @@ local function ValidatedDB(saved)
     if type(saved) ~= "table" or saved.schemaVersion ~= DB_SCHEMA_VERSION then saved = {} end
 
     local savedGlobal = type(saved.global) == "table" and saved.global or {}
-    local savedProfile = type(saved.profile) == "table" and saved.profile or {}
+    local savedProfiles = type(saved.profiles) == "table" and saved.profiles or {}
 
     local db = {
         schemaVersion = DB_SCHEMA_VERSION,
@@ -279,50 +352,45 @@ local function ValidatedDB(saved)
             categoryModes = {},
             trp3 = {},
         },
-        profile = {
-            priorityColors = {},
-            effectColors = {},
-            appearance = {},
-        },
+        profiles = {},
+        profileKeys = {},
     }
 
-    local savedPriorityColors = type(savedProfile.priorityColors) == "table"
-        and savedProfile.priorityColors or {}
-    for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
-        local color = savedPriorityColors[key]
-        db.profile.priorityColors[key] = CopyColor(IsValidColor(color) and color or default)
+    db.profiles[DEFAULT_PROFILE_NAME] = ValidatedProfile(savedProfiles[DEFAULT_PROFILE_NAME])
+    if savedProfiles[HIGH_CONTRAST_PROFILE_NAME] == nil then
+        db.profiles[HIGH_CONTRAST_PROFILE_NAME] = NewProfile("highContrast")
+    else
+        db.profiles[HIGH_CONTRAST_PROFILE_NAME] = ValidatedProfile(
+            savedProfiles[HIGH_CONTRAST_PROFILE_NAME], "highContrast")
     end
+    local knownProfileNames = {
+        [string.lower(DEFAULT_PROFILE_NAME)] = true,
+        [string.lower(HIGH_CONTRAST_PROFILE_NAME)] = true,
+    }
+    for name, profile in pairs(savedProfiles) do
+        local normalized = type(name) == "string" and strtrim(name) or ""
+        local lowerName = string.lower(normalized)
+        if normalized == name and normalized ~= "" and #normalized <= MAX_PROFILE_NAME_LENGTH
+            and not knownProfileNames[lowerName] then
+            db.profiles[name] = ValidatedProfile(profile)
+            knownProfileNames[lowerName] = true
+        end
+    end
+
+    local savedProfileKeys = type(saved.profileKeys) == "table" and saved.profileKeys or {}
+    for character, profileName in pairs(savedProfileKeys) do
+        if type(character) == "string" and type(profileName) == "string"
+            and db.profiles[profileName] then
+            db.profileKeys[character] = profileName
+        end
+    end
+
     local savedCategoryModes = type(savedGlobal.categoryModes) == "table"
         and savedGlobal.categoryModes or {}
     for key, default in pairs(DEFAULT_CATEGORY_MODES) do
         local mode = savedCategoryModes[key]
         db.global.categoryModes[key] = (mode == "active" or mode == "inactive" or mode == "hide")
             and mode or default
-    end
-
-    local savedEffectColors = type(savedProfile.effectColors) == "table"
-        and savedProfile.effectColors or {}
-    for key, default in pairs(DEFAULT_EFFECT_COLORS) do
-        local color = savedEffectColors[key]
-        db.profile.effectColors[key] = CopyColor(IsValidColor(color) and color or default)
-    end
-
-    local savedAppearance = type(savedProfile.appearance) == "table" and savedProfile.appearance or {}
-    db.profile.appearance.nameFont = FONT_BY_VALUE[savedAppearance.nameFont]
-        and savedAppearance.nameFont or DEFAULT_APPEARANCE.nameFont
-    if IsFiniteNumber(savedAppearance.nameSize)
-        and savedAppearance.nameSize >= MIN_NAME_SIZE
-        and savedAppearance.nameSize <= MAX_NAME_SIZE then
-        db.profile.appearance.nameSize = math.floor(savedAppearance.nameSize + 0.5)
-    else
-        db.profile.appearance.nameSize = DEFAULT_APPEARANCE.nameSize
-    end
-    db.profile.appearance.threatFont = FONT_BY_VALUE[savedAppearance.threatFont]
-        and savedAppearance.threatFont or DEFAULT_APPEARANCE.threatFont
-    if savedAppearance.namePlacement == "ABOVE" or savedAppearance.namePlacement == "INSIDE" then
-        db.profile.appearance.namePlacement = savedAppearance.namePlacement
-    else
-        db.profile.appearance.namePlacement = DEFAULT_APPEARANCE.namePlacement
     end
 
     db.global.stylingEnabled = SavedBoolean(savedGlobal.stylingEnabled, DEFAULT_STYLING_ENABLED)
@@ -332,10 +400,6 @@ local function ValidatedDB(saved)
         DEFAULT_HIDE_CRITTER_COMPANION_NAMES)
     db.global.replaceBlizzardOverheadNames = SavedBoolean(savedGlobal.replaceBlizzardOverheadNames,
         DEFAULT_REPLACE_BLIZZARD_OVERHEAD_NAMES)
-    db.profile.showThreat = SavedBoolean(savedProfile.showThreat, DEFAULT_SHOW_THREAT)
-    db.profile.attackingGlow = SavedBoolean(savedProfile.attackingGlow, false)
-    db.profile.interruptibleHighlight = SavedBoolean(savedProfile.interruptibleHighlight, false)
-
     local savedTRP3 = type(savedGlobal.trp3) == "table" and savedGlobal.trp3 or {}
     for key, default in pairs(DEFAULT_TRP3) do
         db.global.trp3[key] = SavedBoolean(savedTRP3[key], default)
@@ -352,6 +416,115 @@ local function EnsureDB()
     SimpleNameplatesDB = ValidatedDB(SimpleNameplatesDB)
     dbReady = true
     return SimpleNameplatesDB
+end
+
+local function GetActiveProfileName()
+    local db = EnsureDB()
+    local key = CharacterKey()
+    local profileName = db.profileKeys[key]
+    if not db.profiles[profileName] then
+        profileName = DEFAULT_PROFILE_NAME
+        db.profileKeys[key] = profileName
+    end
+    return profileName
+end
+
+local function ActiveProfile()
+    local db = EnsureDB()
+    return db.profiles[GetActiveProfileName()]
+end
+
+local function ActiveProfileDefaults()
+    return NewProfile(GetActiveProfileName() == HIGH_CONTRAST_PROFILE_NAME
+        and "highContrast" or nil)
+end
+
+local function GetProfileNames()
+    local names = {}
+    for name in pairs(EnsureDB().profiles) do names[#names + 1] = name end
+    table.sort(names, function(a, b)
+        if a == b then return false end
+        if a == DEFAULT_PROFILE_NAME then return true end
+        if b == DEFAULT_PROFILE_NAME then return false end
+        if a == HIGH_CONTRAST_PROFILE_NAME then return true end
+        if b == HIGH_CONTRAST_PROFILE_NAME then return false end
+        return string.lower(a) < string.lower(b)
+    end)
+    return names
+end
+
+local function FindProfileName(name)
+    if type(name) ~= "string" then return nil end
+    local wanted = string.lower(name)
+    for existing in pairs(EnsureDB().profiles) do
+        if string.lower(existing) == wanted then return existing end
+    end
+end
+
+local function ValidProfileName(name, currentName)
+    name = type(name) == "string" and strtrim(name) or ""
+    if name == "" then return nil, "Enter a profile name." end
+    if #name > MAX_PROFILE_NAME_LENGTH then
+        return nil, "Profile names may contain at most 64 characters."
+    end
+    local existing = FindProfileName(name)
+    if existing and existing ~= currentName then return nil, "That profile name is already in use." end
+    return name
+end
+
+local function SetActiveProfileName(name)
+    local exactName = FindProfileName(name)
+    if not exactName then return false, "Profile not found." end
+    EnsureDB().profileKeys[CharacterKey()] = exactName
+    return true
+end
+
+local function CreateProfile(name)
+    local validName, errorMessage = ValidProfileName(name)
+    if not validName then return false, errorMessage end
+    EnsureDB().profiles[validName] = NewProfile()
+    SetActiveProfileName(validName)
+    return true
+end
+
+local function CopyActiveProfile(name)
+    local validName, errorMessage = ValidProfileName(name)
+    if not validName then return false, errorMessage end
+    EnsureDB().profiles[validName] = CopyProfile(ActiveProfile())
+    SetActiveProfileName(validName)
+    return true
+end
+
+local function RenameActiveProfile(name)
+    local db = EnsureDB()
+    local oldName = GetActiveProfileName()
+    if oldName == DEFAULT_PROFILE_NAME then return false, "Default cannot be renamed." end
+    local validName, errorMessage = ValidProfileName(name, oldName)
+    if not validName then return false, errorMessage end
+    if validName == oldName then return true end
+    db.profiles[validName] = db.profiles[oldName]
+    db.profiles[oldName] = nil
+    for character, assignedName in pairs(db.profileKeys) do
+        if assignedName == oldName then db.profileKeys[character] = validName end
+    end
+    return true
+end
+
+local function DeleteActiveProfile()
+    local db = EnsureDB()
+    local name = GetActiveProfileName()
+    if name == DEFAULT_PROFILE_NAME then return false, "Default cannot be deleted." end
+    db.profiles[name] = nil
+    for character, assignedName in pairs(db.profileKeys) do
+        if assignedName == name then db.profileKeys[character] = DEFAULT_PROFILE_NAME end
+    end
+    return true
+end
+
+local function RestoreBundledProfiles()
+    local db = EnsureDB()
+    db.profiles[DEFAULT_PROFILE_NAME] = NewProfile()
+    db.profiles[HIGH_CONTRAST_PROFILE_NAME] = NewProfile("highContrast")
 end
 
 local function GetTRP3Enabled()
@@ -373,11 +546,11 @@ local function SetTRP3Setting(key, enabled)
 end
 
 local function GetAppearanceSetting(key)
-    return EnsureDB().profile.appearance[key]
+    return ActiveProfile().appearance[key]
 end
 
 local function SetAppearanceSetting(key, value)
-    local appearance = EnsureDB().profile.appearance
+    local appearance = ActiveProfile().appearance
     if (key == "nameFont" or key == "threatFont") and FONT_BY_VALUE[value] then
         appearance[key] = value
     elseif key == "nameSize" and type(value) == "number" then
@@ -394,14 +567,14 @@ local function FontPath(value)
 end
 
 local function ResetAppearance()
-    local appearance = EnsureDB().profile.appearance
+    local appearance = ActiveProfile().appearance
     for key, value in pairs(DEFAULT_APPEARANCE) do appearance[key] = value end
 end
 
 local ApplyManagedNameSettings
 
 local function PriorityColorForState(state)
-    local color = EnsureDB().profile.priorityColors[state]
+    local color = ActiveProfile().priorityColors[state]
         or DEFAULT_PRIORITY_COLORS[state]
         or DEFAULT_PRIORITY_COLORS.other
     return color.r, color.g, color.b
@@ -420,18 +593,18 @@ end
 
 local function SetPriorityColor(state, r, g, b)
     if DEFAULT_PRIORITY_COLORS[state] then
-        EnsureDB().profile.priorityColors[state] = { r = r, g = g, b = b }
+        ActiveProfile().priorityColors[state] = { r = r, g = g, b = b }
     end
 end
 
 local function ResetPriorityColor(state)
-    local default = DEFAULT_PRIORITY_COLORS[state]
+    local default = ActiveProfileDefaults().priorityColors[state]
     if not default then return end
-    EnsureDB().profile.priorityColors[state] = CopyColor(default)
+    ActiveProfile().priorityColors[state] = CopyColor(default)
 end
 
 local function EffectColor(effect)
-    local color = EnsureDB().profile.effectColors[effect]
+    local color = ActiveProfile().effectColors[effect]
         or DEFAULT_EFFECT_COLORS[effect]
         or DEFAULT_EFFECT_COLORS.interruptible
     return color.r, color.g, color.b
@@ -439,58 +612,41 @@ end
 
 local function SetEffectColor(effect, r, g, b)
     if DEFAULT_EFFECT_COLORS[effect] then
-        EnsureDB().profile.effectColors[effect] = { r = r, g = g, b = b }
+        ActiveProfile().effectColors[effect] = { r = r, g = g, b = b }
     end
 end
 
 local function ResetEffectColor(effect)
-    local default = DEFAULT_EFFECT_COLORS[effect]
+    local default = ActiveProfileDefaults().effectColors[effect]
     if not default then return end
-    EnsureDB().profile.effectColors[effect] = CopyColor(default)
+    ActiveProfile().effectColors[effect] = CopyColor(default)
 end
 
 local function ResetAllColors()
-    local profile = EnsureDB().profile
-    for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
+    local profile = ActiveProfile()
+    local defaults = ActiveProfileDefaults()
+    for key, default in pairs(defaults.priorityColors) do
         profile.priorityColors[key] = CopyColor(default)
     end
-    for key, default in pairs(DEFAULT_EFFECT_COLORS) do
+    for key, default in pairs(defaults.effectColors) do
         profile.effectColors[key] = CopyColor(default)
     end
 end
 
-local function ApplyColorPreset(presetName)
-    local preset = COLOR_PRESETS[presetName]
-    if not preset then return false end
-
-    local profile = EnsureDB().profile
-    for key, color in pairs(preset.priorityColors or {}) do
-        if DEFAULT_PRIORITY_COLORS[key] and IsValidColor(color) then
-            profile.priorityColors[key] = CopyColor(color)
-        end
-    end
-    for key, color in pairs(preset.effectColors or {}) do
-        if DEFAULT_EFFECT_COLORS[key] and IsValidColor(color) then
-            profile.effectColors[key] = CopyColor(color)
-        end
-    end
-    return true
-end
-
 local function GetAttackingGlowEnabled()
-    return EnsureDB().profile.attackingGlow
+    return ActiveProfile().attackingGlow
 end
 
 local function SetAttackingGlowEnabled(enabled)
-    EnsureDB().profile.attackingGlow = enabled == true
+    ActiveProfile().attackingGlow = enabled == true
 end
 
 local function GetInterruptibleHighlightEnabled()
-    return EnsureDB().profile.interruptibleHighlight
+    return ActiveProfile().interruptibleHighlight
 end
 
 local function SetInterruptibleHighlightEnabled(enabled)
-    EnsureDB().profile.interruptibleHighlight = enabled == true
+    ActiveProfile().interruptibleHighlight = enabled == true
 end
 
 local function GetStylingEnabled()
@@ -502,11 +658,11 @@ local function SetStylingEnabled(enabled)
 end
 
 local function GetThreatEnabled()
-    return EnsureDB().profile.showThreat
+    return ActiveProfile().showThreat
 end
 
 local function SetThreatEnabled(enabled)
-    EnsureDB().profile.showThreat = enabled == true
+    ActiveProfile().showThreat = enabled == true
 end
 
 local applyingManagedNameSettings = false
@@ -749,6 +905,16 @@ local function AccessibleValue(v)
 end
 
 ns.EnsureDB = EnsureDB
+ns.DEFAULT_PROFILE_NAME = DEFAULT_PROFILE_NAME
+ns.HIGH_CONTRAST_PROFILE_NAME = HIGH_CONTRAST_PROFILE_NAME
+ns.GetActiveProfileName = GetActiveProfileName
+ns.GetProfileNames = GetProfileNames
+ns.SetActiveProfileName = SetActiveProfileName
+ns.CreateProfile = CreateProfile
+ns.CopyActiveProfile = CopyActiveProfile
+ns.RenameActiveProfile = RenameActiveProfile
+ns.DeleteActiveProfile = DeleteActiveProfile
+ns.RestoreBundledProfiles = RestoreBundledProfiles
 ns.PriorityColorForState = PriorityColorForState
 ns.GetCategoryMode = GetCategoryMode
 ns.SetCategoryMode = SetCategoryMode
@@ -758,7 +924,6 @@ ns.EffectColor = EffectColor
 ns.SetEffectColor = SetEffectColor
 ns.ResetEffectColor = ResetEffectColor
 ns.ResetAllColors = ResetAllColors
-ns.ApplyColorPreset = ApplyColorPreset
 ns.GetAttackingGlowEnabled = GetAttackingGlowEnabled
 ns.SetAttackingGlowEnabled = SetAttackingGlowEnabled
 ns.GetInterruptibleHighlightEnabled = GetInterruptibleHighlightEnabled

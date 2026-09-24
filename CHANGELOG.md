@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.75
+
+* Added named appearance profiles shared account-wide with per-character active-profile selection.
+* Added editable bundled Default and High Contrast profiles plus Create, Copy, Rename, Delete, and Restore Bundled Profiles controls.
+* Protected Default as the permanent fallback; deleting another profile returns assigned characters to Default.
+* Combined profile management, text and layout, colors, and visual effects on one Appearance tab; `/snp colors` remains an alias for it.
+* Replaced the one-shot High Contrast preset with the editable High Contrast profile.
+
 ## 1.0.74
 
 * Split saved settings into a validated global section for addon behavior and user preferences and an appearance profile for colors, visual effects, fonts, sizing, placement, and threat display.

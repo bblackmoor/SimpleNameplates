@@ -47,11 +47,13 @@ The six categories are evaluated from top to bottom. The first matching category
 * **Inactive** leaves Blizzard's display unchanged for that category.
 * **Hide** conceals that category's addon-accessible names and nameplates, and also hides matching Blizzard overhead-name categories where WoW permits it.
 
-## Color Settings
+## Appearance Profiles and Settings
 
-Open **Options → AddOns → Simple Nameplates → Colors**, or type `/snp colors`. Colors and visual effects are appearance-profile settings. Changes apply immediately and are saved between sessions. Three locked rows document Blizzard-controlled periwinkle-blue opposing-player/minion names, yellow interactive-NPC names, and green vendor-NPC names.
+Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp appearance`. This page contains every profile-controlled setting: profile management, text and layout, Priority Colors, Blizzard-controlled color information, and visual effects. Changes apply immediately and are saved between sessions.
 
-The **High Contrast** preset changes Priority Colors 1–6 to magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, blue `#0066FF`, cyan `#00FFFF`, and white `#FFFFFF`; changes the interruptible cast highlight to green `#00FF00`; and enables the attacking glow. It does not change the six category modes or WoW's colorblind settings.
+Profiles are shared account-wide, while each character remembers its active profile. **Create** starts with factory-default appearance settings; **Copy** duplicates the complete active profile. Profiles can be renamed and deleted, except **Default**, which is the permanent fallback. Deleting a profile moves characters assigned to it back to Default.
+
+The editable bundled profiles are **Default** and **High Contrast**. High Contrast uses magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, blue `#0066FF`, cyan `#00FFFF`, and white `#FFFFFF` for Priority Colors 1–6; green `#00FF00` for interruptible casts; and enables the attacking glow. **Restore Bundled Profiles** resets both bundles and recreates High Contrast if it was deleted or renamed. Custom profiles are left untouched.
 
 Priority Colors 1–3 put their color on visible health bars and leave the name white for contrast. Priority Colors 4–6 are name-only whenever Simple Nameplates can style an addon-accessible frame.
 
@@ -59,11 +61,7 @@ Blizzard's separate overhead world names are not addon-accessible and cannot be 
 
 **Hide Blizzard-controlled minion names** and **Hide critter and companion names** remain independent narrow controls. Their prior WoW settings are restored when disabled.
 
-The interruptible highlight is a static outline around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to casts and channels, and preserves Blizzard's normal non-interruptible shield treatment.
-
-## Appearance Settings
-
-Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp appearance`, to choose:
+The Text and Layout section provides:
 
 * The unit-name font.
 * A shared 8–36 point size for addon-controlled floating names and names above health bars.
@@ -72,6 +70,8 @@ Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp 
 * Whether available threat percentages are displayed.
 
 Both fonts default to WoW's built-in **Arial Narrow** with a normal outline, and names default to 12 points. Other standard Blizzard fonts are available without an external font library. Inside-bar names use 80% of the selected size, rounded to the nearest point. Their health bars resize to leave two UI units above and below the text, then return to Blizzard's original height when names move above the bar or Simple Nameplates styling is disabled. Friendly name-only plates are unaffected by the placement setting. Blizzard-controlled overhead names have no nameplate frame, so their size and font remain controlled by the game.
+
+Three locked color rows document Blizzard-controlled periwinkle-blue opposing-player/minion names, yellow interactive-NPC names, and green vendor-NPC names. The interruptible highlight is a static outline around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to casts and channels, and preserves Blizzard's normal non-interruptible shield treatment.
 
 ## TRP3 Integration
 
@@ -83,7 +83,7 @@ Each field has its own toggle. To keep nameplates readable, roleplaying names ar
 
 ## Saved Settings
 
-Look-and-feel settings are stored in the appearance profile: Priority Colors, effect colors and toggles, fonts, sizing, placement, and threat display. Addon behavior and user preferences are global: styling enablement, category handling, Blizzard overhead-name controls, and TRP3 integration.
+Look-and-feel settings are stored in named appearance profiles: Priority Colors, effect colors and toggles, fonts, sizing, placement, and threat display. Addon behavior and user preferences are global: styling enablement, category handling, Blizzard overhead-name controls, and TRP3 integration.
 
 Saved data is validated against the current schema. Data from older or incompatible schemas is ignored and replaced with current defaults; the addon does not retain one-off migration code.
 
