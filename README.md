@@ -14,7 +14,7 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | 4 | Opposite-faction PC | Periwinkle blue | Name when not attackable; attackable opponents use priority 1 or 2 |
 | 5 | My-faction PC | Green | Name |
 | 6 | Anything else Simple Nameplates can color | Light blue | Name; includes friendly NPCs and unmatched colorable units |
-| — | Interruptible cast | Cyan | Optional cast-bar outline |
+| — | Interruptible cast | Cyan | Optional pulsing cast-bar border |
 | — | Blizzard-controlled overhead names | Locked | Some opposing PCs, minions, interactive NPCs, and vendors |
 
 ## How It Works
@@ -34,8 +34,7 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 * Normal Blizzard cast/channel bar and spell information
 * Normal Blizzard target treatment
 * Optional threat percentage at the right side of the health bar when Midnight exposes a non-secret threat percentage
-* Optional attacking-color glow around the health bars of attacking PCs and NPCs
-* Optional cyan outline around interruptible cast bars
+* Optional pulsing cyan border around interruptible cast bars
 
 ## Behavior Settings
 
@@ -53,7 +52,7 @@ Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp 
 
 Profiles are shared account-wide, while each character remembers its active profile. **Create** starts with factory-default appearance settings; **Copy** duplicates the complete active profile. Profiles can be renamed and deleted, except **Default**, which is the permanent fallback. Deleting a profile moves characters assigned to it back to Default.
 
-The editable bundled profiles are **Default** and **High Contrast**. High Contrast uses magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, blue `#0066FF`, cyan `#00FFFF`, and white `#FFFFFF` for Priority Colors 1–6; green `#00FF00` for interruptible casts; and enables the attacking glow. **Restore Bundled Profiles** resets both bundles and recreates High Contrast if it was deleted or renamed. Custom profiles are left untouched.
+The editable bundled profiles are **Default** and **High Contrast**. High Contrast uses magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, blue `#0066FF`, cyan `#00FFFF`, and white `#FFFFFF` for Priority Colors 1–6; and green `#00FF00` for interruptible casts. **Restore Bundled Profiles** resets both bundles and recreates High Contrast if it was deleted or renamed. Custom profiles are left untouched.
 
 Priority Colors 1–3 put their color on visible health bars and leave the name white for contrast. Priority Colors 4–6 are name-only whenever Simple Nameplates can style an addon-accessible frame.
 
@@ -71,7 +70,7 @@ The Text and Layout section provides:
 
 Both fonts default to WoW's built-in **Arial Narrow** with a normal outline, and names default to 12 points. Other standard Blizzard fonts are available without an external font library. Inside-bar names use 80% of the selected size, rounded to the nearest point. Their health bars resize to leave two UI units above and below the text, then return to Blizzard's original height when names move above the bar or Simple Nameplates styling is disabled. Friendly name-only plates are unaffected by the placement setting. Blizzard-controlled overhead names have no nameplate frame, so their size and font remain controlled by the game.
 
-Three locked color rows document Blizzard-controlled periwinkle-blue opposing-player/minion names, yellow interactive-NPC names, and green vendor-NPC names. The interruptible highlight is a static outline around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to casts and channels, and preserves Blizzard's normal non-interruptible shield treatment.
+Three locked color rows document Blizzard-controlled periwinkle-blue opposing-player/minion names, yellow interactive-NPC names, and green vendor-NPC names. The optional interruptible highlight is a pulsing, solid-color border with a dark outer edge around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to casts and channels, and preserves Blizzard's normal non-interruptible shield treatment.
 
 ## TRP3 Integration
 

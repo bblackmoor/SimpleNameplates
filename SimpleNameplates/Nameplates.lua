@@ -28,7 +28,6 @@ local GetCategoryMode = ns.GetCategoryMode
 local EffectColor = ns.EffectColor
 local GetAppearanceSetting = ns.GetAppearanceSetting
 local GetTRP3Setting = ns.GetTRP3Setting
-local GetAttackingGlowEnabled = ns.GetAttackingGlowEnabled
 local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
 local GetStylingEnabled = ns.GetStylingEnabled
 local GetThreatEnabled = ns.GetThreatEnabled
@@ -429,63 +428,6 @@ local function UpdateThreatText(frame, state)
     if percent then threatText:SetFormattedText("%.0f%%", percent) else threatText:SetText("") end
 end
 
-local function CreateGlowEdge(bar)
-    local edge = bar:CreateTexture(nil, "OVERLAY")
-    edge:SetColorTexture(1, 1, 1, 0.7)
-    edge:SetBlendMode("ADD")
-    edge:Hide()
-    return edge
-end
-
-local function EnsureAttackingGlow(frame)
-    local bar = GetHealthBar(frame)
-    if not bar then return nil end
-    if frame.SNPAttackingGlow and frame.SNPAttackingGlow.bar == bar then return frame.SNPAttackingGlow end
-
-    local glow = {
-        bar = bar,
-        top = CreateGlowEdge(bar),
-        bottom = CreateGlowEdge(bar),
-        left = CreateGlowEdge(bar),
-        right = CreateGlowEdge(bar),
-    }
-    glow.top:SetPoint("BOTTOMLEFT", bar, "TOPLEFT", -2, -1)
-    glow.top:SetPoint("BOTTOMRIGHT", bar, "TOPRIGHT", 2, -1)
-    glow.top:SetHeight(3)
-    glow.bottom:SetPoint("TOPLEFT", bar, "BOTTOMLEFT", -2, 1)
-    glow.bottom:SetPoint("TOPRIGHT", bar, "BOTTOMRIGHT", 2, 1)
-    glow.bottom:SetHeight(3)
-    glow.left:SetPoint("TOPRIGHT", bar, "TOPLEFT", 1, 2)
-    glow.left:SetPoint("BOTTOMRIGHT", bar, "BOTTOMLEFT", 1, -2)
-    glow.left:SetWidth(3)
-    glow.right:SetPoint("TOPLEFT", bar, "TOPRIGHT", -1, 2)
-    glow.right:SetPoint("BOTTOMLEFT", bar, "BOTTOMRIGHT", -1, -2)
-    glow.right:SetWidth(3)
-    frame.SNPAttackingGlow = glow
-    return glow
-end
-
-local function UpdateGlowEdge(edge, shown, r, g, b)
-    if shown then
-        edge:SetColorTexture(r, g, b, 0.7)
-        edge:Show()
-    else
-        edge:Hide()
-    end
-end
-
-local function UpdateAttackingGlow(frame, state, r, g, b)
-    local glow = frame.SNPAttackingGlow
-    local shown = GetAttackingGlowEnabled() and state == "attacking"
-    if shown then glow = EnsureAttackingGlow(frame) end
-    if not glow then return end
-
-    UpdateGlowEdge(glow.top, shown, r, g, b)
-    UpdateGlowEdge(glow.bottom, shown, r, g, b)
-    UpdateGlowEdge(glow.left, shown, r, g, b)
-    UpdateGlowEdge(glow.right, shown, r, g, b)
-end
-
 local function SetInterruptibleHighlightShown(overlay, shown)
     if not overlay then return end
     local ok = pcall(overlay.SetShown, overlay, shown)
@@ -520,41 +462,58 @@ local function EnsureInterruptibleHighlight(frame)
     if existing and existing.frame then existing.frame:Hide() end
 
     local overlay = CreateFrame("Frame", nil, castBar)
-    overlay:SetPoint("TOPLEFT", castBar, "TOPLEFT", -3, 3)
-    overlay:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 3, -3)
+    overlay:SetPoint("TOPLEFT", castBar, "TOPLEFT", -5, 5)
+    overlay:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 5, -5)
     local healthBar = GetHealthBar(frame)
     local highestFrameLevel = castBar:GetFrameLevel()
     if healthBar then highestFrameLevel = math.max(highestFrameLevel, healthBar:GetFrameLevel()) end
     overlay:SetFrameLevel(highestFrameLevel + 20)
     overlay:Hide()
 
-    local function CreateEdge()
-        local edge = overlay:CreateTexture(nil, "OVERLAY", nil, 7)
-        edge:SetColorTexture(0, 1, 1, 0.9)
-        edge:SetBlendMode("ADD")
-        return edge
+    local function CreateBorder(inset, thickness, layer)
+        local function Edge()
+            return overlay:CreateTexture(nil, "OVERLAY", nil, layer)
+        end
+        local top, bottom, left, right = Edge(), Edge(), Edge(), Edge()
+        top:SetPoint("TOPLEFT", inset, -inset)
+        top:SetPoint("TOPRIGHT", -inset, -inset)
+        top:SetHeight(thickness)
+        bottom:SetPoint("BOTTOMLEFT", inset, inset)
+        bottom:SetPoint("BOTTOMRIGHT", -inset, inset)
+        bottom:SetHeight(thickness)
+        left:SetPoint("TOPLEFT", inset, -inset)
+        left:SetPoint("BOTTOMLEFT", inset, inset)
+        left:SetWidth(thickness)
+        right:SetPoint("TOPRIGHT", -inset, -inset)
+        right:SetPoint("BOTTOMRIGHT", -inset, inset)
+        right:SetWidth(thickness)
+        return { top, bottom, left, right }
     end
 
     local highlight = {
         castBar = castBar,
         frame = overlay,
-        top = CreateEdge(),
-        bottom = CreateEdge(),
-        left = CreateEdge(),
-        right = CreateEdge(),
+        backing = CreateBorder(0, 6, 6),
+        border = CreateBorder(2, 4, 7),
     }
-    highlight.top:SetPoint("TOPLEFT")
-    highlight.top:SetPoint("TOPRIGHT")
-    highlight.top:SetHeight(3)
-    highlight.bottom:SetPoint("BOTTOMLEFT")
-    highlight.bottom:SetPoint("BOTTOMRIGHT")
-    highlight.bottom:SetHeight(3)
-    highlight.left:SetPoint("TOPLEFT")
-    highlight.left:SetPoint("BOTTOMLEFT")
-    highlight.left:SetWidth(3)
-    highlight.right:SetPoint("TOPRIGHT")
-    highlight.right:SetPoint("BOTTOMRIGHT")
-    highlight.right:SetWidth(3)
+    for _, edge in ipairs(highlight.backing) do edge:SetColorTexture(0, 0, 0, 1) end
+    local pulse = overlay:CreateAnimationGroup()
+    local fadeOut = pulse:CreateAnimation("Alpha")
+    fadeOut:SetFromAlpha(1)
+    fadeOut:SetToAlpha(0.35)
+    fadeOut:SetDuration(0.55)
+    fadeOut:SetOrder(1)
+    local fadeIn = pulse:CreateAnimation("Alpha")
+    fadeIn:SetFromAlpha(0.35)
+    fadeIn:SetToAlpha(1)
+    fadeIn:SetDuration(0.55)
+    fadeIn:SetOrder(2)
+    pulse:SetLooping("REPEAT")
+    overlay:SetScript("OnShow", function() pulse:Play() end)
+    overlay:SetScript("OnHide", function()
+        pulse:Stop()
+        overlay:SetAlpha(1)
+    end)
     frame.SNPInterruptibleHighlight = highlight
 
     -- Blizzard already makes the secret-safe interruptibility decision and
@@ -570,10 +529,7 @@ local function UpdateInterruptibleHighlight(frame)
     if not highlight then return end
 
     local r, g, b = EffectColor("interruptible")
-    highlight.top:SetColorTexture(r, g, b, 0.9)
-    highlight.bottom:SetColorTexture(r, g, b, 0.9)
-    highlight.left:SetColorTexture(r, g, b, 0.9)
-    highlight.right:SetColorTexture(r, g, b, 0.9)
+    for _, edge in ipairs(highlight.border) do edge:SetColorTexture(r, g, b, 1) end
 
     if not GetInterruptibleHighlightEnabled() then
         highlight.frame:Hide()
@@ -610,7 +566,6 @@ local function ApplyHiddenStyle(frame, state)
     RestoreOriginalBarHeight(frame, GetHealthBar(frame))
     if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
-    if frame.SNPAttackingGlow then UpdateAttackingGlow(frame, "", 1, 1, 1) end
     if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
     SetShownSafe(frame.name, false)
     SetShownSafe(GetHealthBar(frame), false)
@@ -647,7 +602,6 @@ local function ApplySimpleStyle(frame)
     elseif frame.SNPThreatText then
         frame.SNPThreatText:SetText("")
     end
-    UpdateAttackingGlow(frame, state, r, g, b)
     UpdateInterruptibleHighlight(frame)
 end
 
@@ -673,7 +627,6 @@ local function RepairHealthColor(frame)
     if not IsNameOnlyState(state) and bar then
         bar:SetStatusBarColor(r, g, b, 1)
     end
-    UpdateAttackingGlow(frame, state, r, g, b)
     UpdateInterruptibleHighlight(frame)
 end
 
@@ -730,7 +683,6 @@ RestoreFrame = function(frame)
     frame.SNPRestoring = true
     if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
-    if frame.SNPAttackingGlow then UpdateAttackingGlow(frame, "", 1, 1, 1) end
     if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
     frame.SNPNameStyle = nil
     frame.SNPState = nil
@@ -866,7 +818,6 @@ local function CleanupRemovedNameplate(unit)
         if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
         frame.SNPNameStyle = nil
         frame.SNPState = nil
-        UpdateAttackingGlow(frame, "", 1, 1, 1)
         if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
     end
     dirtyUnits[unit] = nil

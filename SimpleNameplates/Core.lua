@@ -274,7 +274,6 @@ local function NewProfile(presetName)
         effectColors = {},
         appearance = {},
         showThreat = DEFAULT_SHOW_THREAT,
-        attackingGlow = presetName == "highContrast",
         interruptibleHighlight = false,
     }
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
@@ -322,7 +321,6 @@ end
 
 local function ValidateProfileToggles(profile, saved)
     profile.showThreat = SavedBoolean(saved.showThreat, profile.showThreat)
-    profile.attackingGlow = SavedBoolean(saved.attackingGlow, profile.attackingGlow)
     profile.interruptibleHighlight = SavedBoolean(saved.interruptibleHighlight,
         profile.interruptibleHighlight)
 end
@@ -665,14 +663,6 @@ local function ResetAllColors()
     end
 end
 
-local function GetAttackingGlowEnabled()
-    return ActiveProfile().attackingGlow
-end
-
-local function SetAttackingGlowEnabled(enabled)
-    ActiveProfile().attackingGlow = enabled == true
-end
-
 local function GetInterruptibleHighlightEnabled()
     return ActiveProfile().interruptibleHighlight
 end
@@ -972,8 +962,6 @@ ns.EffectColor = EffectColor
 ns.SetEffectColor = SetEffectColor
 ns.ResetEffectColor = ResetEffectColor
 ns.ResetAllColors = ResetAllColors
-ns.GetAttackingGlowEnabled = GetAttackingGlowEnabled
-ns.SetAttackingGlowEnabled = SetAttackingGlowEnabled
 ns.GetInterruptibleHighlightEnabled = GetInterruptibleHighlightEnabled
 ns.SetInterruptibleHighlightEnabled = SetInterruptibleHighlightEnabled
 ns.GetStylingEnabled = GetStylingEnabled

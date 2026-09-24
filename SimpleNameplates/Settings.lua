@@ -12,7 +12,6 @@ local EffectColor, SetEffectColor, ResetEffectColor = ns.EffectColor, ns.SetEffe
 local ResetAllColors = ns.ResetAllColors
 local GetAppearanceSetting, SetAppearanceSetting = ns.GetAppearanceSetting, ns.SetAppearanceSetting
 local ResetAppearance = ns.ResetAppearance
-local GetAttackingGlowEnabled, SetAttackingGlowEnabled = ns.GetAttackingGlowEnabled, ns.SetAttackingGlowEnabled
 local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
 local SetInterruptibleHighlightEnabled = ns.SetInterruptibleHighlightEnabled
 local GetStylingEnabled, SetStylingEnabled = ns.GetStylingEnabled, ns.SetStylingEnabled
@@ -830,34 +829,10 @@ local function AddLockedColorControls(context)
         0, 1, 0, "SNP_BLIZZARD_VENDOR_INFO")
 end
 
-local function AddAttackingIndicatorControls(context)
-    context.layout:Space(6)
-    AddSection(context.content, context.layout, "ATTACKING INDICATOR")
-    local attackingGlow = CreateFrame("CheckButton", nil, context.content, "UICheckButtonTemplate")
-    attackingGlow:SetSize(26, 26)
-    attackingGlow:SetHitRectInsets(0, -320, 0, 0)
-    context.layout:Add(attackingGlow, 20, 30, 2)
-    local label = context.content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    label:SetPoint("LEFT", attackingGlow, "RIGHT", 4, 0)
-    label:SetText("Glow attacking units")
-    local note = context.content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    note:SetPoint("RIGHT", context.content, "RIGHT", -20, 0)
-    note:SetJustifyH("LEFT")
-    note:SetText("Uses Priority Color 1 and applies to both PCs and NPCs.")
-    context.layout:Add(note, 24, 28, 8)
-
-    local function Refresh() attackingGlow:SetChecked(GetAttackingGlowEnabled()) end
-    context.toggleRefreshers[#context.toggleRefreshers + 1] = Refresh
-    attackingGlow:SetScript("OnClick", function(self)
-        SetAttackingGlowEnabled(self:GetChecked() == true)
-        RefreshNameplates()
-    end)
-end
-
 local function AddCastBarControls(context)
     AddSection(context.content, context.layout, "CAST BARS")
     CreateColorRow(context, "Highlight interruptible casts and channels",
-        "Changes the cast-bar outline color",
+        "Changes the pulsing cast-bar border color",
         function() return EffectColor("interruptible") end,
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
         function() ResetEffectColor("interruptible") end,
@@ -865,7 +840,7 @@ local function AddCastBarControls(context)
     local note = context.content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     note:SetPoint("RIGHT", context.content, "RIGHT", -20, 0)
     note:SetJustifyH("LEFT")
-    note:SetText("Uses Blizzard's interruptibility result and is drawn above the attacking glow.")
+    note:SetText("Uses Blizzard's interruptibility result; the border pulses and has a dark outer edge.")
     context.layout:Add(note, 24, 28, 8)
 end
 
@@ -894,7 +869,6 @@ local function CreateAppearancePanel()
     layout:Space(8)
     AddPriorityColorControls(context)
     AddLockedColorControls(context)
-    AddAttackingIndicatorControls(context)
     AddCastBarControls(context)
 
     panel:SetScript("OnShow", function() RefreshAppearanceControls(context) end)

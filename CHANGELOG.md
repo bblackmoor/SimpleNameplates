@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.77
+
+* Removed the attacking glow, its appearance control, and its saved profile field.
+* Made the optional interruptible cast border thicker and opaque with a dark outer edge and a pulsing animation.
+
 ## 1.0.76
 
 * Aligned Appearance labels and controls in compact rows and narrowed the name-size slider.
