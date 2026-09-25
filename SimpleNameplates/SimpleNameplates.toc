@@ -3,7 +3,7 @@
 ## Category: Unit Frames
 ## Notes: Custom nameplate colors and interruptible cast highlights while retaining Blizzard bars.
 ## Author: Brandon Blackmoor <bblackmoor@blackgate.net>
-## Version: 1.0.78
+## Version: 1.0.79
 ## OptionalDeps: totalRP3
 ## SavedVariables: SimpleNameplatesDB
 ## IconTexture: Interface\Icons\INV_Misc_Eye_01

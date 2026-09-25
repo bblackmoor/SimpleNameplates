@@ -161,8 +161,10 @@ end
 local function UpdateNameText(frame)
     local name, unit = frame and frame.name, frame and frame.unit
     if not name or not unit then return nil end
-    local unitName = AccessibleValue(UnitName(unit))
-    local displayName = unitName or ""
+    -- UnitName can be secret in Midnight. FontString:SetText can display that
+    -- value directly; do not replace it with an empty string.
+    local unitName = UnitName(unit)
+    local displayName = unitName
     local fullTitle
     local info = ns.TRP3 and ns.TRP3.GetDisplayInfo(unit)
 
@@ -177,7 +179,11 @@ local function UpdateNameText(frame)
         elseif GetTRP3Setting("showShortTitle") then
             prefix = info.shortTitle
         end
-        if prefix then displayName = prefix .. " " .. displayName end
+        -- Lua cannot concatenate a secret unit name. Retain the raw name
+        -- when it is restricted; a readable TRP3 name can still use the prefix.
+        if prefix and AccessibleValue(displayName) then
+            displayName = prefix .. " " .. displayName
+        end
 
         if GetTRP3Setting("showFullTitle") then fullTitle = info.fullTitle end
     end

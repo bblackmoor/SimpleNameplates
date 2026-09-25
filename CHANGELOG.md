@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.79
+
+* Display restricted Midnight unit names directly in the inside-bar font string instead of replacing them with empty text.
+* Skip Lua prefix concatenation when the unit name is restricted.
+
 ## 1.0.78
 
 * Render inside-bar names on the health bar's overlay layer so the bar cannot cover them.
