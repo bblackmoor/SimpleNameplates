@@ -75,12 +75,59 @@ local function AddTitle(content, layout, text)
     return layout:Add(title, 20, 24, 4)
 end
 
-local function AddDescription(content, layout, text)
+local function AddDescription(content, layout, text, height)
     local description = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     description:SetPoint("RIGHT", content, "RIGHT", -20, 0)
     description:SetJustifyH("LEFT")
     description:SetText(text)
-    return layout:Add(description, 20, 32, 4)
+    return layout:Add(description, 20, height or 32, 4)
+end
+
+-- Visual switch with the same SetChecked/GetChecked contract as the former checkbox.
+local function CreateSwitch(parent, onChanged)
+    local switch = CreateFrame("Button", nil, parent)
+    switch:SetSize(44, 20)
+    local track = switch:CreateTexture(nil, "BACKGROUND")
+    track:SetAllPoints()
+    local thumb = switch:CreateTexture(nil, "ARTWORK")
+    thumb:SetSize(18, 16)
+    function switch:SetChecked(checked)
+        self.checked = checked == true
+        thumb:ClearAllPoints()
+        if self.checked then
+            track:SetColorTexture(0.19, 0.42, 0.31, self:IsEnabled() and 1 or 0.5)
+            thumb:SetPoint("RIGHT", self, "RIGHT", -2, 0)
+        else
+            track:SetColorTexture(0.25, 0.25, 0.26, self:IsEnabled() and 1 or 0.5)
+            thumb:SetPoint("LEFT", self, "LEFT", 2, 0)
+        end
+        thumb:SetColorTexture(0.72, 0.72, 0.73, self:IsEnabled() and 1 or 0.5)
+    end
+    function switch:GetChecked() return self.checked end
+    switch:SetScript("OnEnable", function(self) self:SetChecked(self.checked) end)
+    switch:SetScript("OnDisable", function(self) self:SetChecked(self.checked) end)
+    switch:SetScript("OnClick", function(self)
+        self:SetChecked(not self:GetChecked())
+        onChanged(self:GetChecked())
+    end)
+    switch:SetChecked(false)
+    return switch
+end
+
+local function AddInfoLink(parent, anchor, popupKey)
+    local link = CreateFrame("Button", nil, parent)
+    link:SetSize(24, 26)
+    link:SetPoint("LEFT", anchor, "RIGHT", 10, 0)
+    local circle = link:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    circle:SetPoint("CENTER")
+    circle:SetText("O")
+    local letter = link:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    letter:SetPoint("CENTER")
+    letter:SetText("i")
+    link:SetSize(math.ceil(math.max(circle:GetStringWidth(), letter:GetStringWidth()) + 6),
+        math.ceil(math.max(circle:GetStringHeight(), letter:GetStringHeight()) + 4))
+    link:SetScript("OnClick", function() StaticPopup_Show(popupKey) end)
+    return link
 end
 
 local function CreateAboutPanel()
@@ -224,20 +271,19 @@ local function AddNameSizeControl(content, layout, refreshers)
 end
 
 local function AddThreatControl(content, layout, refreshers)
-    local threat = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
-    threat:SetSize(26, 26)
-    threat:SetHitRectInsets(0, -250, 0, 0)
-    layout:Add(threat, 20, 30, 4)
-    local threatLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    threatLabel:SetPoint("LEFT", threat, "RIGHT", 4, 0)
-    threatLabel:SetText("Show threat percentage when available")
-
-    local function RefreshThreat() threat:SetChecked(GetThreatEnabled()) end
-    refreshers[#refreshers + 1] = RefreshThreat
-    threat:SetScript("OnClick", function(self)
-        SetThreatEnabled(self:GetChecked() == true)
+    local row = CreateFrame("Frame", nil, content)
+    row:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(row, 24, 30, 4)
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT")
+    label:SetText("Show threat percentage when available")
+    local threat = CreateSwitch(row, function(checked)
+        SetThreatEnabled(checked)
         RefreshNameplates()
     end)
+    threat:SetPoint("LEFT", label, "RIGHT", 12, 0)
+    local function RefreshThreat() threat:SetChecked(GetThreatEnabled()) end
+    refreshers[#refreshers + 1] = RefreshThreat
     RefreshThreat()
 end
 
@@ -258,7 +304,7 @@ local function AddSectionResetButton(content, layout, title, buttonText, onClick
     heading:SetText(title)
     local reset = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
     reset:SetSize(150, 24)
-    reset:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+    reset:SetPoint("LEFT", heading, "RIGHT", 12, 0)
     reset:SetText(buttonText)
     reset:SetScript("OnClick", onClick)
 end
@@ -337,8 +383,7 @@ local function CreateProfileButtons(content, layout)
     layout:Add(buttonRow, 24, 24, 8)
     local buttons = {}
     for index, definition in ipairs({
-        { "Create", 82 }, { "Copy", 82 }, { "Rename", 82 },
-        { "Delete", 82 }, { "Restore Bundled Profiles", 172 },
+        { "Create", 88 }, { "Copy", 88 }, { "Rename", 88 }, { "Delete", 88 },
     }) do
         local button = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
         button:SetSize(definition[2], 24)
@@ -351,8 +396,8 @@ local function CreateProfileButtons(content, layout)
 end
 
 local function InstallProfileButtonScripts(buttons, changed)
-    local create, copy, rename, delete, restore =
-        buttons[1], buttons[2], buttons[3], buttons[4], buttons[5]
+    local create, copy, rename, delete =
+        buttons[1], buttons[2], buttons[3], buttons[4]
     local function OpenNameDialog(action, initial)
         StaticPopup_Show("SNP_PROFILE_NAME", nil, nil,
             { action = action, initial = initial, onChanged = changed })
@@ -368,24 +413,25 @@ local function InstallProfileButtonScripts(buttons, changed)
         StaticPopup_Show("SNP_DELETE_PROFILE", ns.GetActiveProfileName(), nil,
             { onChanged = changed })
     end)
-    restore:SetScript("OnClick", function()
-        StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil,
-            { onChanged = changed })
-    end)
 end
 
 local function AddProfileControls(content, layout, refreshers, onChanged)
     RegisterProfileDialogs()
     local section = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     section:SetText("PROFILES")
-    layout:Add(section, 24, 20, 2)
+    layout:Add(section, 24, 20, 6)
+    AddDescription(content, layout,
+        "Profiles hold appearance settings and are shared account-wide. Each character remembers its selected profile.", 40)
 
     local profileRow = CreateFrame("Frame", nil, content)
     profileRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    layout:Add(profileRow, 20, 46, 4)
+    layout:Add(profileRow, 24, 42, 6)
+    local label = profileRow:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    label:SetPoint("LEFT", 0, 0)
+    label:SetText("Selected profile")
     local profileDropdown = CreateFrame("Frame", nil, profileRow, "UIDropDownMenuTemplate")
-    profileDropdown:SetPoint("TOPLEFT", -14, 0)
-    UIDropDownMenu_SetWidth(profileDropdown, 240)
+    profileDropdown:SetPoint("LEFT", label, "RIGHT", -4, 0)
+    UIDropDownMenu_SetWidth(profileDropdown, 235)
 
     local buttons = CreateProfileButtons(content, layout)
     local rename, delete = buttons[3], buttons[4]
@@ -394,6 +440,17 @@ local function AddProfileControls(content, layout, refreshers, onChanged)
         RefreshNameplates()
     end
     InstallProfileButtonScripts(buttons, Changed)
+
+    local restore = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+    restore:SetSize(172, 24)
+    restore:SetText("Restore Bundled Profiles")
+    layout:Add(restore, 24, 24, 6)
+    restore:SetScript("OnClick", function()
+        StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil,
+            { onChanged = Changed })
+    end)
+    AddDescription(content, layout,
+        "Default can be edited and restored, but not renamed or deleted. Create starts with bundled defaults; Copy uses the selected profile. Restore replaces Default and High Contrast.", 48)
 
     local function Refresh()
         local active = ns.GetActiveProfileName()
@@ -424,13 +481,19 @@ local function CreateTRP3Panel()
     local panel, content, layout = CreateScrollablePanel("TRP3")
     AddTitle(content, layout, "Simple Nameplates — TRP3")
     AddDescription(content, layout, "Optional Total RP 3 profile integration. Simple Nameplates continues to work normally when TRP3 is absent.")
-    local enabled = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
-    enabled:SetSize(26, 26)
-    enabled:SetHitRectInsets(0, -260, 0, 0)
-    layout:Add(enabled, 20, 30, 8)
-    local enabledLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    enabledLabel:SetPoint("LEFT", enabled, "RIGHT", 4, 0)
+    local enabledRow = CreateFrame("Frame", nil, content)
+    enabledRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(enabledRow, 24, 30, 8)
+    local enabledLabel = enabledRow:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    enabledLabel:SetPoint("LEFT")
     enabledLabel:SetText("Display TRP3 profile information")
+    local refreshOptions
+    local enabled = CreateSwitch(enabledRow, function(checked)
+        ns.SetTRP3Enabled(checked)
+        if ns.TRP3 then ns.TRP3.Refresh() end
+        refreshOptions()
+    end)
+    enabled:SetPoint("LEFT", enabledLabel, "RIGHT", 12, 0)
 
     local status = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     status:SetPoint("RIGHT", content, "RIGHT", -20, 0)
@@ -442,17 +505,17 @@ local function CreateTRP3Panel()
 
     local optionControls = {}
     local function CreateOption(labelText, setting)
-        local option = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
-        option:SetSize(26, 26)
-        option:SetHitRectInsets(0, -360, 0, 0)
-        layout:Add(option, 20, 34, 2)
-        local label = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        label:SetPoint("LEFT", option, "RIGHT", 4, 0)
+        local row = CreateFrame("Frame", nil, content)
+        row:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+        layout:Add(row, 24, 34, 2)
+        local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        label:SetPoint("LEFT")
         label:SetText(labelText)
-        option:SetScript("OnClick", function(self)
-            ns.SetTRP3Setting(setting, self:GetChecked() == true)
+        local option = CreateSwitch(row, function(checked)
+            ns.SetTRP3Setting(setting, checked)
             if ns.TRP3 then ns.TRP3.Refresh() end
         end)
+        option:SetPoint("LEFT", label, "RIGHT", 12, 0)
         optionControls[#optionControls + 1] = { button = option, label = label, setting = setting }
     end
     CreateOption("Use TRP3 roleplaying full name", "useRoleplayingName")
@@ -483,11 +546,7 @@ local function CreateTRP3Panel()
             status:SetTextColor(0.75, 0.75, 0.75, 1)
         end
     end
-    enabled:SetScript("OnClick", function(self)
-        ns.SetTRP3Enabled(self:GetChecked() == true)
-        if ns.TRP3 then ns.TRP3.Refresh() end
-        Refresh()
-    end)
+    refreshOptions = Refresh
     panel:SetScript("OnShow", Refresh)
     Refresh()
     layout:Finish()
@@ -515,13 +574,19 @@ end
 
 local function CreateBehaviorToggle(context, labelText, noteText, getter, setter, onChanged)
     local content, layout = context.content, context.layout
-    local toggle = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
-    toggle:SetSize(26, 26)
-    toggle:SetHitRectInsets(0, -390, 0, 0)
-    layout:Add(toggle, 20, 30, 0)
-    local label = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    label:SetPoint("LEFT", toggle, "RIGHT", 4, 0)
+    local row = CreateFrame("Frame", nil, content)
+    row:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(row, 24, 30, 0)
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT")
     label:SetText(labelText)
+    local toggle
+    toggle = CreateSwitch(row, function(checked)
+        setter(checked)
+        if onChanged then onChanged(checked) end
+        toggle:SetChecked(getter())
+    end)
+    toggle:SetPoint("LEFT", label, "RIGHT", 12, 0)
     if noteText then
         local note = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
         note:SetPoint("RIGHT", content, "RIGHT", -20, 0)
@@ -533,11 +598,6 @@ local function CreateBehaviorToggle(context, labelText, noteText, getter, setter
     end
 
     local function Refresh() toggle:SetChecked(getter()) end
-    toggle:SetScript("OnClick", function(self)
-        setter(self:GetChecked() == true)
-        if onChanged then onChanged(self:GetChecked() == true) end
-        Refresh()
-    end)
     context.refreshers[#context.refreshers + 1] = Refresh
     Refresh()
 end
@@ -566,16 +626,16 @@ local function CreateCategoryModeRow(context, rowData)
     local row = CreateFrame("Frame", nil, content)
     row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
     layout:Add(row, 24, 44, 2)
-    local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("LEFT", -18, 0)
-    UIDropDownMenu_SetWidth(dropdown, 82)
     local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    label:SetPoint("TOPLEFT", dropdown, "TOPRIGHT", -6, -3)
-    label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -4, -3)
+    label:SetPoint("TOPLEFT", 4, -3)
+    label:SetWidth(375)
     label:SetJustifyH("LEFT")
     label:SetText(labelText)
+    local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
+    dropdown:SetPoint("LEFT", label, "RIGHT", -4, -9)
+    UIDropDownMenu_SetWidth(dropdown, 82)
     local note = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    note:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
+    note:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -4)
     note:SetPoint("RIGHT", row, "RIGHT", -4, 0)
     note:SetJustifyH("LEFT")
     note:SetText(noteText)
@@ -669,34 +729,30 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
     row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
     layout:Add(row, 24, 40, 2)
     local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("TOPLEFT", 4, -3)
+    label:SetWidth(getEnabled and 370 or 410)
+    label:SetJustifyH("LEFT")
+    label:SetText(text)
     if getEnabled and setEnabled then
-        local toggle = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
-        toggle:SetSize(26, 26)
-        toggle:SetPoint("LEFT", -4, 0)
-        toggle:SetScript("OnClick", function(self)
-            setEnabled(self:GetChecked() == true)
+        local toggle = CreateSwitch(row, function(checked)
+            setEnabled(checked)
             RefreshNameplates()
         end)
+        toggle:SetPoint("LEFT", label, "RIGHT", 8, -9)
         local function RefreshToggle() toggle:SetChecked(getEnabled()) end
         context.toggleRefreshers[#context.toggleRefreshers + 1] = RefreshToggle
         RefreshToggle()
-        label:SetPoint("TOPLEFT", toggle, "TOPRIGHT", 0, -1)
-    else
-        label:SetPoint("TOPLEFT", 4, -3)
     end
-    label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -104, -3)
-    label:SetJustifyH("LEFT")
-    label:SetText(text)
 
     local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     display:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
-    display:SetPoint("RIGHT", row, "RIGHT", -104, 0)
+    display:SetWidth(380)
     display:SetJustifyH("LEFT")
     display:SetText(displayText)
 
     local swatch = CreateFrame("Button", nil, row, "BackdropTemplate")
     swatch:SetSize(26, 26)
-    swatch:SetPoint("RIGHT", -4, 0)
+    swatch:SetPoint("LEFT", 440, 0)
     swatch:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
     swatch:SetBackdropColor(0.04, 0.04, 0.04, 1)
@@ -740,7 +796,7 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
 
     local resetOne = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
     resetOne:SetSize(54, 22)
-    resetOne:SetPoint("RIGHT", swatch, "LEFT", -8, 0)
+    resetOne:SetPoint("LEFT", swatch, "RIGHT", 8, 0)
     resetOne:SetText("Reset")
     resetOne:SetScript("OnClick", function()
         resetColor()
@@ -763,17 +819,17 @@ local function CreateLockedColorRow(context, text, r, g, b, popupKey)
     layout:Add(row, 24, 40, 2)
     local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     label:SetPoint("TOPLEFT", 4, -3)
-    label:SetPoint("TOPRIGHT", row, "TOPRIGHT", -104, -3)
+    label:SetWidth(410)
     label:SetJustifyH("LEFT")
     label:SetText(text)
     local display = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     display:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
-    display:SetPoint("RIGHT", row, "RIGHT", -104, 0)
+    display:SetWidth(380)
     display:SetJustifyH("LEFT")
     display:SetText("Controlled by Blizzard; cannot be changed")
     local swatch = CreateFrame("Frame", nil, row, "BackdropTemplate")
     swatch:SetSize(26, 26)
-    swatch:SetPoint("RIGHT", -4, 0)
+    swatch:SetPoint("LEFT", 440, 0)
     swatch:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
     swatch:SetBackdropColor(0.04, 0.04, 0.04, 1)
@@ -782,11 +838,7 @@ local function CreateLockedColorRow(context, text, r, g, b, popupKey)
     fill:SetPoint("TOPLEFT", 3, -3)
     fill:SetPoint("BOTTOMRIGHT", -3, 3)
     fill:SetColorTexture(r, g, b, 1)
-    local info = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-    info:SetSize(24, 22)
-    info:SetPoint("RIGHT", swatch, "LEFT", -8, 0)
-    info:SetText("?")
-    info:SetScript("OnClick", function() StaticPopup_Show(popupKey) end)
+    AddInfoLink(row, swatch, popupKey)
     row:EnableMouse(true)
     row:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")

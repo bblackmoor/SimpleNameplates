@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.84
+
+* Replaced settings checkboxes with on/off switches while keeping their saved settings and effects.
+* Aligned labels, controls, reset actions, and Blizzard color info links; replaced question-mark buttons with yellow circled info glyphs.
+* Reorganized appearance profile management around selection, actions, restore, and concise guidance.
+
 ## 1.0.79
 
 * Display restricted Midnight unit names directly in the inside-bar font string instead of replacing them with empty text.
