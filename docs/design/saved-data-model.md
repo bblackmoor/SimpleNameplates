@@ -1,79 +1,59 @@
-# Proposed saved data model
+# Saved data model for the refactor
 
-Status: design proposal for Simple Nameplates. No runtime change has been made.
+Status: revised proposal. Simple Nameplates does not need a separate Theme layer.
 
-## Existing state (main at 22f8515)
+## Why two scopes are sufficient
 
-`SimpleNameplatesDB` uses schema version 2 with `global`, `profiles`, and `profileKeys`. `profileKeys` maps a character GUID (or name-realm fallback) to an account-wide appearance Profile. Default and High Contrast are editable bundled Profiles. `Core.lua` reconstructs valid settings from defaults and ignores saved data whose schema version differs. There is currently no Theme, import/export format, or separate per-character SavedVariables declaration.
+Unlike RP Emote Menu, Simple Nameplates has no categories, emotes, window state, or other substantial Profile content to separate from appearance. Its current Profiles already hold the visual configuration. A Profile -> Theme reference would make Profiles mostly wrappers, add shared-reference and deletion rules, and complicate selection without a clear user benefit.
 
-## Proposed relationship
+Keep the existing chain:
 
 ```text
-Character selection -> Profile -> Theme
-                         |
-                         +-> presentation choices
+Character -> appearance Profile
+Global behavior applies across characters
 ```
 
-Global preferences, Profiles, and Themes are account-wide. Each character independently selects a Profile through `profileKeys`. An unassigned or invalid selection resolves to Default Profile, which initially references Default Theme. Profiles reference a Theme by name; they never embed a copy. Two Profiles sharing a Theme display the same visual edits.
+Account-wide Profiles are selected independently by each character through `profileKeys`. A character without a valid assignment uses Default. There is no Theme collection or Theme reference.
 
-### Global: addon behavior and integration
-
-| Setting | Existing location | Proposed owner |
-| --- | --- | --- |
-| `stylingEnabled` | `global` | Global |
-| Six `categoryModes` (active/inactive/hide) | `global` | Global |
-| `hideBlizzardMinionNames` | `global` | Global |
-| `hideCritterCompanionNames` | `global` | Global |
-| `replaceBlizzardOverheadNames` | `global` | Global |
-| `trp3.enabled`, `useRoleplayingName`, `showShortTitle`, `showFullTitle`, `showOOC` | `global.trp3` | Global |
-
-Keep category modes global: the user already chose that ownership and those modes affect managed Blizzard CVars, sometimes after combat. Keep TRP3 interpretation global; a Theme only changes presentation. `global.managedNameCVarOriginals` is a restoration ledger, not a preference: give it a clearly named internal saved area (or retain its stable storage while moving APIs). Preserve original values until CVars are safely restored. Friendly class-color original values are currently in-memory and have a separate restore path.
-
-### Profile: presentation choices and Theme assignment
-
-| Setting | Existing location | Proposed owner |
-| --- | --- | --- |
-| Theme reference | absent | Profile |
-| `showThreat` | Profile | Profile |
-| `interruptibleHighlight` | Profile | Profile |
-
-`showThreat` and `interruptibleHighlight` determine whether optional information is displayed. Keeping them in Profile lets two Profiles share colors/fonts while selecting different information. If these should instead always travel with appearance, make that decision before Phase 1 and put both in Theme. This is the only substantive scope choice not dictated by the current Global/appearance split.
-
-Default Profile always exists, is editable/restorable, and cannot be renamed/deleted. Retain the bundled High Contrast *Profile* as a convenient editable selection whose factory Theme reference is High Contrast Theme, preserving the existing two-profile experience. Restore Bundled Profiles must restore those two Profile definitions only; Theme restoration is a separate action. Deleting any other Profile reassigns all affected character selections to Default. Profile selection must update visible nameplates without changing Global behavior.
-
-### Theme: visual appearance
-
-| Setting | Existing location | Proposed owner |
-| --- | --- | --- |
-| Six `priorityColors` | Profile | Theme |
-| `effectColors.interruptible` | Profile | Theme |
-| `appearance.nameFont`, `nameSize`, `threatFont`, `namePlacement` | Profile | Theme |
-
-Default Theme and High Contrast Theme contain the current factory visual definitions. Both are editable and restorable. Default cannot be renamed/deleted; a deleted High Contrast Theme can be recreated by Restore Bundled Themes. Invalid references resolve to Default Theme. Deleting a Theme in use requires a warning listing affected Profiles; confirm reassigns them to Default Theme, cancel changes nothing. Distinguish an actively edited Theme from the Theme attached to the current character's Profile when designing the UI.
-
-The fixed lavender, yellow, and green Blizzard-controlled overhead-name swatches are documentation of engine colors, not saved Theme values. The six priority classifications and their precedence are runtime logic, not saved visual settings.
-
-## Proposed schema sketch
+## Current schema (version 2)
 
 ```lua
 SimpleNameplatesDB = {
-    schemaVersion = 3, -- proposal, not yet implemented
-    global = { ... },
-    internal = { managedNameCVarOriginals = { ... } },
+    schemaVersion = 2,
+    global = { categoryModes = { ... }, trp3 = { ... },
+               stylingEnabled = true, managedNameCVarOriginals = { ... }, ... },
     profiles = {
-        Default = { theme = "Default", showThreat = true, interruptibleHighlight = false },
-        ["High Contrast"] = { theme = "High Contrast", showThreat = true, interruptibleHighlight = false },
-    },
-    themes = {
-        Default = { priorityColors = { ... }, effectColors = { ... }, appearance = { ... } },
-        ["High Contrast"] = { priorityColors = { ... }, effectColors = { ... }, appearance = { ... } },
+        Default = { priorityColors = { ... }, effectColors = { ... },
+                    appearance = { ... }, showThreat = true,
+                    interruptibleHighlight = false },
+        ["High Contrast"] = { ... },
     },
     profileKeys = { ["Player-GUID"] = "Default" },
 }
 ```
 
-## Compatibility decision for Phase 1
+A valid version-2 saved database already separates behavior from look and feel; the structural refactor should keep this shape and version. Validation reconstructs settings from defaults, ignores malformed values, and ignores data of a different schema. No one-off migration or import/export facility is needed.
 
-The current validator explicitly discards any database with another schema version. The prior Simple Nameplates decision was to avoid one-off legacy migrations and silently ignore invalid saved values. Accordingly, this proposal uses a clean version-3 boundary and does not add permanent migration code. **This resets valid version-2 saved Profiles and Global settings when installed.** Decide explicitly whether that loss is acceptable before Phase 1. If preserving valid version-2 settings is required, plan a bounded conversion that preserves custom Profile names, per-character assignments, appearance values, and the original-CVar restoration ledger. Never discard recorded original CVar values before restoring managed CVars, even during a clean break.
+## Ownership inventory
 
-No JSON import/export exists today. Profile/Theme/Everything transfer is a separate optional product feature, not a prerequisite for separating ownership or making settings code readable. If later added, define a separate format version and atomic validation, with missing Theme references falling back to Default.
+| Setting | Owner | Reason |
+| --- | --- | --- |
+| `stylingEnabled` | Global | Master addon behavior |
+| Six `categoryModes` (active/inactive/hide) | Global | Per-category behavior and managed Blizzard CVars |
+| `hideBlizzardMinionNames`, `hideCritterCompanionNames`, `replaceBlizzardOverheadNames` | Global | Blizzard name management |
+| `trp3.enabled`, `useRoleplayingName`, `showShortTitle`, `showFullTitle`, `showOOC` | Global | TRP3 integration and display policy |
+| Six `priorityColors`, `effectColors.interruptible` | Profile | Appearance colors |
+| `appearance.nameFont`, `nameSize`, `threatFont`, `namePlacement` | Profile | Text and layout |
+| `showThreat`, `interruptibleHighlight` | Profile | Which optional visual elements this appearance Profile displays |
+| `profileKeys` | Account-wide character selection map | Independent Profile choice per character |
+| `global.managedNameCVarOriginals` | Internal restoration ledger | Original Blizzard values, not a user preference |
+
+Do not confuse the six editable Priority Colors with fixed Blizzard-controlled lavender/yellow/green overhead names. The latter are explanations in the settings UI, not Profile values. The classification precedence is runtime logic, not a saved setting.
+
+## Bundled Profile rules
+
+Default and High Contrast are editable account-wide Profiles. Default always exists and can be restored but cannot be renamed or deleted. High Contrast can be edited and restored or recreated, and the current lifecycle permits renaming and deleting it. The Restore Bundled Profiles action restores both factory definitions. Deleting a selected Profile reassigns every affected character to Default. Creating a Profile starts with Default factory values; Copy duplicates the active Profile. Profile changes refresh visible nameplates.
+
+## CVar safety and compatibility
+
+Managed overhead-name original values are persisted in `global.managedNameCVarOriginals` and must survive the refactor unchanged until restored. Some friendly class-color original values are held in memory separately. Keep combat deferral, capture-before-set, and restoration on disable or when no longer managed. A code-layout refactor has no reason to bump `schemaVersion`; doing so would silently reset valid settings and could strand modified Blizzard CVars. If a later feature truly changes the schema, plan its compatibility and CVar restoration independently.
