@@ -27,7 +27,9 @@ C_CVar = {
 }
 local function loadCore()
     local namespace = {}
-    assert(loadfile("SimpleNameplates/Core.lua"))("SimpleNameplates", namespace)
+    for _, file in ipairs({ "Defaults.lua", "Core.lua", "Database.lua" }) do
+        assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", namespace)
+    end
     return namespace
 end
 local function fresh()
@@ -163,5 +165,20 @@ equal(cvars.UnitNameFriendlyPlayerName, "0", "pending applies after combat")
 ns.SetStylingEnabled(false)
 ns.RestoreOverheadNameSettings()
 equal(cvars.UnitNameFriendlyPlayerName, "original", "disabled restores originals")
+
+
+-- All declared addon modules must exist, compile, and load in dependency order.
+local toc = assert(io.open("SimpleNameplates/SimpleNameplates.toc", "r"))
+local modules = {}
+for line in toc:lines() do
+    if line:match("%.lua$") then
+        modules[#modules + 1] = line
+        assert(loadfile("SimpleNameplates/" .. line), line .. " must compile")
+    end
+end
+toc:close()
+equal(table.concat(modules, ","),
+    "Defaults.lua,Core.lua,Database.lua,TRP3.lua,Nameplates.lua,Settings.lua",
+    "TOC module order")
 
 print("Core behavior smoke: passed")

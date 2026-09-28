@@ -19,7 +19,7 @@ The stub covers:
 - Valid schema-2 settings preserved across a fresh Core load; malformed individual settings fall back; incompatible schema is ignored.
 - Managed name-CVar capture, overlapping hide/replacement claims, restoration when the last claim ends, persistence and restoration across Core reload, and combat deferral until `ApplyPendingManagedNameSettings`.
 
-The test directly loads `SimpleNameplates/Core.lua` with simulated WoW globals and CVar storage. It is intentionally a behavioral contract, not an implementation snapshot.
+The test loads `Defaults.lua`, `Core.lua`, and `Database.lua` with simulated WoW globals and CVar storage, then checks all .toc module paths/order and Lua syntax. It is intentionally a behavioral contract, not an implementation snapshot.
 
 ## Entry points to preserve
 

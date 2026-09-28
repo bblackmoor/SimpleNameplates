@@ -1,6 +1,6 @@
 # Simple Nameplates staged refactor plan
 
-Status: revised proposal. Phase 0 documents analysis only; no runtime Lua changed.
+Status: Phases 0–2 implemented; live WoW checks remain open. The version-2 saved-data shape is unchanged.
 
 See [saved-data-model.md](saved-data-model.md), [settings-architecture.md](settings-architecture.md), and [phase-1-baseline.md](phase-1-baseline.md). This adapts the RP Emote Menu readability work to Simple Nameplates without adding Themes. Keep data/code-boundary changes and settings presentation changes in distinct commits.
 
@@ -21,12 +21,14 @@ Acceptance: Core smoke test passes; live WoW checks in phase-1-baseline.md remai
 
 ## Phase 2 — Clarify defaults and database responsibilities
 
-- [ ] Extract factory defaults/High Contrast values and schema-2 validation into clear units.
-- [ ] Extract Profile selection/lifecycle and explicit Global/Profile getters/setters from Core.
-- [ ] Preserve `schemaVersion = 2`, the saved-data shape, invalid-value handling, character keys, names, and every Profile operation.
-- [ ] Keep Default editable/restorable and High Contrast's existing lifecycle intact.
+- [x] Extract factory defaults/High Contrast values and schema-2 validation into clear units.
+- [x] Extract Profile selection/lifecycle and explicit Global/Profile getters/setters from Core.
+- [x] Preserve `schemaVersion = 2`, the saved-data shape, invalid-value handling, character keys, names, and every Profile operation.
+- [x] Keep Default editable/restorable and High Contrast's existing lifecycle intact.
 
-Acceptance: existing saved variables load with identical meaning; no migration, reset, or unexpected Profile reassignment.
+Acceptance: the updated Core behavior smoke test passes with the split modules and checks .toc paths/order and Lua syntax. Existing saved variables retain their meaning; no migration, reset, or unexpected Profile reassignment. Live WoW verification remains open.
+
+Phase 2 load order: `Defaults.lua` defines factory settings; `Core.lua` builds the managed CVar allowlist and exposes its runtime helpers; `Database.lua` validates saved data using that allowlist and exports the settings API before `TRP3.lua`, `Nameplates.lua`, and `Settings.lua` bind it. Core's callbacks resolve Database APIs only when invoked after loading. Phase 3 will move managed-CVar implementation out of Core.
 
 ## Phase 3 — Isolate managed CVar behavior
 
