@@ -2,7 +2,7 @@
 
 Status: revised proposal. Phase 0 documents analysis only; no runtime Lua changed.
 
-See [saved-data-model.md](saved-data-model.md) and [settings-architecture.md](settings-architecture.md). This adapts the RP Emote Menu readability work to Simple Nameplates without adding Themes. Keep data/code-boundary changes and settings presentation changes in distinct commits.
+See [saved-data-model.md](saved-data-model.md), [settings-architecture.md](settings-architecture.md), and [phase-1-baseline.md](phase-1-baseline.md). This adapts the RP Emote Menu readability work to Simple Nameplates without adding Themes. Keep data/code-boundary changes and settings presentation changes in distinct commits.
 
 ## Phase 0 — Analysis and design
 
@@ -13,11 +13,11 @@ See [saved-data-model.md](saved-data-model.md) and [settings-architecture.md](se
 
 ## Phase 1 — Characterize existing behavior
 
-- [ ] Add focused checks for fresh install, saved-value validation, Profile CRUD, independent character selection, and factory restore.
-- [ ] Capture CVar original-value behavior through enable/disable, category mode changes, reload, and combat deferral.
-- [ ] Record settings registration and nameplate refresh entry points, including known client-only checks.
+- [x] Add focused checks for fresh install, saved-value validation, Profile CRUD, independent character selection, and factory restore.
+- [x] Capture Core-level CVar original-value behavior through styling disable/restore, category mode changes, reload, and combat deferral. Live-client verification remains open.
+- [x] Record settings registration and nameplate refresh entry points, including known client-only checks.
 
-Acceptance: changes in later phases can be compared with the existing behavior; avoid broad tests that merely restate implementation.
+Acceptance: Core smoke test passes; live WoW checks in phase-1-baseline.md remain pending. Changes in later phases can be compared with the existing behavior; avoid broad tests that merely restate implementation.
 
 ## Phase 2 — Clarify defaults and database responsibilities
 
