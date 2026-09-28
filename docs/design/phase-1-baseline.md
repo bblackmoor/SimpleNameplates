@@ -17,9 +17,10 @@ The stub covers:
 - Fresh version-2 defaults, six-category behavior default, TRP3 default, and Default/High Contrast selection.
 - Independent character Profile selections, create/copy with independent colors, rename propagation, deletion fallback, Default protection, duplicate names, and bundled restore.
 - Valid schema-2 settings preserved across a fresh Core load; malformed individual settings fall back; incompatible schema is ignored.
-- Managed name-CVar capture, overlapping hide/replacement claims, restoration when the last claim ends, persistence and restoration across Core reload, and combat deferral until `ApplyPendingManagedNameSettings`.
+- Managed name-CVar capture, overlapping hide/replacement claims, restoration when the last claim ends, persistence and restoration across module reload, and combat deferral until `ApplyPendingManagedNameSettings`.
+- Phase 3 extensions: failed and silently refused restoration retain originals for retry; explicit restore during combat waits; friendly class-color restoration retries and defers in combat.
 
-The test loads `Defaults.lua`, `Core.lua`, and `Database.lua` with simulated WoW globals and CVar storage, then checks all .toc module paths/order and Lua syntax. It is intentionally a behavioral contract, not an implementation snapshot.
+The test loads `Defaults.lua`, `Core.lua`, `ManagedNames.lua`, and `Database.lua` with simulated WoW globals and CVar storage, then checks all .toc module paths/order and Lua syntax. It is intentionally a behavioral contract, not an implementation snapshot.
 
 ## Entry points to preserve
 

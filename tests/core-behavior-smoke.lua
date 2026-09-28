@@ -12,6 +12,7 @@ local character = "Player-One"
 local inCombat = false
 local cvars = {}
 local writes = {}
+local rejectedWrites = {}
 
 function UnitGUID() return character end
 function UnitFullName() return "Fallback", "Realm" end
@@ -21,20 +22,22 @@ function wipe(t) for key in pairs(t) do t[key] = nil end end
 C_CVar = {
     GetCVar = function(name) return cvars[name] or "1" end,
     SetCVar = function(name, value)
+        if rejectedWrites[name] == "silent" then return end
+        if rejectedWrites[name] then error("CVar write blocked") end
         cvars[name] = value
         writes[#writes + 1] = { name, value }
     end,
 }
 local function loadCore()
     local namespace = {}
-    for _, file in ipairs({ "Defaults.lua", "Core.lua", "Database.lua" }) do
+    for _, file in ipairs({ "Defaults.lua", "Core.lua", "ManagedNames.lua", "Database.lua" }) do
         assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", namespace)
     end
     return namespace
 end
 local function fresh()
     SimpleNameplatesDB = nil
-    cvars, writes = {}, {}
+    cvars, writes, rejectedWrites = {}, {}, {}
     inCombat, character = false, "Player-One"
     return loadCore()
 end
@@ -167,6 +170,56 @@ ns.RestoreOverheadNameSettings()
 equal(cvars.UnitNameFriendlyPlayerName, "original", "disabled restores originals")
 
 
+-- A failed restoration must retain its original for a later retry.
+ns = fresh()
+cvars.UnitNameFriendlyPlayerName = "custom"
+ns.SetCategoryMode("friendlyPC", "hide")
+rejectedWrites.UnitNameFriendlyPlayerName = true
+ns.SetCategoryMode("friendlyPC", "inactive")
+equal(cvars.UnitNameFriendlyPlayerName, "0", "failed restore leaves modified CVar")
+equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
+    "custom", "failed restore retains original")
+rejectedWrites.UnitNameFriendlyPlayerName = "silent"
+ns.ApplyPendingManagedNameSettings()
+equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
+    "custom", "silent refusal retains original")
+rejectedWrites.UnitNameFriendlyPlayerName = nil
+ns.ApplyPendingManagedNameSettings()
+equal(cvars.UnitNameFriendlyPlayerName, "custom", "failed restore retries")
+equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
+    nil, "successful retry clears original")
+
+-- An explicit restore in combat waits until combat ends, keeping the ledger.
+ns.SetCategoryMode("friendlyPC", "hide")
+inCombat = true
+ns.RestoreOverheadNameSettings()
+equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
+    "custom", "combat restore retains original")
+equal(cvars.UnitNameFriendlyPlayerName, "0", "combat restore makes no write")
+inCombat = false
+ns.ApplyPendingManagedNameSettings()
+equal(cvars.UnitNameFriendlyPlayerName, "custom", "combat restore retries")
+
+-- Friendly class-color settings have their own original-value capture and retry.
+ns = fresh()
+local friendly = ns.FRIENDLY_COLOR_CVARS[1]
+cvars[friendly] = "class-original"
+ns.DisableFriendlyClassColors()
+equal(cvars[friendly], "0", "friendly class color disabled")
+rejectedWrites[friendly] = true
+ns.RestoreFriendlyClassColors()
+equal(cvars[friendly], "0", "failed friendly restore retains changed CVar")
+rejectedWrites[friendly] = nil
+ns.ApplyPendingManagedNameSettings()
+equal(cvars[friendly], "class-original", "friendly restore retries")
+ns.DisableFriendlyClassColors()
+inCombat = true
+ns.RestoreFriendlyClassColors()
+equal(cvars[friendly], "0", "friendly combat restore deferred")
+inCombat = false
+ns.ApplyPendingManagedNameSettings()
+equal(cvars[friendly], "class-original", "friendly combat restore applied")
+
 -- All declared addon modules must exist, compile, and load in dependency order.
 local toc = assert(io.open("SimpleNameplates/SimpleNameplates.toc", "r"))
 local modules = {}
@@ -178,7 +231,7 @@ for line in toc:lines() do
 end
 toc:close()
 equal(table.concat(modules, ","),
-    "Defaults.lua,Core.lua,Database.lua,TRP3.lua,Nameplates.lua,Settings.lua",
+    "Defaults.lua,Core.lua,ManagedNames.lua,Database.lua,TRP3.lua,Nameplates.lua,Settings.lua",
     "TOC module order")
 
 print("Core behavior smoke: passed")

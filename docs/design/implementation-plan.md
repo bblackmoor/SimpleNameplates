@@ -1,6 +1,6 @@
 # Simple Nameplates staged refactor plan
 
-Status: Phases 0–2 implemented; live WoW checks remain open. The version-2 saved-data shape is unchanged.
+Status: Phases 0–3 implemented; live WoW checks remain open. The version-2 saved-data shape is unchanged.
 
 See [saved-data-model.md](saved-data-model.md), [settings-architecture.md](settings-architecture.md), and [phase-1-baseline.md](phase-1-baseline.md). This adapts the RP Emote Menu readability work to Simple Nameplates without adding Themes. Keep data/code-boundary changes and settings presentation changes in distinct commits.
 
@@ -28,15 +28,15 @@ Acceptance: Core smoke test passes; live WoW checks in phase-1-baseline.md remai
 
 Acceptance: the updated Core behavior smoke test passes with the split modules and checks .toc paths/order and Lua syntax. Existing saved variables retain their meaning; no migration, reset, or unexpected Profile reassignment. Live WoW verification remains open.
 
-Phase 2 load order: `Defaults.lua` defines factory settings; `Core.lua` builds the managed CVar allowlist and exposes its runtime helpers; `Database.lua` validates saved data using that allowlist and exports the settings API before `TRP3.lua`, `Nameplates.lua`, and `Settings.lua` bind it. Core's callbacks resolve Database APIs only when invoked after loading. Phase 3 will move managed-CVar implementation out of Core.
+Phase 3 load order: `Defaults.lua` defines factory settings; `Core.lua` supplies metadata/helpers; `ManagedNames.lua` builds the CVar allowlist before `Database.lua` validates saved originals. ManagedNames callbacks resolve Database APIs only when invoked after loading. `TRP3.lua`, `Nameplates.lua`, and `Settings.lua` then bind the exported settings API.
 
 ## Phase 3 — Isolate managed CVar behavior
 
-- [ ] Move managed overhead-name CVars, original-value ledger, combat deferral, and friendly class-color handling behind a focused API.
-- [ ] Preserve capture-before-change and restoration when styling is disabled or a CVar is no longer managed.
-- [ ] Keep Global category modes and Blizzard-controlled overhead-name limitations unchanged.
+- [x] Move managed overhead-name CVars, original-value ledger, combat deferral, and friendly class-color handling behind a focused API.
+- [x] Preserve capture-before-change and restoration when styling is disabled or a CVar is no longer managed. Retain originals until restoration succeeds, including failed writes and combat deferral.
+- [x] Keep Global category modes and Blizzard-controlled overhead-name limitations unchanged.
 
-Acceptance: a Profile switch changes appearance without changing managed category CVars; disabling/restoring and combat transitions work as before.
+Acceptance: Core smoke checks pass for Profile-independent modes, saved CVar originals, overlapping claims, failed/silent writes, friendly class colors, and combat restoration; .toc paths and syntax pass. Live WoW confirmation of Profile switching, secret values, secure CVar behavior, and Blizzard-controlled overhead names remains open.
 
 ## Phase 4 — Make settings source human readable
 

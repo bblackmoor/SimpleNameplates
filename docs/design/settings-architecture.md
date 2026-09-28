@@ -1,10 +1,10 @@
 # Settings and runtime architecture
 
-Status: Phase 2 extraction implemented; later phases remain proposed. Preserve Global + Profile ownership and the version-2 saved-data shape.
+Status: Phases 2–3 extraction implemented; later phases remain proposed. Preserve Global + Profile ownership and the version-2 saved-data shape.
 
 ## Current inventory
 
-Originally the .toc loaded a roughly 997-line `Core.lua` before `TRP3.lua`, `Nameplates.lua`, and `Settings.lua`. Phase 2 now loads `Defaults.lua`, `Core.lua`, and `Database.lua` before those consumers. `Defaults.lua` owns factory values; `Database.lua` owns version-2 validation, Profile lifecycle, and Global/Profile settings access. `Core.lua` still owns managed CVar definitions/actions, warnings, and accessibility helpers pending Phase 3. Settings.lua (roughly 972 lines) constructs About, TRP3, Behavior, and Appearance. Nameplates.lua (roughly 1061 lines) contains classification, styling, frame repair, events, and diagnostics. TRP3.lua is already a focused optional adapter.
+Originally the .toc loaded a roughly 997-line `Core.lua` before `TRP3.lua`, `Nameplates.lua`, and `Settings.lua`. The .toc now loads `Defaults.lua`, `Core.lua`, `ManagedNames.lua`, and `Database.lua` before those consumers. `Defaults.lua` owns factory values; `Database.lua` owns version-2 validation, Profile lifecycle, and Global/Profile settings access. `ManagedNames.lua` owns CVar definitions/actions; `Core.lua` retains metadata, warnings, and accessibility helpers. Settings.lua (roughly 972 lines) constructs About, TRP3, Behavior, and Appearance. Nameplates.lua (roughly 1061 lines) contains classification, styling, frame repair, events, and diagnostics. TRP3.lua is already a focused optional adapter.
 
 The settings UI already has scroll layout, thumb switches, circled-i links, and section constructors. Preserve these. The Appearance panel combines Profile management, text/layout, colors, fixed Blizzard swatches, and cast effects. `CreateColorRow` contains swatch, color picker, cancel rollback, reset, and refresh behavior. Profile dialogs and selection are embedded in the same file.
 
@@ -14,8 +14,8 @@ The settings UI already has scroll layout, thumb switches, circled-i links, and 
 | --- | --- |
 | `Defaults.lua` | Factory Global/Profile values, preset definitions, valid ranges |
 | `Database.lua` | Validate version-2 data, character selection, Profile lifecycle, explicit Global/Profile access |
-| `ManagedNames.lua` | Planned Phase 3 extraction of managed CVars, restoration ledger, combat deferral, friendly class colors |
-| `Core.lua` | Metadata, CVar allowlist and runtime behavior (until Phase 3), shared helpers/conflict warning |
+| `ManagedNames.lua` | Managed CVars, restoration ledger, combat deferral, friendly class colors |
+| `Core.lua` | Metadata and shared helpers/conflict warning |
 | `TRP3.lua` | Existing integration adapter |
 | `Nameplates.lua` | Existing styling pipeline initially; split on actual responsibility boundaries later |
 | `SettingsControls.lua` | Shared layout, switches, info links, dropdown/color primitives |
@@ -26,7 +26,7 @@ The settings UI already has scroll layout, thumb switches, circled-i links, and 
 | `SettingsAppearance.lua` | Profile text/layout, colors, Blizzard fixed-color explanations, cast effect |
 | `Settings.lua` | Settings registration and refresh entry points |
 
-Defaults, Database, and the current Core boundary are implemented; the remaining entries are candidate boundaries. Avoid splitting a small cohesive component solely to match a filename list. Put each tab's section/control constructors in visual order. If Profile management remains at the top of Appearance, keep that UI arrangement; the separate source module is for readability, not a new tab mandate.
+Defaults, Database, ManagedNames, and the current Core boundary are implemented; the remaining entries are candidate boundaries. Avoid splitting a small cohesive component solely to match a filename list. Put each tab's section/control constructors in visual order. If Profile management remains at the top of Appearance, keep that UI arrangement; the separate source module is for readability, not a new tab mandate.
 
 ## Runtime and UI contracts
 
@@ -45,4 +45,4 @@ Characterize existing defaults, validation, Profile CRUD, per-character selectio
 
 ## Phase 2 load-order constraint
 
-`Database.lua` validates `global.managedNameCVarOriginals` using the allowlist that `Core.lua` constructs. `Core.lua` therefore loads first; it resolves `ns.EnsureDB`, `ns.GetCategoryMode`, and `ns.GetStylingEnabled` only inside callbacks after `Database.lua` has loaded. `Nameplates.lua` and `Settings.lua` bind `ns` functions immediately at load time, so both must remain after `Database.lua`. Phase 3 may move CVar definitions and behavior into `ManagedNames.lua` while preserving this initialization order.
+`Database.lua` validates `global.managedNameCVarOriginals` using the allowlist that `ManagedNames.lua` constructs. ManagedNames resolves `ns.EnsureDB`, `ns.GetCategoryMode`, and `ns.GetStylingEnabled` only inside callbacks after Database has loaded. `Nameplates.lua` and `Settings.lua` bind `ns` functions immediately at load time, so both remain after Database. Failed CVar writes retain the captured original; combat restores defer until `PLAYER_REGEN_ENABLED`. Friendly class colors keep their separate in-memory originals and retry path.

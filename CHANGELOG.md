@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.95
+
+* Moved managed Blizzard name and friendly class-color CVar handling into `ManagedNames.lua` without changing the version-2 saved-data schema.
+* Retained captured original CVar values when a restore is blocked or refused, and retried deferred restoration after combat.
+
 ## 1.0.84
 
 * Replaced settings checkboxes with on/off switches while keeping their saved settings and effects.
