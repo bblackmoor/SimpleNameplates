@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.97
+
+* Isolated priority unit classification in `NameplateClassification.lua` while leaving the coupled styling, frame repair, and event pipeline together.
+* Added a runtime smoke check for category decisions, event/hook registration, and Lua upvalue counts; removed an unused dead function.
+
 ## 1.0.96
 
 * Split the settings UI into focused shared-control, About, Behavior, Profile, Appearance, and TRP3 modules while preserving the existing tabs and settings behavior.

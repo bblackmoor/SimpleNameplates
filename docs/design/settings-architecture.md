@@ -1,10 +1,10 @@
 # Settings and runtime architecture
 
-Status: Phases 2–4 extraction implemented; later phases remain proposed. Preserve Global + Profile ownership and the version-2 saved-data shape.
+Status: Phases 2–5 extraction implemented; final cleanup remains proposed. Preserve Global + Profile ownership and the version-2 saved-data shape.
 
 ## Current inventory
 
-Originally the .toc loaded a roughly 997-line `Core.lua` before `TRP3.lua`, `Nameplates.lua`, and `Settings.lua`. The .toc now loads `Defaults.lua`, `Core.lua`, `ManagedNames.lua`, and `Database.lua` before those consumers. `Defaults.lua` owns factory values; `Database.lua` owns version-2 validation, Profile lifecycle, and Global/Profile settings access. `ManagedNames.lua` owns CVar definitions/actions; `Core.lua` retains metadata, warnings, and accessibility helpers. Before Phase 4, Settings.lua (roughly 972 lines) constructed About, TRP3, Behavior, and Appearance. It now registers pages and slash routes while the page modules build their controls. Nameplates.lua (roughly 1061 lines) contains classification, styling, frame repair, events, and diagnostics. TRP3.lua is already a focused optional adapter.
+Originally the .toc loaded a roughly 997-line `Core.lua` before `TRP3.lua`, `Nameplates.lua`, and `Settings.lua`. The .toc now loads `Defaults.lua`, `Core.lua`, `ManagedNames.lua`, and `Database.lua` before those consumers. `Defaults.lua` owns factory values; `Database.lua` owns version-2 validation, Profile lifecycle, and Global/Profile settings access. `ManagedNames.lua` owns CVar definitions/actions; `Core.lua` retains metadata, warnings, and accessibility helpers. Before Phase 4, Settings.lua (roughly 972 lines) constructed About, TRP3, Behavior, and Appearance. It now registers pages and slash routes while the page modules build their controls. Before Phase 5, Nameplates.lua (roughly 1061 lines) contained classification, styling, frame repair, events, and diagnostics. Priority classification now lives in NameplateClassification.lua; styling, repair, diagnostics, and the single event frame stay together in Nameplates.lua. TRP3.lua is already a focused optional adapter.
 
 The settings UI already has scroll layout, thumb switches, circled-i links, and section constructors. Preserve these. The Appearance panel combines Profile management, text/layout, colors, fixed Blizzard swatches, and cast effects. `CreateColorRow` contains swatch, color picker, cancel rollback, reset, and refresh behavior. Profile dialogs and selection are embedded in the same file.
 
@@ -17,7 +17,8 @@ The settings UI already has scroll layout, thumb switches, circled-i links, and 
 | `ManagedNames.lua` | Managed CVars, restoration ledger, combat deferral, friendly class colors |
 | `Core.lua` | Metadata and shared helpers/conflict warning |
 | `TRP3.lua` | Existing integration adapter |
-| `Nameplates.lua` | Existing styling pipeline initially; split on actual responsibility boundaries later |
+| `NameplateClassification.lua` | Six-category priority classification and name-only state |
+| `Nameplates.lua` | Styling, frame repair, events, and diagnostics |
 | `SettingsControls.lua` | Shared scroll layout, switches, info links, section helpers, and refresh helper |
 | `SettingsAbout.lua` | About |
 | `SettingsTRP3.lua` | Global TRP3 preferences |
@@ -50,3 +51,7 @@ Characterize existing defaults, validation, Profile CRUD, per-character selectio
 ## Phase 4 verification
 
 `tests/settings-smoke.lua` uses a small WoW UI stub to exercise panel registration, one-time registration, slash routing, Profile create/restore dialogs, the master switch, and color-picker apply/cancel. The Core smoke test verifies .toc order and Lua compilation for all modules. Visual alignment and actual settings rendering still require a live WoW client.
+
+## Phase 5 verification
+
+`tests/nameplates-smoke.lua` executes both runtime modules with small WoW stubs. It checks representative classification cases, one event frame, two Blizzard repair hooks, event counts, login and CVar callbacks, and reachable upvalue counts. It cannot establish actual Blizzard frame layout or Midnight secret-value behavior; those remain live WoW checks.

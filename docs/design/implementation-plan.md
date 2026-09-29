@@ -1,6 +1,6 @@
 # Simple Nameplates staged refactor plan
 
-Status: Phases 0–4 implemented; live WoW checks remain open. The version-2 saved-data shape is unchanged.
+Status: Phases 0–5 implemented; live WoW checks remain open. The version-2 saved-data shape is unchanged.
 
 See [saved-data-model.md](saved-data-model.md), [settings-architecture.md](settings-architecture.md), and [phase-1-baseline.md](phase-1-baseline.md). This adapts the RP Emote Menu readability work to Simple Nameplates without adding Themes. Keep data/code-boundary changes and settings presentation changes in distinct commits.
 
@@ -51,11 +51,11 @@ Acceptance: settings and Core smoke checks pass, covering one-time registration,
 
 ## Phase 5 — Review nameplate runtime boundaries
 
-- [ ] Review Nameplates.lua for useful classification, styling/repair, event, and diagnostic boundaries; split only where coupling and size justify it.
-- [ ] Preserve priority classification, name-inside-bar behavior, TRP3 long-title/fallback, threat text, interruptible highlight, and safe Midnight frame access.
-- [ ] Check upvalues and that startup/event hooks register once.
+- [x] Extract priority classification into NameplateClassification.lua; keep coupled styling/repair, event registration, and diagnostics together. Remove an unused dead function.
+- [x] Preserve priority classification and leave name-inside-bar, TRP3 title/fallback, threat, highlight, and safe Midnight frame code in their existing paths.
+- [x] Check reachable upvalues and that one event frame and two Blizzard repair hooks register on module load.
 
-Acceptance: existing nameplates and refresh paths work in a live client, without secret-value regressions.
+Acceptance: `tests/nameplates-smoke.lua` passes classification cases, one-time module setup, login/CVar callbacks, and upvalue checks. Core and settings smoke tests pass and .toc modules compile. Live-client verification of rendering, refresh paths, and secret-value safety remains open.
 
 ## Phase 6 — Cleanup and verification
 
