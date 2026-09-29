@@ -1,6 +1,6 @@
 # Simple Nameplates staged refactor plan
 
-Status: Phases 0–3 implemented; live WoW checks remain open. The version-2 saved-data shape is unchanged.
+Status: Phases 0–4 implemented; live WoW checks remain open. The version-2 saved-data shape is unchanged.
 
 See [saved-data-model.md](saved-data-model.md), [settings-architecture.md](settings-architecture.md), and [phase-1-baseline.md](phase-1-baseline.md). This adapts the RP Emote Menu readability work to Simple Nameplates without adding Themes. Keep data/code-boundary changes and settings presentation changes in distinct commits.
 
@@ -40,14 +40,14 @@ Acceptance: Core smoke checks pass for Profile-independent modes, saved CVar ori
 
 ## Phase 4 — Make settings source human readable
 
-- [ ] Split About, TRP3, Behavior, Profile management, and Appearance construction into focused modules/sections.
-- [ ] Keep existing visible tab arrangement unless a concrete UI problem calls for a change.
-- [ ] Arrange source in the same tab -> section -> control order seen by the user.
-- [ ] Extract color picker/swatch/rollback, dialogs, refresh, and registration responsibilities into named helpers.
-- [ ] Reuse the existing scroll layout, switches, circled-i links, and consistent label/control/reset/info spacing.
-- [ ] Keep calls into CVar and nameplate subsystems explicit; verify .toc ordering and settings registration.
+- [x] Split About, TRP3, Behavior, Profile management, and Appearance construction into focused modules/sections.
+- [x] Keep the existing visible tab arrangement.
+- [x] Arrange source in the same tab -> section -> control order seen by the user.
+- [x] Extract color picker/rollback, Profile dialogs, refresh, and registration responsibilities into named helpers/modules.
+- [x] Reuse the existing scroll layout, switches, circled-i links, and consistent label/control/reset/info spacing.
+- [x] Keep calls into CVar and nameplate subsystems explicit; verify .toc ordering and settings registration.
 
-Acceptance: a developer can locate a setting and understand its saved owner, UI callback, and refresh behavior without tracing unrelated code.
+Acceptance: settings and Core smoke checks pass, covering one-time registration, tab/slash routes, Profile dialogs, master switch, color-picker cancel rollback, and all .toc module paths/syntax. Settings remain grouped by page/section and use the existing visual layout. Live WoW UI rendering remains to be checked.
 
 ## Phase 5 — Review nameplate runtime boundaries
 

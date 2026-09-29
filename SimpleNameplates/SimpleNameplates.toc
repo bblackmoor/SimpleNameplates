@@ -3,7 +3,7 @@
 ## Category: Unit Frames
 ## Notes: Custom nameplate colors and interruptible cast highlights while retaining Blizzard bars.
 ## Author: Brandon Blackmoor <bblackmoor@blackgate.net>
-## Version: 1.0.95
+## Version: 1.0.96
 ## OptionalDeps: totalRP3
 ## SavedVariables: SimpleNameplatesDB
 ## IconTexture: Interface\Icons\INV_Misc_Eye_01
@@ -16,4 +16,10 @@ ManagedNames.lua
 Database.lua
 TRP3.lua
 Nameplates.lua
+SettingsControls.lua
+SettingsAbout.lua
+SettingsBehavior.lua
+SettingsProfiles.lua
+SettingsAppearance.lua
+SettingsTRP3.lua
 Settings.lua

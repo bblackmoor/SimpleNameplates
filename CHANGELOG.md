@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.96
+
+* Split the settings UI into focused shared-control, About, Behavior, Profile, Appearance, and TRP3 modules while preserving the existing tabs and settings behavior.
+* Added a settings registration and callback smoke test, including color-picker cancel rollback.
+
 ## 1.0.95
 
 * Moved managed Blizzard name and friendly class-color CVar handling into `ManagedNames.lua` without changing the version-2 saved-data schema.
