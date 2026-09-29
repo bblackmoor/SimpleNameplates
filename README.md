@@ -21,7 +21,7 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 
 Simple Nameplates does **not** draw its own replacement nameplates.
 
-Instead, it keeps Blizzard's normal Midnight nameplates and recolors their existing health bars and names. Blizzard remains responsible for creating each nameplate and for health depletion, casting, channels, target treatment, classification, and other standard nameplate behavior.
+Instead, it keeps Blizzard's normal Midnight nameplates and recolors their existing health bars and names. Blizzard remains responsible for creating each nameplate and for health depletion, casting, channels, target treatment, and other standard nameplate behavior. Simple Nameplates classifies addon-accessible units into its six Priority Colors.
 
 This avoids duplicate nameplates and preserves the normal Blizzard nameplate functionality.
 
@@ -122,6 +122,10 @@ Simple Nameplates does not attempt to inspect secret values. Threat percentage i
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so applying the shared red attacking color to PCs is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
+
+## Development
+
+The [staged refactor plan](docs/design/implementation-plan.md) and [source ownership guide](docs/design/settings-architecture.md) describe the Global behavior and appearance Profile boundaries. Run `lua tests/core-behavior-smoke.lua`, `lua tests/settings-smoke.lua`, and `lua tests/nameplates-smoke.lua` from the repository root for the local behavioral checks. The [live WoW checklist](docs/design/live-wow-verification.md) records integration checks that require the game client.
 
 ## AI Disclaimer
 

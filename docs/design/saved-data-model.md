@@ -1,6 +1,6 @@
 # Saved data model for the refactor
 
-Status: revised proposal. Simple Nameplates does not need a separate Theme layer.
+Status: implemented version-2 schema. Simple Nameplates uses Global behavior and appearance Profiles, with no separate Theme layer.
 
 ## Why two scopes are sufficient
 
@@ -32,7 +32,7 @@ SimpleNameplatesDB = {
 }
 ```
 
-A valid version-2 saved database already separates behavior from look and feel; the structural refactor should keep this shape and version. Validation reconstructs settings from defaults, ignores malformed values, and ignores data of a different schema. No one-off migration or import/export facility is needed.
+A valid version-2 saved database separates behavior from look and feel. The structural refactor kept this shape and version. Validation reconstructs settings from defaults, ignores malformed values, and ignores data of a different schema. No one-off migration or import/export facility is needed.
 
 ## Ownership inventory
 

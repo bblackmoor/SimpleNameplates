@@ -1,14 +1,14 @@
 # Settings and runtime architecture
 
-Status: Phases 2–5 extraction implemented; final cleanup remains proposed. Preserve Global + Profile ownership and the version-2 saved-data shape.
+Status: Phases 2–6 repository work implemented. Global + Profile ownership and the version-2 saved-data shape are unchanged; live WoW checks remain open.
 
 ## Current inventory
 
-Originally the .toc loaded a roughly 997-line `Core.lua` before `TRP3.lua`, `Nameplates.lua`, and `Settings.lua`. The .toc now loads `Defaults.lua`, `Core.lua`, `ManagedNames.lua`, and `Database.lua` before those consumers. `Defaults.lua` owns factory values; `Database.lua` owns version-2 validation, Profile lifecycle, and Global/Profile settings access. `ManagedNames.lua` owns CVar definitions/actions; `Core.lua` retains metadata, warnings, and accessibility helpers. Before Phase 4, Settings.lua (roughly 972 lines) constructed About, TRP3, Behavior, and Appearance. It now registers pages and slash routes while the page modules build their controls. Before Phase 5, Nameplates.lua (roughly 1061 lines) contained classification, styling, frame repair, events, and diagnostics. Priority classification now lives in NameplateClassification.lua; styling, repair, diagnostics, and the single event frame stay together in Nameplates.lua. TRP3.lua is already a focused optional adapter.
+The .toc loads `Defaults.lua`, `Core.lua`, `ManagedNames.lua`, and `Database.lua` before runtime and settings consumers. `Defaults.lua` owns factory values; `Database.lua` owns version-2 validation, Profile lifecycle, and Global/Profile settings access. `ManagedNames.lua` owns CVar definitions/actions; `Core.lua` retains metadata, warnings, and accessibility helpers. `NameplateClassification.lua` owns priority decisions while `Nameplates.lua` owns styling, repair, diagnostics, and the single event frame. `TRP3.lua` is the optional integration adapter. The settings page modules construct their controls; `Settings.lua` registers pages and slash routes.
 
-The settings UI already has scroll layout, thumb switches, circled-i links, and section constructors. Preserve these. The Appearance panel combines Profile management, text/layout, colors, fixed Blizzard swatches, and cast effects. `CreateColorRow` contains swatch, color picker, cancel rollback, reset, and refresh behavior. Profile dialogs and selection are embedded in the same file.
+The settings UI uses scroll layout, thumb switches, circled-i links, and section constructors. The Appearance panel combines Profile management, text/layout, colors, fixed Blizzard swatches, and cast effects. `SettingsProfiles.lua` owns Profile dialogs and selection. `SettingsAppearance.lua` owns color-picker apply/cancel rollback and Appearance construction, using shared row controls from `SettingsControls.lua`.
 
-## Proposed source ownership
+## Current source ownership
 
 | Module | Responsibility |
 | --- | --- |
@@ -27,7 +27,7 @@ The settings UI already has scroll layout, thumb switches, circled-i links, and 
 | `SettingsAppearance.lua` | Profile text/layout, color picker and rollback, Blizzard fixed-color explanations, cast effect |
 | `Settings.lua` | Settings registration and slash routes |
 
-The listed settings modules and the earlier Defaults, Database, ManagedNames, and Core boundaries are implemented. The visible tabs remain About, Behavior, Appearance, and TRP3; Profile management stays at the top of Appearance. Avoid splitting a small cohesive component solely to match a filename list. Put each tab's section/control constructors in visual order. If Profile management remains at the top of Appearance, keep that UI arrangement; the separate source module is for readability, not a new tab mandate.
+The visible tabs are About, Behavior, Appearance, and TRP3; Profile management appears at the top of Appearance. Its separate source module supports readability without introducing a separate tab. Keep each tab's section/control constructors in visual order and avoid splitting a small cohesive component solely to match a filename list.
 
 ## Runtime and UI contracts
 
@@ -44,9 +44,9 @@ Use a simple tab -> section -> control structure; separate construction from ref
 
 Characterize existing defaults, validation, Profile CRUD, per-character selection, CVar capture/reapply/restore, settings registration, and styling refresh. Run targeted Lua syntax/smoke checks and a live WoW matrix. Local stubs cannot prove Blizzard frame behavior or secret-value safety in the client.
 
-## Phase 2 load-order constraint
+## Load-order constraint
 
-`Database.lua` validates `global.managedNameCVarOriginals` using the allowlist that `ManagedNames.lua` constructs. ManagedNames resolves `ns.EnsureDB`, `ns.GetCategoryMode`, and `ns.GetStylingEnabled` only inside callbacks after Database has loaded. `Nameplates.lua` and `Settings.lua` bind `ns` functions immediately at load time, so both remain after Database. Failed CVar writes retain the captured original; combat restores defer until `PLAYER_REGEN_ENABLED`. Friendly class colors keep their separate in-memory originals and retry path.
+`Database.lua` validates `global.managedNameCVarOriginals` using the allowlist that `ManagedNames.lua` constructs. ManagedNames resolves `ns.EnsureDB`, `ns.GetCategoryMode`, and `ns.GetStylingEnabled` only inside callbacks after Database has loaded. `NameplateClassification.lua`, `Nameplates.lua`, and the settings modules load after Database. Failed CVar writes retain the captured original; combat restores defer until `PLAYER_REGEN_ENABLED`. Friendly class colors keep their separate in-memory originals and retry path.
 
 ## Phase 4 verification
 
@@ -55,3 +55,7 @@ Characterize existing defaults, validation, Profile CRUD, per-character selectio
 ## Phase 5 verification
 
 `tests/nameplates-smoke.lua` executes both runtime modules with small WoW stubs. It checks representative classification cases, one event frame, two Blizzard repair hooks, event counts, login and CVar callbacks, and reachable upvalue counts. It cannot establish actual Blizzard frame layout or Midnight secret-value behavior; those remain live WoW checks.
+
+## Phase 6 verification
+
+Run all three smoke scripts from the repository root. The pending game-client integration matrix is tracked in [live-wow-verification.md](live-wow-verification.md); do not infer client behavior from the stubs.

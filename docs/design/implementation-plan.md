@@ -1,8 +1,8 @@
 # Simple Nameplates staged refactor plan
 
-Status: Phases 0–5 implemented; live WoW checks remain open. The version-2 saved-data shape is unchanged.
+Status: Phases 0–6 repository work implemented; live WoW checks remain open. The version-2 saved-data shape is unchanged.
 
-See [saved-data-model.md](saved-data-model.md), [settings-architecture.md](settings-architecture.md), and [phase-1-baseline.md](phase-1-baseline.md). This adapts the RP Emote Menu readability work to Simple Nameplates without adding Themes. Keep data/code-boundary changes and settings presentation changes in distinct commits.
+See [saved-data-model.md](saved-data-model.md), [settings-architecture.md](settings-architecture.md), [phase-1-baseline.md](phase-1-baseline.md), and [live-wow-verification.md](live-wow-verification.md). This adapts the RP Emote Menu readability work to Simple Nameplates without adding Themes. Data/code-boundary changes and settings presentation changes were kept in distinct commits.
 
 ## Phase 0 — Analysis and design
 
@@ -28,7 +28,7 @@ Acceptance: Core smoke test passes; live WoW checks in phase-1-baseline.md remai
 
 Acceptance: the updated Core behavior smoke test passes with the split modules and checks .toc paths/order and Lua syntax. Existing saved variables retain their meaning; no migration, reset, or unexpected Profile reassignment. Live WoW verification remains open.
 
-Phase 3 load order: `Defaults.lua` defines factory settings; `Core.lua` supplies metadata/helpers; `ManagedNames.lua` builds the CVar allowlist before `Database.lua` validates saved originals. ManagedNames callbacks resolve Database APIs only when invoked after loading. `TRP3.lua`, `Nameplates.lua`, and `Settings.lua` then bind the exported settings API.
+Load order: `Defaults.lua` defines factory settings; `Core.lua` supplies metadata/helpers; `ManagedNames.lua` builds the CVar allowlist before `Database.lua` validates saved originals. ManagedNames callbacks resolve Database APIs only when invoked after loading. `TRP3.lua`, `NameplateClassification.lua`, `Nameplates.lua`, the settings page modules, and `Settings.lua` load in the explicit .toc order.
 
 ## Phase 3 — Isolate managed CVar behavior
 
@@ -59,12 +59,12 @@ Acceptance: `tests/nameplates-smoke.lua` passes classification cases, one-time m
 
 ## Phase 6 — Cleanup and verification
 
-- [ ] Remove transitional helpers and stale comments; update README, About, changelog, and developer docs as needed.
-- [ ] Run syntax and focused smoke checks.
+- [x] Audit for transitional helpers and stale comments; update README, changelog, and developer docs. The About page already derives the version from .toc and describes the current behavior.
+- [x] Run syntax and focused smoke checks.
 - [ ] Run live WoW checks for fresh install, valid saved data, two characters selecting different Profiles, bundled restore, create/copy/rename/delete, six category modes, managed CVar restoration, inside-bar placement, interruptible casts, TRP3 fallback, reload/logout, and disable/re-enable.
-- [ ] Record outstanding client-only checks explicitly and follow repository version conventions.
+- [x] Record outstanding client-only checks explicitly and follow repository version conventions.
 
-Acceptance: settings retain their previous meaning and presentation; documented behavior matches tested behavior.
+Acceptance: repository smoke checks pass without changing settings behavior or the version-2 schema. Actual settings presentation and the remaining client-only behavior require the live WoW matrix in [live-wow-verification.md](live-wow-verification.md) before full integration acceptance.
 
 ## Scope
 

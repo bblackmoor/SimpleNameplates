@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.98
+
+* Updated source and saved-data documentation to match the completed module split; clarified the README's Priority Color classification and local development checks.
+* Recorded the remaining live WoW integration matrix separately from the Lua smoke checks. No saved-data schema or settings behavior changed.
+
 ## 1.0.97
 
 * Isolated priority unit classification in `NameplateClassification.lua` while leaving the coupled styling, frame repair, and event pipeline together.

@@ -33,10 +33,12 @@ The test loads `Defaults.lua`, `Core.lua`, `ManagedNames.lua`, and `Database.lua
 | `NAME_PLATE_UNIT_ADDED` | Nameplates.lua `HandleNameplateEvent` | Refresh unit immediately and after 0.5 seconds |
 | Settings registration | Settings.lua `RegisterSettingsPanel` | About, Behavior, Appearance, TRP3; one-time registration |
 | `/snp` commands | Settings.lua `RegisterSettingsPanel` | Behavior default, About/Appearance/Colors/TRP3 routes, Debug |
-| Profile/appearance control callbacks | Settings.lua | Refresh selected controls and `ns.RefreshAll` |
+| Profile/appearance control callbacks | SettingsProfiles.lua / SettingsAppearance.lua | Refresh selected controls and `ns.RefreshAll` |
 | `RefreshAll` / `RestoreAll` | Nameplates.lua | Update or restore visible nameplates |
 
 ## Live WoW checks before marking the full phase complete
+
+The consolidated Phase 6 integration matrix is in [live-wow-verification.md](live-wow-verification.md). The original characterization checks remain below for historical context.
 
 - [ ] Settings appear once after login; About, Behavior, Appearance, and TRP3 open; `/snp`, `/snp colors`, `/snp trp3`, and `/snp debug` route correctly.
 - [ ] Different characters independently select Default and High Contrast, then keep those selections across reload/logout.
