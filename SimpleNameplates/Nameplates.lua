@@ -660,11 +660,9 @@ end
 
 local function HandlePlayerLogin()
     ns.EnsureDB()
-    ns.ApplyBlizzardMinionNameVisibility()
     ns.ApplyCritterCompanionNameVisibility()
     ns.ApplyOverheadNameReplacement()
     C_Timer.After(1, function()
-        if ns.GetHideBlizzardMinionNames() then ns.ApplyBlizzardMinionNameVisibility() end
         if ns.GetHideCritterCompanionNames() then ns.ApplyCritterCompanionNameVisibility() end
         if ns.GetReplaceBlizzardOverheadNames() then ns.ApplyOverheadNameReplacement() end
     end)
@@ -690,14 +688,6 @@ local function HandleCVarUpdate(cvarName)
         if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
         QueueRefreshAll()
         return
-    end
-    if ns.GetHideBlizzardMinionNames() then
-        for _, cvar in ipairs(ns.BLIZZARD_MINION_NAME_CVARS) do
-            if cvarName == cvar then
-                ns.ApplyBlizzardMinionNameVisibility()
-                return
-            end
-        end
     end
     if ns.GetHideCritterCompanionNames() then
         for _, cvar in ipairs(ns.BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do

@@ -114,7 +114,6 @@ local ns = {
     GetInterruptibleHighlightEnabled = function() return false end,
     GetTRP3Enabled = function() return false end,
     GetTRP3Setting = function() return true end,
-    GetHideBlizzardMinionNames = function() return false end,
     GetHideCritterCompanionNames = function() return false end,
     GetReplaceBlizzardOverheadNames = function() return false end,
     RefreshAll = function() refreshes = refreshes + 1 end,
@@ -128,7 +127,7 @@ local ns = {
 for _, name in ipairs({
     "ResetPriorityColor", "SetEffectColor", "ResetEffectColor",
     "ResetAllColors", "SetInterruptibleHighlightEnabled",
-    "SetThreatEnabled", "SetHideBlizzardMinionNames", "SetHideCritterCompanionNames",
+    "SetThreatEnabled", "SetHideCritterCompanionNames",
     "SetReplaceBlizzardOverheadNames", "SetTRP3Enabled", "SetTRP3Setting",
 }) do ns[name] = function() end end
 

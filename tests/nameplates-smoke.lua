@@ -55,12 +55,10 @@ local ns = {
     GetInterruptibleHighlightEnabled = function() return false end,
     GetThreatEnabled = function() return false end,
     GetReplaceBlizzardOverheadNames = function() return false end,
-    GetHideBlizzardMinionNames = function() return false end,
     GetHideCritterCompanionNames = function() return false end,
     PriorityColorForState = function() return 1, 0, 0 end,
     EffectColor = function() return 0, 1, 1 end,
     FontPath = function() return "Fonts\\ARIALN.TTF" end,
-    ApplyBlizzardMinionNameVisibility = function() count("minions") end,
     ApplyCritterCompanionNameVisibility = function() count("critters") end,
     ApplyOverheadNameReplacement = function() count("overhead") end,
     DisableFriendlyClassColors = function() count("classColors") end,
@@ -69,7 +67,7 @@ local ns = {
     RegisterSettingsPanel = function() count("settings") end,
     ShowNameplateConflictWarning = function() count("warning") end,
     OVERHEAD_REPLACEMENT_CVAR_SET = { unitnamefriendlyplayername = true },
-    BLIZZARD_MINION_NAME_CVARS = {}, BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
+    BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
     FRIENDLY_COLOR_CVARS = {},
 }
 assert(loadfile("SimpleNameplates/NameplateClassification.lua"))("SimpleNameplates", ns)
@@ -90,7 +88,6 @@ equal(calls.db, 1, "database initialized once")
 equal(events.registered.ADDON_LOADED, nil, "load event unregistered")
 events.scripts.OnEvent(events, "PLAYER_LOGIN")
 equal(calls.settings, 1, "settings registration on login")
-equal(calls.minions, 1, "managed minion settings on login")
 equal(calls.critters, 1, "managed critter settings on login")
 equal(calls.overhead, 1, "overhead setting on login")
 equal(calls.classColors, 1, "friendly class colors on login")

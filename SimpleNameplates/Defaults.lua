@@ -72,7 +72,6 @@ local DEFAULT_TRP3 = {
 
 local DEFAULT_STYLING_ENABLED = true
 local DEFAULT_SHOW_THREAT = true
-local DEFAULT_HIDE_BLIZZARD_MINION_NAMES = false
 local DEFAULT_HIDE_CRITTER_COMPANION_NAMES = false
 local DEFAULT_REPLACE_BLIZZARD_OVERHEAD_NAMES = false
 
@@ -90,7 +89,6 @@ ns.Defaults = {
     trp3 = DEFAULT_TRP3,
     stylingEnabled = DEFAULT_STYLING_ENABLED,
     showThreat = DEFAULT_SHOW_THREAT,
-    hideBlizzardMinionNames = DEFAULT_HIDE_BLIZZARD_MINION_NAMES,
     hideCritterCompanionNames = DEFAULT_HIDE_CRITTER_COMPANION_NAMES,
     replaceBlizzardOverheadNames = DEFAULT_REPLACE_BLIZZARD_OVERHEAD_NAMES,
 }

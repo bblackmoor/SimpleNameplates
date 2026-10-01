@@ -7,8 +7,6 @@ local AddSection, RunRefreshers, RefreshNameplates =
     U.AddSection, U.RunRefreshers, U.RefreshNameplates
 local GetCategoryMode, SetCategoryMode = ns.GetCategoryMode, ns.SetCategoryMode
 local GetStylingEnabled, SetStylingEnabled = ns.GetStylingEnabled, ns.SetStylingEnabled
-local GetHideBlizzardMinionNames, SetHideBlizzardMinionNames =
-    ns.GetHideBlizzardMinionNames, ns.SetHideBlizzardMinionNames
 local GetHideCritterCompanionNames, SetHideCritterCompanionNames =
     ns.GetHideCritterCompanionNames, ns.SetHideCritterCompanionNames
 local GetReplaceBlizzardOverheadNames, SetReplaceBlizzardOverheadNames =
@@ -129,9 +127,6 @@ local function AddBehaviorOverheadNameControls(context)
     CreateBehaviorToggle(context, "Replace Blizzard overhead names (experimental)",
         "Requests name-only player, minion, and NPC plates, then hides matching world names. A unit may have no visible name if Blizzard does not create a plate.",
         GetReplaceBlizzardOverheadNames, SetReplaceBlizzardOverheadNames, RefreshNameplates)
-    CreateBehaviorToggle(context, "Hide Blizzard-controlled minion names",
-        "Hides friendly and enemy pets, guardians, totems, and minions. Opposing-player names remain visible.",
-        GetHideBlizzardMinionNames, SetHideBlizzardMinionNames)
     CreateBehaviorToggle(context, "Hide critter and companion names",
         "Hides Blizzard overhead names for noncombat critters and companions.",
         GetHideCritterCompanionNames, SetHideCritterCompanionNames)

@@ -1,18 +1,6 @@
 -- Simple Nameplates: Blizzard name CVars, ownership, and restoration.
 local _, ns = ...
 
-local BLIZZARD_MINION_NAME_CVARS = {
-    "UnitNameFriendlyMinionName",
-    "UnitNameEnemyMinionName",
-    "UnitNameFriendlyPetName",
-    "UnitNameEnemyPetName",
-    "UnitNameFriendlyGuardianName",
-    "UnitNameEnemyGuardianName",
-    "UnitNameFriendlyTotemName",
-    "UnitNameEnemyTotemName",
-}
-ns.BLIZZARD_MINION_NAME_CVARS = BLIZZARD_MINION_NAME_CVARS
-
 local BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {
     "UnitNameNonCombatCreatureName",
 }
@@ -77,7 +65,6 @@ local function RegisterManagedCVars(values)
 end
 RegisterManagedCVars(SHARED_REPLACEMENT_CVAR_VALUES)
 for _, values in pairs(CATEGORY_REPLACEMENT_CVAR_VALUES) do RegisterManagedCVars(values) end
-for _, cvar in ipairs(BLIZZARD_MINION_NAME_CVARS) do RegisterManagedCVars({ [cvar] = "0" }) end
 for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do RegisterManagedCVars({ [cvar] = "0" }) end
 table.sort(MANAGED_NAME_CVARS)
 ns.OVERHEAD_REPLACEMENT_CVARS = MANAGED_NAME_CVARS
@@ -126,9 +113,6 @@ local function AddReplacementCVarSettings(desired, global)
 end
 
 local function AddExplicitHiddenNameCVarSettings(desired, global)
-    if global.hideBlizzardMinionNames then
-        for _, cvar in ipairs(BLIZZARD_MINION_NAME_CVARS) do desired[cvar] = "0" end
-    end
     if global.hideCritterCompanionNames then
         for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do desired[cvar] = "0" end
     end
@@ -207,19 +191,6 @@ local function RestoreAllManagedNameSettings()
         end
     end
     applyingManagedNameSettings = false
-end
-
-local function GetHideBlizzardMinionNames()
-    return EnsureDB().global.hideBlizzardMinionNames
-end
-
-local function SetHideBlizzardMinionNames(enabled)
-    EnsureDB().global.hideBlizzardMinionNames = enabled == true
-    ApplyManagedNameSettings()
-end
-
-local function ApplyBlizzardMinionNameVisibility()
-    ApplyManagedNameSettings()
 end
 
 local function GetHideCritterCompanionNames()
@@ -321,9 +292,6 @@ RestoreFriendlyClassColors = function()
 end
 
 
-ns.GetHideBlizzardMinionNames = GetHideBlizzardMinionNames
-ns.SetHideBlizzardMinionNames = SetHideBlizzardMinionNames
-ns.ApplyBlizzardMinionNameVisibility = ApplyBlizzardMinionNameVisibility
 ns.GetHideCritterCompanionNames = GetHideCritterCompanionNames
 ns.SetHideCritterCompanionNames = SetHideCritterCompanionNames
 ns.ApplyCritterCompanionNameVisibility = ApplyCritterCompanionNameVisibility

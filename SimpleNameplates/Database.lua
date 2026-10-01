@@ -10,7 +10,6 @@ local DEFAULT_APPEARANCE = defaults.appearance
 local DEFAULT_TRP3 = defaults.trp3
 local DEFAULT_STYLING_ENABLED = defaults.stylingEnabled
 local DEFAULT_SHOW_THREAT = defaults.showThreat
-local DEFAULT_HIDE_BLIZZARD_MINION_NAMES = defaults.hideBlizzardMinionNames
 local DEFAULT_HIDE_CRITTER_COMPANION_NAMES = defaults.hideCritterCompanionNames
 local DEFAULT_REPLACE_BLIZZARD_OVERHEAD_NAMES = defaults.replaceBlizzardOverheadNames
 local MIN_NAME_SIZE, MAX_NAME_SIZE = ns.MIN_NAME_SIZE, ns.MAX_NAME_SIZE
@@ -198,8 +197,6 @@ end
 
 local function ValidateGlobalToggles(db, savedGlobal)
     db.global.stylingEnabled = SavedBoolean(savedGlobal.stylingEnabled, DEFAULT_STYLING_ENABLED)
-    db.global.hideBlizzardMinionNames = SavedBoolean(savedGlobal.hideBlizzardMinionNames,
-        DEFAULT_HIDE_BLIZZARD_MINION_NAMES)
     db.global.hideCritterCompanionNames = SavedBoolean(savedGlobal.hideCritterCompanionNames,
         DEFAULT_HIDE_CRITTER_COMPANION_NAMES)
     db.global.replaceBlizzardOverheadNames = SavedBoolean(savedGlobal.replaceBlizzardOverheadNames,
@@ -214,10 +211,9 @@ local function ValidateTRP3Settings(db, savedGlobal)
 end
 
 local function ValidatedDB(saved)
-    -- Saved data from another schema is intentionally ignored. Keeping schema
-    -- changes here avoids permanent one-off migration code and prevents stale
-    -- or misplaced settings from leaking into the current configuration.
-    if type(saved) ~= "table" or saved.schemaVersion ~= DB_SCHEMA_VERSION then saved = {} end
+    -- Validate recognized settings in their current locations. Unknown or
+    -- invalid values are discarded; no aliases, conversions, or migrations.
+    if type(saved) ~= "table" then saved = {} end
 
     local savedGlobal = type(saved.global) == "table" and saved.global or {}
     local savedProfiles = type(saved.profiles) == "table" and saved.profiles or {}

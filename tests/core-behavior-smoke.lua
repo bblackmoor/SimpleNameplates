@@ -134,10 +134,38 @@ equal(db.global.managedNameCVarOriginals.InventedCVar, nil, "unknown ledger entr
 ns.SetCategoryMode("friendlyPC", "inactive")
 ns.SetCategoryMode("friendlyPC", "hide")
 equal(ns.GetCategoryMode("friendlyPC"), "inactive", "removed category mode rejected by setter")
-SimpleNameplatesDB = { schemaVersion = 999, global = { stylingEnabled = false } }
-ns = loadCore()
-equal(ns.EnsureDB().schemaVersion, 2, "incompatible schema discarded")
-equal(ns.GetStylingEnabled(), true, "incompatible values ignored")
+-- A schema marker does not discard valid fields; no legacy aliases are converted.
+for _, marker in ipairs({ 999, false }) do
+    SimpleNameplatesDB = {
+        schemaVersion = marker,
+        global = {
+            stylingEnabled = false,
+            hideBlizzardMinionNames = true,
+            hideCritterCompanionNames = true,
+            categoryModes = { hostile = "inactive", other = "invalid" },
+            legacyStylingEnabled = true,
+        },
+        profiles = {
+            Default = { appearance = { nameSize = 25, nameFont = "invalid" } },
+            Custom = { showThreat = false },
+        },
+        profileKeys = { ["Player-One"] = "Custom" },
+        legacyAppearance = { nameSize = 30 },
+    }
+    ns = loadCore()
+    db = ns.EnsureDB()
+    equal(db.schemaVersion, 2, "current schema marker")
+    equal(ns.GetStylingEnabled(), false, "valid setting retained across schema markers")
+    equal(ns.GetCategoryMode("hostile"), "inactive", "valid mode retained")
+    equal(ns.GetCategoryMode("other"), "active", "invalid mode discarded")
+    equal(db.profiles.Default.appearance.nameSize, 25, "valid appearance retained")
+    equal(db.profiles.Default.appearance.nameFont, "ARIALN", "invalid font discarded")
+    equal(ns.GetActiveProfileName(), "Custom", "valid selection retained")
+    equal(db.global.hideBlizzardMinionNames, nil, "removed setting discarded")
+    equal(db.global.legacyStylingEnabled, nil, "unknown setting discarded")
+    equal(db.legacyAppearance, nil, "legacy layout not converted")
+    equal(ns.GetHideCritterCompanionNames(), true, "critter toggle retained")
+end
 
 -- Replacement CVar capture, restoration, reload, and combat deferral.
 ns = fresh()
@@ -223,22 +251,34 @@ inCombat = false
 ns.ApplyPendingManagedNameSettings()
 equal(cvars[friendly], "class-original", "friendly combat restore applied")
 
--- Both dedicated hide switches remain independent of category handling.
+-- Critter hiding remains independent; replacement still manages minion names.
 ns = fresh()
 cvars.UnitNameFriendlyPetName = "pet-original"
 cvars.UnitNameNonCombatCreatureName = "critter-original"
-ns.SetHideBlizzardMinionNames(true)
+equal(ns.GetHideBlizzardMinionNames, nil, "minion getter removed")
+equal(ns.SetHideBlizzardMinionNames, nil, "minion setter removed")
 ns.SetHideCritterCompanionNames(true)
-equal(cvars.UnitNameFriendlyPetName, "0", "dedicated pet hide retained")
+equal(cvars.UnitNameFriendlyPetName, "pet-original", "critter hide leaves pets alone")
 equal(cvars.UnitNameNonCombatCreatureName, "0", "dedicated critter hide retained")
 ns.SetReplaceBlizzardOverheadNames(true)
-ns.SetHideBlizzardMinionNames(false)
-equal(cvars.UnitNameFriendlyPetName, "0", "replacement retains shared pet claim")
+equal(cvars.UnitNameFriendlyPetName, "0", "replacement retains minion-name behavior")
 ns.SetReplaceBlizzardOverheadNames(false)
-equal(cvars.UnitNameFriendlyPetName, "pet-original", "last pet claim restored")
+equal(cvars.UnitNameFriendlyPetName, "pet-original", "replacement pet claim restored")
 equal(cvars.UnitNameNonCombatCreatureName, "0", "critter hide remains independent")
 ns.SetHideCritterCompanionNames(false)
 equal(cvars.UnitNameNonCombatCreatureName, "critter-original", "critter original restored")
+
+-- Valid restoration records remain usable after an obsolete setting is discarded.
+ns = fresh()
+db = ns.EnsureDB()
+db.global.hideBlizzardMinionNames = true
+db.global.managedNameCVarOriginals.UnitNameFriendlyPetName = "pre-addon-pet"
+cvars.UnitNameFriendlyPetName = "0"
+ns = loadCore()
+db = ns.EnsureDB()
+equal(db.global.hideBlizzardMinionNames, nil, "obsolete minion toggle discarded")
+ns.ApplyManagedNameSettings()
+equal(cvars.UnitNameFriendlyPetName, "pre-addon-pet", "valid pet original restored")
 
 -- Removed Hide values fall back for every category and old CVar claims restore.
 ns = fresh()

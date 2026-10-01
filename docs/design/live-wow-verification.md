@@ -5,7 +5,7 @@ Status: pending. These checks require a World of Warcraft client; local Lua stub
 ## Setup and saved data
 
 - [ ] Fresh install with no `SimpleNameplatesDB`: Default and High Contrast appear, the active Profile is Default, and Global behavior uses factory values.
-- [ ] Load an existing valid schema-2 database: colors, fonts, sizes, placement, category modes, TRP3 preferences, and managed-CVar originals retain their meaning. Verify incompatible/malformed values fall back as documented.
+- [ ] Load an existing valid schema-2 database: colors, fonts, sizes, placement, category modes, TRP3 preferences, and managed-CVar originals retain their meaning. Verify invalid fields are discarded individually while valid fields survive regardless of the schema marker.
 - [ ] On two characters, select different Profiles; reload and log out/in on each. Selections persist independently and edits to an account-wide Profile appear for both where selected.
 - [ ] Create, copy, rename, and delete a Profile. Copy retains the selected appearance, renaming propagates to character assignments, deletion falls back to Default, and Default cannot be renamed/deleted.
 - [ ] Edit both bundled Profiles, then Restore Bundled Profiles. Factory appearances return and High Contrast is recreated after removal without changing custom Profiles.
@@ -14,7 +14,7 @@ Status: pending. These checks require a World of Warcraft client; local Lua stub
 
 - [ ] About, Behavior, Appearance, and TRP3 render once, scroll correctly, and maintain the expected layout and controls; `/snp`, `/snp colors`, `/snp trp3`, `/snp about`, and `/snp debug` route correctly.
 - [ ] Exercise Active and Inactive for all six priority categories on representative addon-accessible units. Confirm first-match priority and threat/effect behavior; no category Hide option is available.
-- [ ] Exercise overhead replacement and independent minion/critter controls. Original managed Blizzard CVars are captured and restored when the last claim ends, when styling is disabled, after a reload, and after a combat-deferred change. Confirm no taint or secret-value errors.
+- [ ] Exercise overhead replacement and the independent critter/companion control. Original managed Blizzard CVars are captured and restored when the last claim ends, when styling is disabled, after a reload, and after a combat-deferred change. Confirm no taint or secret-value errors.
 - [ ] Disable and re-enable styling; addon visuals and inside-bar sizing restore and reapply correctly without losing Global modes or the selected Profile.
 
 ## Nameplate presentation and integration

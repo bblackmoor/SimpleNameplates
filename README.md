@@ -57,7 +57,7 @@ Priority Colors 1–3 put their color on visible health bars and leave the name 
 
 Blizzard's separate overhead world names are not addon-accessible and cannot be recolored directly. **Replace Blizzard overhead names (experimental)** hides selected world-name categories and requests corresponding Blizzard nameplates so priorities 4–6 can style them. Blizzard still decides whether a unit receives a nameplate, so the experiment can leave a unit without a visible name. Any WoW CVar changed by the addon is restored when no current option needs it or Simple Nameplates styling is disabled.
 
-**Hide Blizzard-controlled minion names** and **Hide critter and companion names** remain independent narrow controls. Their prior WoW settings are restored when disabled.
+**Hide critter and companion names** controls ordinary overhead names for noncombat critters and companions. Their prior WoW settings are restored when disabled.
 
 The Text and Layout section provides:
 
@@ -83,7 +83,7 @@ Each field has its own toggle. To keep nameplates readable, roleplaying names ar
 
 Look-and-feel settings are stored in named appearance profiles: Priority Colors, effect colors and toggles, fonts, sizing, placement, and threat display. Addon behavior and user preferences are global: styling enablement, category handling, Blizzard overhead-name controls, and TRP3 integration.
 
-Saved data is validated against the current schema. Data from older or incompatible schemas is ignored and replaced with current defaults; the addon does not retain one-off migration code.
+Saved settings are validated individually in their current locations. Recognized valid values are retained regardless of the saved schema marker; invalid and unknown settings are silently discarded, with defaults supplying missing values. No old settings are renamed, relocated, or converted.
 
 ## About and Diagnostics
 

@@ -32,7 +32,7 @@ SimpleNameplatesDB = {
 }
 ```
 
-A valid version-2 saved database separates behavior from look and feel. The structural refactor kept this shape and version. Validation reconstructs settings from defaults, ignores malformed values, and ignores data of a different schema. No one-off migration or import/export facility is needed.
+A valid version-2 saved database separates behavior from look and feel. The structural refactor kept this shape and version. Validation reconstructs settings from defaults, discards invalid and unknown fields, and retains recognized valid settings regardless of the saved schema marker. No one-off migration or import/export facility is needed.
 
 ## Ownership inventory
 
@@ -40,7 +40,7 @@ A valid version-2 saved database separates behavior from look and feel. The stru
 | --- | --- | --- |
 | `stylingEnabled` | Global | Master addon behavior |
 | Six `categoryModes` (active/inactive) | Global | Per-category behavior and managed Blizzard CVars |
-| `hideBlizzardMinionNames`, `hideCritterCompanionNames`, `replaceBlizzardOverheadNames` | Global | Blizzard name management |
+| `hideCritterCompanionNames`, `replaceBlizzardOverheadNames` | Global | Blizzard name management |
 | `trp3.enabled`, `useRoleplayingName`, `showShortTitle`, `showFullTitle`, `showOOC` | Global | TRP3 integration and display policy |
 | Six `priorityColors`, `effectColors.interruptible` | Profile | Appearance colors |
 | `appearance.nameFont`, `nameSize`, `threatFont`, `namePlacement` | Profile | Text and layout |
@@ -56,4 +56,4 @@ Default and High Contrast are editable account-wide Profiles. Default always exi
 
 ## CVar safety and compatibility
 
-Managed overhead-name original values are persisted in `global.managedNameCVarOriginals` and must survive the refactor unchanged until restored. Some friendly class-color original values are held in memory separately. Keep combat deferral, capture-before-set, and restoration on disable or when no longer managed. A code-layout refactor has no reason to bump `schemaVersion`; doing so would silently reset valid settings and could strand modified Blizzard CVars. If a later feature truly changes the schema, plan its compatibility and CVar restoration independently.
+Managed overhead-name original values are persisted in `global.managedNameCVarOriginals` and must survive the refactor unchanged until restored. Some friendly class-color original values are held in memory separately. Keep combat deferral, capture-before-set, and restoration on disable or when no longer managed. A code-layout refactor has no reason to bump `schemaVersion`; it remains descriptive metadata rather than a reason to reset valid settings. The saved schema marker does not reject an otherwise valid setting. Recognized fields are validated in their current locations without conversion; retain valid restoration-ledger entries until they are restored.

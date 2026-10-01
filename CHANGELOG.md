@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.101
+
+* Removed Hide Blizzard-controlled minion names and its dedicated defaults, saved setting, CVar claims, and runtime callbacks.
+* Validate recognized saved settings individually regardless of the schema marker; retain valid fields and silently discard invalid or unknown fields without conversion.
+* Retained critter/companion hiding, experimental overhead replacement, and managed CVar restoration.
+
 ## 1.0.100
 
 * Removed Hide from all six Priority Color category selectors, saved-setting validation, and runtime handling; categories now support Active or Inactive only.
