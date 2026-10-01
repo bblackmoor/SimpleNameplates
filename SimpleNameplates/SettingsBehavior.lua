@@ -9,8 +9,6 @@ local GetCategoryMode, SetCategoryMode = ns.GetCategoryMode, ns.SetCategoryMode
 local GetStylingEnabled, SetStylingEnabled = ns.GetStylingEnabled, ns.SetStylingEnabled
 local GetHideCritterCompanionNames, SetHideCritterCompanionNames =
     ns.GetHideCritterCompanionNames, ns.SetHideCritterCompanionNames
-local GetReplaceBlizzardOverheadNames, SetReplaceBlizzardOverheadNames =
-    ns.GetReplaceBlizzardOverheadNames, ns.SetReplaceBlizzardOverheadNames
 
 local CATEGORY_ROWS = {
     { "1. Attacking me", "attacking", "Includes attacks on pets, guardians, and minions; overrides 2–6" },
@@ -54,10 +52,10 @@ end
 local function HandleStylingChanged(enabled)
     if enabled then
         ns.DisableFriendlyClassColors()
-        ns.ApplyOverheadNameReplacement()
+        ns.ApplyManagedNameSettings()
         RefreshNameplates()
     else
-        ns.RestoreOverheadNameSettings()
+        ns.RestoreManagedNameSettings()
         ns.RestoreFriendlyClassColors()
         if ns.RestoreAll then ns.RestoreAll() end
     end
@@ -124,9 +122,6 @@ end
 local function AddBehaviorOverheadNameControls(context)
     context.layout:Space(6)
     AddSection(context.content, context.layout, "BLIZZARD OVERHEAD NAMES")
-    CreateBehaviorToggle(context, "Replace Blizzard overhead names (experimental)",
-        "Requires all six categories Active because Blizzard CVars overlap them. Requests matching nameplates and hides world names; a unit may have no visible replacement.",
-        GetReplaceBlizzardOverheadNames, SetReplaceBlizzardOverheadNames, RefreshNameplates)
     CreateBehaviorToggle(context, "Hide critter and companion names",
         "Hides Blizzard overhead names for noncombat critters and companions.",
         GetHideCritterCompanionNames, SetHideCritterCompanionNames)

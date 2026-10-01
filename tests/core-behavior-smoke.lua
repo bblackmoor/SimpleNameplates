@@ -167,69 +167,83 @@ for _, marker in ipairs({ 999, false }) do
     equal(ns.GetHideCritterCompanionNames(), true, "critter toggle retained")
 end
 
--- Replacement CVar capture, restoration, reload, and combat deferral.
+-- Removed replacement setting is discarded, while valid originals restore.
 ns = fresh()
-cvars.UnitNameFriendlyPlayerName = "original"
-cvars.nameplateShowFriendlyPlayers = "original-plates"
-ns.SetReplaceBlizzardOverheadNames(true)
-equal(cvars.UnitNameFriendlyPlayerName, "0", "replacement applies name CVar")
-equal(cvars.nameplateShowFriendlyPlayers, "1", "replacement requests player plates")
-equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
-    "original", "capture original once")
-ns.SetCategoryMode("friendly", "active")
-ns.SetReplaceBlizzardOverheadNames(true)
-equal(cvars.UnitNameFriendlyPlayerName, "0", "replacement claims name CVar")
-equal(cvars.nameplateShowFriendlyPlayers, "1", "replacement claims plate CVar")
-ns.SetCategoryMode("friendly", "inactive")
-equal(cvars.UnitNameFriendlyPlayerName, "original", "last name claim restored")
-equal(cvars.nameplateShowFriendlyPlayers, "original-plates", "last plate claim restored")
-ns.SetCategoryMode("friendly", "active")
+db = ns.EnsureDB()
+db.global.replaceBlizzardOverheadNames = true
+db.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName = "original"
+db.global.managedNameCVarOriginals.nameplateShowFriendlyPlayers = "original-plates"
+cvars.UnitNameFriendlyPlayerName, cvars.nameplateShowFriendlyPlayers = "0", "1"
 ns = loadCore()
-ns.EnsureDB()
-ns.RestoreOverheadNameSettings()
-equal(cvars.UnitNameFriendlyPlayerName, "original", "reload restore original")
-equal(next(SimpleNameplatesDB.global.managedNameCVarOriginals), nil, "restore clears ledger")
-inCombat = true
+db = ns.EnsureDB()
+equal(db.global.replaceBlizzardOverheadNames, nil, "removed preference discarded")
+equal(ns.GetReplaceBlizzardOverheadNames, nil, "replacement getter removed")
+equal(ns.SetReplaceBlizzardOverheadNames, nil, "replacement setter removed")
+equal(ns.ApplyOverheadNameReplacement, nil, "replacement action removed")
+ns.ApplyManagedNameSettings()
+equal(cvars.UnitNameFriendlyPlayerName, "original", "world name original restored")
+equal(cvars.nameplateShowFriendlyPlayers, "original-plates", "plate original restored")
+equal(next(db.global.managedNameCVarOriginals), nil, "successful restore clears ledger")
 local before = #writes
-ns.SetCategoryMode("friendly", "active")
-equal(#writes, before, "combat defers writes")
-inCombat = false
-ns.ApplyPendingManagedNameSettings()
-equal(cvars.UnitNameFriendlyPlayerName, "0", "pending applies after combat")
-ns.SetStylingEnabled(false)
-ns.RestoreOverheadNameSettings()
-equal(cvars.UnitNameFriendlyPlayerName, "original", "disabled restores originals")
+ns.ApplyManagedNameSettings()
+for _, state in ipairs({"attacking", "hostile", "neutral", "friendly", "useful", "useless"}) do
+    ns.SetCategoryMode(state, "inactive")
+    ns.SetCategoryMode(state, "active")
+end
+equal(#writes, before, "replacement never recaptures or rewrites restored values")
 
-
--- A failed restoration must retain its original for a later retry.
+-- Every former replacement CVar remains eligible for restoration only.
 ns = fresh()
-cvars.UnitNameFriendlyPlayerName = "custom"
-ns.SetReplaceBlizzardOverheadNames(true)
+db = ns.EnsureDB()
+for _, cvar in ipairs(ns.MANAGED_NAME_CVARS) do
+    if cvar ~= "UnitNameNonCombatCreatureName" then
+        db.global.managedNameCVarOriginals[cvar] = "original-" .. cvar
+        cvars[cvar] = "modified"
+    end
+end
+ns = loadCore()
+db = ns.EnsureDB()
+ns.ApplyManagedNameSettings()
+for _, cvar in ipairs(ns.MANAGED_NAME_CVARS) do
+    if cvar ~= "UnitNameNonCombatCreatureName" then
+        equal(cvars[cvar], "original-" .. cvar, "restoration allowlist: " .. cvar)
+    end
+end
+equal(next(db.global.managedNameCVarOriginals), nil, "all original entries restored")
+
+-- Failed or silently rejected restoration retains its original for retry.
+ns = fresh()
+db = ns.EnsureDB()
+db.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName = "custom"
+cvars.UnitNameFriendlyPlayerName = "0"
 rejectedWrites.UnitNameFriendlyPlayerName = true
-ns.SetCategoryMode("friendly", "inactive")
-equal(cvars.UnitNameFriendlyPlayerName, "0", "failed restore leaves modified CVar")
-equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
-    "custom", "failed restore retains original")
+ns.ApplyManagedNameSettings()
+equal(cvars.UnitNameFriendlyPlayerName, "0", "failed restore leaves current value")
+equal(db.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName, "custom", "failed restore retains original")
 rejectedWrites.UnitNameFriendlyPlayerName = "silent"
 ns.ApplyPendingManagedNameSettings()
-equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
-    "custom", "silent refusal retains original")
+equal(db.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName, "custom", "silent failure retains original")
 rejectedWrites.UnitNameFriendlyPlayerName = nil
 ns.ApplyPendingManagedNameSettings()
-equal(cvars.UnitNameFriendlyPlayerName, "custom", "failed restore retries")
-equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
-    nil, "successful retry clears original")
+equal(cvars.UnitNameFriendlyPlayerName, "custom", "restoration retries")
+equal(db.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName, nil, "successful retry clears original")
 
--- An explicit restore in combat waits until combat ends, keeping the ledger.
-ns.SetCategoryMode("friendly", "active")
+-- Removed-feature restoration works with styling disabled and defers in combat.
+ns = fresh()
+db = ns.EnsureDB()
+db.global.stylingEnabled = false
+db.global.managedNameCVarOriginals.nameplateShowOnlyNameForFriendlyPlayerUnits = "bar-original"
+cvars.nameplateShowOnlyNameForFriendlyPlayerUnits = "1"
 inCombat = true
-ns.RestoreOverheadNameSettings()
-equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
-    "custom", "combat restore retains original")
-equal(cvars.UnitNameFriendlyPlayerName, "0", "combat restore makes no write")
+before = #writes
+ns.ApplyManagedNameSettings()
+equal(#writes, before, "combat defers restoration")
+equal(db.global.managedNameCVarOriginals.nameplateShowOnlyNameForFriendlyPlayerUnits,
+    "bar-original", "combat retains original")
 inCombat = false
 ns.ApplyPendingManagedNameSettings()
-equal(cvars.UnitNameFriendlyPlayerName, "custom", "combat restore retries")
+equal(cvars.nameplateShowOnlyNameForFriendlyPlayerUnits, "bar-original", "disabled styling restoration retries")
+equal(next(db.global.managedNameCVarOriginals), nil, "deferred restore clears ledger")
 
 -- Friendly class-color settings have their own original-value capture and retry.
 ns = fresh()
@@ -251,7 +265,7 @@ inCombat = false
 ns.ApplyPendingManagedNameSettings()
 equal(cvars[friendly], "class-original", "friendly combat restore applied")
 
--- Critter hiding remains independent; replacement still manages minion names.
+-- Critter hiding remains independent and does not request minion replacements.
 ns = fresh()
 cvars.UnitNameFriendlyPetName = "pet-original"
 cvars.UnitNameNonCombatCreatureName = "critter-original"
@@ -260,11 +274,6 @@ equal(ns.SetHideBlizzardMinionNames, nil, "minion setter removed")
 ns.SetHideCritterCompanionNames(true)
 equal(cvars.UnitNameFriendlyPetName, "pet-original", "critter hide leaves pets alone")
 equal(cvars.UnitNameNonCombatCreatureName, "0", "dedicated critter hide retained")
-ns.SetReplaceBlizzardOverheadNames(true)
-equal(cvars.UnitNameFriendlyPetName, "0", "replacement retains minion-name behavior")
-ns.SetReplaceBlizzardOverheadNames(false)
-equal(cvars.UnitNameFriendlyPetName, "pet-original", "replacement pet claim restored")
-equal(cvars.UnitNameNonCombatCreatureName, "0", "critter hide remains independent")
 ns.SetHideCritterCompanionNames(false)
 equal(cvars.UnitNameNonCombatCreatureName, "critter-original", "critter original restored")
 
@@ -325,18 +334,8 @@ local categoryCount = 0
 for _ in pairs(db.global.categoryModes) do categoryCount = categoryCount + 1 end
 equal(categoryCount, 6, "exactly six current categories")
 
--- Replacement CVars overlap categories: any Inactive category releases all replacement claims.
+-- Friendly class-color control respects possible player combat priorities.
 ns = fresh()
-cvars.UnitNameFriendlyPlayerName = "world-original"
-cvars.nameplateShowAll = "plates-original"
-ns.SetReplaceBlizzardOverheadNames(true)
-for _, state in ipairs({"attacking", "hostile", "neutral", "friendly", "useful", "useless"}) do
-    ns.SetCategoryMode(state, "inactive")
-    equal(cvars.UnitNameFriendlyPlayerName, "world-original", "mixed modes release replacement: " .. state)
-    equal(cvars.nameplateShowAll, "plates-original", "shared plate original restored: " .. state)
-    ns.SetCategoryMode(state, "active")
-    equal(cvars.UnitNameFriendlyPlayerName, "0", "all Active resumes replacement: " .. state)
-end
 local friendlyCVar = ns.FRIENDLY_COLOR_CVARS[1]
 cvars[friendlyCVar] = "class-before"
 ns.DisableFriendlyClassColors()

@@ -39,8 +39,8 @@ A valid version-2 saved database separates behavior from look and feel. The stru
 | Setting | Owner | Reason |
 | --- | --- | --- |
 | `stylingEnabled` | Global | Master addon behavior |
-| Six `categoryModes` (attacking/hostile/neutral/friendly/useful/useless; active/inactive) | Global | Per-category behavior and managed Blizzard CVars |
-| `hideCritterCompanionNames`, `replaceBlizzardOverheadNames` | Global | Blizzard name management |
+| Six `categoryModes` (attacking/hostile/neutral/friendly/useful/useless; active/inactive) | Global | Per-category nameplate styling behavior |
+| `hideCritterCompanionNames` | Global | Blizzard name management |
 | `trp3.enabled`, `useRoleplayingName`, `showShortTitle`, `showFullTitle`, `showOOC` | Global | TRP3 integration and display policy |
 | Six `priorityColors`, `effectColors.interruptible` | Profile | Appearance colors |
 | `appearance.nameFont`, `nameSize`, `threatFont`, `namePlacement` | Profile | Text and layout |
@@ -61,3 +61,7 @@ Managed overhead-name original values are persisted in `global.managedNameCVarOr
 ## Runtime phase-3 category fields
 
 Both Global category modes and Profile priority colors recognize only `attacking`, `hostile`, `neutral`, `friendly`, `useful`, and `useless`. Valid values at these keys are retained. The obsolete `unfriendlyNPC`, `unfriendlyPC`, `friendlyPC`, and `other` keys are discarded without remapping. Unrelated valid preferences, profile selections, and managed-CVar restoration records remain valid. The schema marker remains 2; it never overrides individual field validation.
+
+## Removal of experimental replacement (1.0.105)
+
+`replaceBlizzardOverheadNames` is no longer a recognized field and is silently discarded. No preference is converted. Valid `managedNameCVarOriginals` entries for its former Blizzard settings remain restoration records: normal managed-settings processing restores them without capturing or applying new replacement values, retains them after failed writes, and defers restricted restoration until combat ends. Only the independent critter/companion control makes ordinary-name CVar claims now; friendly class-color handling remains separate.

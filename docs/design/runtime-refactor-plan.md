@@ -1,6 +1,6 @@
 # World-context and entity-presentation runtime refactor
 
-Status: phases 1–3 implemented through 1.0.104; phases 4–5 pending. This follows the completed original settings refactor and is a separate five-phase sequence.
+Status: phases 1–3 implemented through 1.0.104; experimental replacement removed in 1.0.105; phases 4–5 pending. This follows the completed original settings refactor and is a separate five-phase sequence.
 
 ## Baseline and accepted rules
 
@@ -53,9 +53,11 @@ Capability assessment distinguishes missing, forbidden, combat-restricted, unkno
 
 Eligibility requires readable directional attackability for a player or player-controlled opponent. PvP flags, faction, and desired War Mode alone cannot promote it. Actual readable permissions remain authoritative for duels even if territory normally suppresses PvP. Useful requires readable NPC interaction evidence; unavailable data remains unknown and may leave the category at Useless without proving non-usefulness. Diagnostics shares these facts and reports configured versus observed presentation correctly.
 
-Current category keys are attacking, hostile, neutral, friendly, useful, and useless. Old keys are discarded without aliases or conversion; current valid values, unrelated preferences, profiles, and restoration records survive. Replacement CVars are named by their Blizzard family instead of falsely identifying them with priority categories. Because shared controls overlap all categories, experimental replacement requires all six Active and releases its claims in mixed modes. Friendly class-color controls also respect the Active modes of possible player combat priorities. Independent critter hiding remains intact.
+Current category keys are attacking, hostile, neutral, friendly, useful, and useless. Old keys are discarded without aliases or conversion; current valid values, unrelated preferences, profiles, and restoration records survive. In 1.0.104 replacement CVars were separated from priority categories and required all categories Active. The replacement feature was removed in 1.0.105; its valid saved original CVar values are retained solely for restoration. Friendly class-color controls also respect the Active modes of possible player combat priorities. Independent critter hiding remains intact.
 
 Local tests cover precedence, PvP/sanctuary/duels, hostile interactive NPCs, directional Neutral classification, minions, unknown/secret/missing/failed observations, saved-field validation, CVar release/resume, and diagnostic reporting. The combat-dependent bar policy and specific context/entity presentation rules remain phase 4. Client verification remains pending.
+
+The removal in 1.0.105 eliminates the permanent friendly-player name-only CVar claim identified during phase-4 readiness review. Phase 4 must still add a presentation decision shared by style/repair/text/title paths and deferred frame restoration after restrictions end, including when styling is disabled. World-name visibility is owned by Blizzard; the independent critter control remains.
 
 ## Phase 4 — Specific presentation rules
 

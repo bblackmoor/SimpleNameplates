@@ -115,11 +115,10 @@ local ns = {
     GetTRP3Enabled = function() return false end,
     GetTRP3Setting = function() return true end,
     GetHideCritterCompanionNames = function() return false end,
-    GetReplaceBlizzardOverheadNames = function() return false end,
     RefreshAll = function() refreshes = refreshes + 1 end,
     DisableFriendlyClassColors = function() end,
-    ApplyOverheadNameReplacement = function() end,
-    RestoreOverheadNameSettings = function() end,
+    ApplyManagedNameSettings = function() end,
+    RestoreManagedNameSettings = function() end,
     RestoreFriendlyClassColors = function() end,
     RestoreAll = function() end,
     TRP3 = { IsAvailable = function() return false end, Refresh = function() end },
@@ -128,7 +127,7 @@ for _, name in ipairs({
     "ResetPriorityColor", "SetEffectColor", "ResetEffectColor",
     "ResetAllColors", "SetInterruptibleHighlightEnabled",
     "SetThreatEnabled", "SetHideCritterCompanionNames",
-    "SetReplaceBlizzardOverheadNames", "SetTRP3Enabled", "SetTRP3Setting",
+    "SetTRP3Enabled", "SetTRP3Setting",
 }) do ns[name] = function() end end
 
 local function loadSettings()
@@ -203,3 +202,7 @@ equal(attacking[1], 0.4, "color picker applies")
 ColorPickerFrame.options.cancelFunc()
 equal(attacking[1], 1, "color picker cancel restores")
 print("Settings smoke: passed")
+
+for _, item in ipairs(frames) do
+    assert(item.text ~= "Replace Blizzard overhead names (experimental)", "replacement UI removed")
+end

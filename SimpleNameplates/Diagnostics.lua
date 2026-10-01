@@ -6,8 +6,7 @@ local StateForUnit, IsNameOnlyState =
     ns.NameplateClassification.StateForUnit, ns.NameplateClassification.IsNameOnlyState
 local Capabilities = ns.PresentationCapabilities
 local GetContext = ns.WorldContext.Get
-local GetStylingEnabled, GetReplaceBlizzardOverheadNames =
-    ns.GetStylingEnabled, ns.GetReplaceBlizzardOverheadNames
+local GetStylingEnabled = ns.GetStylingEnabled
 local PriorityColorForState, GetCategoryMode = ns.PriorityColorForState, ns.GetCategoryMode
 local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
 
@@ -61,7 +60,6 @@ local function DebugClassification(state, rule, hasNameplate)
         display = IsNameOnlyState(state) and "colored name only" or "white name with colored health bar"
     end
     print("  Styling enabled: " .. (enabled and "yes" or "no")
-        .. "; overhead replacement requested: " .. (GetReplaceBlizzardOverheadNames() and "yes" or "no")
         .. "; detected state: " .. state .. "; winning rule: " .. rule .. "; mode: " .. mode
         .. "; configured display: " .. display .. "; configured color: " .. colorHex)
 end

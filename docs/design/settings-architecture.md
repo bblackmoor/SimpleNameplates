@@ -4,7 +4,7 @@ Status: Original Phases 2–6 and subsequent runtime refactor phases 1–3 imple
 
 ## Current inventory
 
-The .toc loads `Defaults.lua`, `Core.lua`, `WorldContext.lua`, `ManagedNames.lua`, and `Database.lua` before runtime and settings consumers. `Defaults.lua` owns factory values; `Database.lua` owns version-2 validation, Profile lifecycle, and Global/Profile settings access. `ManagedNames.lua` owns CVar definitions/actions; `Core.lua` retains metadata, warnings, and accessibility helpers. `EntityFacts.lua` owns observations; `NameplateClassification.lua` owns priority decisions. Frame access, text/layout repair, threat display, cast highlights, presentation/restoration, and diagnostics have focused modules; `Nameplates.lua` owns the single event frame and refresh lifecycle. `TRP3.lua` is the optional integration adapter. The settings page modules construct their controls; `Settings.lua` registers pages and slash routes.
+The .toc loads `Defaults.lua`, `Core.lua`, `WorldContext.lua`, `ManagedNames.lua`, and `Database.lua` before runtime and settings consumers. `Defaults.lua` owns factory values; `Database.lua` owns version-2 validation, Profile lifecycle, and Global/Profile settings access. `ManagedNames.lua` owns critter visibility, CVar restoration, and friendly class colors; `Core.lua` retains metadata, warnings, and accessibility helpers. `EntityFacts.lua` owns observations; `NameplateClassification.lua` owns priority decisions. Frame access, text/layout repair, threat display, cast highlights, presentation/restoration, and diagnostics have focused modules; `Nameplates.lua` owns the single event frame and refresh lifecycle. `TRP3.lua` is the optional integration adapter. The settings page modules construct their controls; `Settings.lua` registers pages and slash routes.
 
 The settings UI uses scroll layout, thumb switches, circled-i links, and section constructors. The Appearance panel combines Profile management, text/layout, colors, fixed Blizzard swatches, and cast effects. `SettingsProfiles.lua` owns Profile dialogs and selection. `SettingsAppearance.lua` owns color-picker apply/cancel rollback and Appearance construction, using shared row controls from `SettingsControls.lua`.
 
@@ -14,7 +14,7 @@ The settings UI uses scroll layout, thumb switches, circled-i links, and section
 | --- | --- |
 | `Defaults.lua` | Factory Global/Profile values, preset definitions, valid ranges |
 | `Database.lua` | Validate version-2 data, character selection, Profile lifecycle, explicit Global/Profile access |
-| `ManagedNames.lua` | Managed CVars, restoration ledger, combat deferral, friendly class colors |
+| `ManagedNames.lua` | Critter CVar, restoration-only name/plate allowlist, ledger, combat deferral, friendly class colors |
 | `Core.lua` | Metadata and shared helpers/conflict warning |
 | `WorldContext.lua` | Event-driven world snapshot, revision, and unknown-value preservation |
 | `PresentationCapabilities.lua` | Frame/region access assessment and observational reads |
@@ -42,7 +42,7 @@ The visible tabs are About, Behavior, Appearance, and TRP3; Profile management a
 
 - `StateForUnit` and category priority do not depend on Profile; six Global modes keep their current active/inactive semantics.
 - `NameplatePresentation.ApplySimpleStyle` uses Global behavior and the active appearance Profile. Profile switches refresh plates, including inside-bar placement, cached name repair, full-title suppression, threat text, and interruptible cast highlight.
-- Name CVars capture original values before changing them, restore them when no longer managed or styling is disabled, and defer restricted changes in combat. Profile switches must not rewrite category CVars.
+- Only critter visibility currently claims ordinary-name CVars. Player/NPC/minion and nameplate-visibility CVars are restoration-only: retain valid originals and retry until restored. Friendly class colors remain separately managed. Profile switches must not change nameplate-visibility CVars.
 - Keep TRP3's cache and normal-WoW-name fallback. Do not introduce reads or comparisons of Midnight secret values in new helper or refresh paths.
 - Keep six Priority Colors in danger-to-friendly order and fixed Blizzard swatches distinct from editable colors.
 - Standard setting row order stays label, control, reset (if any), info glyph (if any), with consistent spacing and the established thumb switches.
@@ -83,4 +83,10 @@ Run the additional `tests/world-context-smoke.lua` script for context caching, A
 
 EntityFacts receives the cached context and preserves primitive true/false/unknown observations. Classification consumes facts independently of game APIs and returns the winning rule. Player identity and faction remain available even when a combat priority wins. NPC interaction evidence does not override Attacking, Hostile, or Neutral. The current category keys replace the previous PC/NPC distinction without saved-setting conversion. Defaults, bundled profiles, validation, settings rows, diagnostics, and managed-name policies use the same six keys.
 
-Experimental replacement now requires all categories Active because its broad CVars cannot represent exclusive priority categories. Mixed modes release replacement claims while keeping the preference and separate critter control. Friendly class-color control respects Friendly and the possible player combat priorities. The new entity smoke script covers facts, precedence, and secret/API-error handling; existing smoke scripts cover saved-field retention/discard, CVar restoration, presentation, and diagnostics. Client behavior remains unverified.
+In 1.0.104 experimental replacement required all categories Active. It was subsequently removed in 1.0.105; the critter control remains separate. Friendly class-color control respects Friendly and the possible player combat priorities. The new entity smoke script covers facts, precedence, and secret/API-error handling; existing smoke scripts cover saved-field retention/discard, CVar restoration, presentation, and diagnostics. Client behavior remains unverified.
+
+## Removal of experimental replacement (1.0.105)
+
+The replacement toggle, defaults, getter/setter/actions, diagnostic field, startup action, and CVar claims are removed. Database validation silently discards its obsolete preference. The existing managed-originals ledger retains an explicit allowlist of previously captured player/NPC/minion and nameplate-visibility values solely for restoration; these values are never captured or claimed again. Login invokes managed restoration even when styling is disabled. Failed and combat-blocked restoration retains originals for retries; current critter hiding can stay enabled independently. The generic RestoreManagedNameSettings operation supports disabling the remaining control.
+
+The former permanent friendly-player name-only claim is gone. Phase 4 still needs deferred frame restoration and the independent combat-dependent presentation decision. No in-game frame behavior is established by the smoke tests.

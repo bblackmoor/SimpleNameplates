@@ -146,17 +146,17 @@ end
 
 local function RegisterAppearancePopups()
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
-        text = "Blizzard draws non-attackable opposing-faction players and many player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nThe experimental replacement option on the Behavior page hides those world-name categories and requests ordinary nameplates instead. It can only work when Blizzard creates a nameplate for the unit.",
+        text = "Blizzard draws non-attackable opposing-faction players and many player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nSimple Nameplates leaves those world names under Blizzard control. It styles name text only when Blizzard supplies an accessible nameplate.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["SNP_BLIZZARD_INTERACTIVE_INFO"] = {
-        text = "Blizzard draws interactive NPCs, including city guards that offer directions, as engine-level yellow overhead names rather than as addon-accessible nameplate text. The experimental replacement option can restyle them only when Blizzard creates a friendly-NPC nameplate.",
+        text = "Blizzard draws interactive NPCs, including city guards that offer directions, as engine-level yellow overhead names rather than as addon-accessible nameplate text. Simple Nameplates leaves world names under Blizzard control and styles only accessible nameplates supplied by Blizzard.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["SNP_BLIZZARD_VENDOR_INFO"] = {
-        text = "Blizzard draws vendor NPCs as engine-level green overhead names rather than as addon-accessible nameplate text. The experimental replacement option can restyle them only when Blizzard creates a friendly-NPC nameplate.",
+        text = "Blizzard draws vendor NPCs as engine-level green overhead names rather than as addon-accessible nameplate text. Simple Nameplates leaves world names under Blizzard control and styles only accessible nameplates supplied by Blizzard.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }

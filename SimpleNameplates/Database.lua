@@ -11,9 +11,8 @@ local DEFAULT_TRP3 = defaults.trp3
 local DEFAULT_STYLING_ENABLED = defaults.stylingEnabled
 local DEFAULT_SHOW_THREAT = defaults.showThreat
 local DEFAULT_HIDE_CRITTER_COMPANION_NAMES = defaults.hideCritterCompanionNames
-local DEFAULT_REPLACE_BLIZZARD_OVERHEAD_NAMES = defaults.replaceBlizzardOverheadNames
 local MIN_NAME_SIZE, MAX_NAME_SIZE = ns.MIN_NAME_SIZE, ns.MAX_NAME_SIZE
-local MANAGED_NAME_CVARS = ns.OVERHEAD_REPLACEMENT_CVARS
+local MANAGED_NAME_CVARS = ns.MANAGED_NAME_CVARS
 
 local dbReady = false
 local DB_SCHEMA_VERSION = 2
@@ -199,8 +198,6 @@ local function ValidateGlobalToggles(db, savedGlobal)
     db.global.stylingEnabled = SavedBoolean(savedGlobal.stylingEnabled, DEFAULT_STYLING_ENABLED)
     db.global.hideCritterCompanionNames = SavedBoolean(savedGlobal.hideCritterCompanionNames,
         DEFAULT_HIDE_CRITTER_COMPANION_NAMES)
-    db.global.replaceBlizzardOverheadNames = SavedBoolean(savedGlobal.replaceBlizzardOverheadNames,
-        DEFAULT_REPLACE_BLIZZARD_OVERHEAD_NAMES)
 end
 
 local function ValidateTRP3Settings(db, savedGlobal)

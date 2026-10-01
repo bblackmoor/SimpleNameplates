@@ -4,8 +4,7 @@ if not ns.EnsureDB then return end
 local C_NamePlate = C_NamePlate
 local WorldContext = ns.WorldContext
 local GetFrameFromPlate = ns.NameplateFrames.GetFrameFromPlate
-local GetStylingEnabled, GetReplaceBlizzardOverheadNames =
-    ns.GetStylingEnabled, ns.GetReplaceBlizzardOverheadNames
+local GetStylingEnabled = ns.GetStylingEnabled
 local StateForUnit = ns.NameplateClassification.StateForUnit
 local GetUnitFrame, GetHealthBar = ns.NameplateFrames.GetUnitFrame, ns.NameplateFrames.GetHealthBar
 local ApplySimpleStyle = ns.NameplatePresentation.ApplySimpleStyle
@@ -85,10 +84,9 @@ end
 local function HandlePlayerLogin()
     ns.EnsureDB()
     ns.ApplyCritterCompanionNameVisibility()
-    ns.ApplyOverheadNameReplacement()
     C_Timer.After(1, function()
         if ns.GetHideCritterCompanionNames() then ns.ApplyCritterCompanionNameVisibility() end
-        if ns.GetReplaceBlizzardOverheadNames() then ns.ApplyOverheadNameReplacement() end
+        ns.ApplyManagedNameSettings()
     end)
     if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
     if ns.TRP3 and ns.TRP3.RegisterCallbacks then ns.TRP3.RegisterCallbacks() end
@@ -108,7 +106,7 @@ end
 
 local function HandleCVarUpdate(cvarName)
     if type(cvarName) == "string"
-        and ns.OVERHEAD_REPLACEMENT_CVAR_SET[string.lower(cvarName)] then
+        and ns.MANAGED_NAME_CVAR_SET[string.lower(cvarName)] then
         if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
         QueueRefreshAll()
         return

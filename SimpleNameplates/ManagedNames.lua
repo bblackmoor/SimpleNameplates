@@ -6,69 +6,51 @@ local BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {
 }
 ns.BLIZZARD_CRITTER_COMPANION_NAME_CVARS = BLIZZARD_CRITTER_COMPANION_NAME_CVARS
 
--- Blizzard-family world-name management. Each CVar is captured once, may be
--- claimed by several options, and is restored only when nothing still needs it.
-local REPLACEMENT_CVAR_FAMILIES = {
-    hostileNPC = {
-        UnitNameHostleNPC = "0",
-        nameplateShowEnemies = "1",
-    },
-    enemyPlayer = {
-        UnitNameEnemyPlayerName = "0",
-        nameplateShowEnemies = "1",
-    },
-    friendlyPlayer = {
-        UnitNameFriendlyPlayerName = "0",
-        nameplateShowFriendlyPlayers = "1",
-        nameplateShowOnlyNameForFriendlyPlayerUnits = "1",
-    },
-    npcsAndMinions = {
-        UnitNameFriendlyMinionName = "0",
-        UnitNameEnemyMinionName = "0",
-        UnitNameFriendlyPetName = "0",
-        UnitNameEnemyPetName = "0",
-        UnitNameFriendlyGuardianName = "0",
-        UnitNameEnemyGuardianName = "0",
-        UnitNameFriendlyTotemName = "0",
-        UnitNameEnemyTotemName = "0",
-        UnitNameFriendlySpecialNPCName = "0",
-        UnitNameInteractiveNPC = "0",
-        UnitNameNPC = "0",
-        nameplateShowFriendlyNpcs = "1",
-        nameplateShowFriendlyPlayerMinions = "1",
-        nameplateShowFriendlyPlayerPets = "1",
-        nameplateShowFriendlyPlayerGuardians = "1",
-        nameplateShowFriendlyPlayerTotems = "1",
-        nameplateShowFriendlyMinions = "1",
-        nameplateShowFriendlyPets = "1",
-        nameplateShowFriendlyGuardians = "1",
-        nameplateShowFriendlyTotems = "1",
-        nameplateShowEnemyMinions = "1",
-        nameplateShowEnemyPets = "1",
-        nameplateShowEnemyGuardians = "1",
-        nameplateShowEnemyTotems = "1",
-    },
+-- Allowlist for current critter control and persisted original values.
+-- Player/NPC/minion and plate entries are restoration-only: never claim or
+-- capture them again. Keep originals readable until restoration succeeds.
+local MANAGED_NAME_CVARS = {
+    "UnitNameEnemyGuardianName",
+    "UnitNameEnemyMinionName",
+    "UnitNameEnemyPetName",
+    "UnitNameEnemyPlayerName",
+    "UnitNameEnemyTotemName",
+    "UnitNameFriendlyGuardianName",
+    "UnitNameFriendlyMinionName",
+    "UnitNameFriendlyPetName",
+    "UnitNameFriendlyPlayerName",
+    "UnitNameFriendlySpecialNPCName",
+    "UnitNameFriendlyTotemName",
+    "UnitNameHostleNPC",
+    "UnitNameInteractiveNPC",
+    "UnitNameNPC",
+    "UnitNameNonCombatCreatureName",
+    "nameplateForceShowUnitName",
+    "nameplateShowAll",
+    "nameplateShowEnemies",
+    "nameplateShowEnemyGuardians",
+    "nameplateShowEnemyMinions",
+    "nameplateShowEnemyPets",
+    "nameplateShowEnemyTotems",
+    "nameplateShowFriendlyGuardians",
+    "nameplateShowFriendlyMinions",
+    "nameplateShowFriendlyNpcs",
+    "nameplateShowFriendlyPets",
+    "nameplateShowFriendlyPlayerGuardians",
+    "nameplateShowFriendlyPlayerMinions",
+    "nameplateShowFriendlyPlayerPets",
+    "nameplateShowFriendlyPlayerTotems",
+    "nameplateShowFriendlyPlayers",
+    "nameplateShowFriendlyTotems",
+    "nameplateShowOnlyNameForFriendlyPlayerUnits",
 }
-local SHARED_REPLACEMENT_CVAR_VALUES = {
-    nameplateShowAll = "1",
-    nameplateForceShowUnitName = "1",
-}
-local MANAGED_NAME_CVARS, MANAGED_NAME_CVAR_SET = {}, {}
-local function RegisterManagedCVars(values)
-    for cvar in pairs(values) do
-        if not MANAGED_NAME_CVAR_SET[cvar] then
-            MANAGED_NAME_CVAR_SET[cvar] = true
-            MANAGED_NAME_CVAR_SET[string.lower(cvar)] = true
-            MANAGED_NAME_CVARS[#MANAGED_NAME_CVARS + 1] = cvar
-        end
-    end
+local MANAGED_NAME_CVAR_SET = {}
+for _, cvar in ipairs(MANAGED_NAME_CVARS) do
+    MANAGED_NAME_CVAR_SET[cvar] = true
+    MANAGED_NAME_CVAR_SET[string.lower(cvar)] = true
 end
-RegisterManagedCVars(SHARED_REPLACEMENT_CVAR_VALUES)
-for _, values in pairs(REPLACEMENT_CVAR_FAMILIES) do RegisterManagedCVars(values) end
-for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do RegisterManagedCVars({ [cvar] = "0" }) end
-table.sort(MANAGED_NAME_CVARS)
-ns.OVERHEAD_REPLACEMENT_CVARS = MANAGED_NAME_CVARS
-ns.OVERHEAD_REPLACEMENT_CVAR_SET = MANAGED_NAME_CVAR_SET
+ns.MANAGED_NAME_CVARS = MANAGED_NAME_CVARS
+ns.MANAGED_NAME_CVAR_SET = MANAGED_NAME_CVAR_SET
 
 
 local function GetCVarValue(cvar)
@@ -96,22 +78,6 @@ local pendingManagedAction -- "apply" or "restore"; last requested action wins
 local pendingFriendlyAction
 local DisableFriendlyClassColors, RestoreFriendlyClassColors
 
-local function MergeCVarValues(target, source)
-    for cvar, value in pairs(source or {}) do target[cvar] = value end
-end
-
-local function AddReplacementCVarSettings(desired, global)
-    if not global.replaceBlizzardOverheadNames then return end
-    -- Blizzard CVars select broad name/plate families, not priority categories.
-    -- Shared plate controls can affect every category. Mixed Active/Inactive
-    -- modes therefore retain Blizzard CVars instead of making partial claims.
-    for _, state in ipairs({ "attacking", "hostile", "neutral", "friendly", "useful", "useless" }) do
-        if global.categoryModes[state] ~= "active" then return end
-    end
-    for _, values in pairs(REPLACEMENT_CVAR_FAMILIES) do MergeCVarValues(desired, values) end
-    MergeCVarValues(desired, SHARED_REPLACEMENT_CVAR_VALUES)
-end
-
 local function AddExplicitHiddenNameCVarSettings(desired, global)
     if global.hideCritterCompanionNames then
         for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do desired[cvar] = "0" end
@@ -122,7 +88,6 @@ local function DesiredManagedNameSettings(db)
     local desired = {}
     local global = db.global
     if not global.stylingEnabled then return desired end
-    AddReplacementCVarSettings(desired, global)
     AddExplicitHiddenNameCVarSettings(desired, global)
     return desired
 end
@@ -206,20 +171,7 @@ local function ApplyCritterCompanionNameVisibility()
     ApplyManagedNameSettings()
 end
 
-local function GetReplaceBlizzardOverheadNames()
-    return EnsureDB().global.replaceBlizzardOverheadNames
-end
-
-local function SetReplaceBlizzardOverheadNames(enabled)
-    EnsureDB().global.replaceBlizzardOverheadNames = enabled == true
-    ApplyManagedNameSettings()
-end
-
-local function ApplyOverheadNameReplacement()
-    ApplyManagedNameSettings()
-end
-
-local function RestoreOverheadNameSettings()
+local function RestoreManagedNameSettings()
     RestoreAllManagedNameSettings()
 end
 
@@ -296,11 +248,8 @@ end
 ns.GetHideCritterCompanionNames = GetHideCritterCompanionNames
 ns.SetHideCritterCompanionNames = SetHideCritterCompanionNames
 ns.ApplyCritterCompanionNameVisibility = ApplyCritterCompanionNameVisibility
-ns.GetReplaceBlizzardOverheadNames = GetReplaceBlizzardOverheadNames
-ns.SetReplaceBlizzardOverheadNames = SetReplaceBlizzardOverheadNames
-ns.ApplyOverheadNameReplacement = ApplyOverheadNameReplacement
 ns.ApplyManagedNameSettings = ApplyManagedNameSettings
 ns.ApplyPendingManagedNameSettings = ApplyPendingManagedNameSettings
-ns.RestoreOverheadNameSettings = RestoreOverheadNameSettings
+ns.RestoreManagedNameSettings = RestoreManagedNameSettings
 ns.DisableFriendlyClassColors = DisableFriendlyClassColors
 ns.RestoreFriendlyClassColors = RestoreFriendlyClassColors

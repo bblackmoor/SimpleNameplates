@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.105
+
+* Removed experimental Blizzard overhead-name replacement, including its control, defaults, saved preference, runtime APIs/actions, CVar claims, and diagnostic field.
+* Retained valid previously captured Blizzard name/nameplate originals solely for restoration, including failed-write and combat-deferred retries. The obsolete preference is discarded without conversion.
+* Retained independent critter/companion hiding, friendly class-color handling, and normal accessible-nameplate styling. Updated documentation and regression checks; phase 4 remains pending.
+
 ## 1.0.104
 
 * Completed runtime phase 3: separated entity facts from classification and implemented Attacking, Hostile, Neutral, Friendly, Useful, and Useless in first-match order.
