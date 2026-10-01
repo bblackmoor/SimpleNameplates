@@ -68,7 +68,6 @@ end
 local CATEGORY_MODES = {
     { value = "active", label = "Active" },
     { value = "inactive", label = "Inactive" },
-    { value = "hide", label = "Hide" },
 }
 
 local function CreateCategoryModeRow(context, rowData)
@@ -120,7 +119,7 @@ end
 local function AddBehaviorCategoryControls(context)
     AddSection(context.content, context.layout, "CATEGORY HANDLING")
     AddDescription(context.content, context.layout,
-        "Active lets Simple Nameplates style the category. Inactive leaves Blizzard's display unchanged. Hide conceals it wherever Blizzard permits.")
+        "Active lets Simple Nameplates style the category. Inactive leaves Blizzard's display unchanged.")
     for _, rowData in ipairs(CATEGORY_ROWS) do CreateCategoryModeRow(context, rowData) end
 end
 

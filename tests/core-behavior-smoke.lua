@@ -119,7 +119,7 @@ SimpleNameplatesDB = {
 ns = loadCore()
 db = ns.EnsureDB()
 equal(ns.GetStylingEnabled(), false, "valid global retained")
-equal(ns.GetCategoryMode("friendlyPC"), "hide", "valid category retained")
+equal(ns.GetCategoryMode("friendlyPC"), "active", "removed category mode discarded")
 equal(ns.GetCategoryMode("hostile"), "active", "invalid category reset")
 equal(ns.GetTRP3Enabled(), true, "valid TRP3 retained")
 equal(ns.GetTRP3Setting("showOOC"), true, "invalid TRP3 reset")
@@ -131,18 +131,21 @@ equal(ns.PriorityColorForState("attacking"), 0.4, "valid color retained")
 equal(ns.GetActiveProfileName(), "Default", "invalid assignment reset")
 equal(db.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName, "original", "ledger retained")
 equal(db.global.managedNameCVarOriginals.InventedCVar, nil, "unknown ledger entry dropped")
+ns.SetCategoryMode("friendlyPC", "inactive")
+ns.SetCategoryMode("friendlyPC", "hide")
+equal(ns.GetCategoryMode("friendlyPC"), "inactive", "removed category mode rejected by setter")
 SimpleNameplatesDB = { schemaVersion = 999, global = { stylingEnabled = false } }
 ns = loadCore()
 equal(ns.EnsureDB().schemaVersion, 2, "incompatible schema discarded")
 equal(ns.GetStylingEnabled(), true, "incompatible values ignored")
 
--- CVar capture, shared claims, restoration, reload, and combat deferral.
+-- Replacement CVar capture, restoration, reload, and combat deferral.
 ns = fresh()
 cvars.UnitNameFriendlyPlayerName = "original"
 cvars.nameplateShowFriendlyPlayers = "original-plates"
-ns.SetCategoryMode("friendlyPC", "hide")
-equal(cvars.UnitNameFriendlyPlayerName, "0", "hide applies name CVar")
-equal(cvars.nameplateShowFriendlyPlayers, "0", "hide applies plate CVar")
+ns.SetReplaceBlizzardOverheadNames(true)
+equal(cvars.UnitNameFriendlyPlayerName, "0", "replacement applies name CVar")
+equal(cvars.nameplateShowFriendlyPlayers, "1", "replacement requests player plates")
 equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
     "original", "capture original once")
 ns.SetCategoryMode("friendlyPC", "active")
@@ -152,7 +155,7 @@ equal(cvars.nameplateShowFriendlyPlayers, "1", "replacement claims plate CVar")
 ns.SetCategoryMode("friendlyPC", "inactive")
 equal(cvars.UnitNameFriendlyPlayerName, "original", "last name claim restored")
 equal(cvars.nameplateShowFriendlyPlayers, "original-plates", "last plate claim restored")
-ns.SetCategoryMode("friendlyPC", "hide")
+ns.SetCategoryMode("friendlyPC", "active")
 ns = loadCore()
 ns.EnsureDB()
 ns.RestoreOverheadNameSettings()
@@ -173,7 +176,7 @@ equal(cvars.UnitNameFriendlyPlayerName, "original", "disabled restores originals
 -- A failed restoration must retain its original for a later retry.
 ns = fresh()
 cvars.UnitNameFriendlyPlayerName = "custom"
-ns.SetCategoryMode("friendlyPC", "hide")
+ns.SetReplaceBlizzardOverheadNames(true)
 rejectedWrites.UnitNameFriendlyPlayerName = true
 ns.SetCategoryMode("friendlyPC", "inactive")
 equal(cvars.UnitNameFriendlyPlayerName, "0", "failed restore leaves modified CVar")
@@ -190,7 +193,7 @@ equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerN
     nil, "successful retry clears original")
 
 -- An explicit restore in combat waits until combat ends, keeping the ledger.
-ns.SetCategoryMode("friendlyPC", "hide")
+ns.SetCategoryMode("friendlyPC", "active")
 inCombat = true
 ns.RestoreOverheadNameSettings()
 equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
@@ -219,6 +222,38 @@ equal(cvars[friendly], "0", "friendly combat restore deferred")
 inCombat = false
 ns.ApplyPendingManagedNameSettings()
 equal(cvars[friendly], "class-original", "friendly combat restore applied")
+
+-- Both dedicated hide switches remain independent of category handling.
+ns = fresh()
+cvars.UnitNameFriendlyPetName = "pet-original"
+cvars.UnitNameNonCombatCreatureName = "critter-original"
+ns.SetHideBlizzardMinionNames(true)
+ns.SetHideCritterCompanionNames(true)
+equal(cvars.UnitNameFriendlyPetName, "0", "dedicated pet hide retained")
+equal(cvars.UnitNameNonCombatCreatureName, "0", "dedicated critter hide retained")
+ns.SetReplaceBlizzardOverheadNames(true)
+ns.SetHideBlizzardMinionNames(false)
+equal(cvars.UnitNameFriendlyPetName, "0", "replacement retains shared pet claim")
+ns.SetReplaceBlizzardOverheadNames(false)
+equal(cvars.UnitNameFriendlyPetName, "pet-original", "last pet claim restored")
+equal(cvars.UnitNameNonCombatCreatureName, "0", "critter hide remains independent")
+ns.SetHideCritterCompanionNames(false)
+equal(cvars.UnitNameNonCombatCreatureName, "critter-original", "critter original restored")
+
+-- Removed Hide values fall back for every category and old CVar claims restore.
+ns = fresh()
+db = ns.EnsureDB()
+for state in pairs(db.global.categoryModes) do db.global.categoryModes[state] = "hide" end
+db.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName = "pre-hide-original"
+cvars.UnitNameFriendlyPlayerName = "0"
+ns = loadCore()
+db = ns.EnsureDB()
+for state in pairs(db.global.categoryModes) do
+    equal(ns.GetCategoryMode(state), "active", "old hide resets: " .. state)
+end
+ns.ApplyManagedNameSettings()
+equal(cvars.UnitNameFriendlyPlayerName, "pre-hide-original", "old category hide CVar restored")
+equal(next(db.global.managedNameCVarOriginals), nil, "old category claims cleared")
 
 -- All declared addon modules must exist, compile, and load in dependency order.
 local toc = assert(io.open("SimpleNameplates/SimpleNameplates.toc", "r"))

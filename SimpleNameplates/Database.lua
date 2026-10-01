@@ -191,7 +191,7 @@ local function ValidateCategoryModes(db, savedGlobal)
         and savedGlobal.categoryModes or {}
     for key, default in pairs(DEFAULT_CATEGORY_MODES) do
         local mode = savedCategoryModes[key]
-        db.global.categoryModes[key] = (mode == "active" or mode == "inactive" or mode == "hide")
+        db.global.categoryModes[key] = (mode == "active" or mode == "inactive")
             and mode or default
     end
 end
@@ -406,7 +406,7 @@ end
 
 local function SetCategoryMode(state, mode)
     if not DEFAULT_CATEGORY_MODES[state]
-        or (mode ~= "active" and mode ~= "inactive" and mode ~= "hide") then return end
+        or (mode ~= "active" and mode ~= "inactive") then return end
     EnsureDB().global.categoryModes[state] = mode
     if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
 end

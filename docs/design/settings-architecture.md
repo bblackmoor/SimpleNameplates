@@ -31,7 +31,7 @@ The visible tabs are About, Behavior, Appearance, and TRP3; Profile management a
 
 ## Runtime and UI contracts
 
-- `StateForUnit` and category priority do not depend on Profile; six Global modes keep their current active/inactive/hide semantics.
+- `StateForUnit` and category priority do not depend on Profile; six Global modes keep their current active/inactive semantics.
 - `ApplySimpleStyle` uses Global behavior and the active appearance Profile. Profile switches refresh plates, including inside-bar placement, cached name repair, full-title suppression, threat text, and interruptible cast highlight.
 - Name CVars capture original values before changing them, restore them when no longer managed or styling is disabled, and defer restricted changes in combat. Profile switches must not rewrite category CVars.
 - Keep TRP3's cache and normal-WoW-name fallback. Do not introduce reads or comparisons of Midnight secret values in new helper or refresh paths.

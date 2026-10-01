@@ -39,7 +39,7 @@ A valid version-2 saved database separates behavior from look and feel. The stru
 | Setting | Owner | Reason |
 | --- | --- | --- |
 | `stylingEnabled` | Global | Master addon behavior |
-| Six `categoryModes` (active/inactive/hide) | Global | Per-category behavior and managed Blizzard CVars |
+| Six `categoryModes` (active/inactive) | Global | Per-category behavior and managed Blizzard CVars |
 | `hideBlizzardMinionNames`, `hideCritterCompanionNames`, `replaceBlizzardOverheadNames` | Global | Blizzard name management |
 | `trp3.enabled`, `useRoleplayingName`, `showShortTitle`, `showFullTitle`, `showOOC` | Global | TRP3 integration and display policy |
 | Six `priorityColors`, `effectColors.interruptible` | Profile | Appearance colors |

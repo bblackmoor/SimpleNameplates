@@ -61,44 +61,6 @@ local CATEGORY_REPLACEMENT_CVAR_VALUES = {
         nameplateShowEnemyTotems = "1",
     },
 }
-local CATEGORY_HIDE_CVAR_VALUES = {
-    hostile = {
-        UnitNameHostleNPC = "0",
-    },
-    unfriendlyPC = {
-        UnitNameEnemyPlayerName = "0",
-    },
-    friendlyPC = {
-        UnitNameFriendlyPlayerName = "0",
-        nameplateShowFriendlyPlayers = "0",
-    },
-    other = {
-        UnitNameFriendlyMinionName = "0",
-        UnitNameEnemyMinionName = "0",
-        UnitNameFriendlyPetName = "0",
-        UnitNameEnemyPetName = "0",
-        UnitNameFriendlyGuardianName = "0",
-        UnitNameEnemyGuardianName = "0",
-        UnitNameFriendlyTotemName = "0",
-        UnitNameEnemyTotemName = "0",
-        UnitNameFriendlySpecialNPCName = "0",
-        UnitNameInteractiveNPC = "0",
-        UnitNameNPC = "0",
-        nameplateShowFriendlyNpcs = "0",
-        nameplateShowFriendlyPlayerMinions = "0",
-        nameplateShowFriendlyPlayerPets = "0",
-        nameplateShowFriendlyPlayerGuardians = "0",
-        nameplateShowFriendlyPlayerTotems = "0",
-        nameplateShowFriendlyMinions = "0",
-        nameplateShowFriendlyPets = "0",
-        nameplateShowFriendlyGuardians = "0",
-        nameplateShowFriendlyTotems = "0",
-        nameplateShowEnemyMinions = "0",
-        nameplateShowEnemyPets = "0",
-        nameplateShowEnemyGuardians = "0",
-        nameplateShowEnemyTotems = "0",
-    },
-}
 local SHARED_REPLACEMENT_CVAR_VALUES = {
     nameplateShowAll = "1",
     nameplateForceShowUnitName = "1",
@@ -115,7 +77,6 @@ local function RegisterManagedCVars(values)
 end
 RegisterManagedCVars(SHARED_REPLACEMENT_CVAR_VALUES)
 for _, values in pairs(CATEGORY_REPLACEMENT_CVAR_VALUES) do RegisterManagedCVars(values) end
-for _, values in pairs(CATEGORY_HIDE_CVAR_VALUES) do RegisterManagedCVars(values) end
 for _, cvar in ipairs(BLIZZARD_MINION_NAME_CVARS) do RegisterManagedCVars({ [cvar] = "0" }) end
 for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do RegisterManagedCVars({ [cvar] = "0" }) end
 table.sort(MANAGED_NAME_CVARS)
@@ -164,14 +125,6 @@ local function AddReplacementCVarSettings(desired, global)
     if replacementActive then MergeCVarValues(desired, SHARED_REPLACEMENT_CVAR_VALUES) end
 end
 
-local function AddHiddenCategoryCVarSettings(desired, global)
-    for _, state in ipairs({ "unfriendlyPC", "friendlyPC", "other" }) do
-        if global.categoryModes[state] == "hide" then
-            MergeCVarValues(desired, CATEGORY_HIDE_CVAR_VALUES[state])
-        end
-    end
-end
-
 local function AddExplicitHiddenNameCVarSettings(desired, global)
     if global.hideBlizzardMinionNames then
         for _, cvar in ipairs(BLIZZARD_MINION_NAME_CVARS) do desired[cvar] = "0" end
@@ -186,7 +139,6 @@ local function DesiredManagedNameSettings(db)
     local global = db.global
     if not global.stylingEnabled then return desired end
     AddReplacementCVarSettings(desired, global)
-    AddHiddenCategoryCVarSettings(desired, global)
     AddExplicitHiddenNameCVarSettings(desired, global)
     return desired
 end

@@ -40,11 +40,10 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 
 Open **Options → AddOns → Simple Nameplates → Behavior**, or type `/snp`. This page contains global addon behavior and user preferences: the master styling toggle, category handling, and Blizzard overhead-name controls.
 
-The six categories are evaluated from top to bottom. The first matching category wins. Every category has a behavior selector:
+The six categories are evaluated from top to bottom. The first matching category wins. Every category has an Active / Inactive behavior selector; category hiding is not available:
 
 * **Active** applies its Priority Color and Simple Nameplates styling, including threat percentage when Midnight exposes a readable value.
 * **Inactive** leaves Blizzard's display unchanged for that category.
-* **Hide** conceals that category's addon-accessible names and nameplates, and also hides matching Blizzard overhead-name categories where WoW permits it.
 
 ## Appearance Profiles and Settings
 

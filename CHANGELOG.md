@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.100
+
+* Removed Hide from all six Priority Color category selectors, saved-setting validation, and runtime handling; categories now support Active or Inactive only.
+* Invalid saved category modes, including the removed Hide value, silently fall back to Active. Existing managed CVar originals remain available for restoration.
+* Retained the independent minion-name and critter/companion-name hide switches and experimental overhead replacement.
+
 ## 1.0.98
 
 * Updated source and saved-data documentation to match the completed module split; clarified the README's Priority Color classification and local development checks.

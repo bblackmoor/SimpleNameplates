@@ -515,25 +515,6 @@ end
 
 local RestoreFrame
 
-local function ApplyHiddenStyle(frame, state)
-    frame.SNPState = state
-    frame.SNPHidden = true
-    RestoreOriginalBarHeight(frame, GetHealthBar(frame))
-    if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
-    if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
-    RestoreNameDisplay(frame)
-    if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
-    SetShownSafe(frame.name, false)
-    SetShownSafe(GetHealthBar(frame), false)
-    SetShownSafe(frame.HealthBarsContainer, false)
-    SetShownSafe(frame.castBar, false)
-    SetShownSafe(frame.CastBar, false)
-    SetShownSafe(frame.castBarAnchor, false)
-    SetShownSafe(frame.classificationIndicator, false)
-    SetShownSafe(frame.ClassificationFrame, false)
-    SetShownSafe(frame.selectionHighlight, false)
-end
-
 local function ApplySimpleStyle(frame)
     if not GetStylingEnabled() then return end
     if not frame or not frame.unit or not tostring(frame.unit):match("^nameplate%d+$") then return end
@@ -542,12 +523,8 @@ local function ApplySimpleStyle(frame)
     if mode == "inactive" then
         RestoreFrame(frame)
         return
-    elseif mode == "hide" then
-        ApplyHiddenStyle(frame, state)
-        return
     end
     frame.SNPState = state
-    frame.SNPHidden = nil
     local r, g, b = PriorityColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyVisibility(frame, state)
@@ -570,12 +547,8 @@ local function RepairHealthColor(frame)
     if mode == "inactive" then
         RestoreFrame(frame)
         return
-    elseif mode == "hide" then
-        ApplyHiddenStyle(frame, state)
-        return
     end
     frame.SNPState = state
-    frame.SNPHidden = nil
     local r, g, b = PriorityColorForState(state)
     local bar = GetHealthBar(frame)
     ApplyConfiguredBarHeight(frame, state, bar, GetAppearanceSetting("nameSize") or 12)
@@ -595,12 +568,8 @@ local function RepairName(frame)
     if mode == "inactive" then
         RestoreFrame(frame)
         return
-    elseif mode == "hide" then
-        ApplyHiddenStyle(frame, state)
-        return
     end
     frame.SNPState = state
-    frame.SNPHidden = nil
     StyleName(frame, state)
 end
 
@@ -626,7 +595,6 @@ RestoreFrame = function(frame)
     if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
     frame.SNPNameStyle = nil
     frame.SNPState = nil
-    frame.SNPHidden = nil
     RestoreOriginalBarHeight(frame, GetHealthBar(frame))
 
     -- Restore anything hidden by name-only styling before asking Blizzard to
