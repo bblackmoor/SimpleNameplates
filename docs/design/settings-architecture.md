@@ -1,6 +1,6 @@
 # Settings and runtime architecture
 
-Status: Original Phases 2–6 and subsequent runtime refactor phases 1–3 implemented. Global + Profile ownership and the version-2 saved-data shape are unchanged; live WoW checks remain open.
+Status: Original Phases 2–6 and subsequent runtime refactor phases 1–4 implemented. Global + Profile ownership and the version-2 saved-data shape are unchanged; live WoW checks remain open.
 
 ## Current inventory
 
@@ -20,12 +20,14 @@ The settings UI uses scroll layout, thumb switches, circled-i links, and section
 | `PresentationCapabilities.lua` | Frame/region access assessment and observational reads |
 | `TRP3.lua` | Existing integration adapter |
 | `EntityFacts.lua` | Readable identity, faction, attackability, interaction and attacking evidence, with unknown results |
-| `NameplateClassification.lua` | Pure six-category first-match classification, winning rule, and current name-only state |
+| `NameplateClassification.lua` | Pure six-category first-match classification and winning rule |
+| `PresentationRules.lua` | Scoped context/entity decisions and independent combat health-bar policy |
+| `NameplateRestoration.lua` | Original visibility and deferred restoration/cleanup retries |
 | `NameplateFrames.lua` | Shared nameplate and region access through capability assessment |
 | `NameplateText.lua` | Names, TRP3 titles, placement, inside-bar sizing, and cached text repair |
 | `NameplateThreat.lua` | Readable threat-percentage text |
 | `CastHighlight.lua` | Interruptible-cast border and pulse |
-| `NameplatePresentation.lua` | Apply/repair current category styling and restore frames |
+| `NameplatePresentation.lua` | Apply one shared presentation decision for styling and both Blizzard repair hooks |
 | `Nameplates.lua` | Events, hooks, refresh queues, and nameplate lifecycle |
 | `Diagnostics.lua` | Targeted-unit relationship and presentation reporting |
 | `SettingsControls.lua` | Shared scroll layout, switches, info links, section helpers, and refresh helper |
@@ -55,7 +57,7 @@ Characterize existing defaults, validation, Profile CRUD, per-character selectio
 
 ## Load-order constraint
 
-`Database.lua` validates `global.managedNameCVarOriginals` using the allowlist that `ManagedNames.lua` constructs. ManagedNames resolves `ns.EnsureDB`, `ns.GetCategoryMode`, and `ns.GetStylingEnabled` only inside callbacks after Database has loaded. Runtime load order after Database/TRP3 is EntityFacts -> Classification -> PresentationCapabilities -> Frames -> Text -> Threat -> CastHighlight -> Presentation -> Nameplates -> Diagnostics, followed by settings modules. Failed CVar writes retain the captured original; combat restores defer until `PLAYER_REGEN_ENABLED`. Friendly class colors keep their separate in-memory originals and retry path.
+`Database.lua` validates `global.managedNameCVarOriginals` using the allowlist that `ManagedNames.lua` constructs. ManagedNames resolves `ns.EnsureDB`, `ns.GetCategoryMode`, and `ns.GetStylingEnabled` only inside callbacks after Database has loaded. Runtime load order after Database/TRP3 is EntityFacts -> Classification -> PresentationCapabilities -> PresentationRules -> Frames -> Text -> Threat -> CastHighlight -> Restoration -> Presentation -> Nameplates -> Diagnostics, followed by settings modules. Failed CVar writes retain the captured original; combat restores defer until `PLAYER_REGEN_ENABLED`. Friendly class colors keep their separate in-memory originals and retry path.
 
 ## Phase 4 verification
 
@@ -67,11 +69,11 @@ Characterize existing defaults, validation, Profile CRUD, per-character selectio
 
 ## Phase 6 verification
 
-Run all five smoke scripts from the repository root. The pending game-client integration matrix is tracked in [live-wow-verification.md](live-wow-verification.md); do not infer client behavior from the stubs.
+Run all six smoke scripts from the repository root. The pending game-client integration matrix is tracked in [live-wow-verification.md](live-wow-verification.md); do not infer client behavior from the stubs.
 
 ## Subsequent runtime phase 1
 
-The current category and presentation decisions are unchanged. The targeting predicate used by classification is explicitly exported for Diagnostics, fixing the previous unavailable-function call. The runtime smoke test now executes presentation, TRP3 title suppression, inside-bar sizing, cached drift repair, restoration, and the diagnostic path in addition to event registration and upvalue checks. Phase 2 adds cached context and capability assessment; phase 3 adds new category definitions; the combat-dependent bar policy remains pending; see [runtime-refactor-plan.md](runtime-refactor-plan.md).
+The current category and presentation decisions are unchanged. The targeting predicate used by classification is explicitly exported for Diagnostics, fixing the previous unavailable-function call. The runtime smoke test now executes presentation, TRP3 title suppression, inside-bar sizing, cached drift repair, restoration, and the diagnostic path in addition to event registration and upvalue checks. Phase 2 adds cached context and capability assessment; phase 3 adds new category definitions; phase 4 adds independent presentation and combat-dependent bars; see [runtime-refactor-plan.md](runtime-refactor-plan.md).
 
 ## Subsequent runtime phase 2
 
@@ -89,4 +91,10 @@ In 1.0.104 experimental replacement required all categories Active. It was subse
 
 The replacement toggle, defaults, getter/setter/actions, diagnostic field, startup action, and CVar claims are removed. Database validation silently discards its obsolete preference. The existing managed-originals ledger retains an explicit allowlist of previously captured player/NPC/minion and nameplate-visibility values solely for restoration; these values are never captured or claimed again. Login invokes managed restoration even when styling is disabled. Failed and combat-blocked restoration retains originals for retries; current critter hiding can stay enabled independently. The generic RestoreManagedNameSettings operation supports disabling the remaining control.
 
-The former permanent friendly-player name-only claim is gone. Phase 4 still needs deferred frame restoration and the independent combat-dependent presentation decision. No in-game frame behavior is established by the smoke tests.
+The former permanent friendly-player name-only claim is gone. Phase 4 subsequently implements deferred frame restoration and the independent combat-dependent presentation decision. No in-game frame behavior is established by the smoke tests.
+
+## Subsequent runtime phase 4
+
+PresentationRules selects named rules by context and entity facts and returns one capability-dependent decision. Classification no longer owns name-only presentation. NameplatePresentation applies the same full decision from both repair hooks so name color/layout, bars, titles, threat, and cast effects stay consistent through transitions. NameplateText associates its cache with the decision and context revision and refuses stale or changed-bar repair; the runtime then recomputes current presentation.
+
+NameplateRestoration captures original shown states before styling and retries skipped restoration with styling disabled. The runtime retains known removed-unit frames and pending refreshes for temporarily inaccessible plates. These retries assess access first and do not poll world APIs. Nameplate visibility CVars remain restoration-only; combat presentation does not modify them. All six smoke scripts pass locally; actual Midnight permissions and presentation require client verification.

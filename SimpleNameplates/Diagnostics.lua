@@ -2,8 +2,8 @@
 local _, ns = ...
 local UnitExists, UnitName = UnitExists, UnitName
 local AccessibleBoolean, AccessibleValue = ns.AccessibleBoolean, ns.AccessibleValue
-local StateForUnit, IsNameOnlyState =
-    ns.NameplateClassification.StateForUnit, ns.NameplateClassification.IsNameOnlyState
+local StateForUnit = ns.NameplateClassification.StateForUnit
+local Resolve = ns.PresentationRules.Resolve
 local Capabilities = ns.PresentationCapabilities
 local GetContext = ns.WorldContext.Get
 local GetStylingEnabled = ns.GetStylingEnabled
@@ -46,22 +46,27 @@ local function DebugContext(context)
         .. "; combat lockdown: " .. DebugBoolean(context.combatLockdown))
 end
 
-local function DebugClassification(state, rule, hasNameplate)
+local function DebugClassification(state, rule, assessment, context, facts)
+    local hasNameplate = assessment.canAccess
+    local decision = Resolve(context, facts, state, assessment, GetStylingEnabled(), GetCategoryMode(state))
     local enabled, mode = GetStylingEnabled(), GetCategoryMode(state)
     local display, colorHex
     if not hasNameplate then
         display, colorHex = "no accessible nameplate; world-name display unknown", "unavailable"
-    elseif not enabled or mode == "inactive" then
+    elseif decision.action == "restore" then
         display, colorHex = "Blizzard presentation", "Blizzard-controlled"
     else
         local r, g, b = PriorityColorForState(state)
         colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5),
             math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
-        display = IsNameOnlyState(state) and "colored name only" or "white name with colored health bar"
+        display = decision.nameOnly and "colored name only" or "white name with colored health bar"
     end
     print("  Styling enabled: " .. (enabled and "yes" or "no")
         .. "; detected state: " .. state .. "; winning rule: " .. rule .. "; mode: " .. mode
         .. "; configured display: " .. display .. "; configured color: " .. colorHex)
+    print("  Presentation rule: " .. decision.ruleID .. "; action: " .. decision.action
+        .. "; reason: " .. decision.reason .. "; health bar requested: " .. DebugBoolean(decision.showHealthBar)
+        .. "; full title permitted: " .. DebugBoolean(decision.showFullTitle))
 end
 
 local function DebugUnitRelationships(facts)
@@ -130,7 +135,7 @@ local function DebugUnit(unit, context)
     local state, rule, facts = StateForUnit(unit, context)
     local assessment = Capabilities.InspectUnit(unit, context)
     print("|cff0cd29fSimple Nameplates debug:|r " .. name)
-    DebugClassification(state, rule, assessment.canAccess)
+    DebugClassification(state, rule, assessment, context, facts)
     DebugUnitRelationships(facts)
     DebugNameRegion(assessment, context)
     DebugPresentation(assessment, context)

@@ -15,8 +15,8 @@ function CreateFrame(kind)
     frames[#frames + 1] = frame
     return frame
 end
-function hooksecurefunc(name, callback)
-    hooks[#hooks + 1] = { name = name, callback = callback }
+function hooksecurefunc(name, callback, objectCallback)
+    hooks[#hooks + 1] = { name = name, callback = objectCallback or callback }
 end
 function CompactUnitFrame_UpdateHealthColor() end
 function CompactUnitFrame_UpdateName() end
@@ -43,6 +43,7 @@ function UnitIsPVP() return unit.pvp or false end
 local unitExists = true
 function UnitExists() return unitExists end
 function UnitName() return "Diagnostic Target" end
+function UnitAffectingCombat() return false end
 function UnitIsInteractable() return unit.interactable or false end
 
 local appearance = { namePlacement = "ABOVE", nameSize = 12, nameFont = "ARIALN", threatFont = "ARIALN" }
@@ -50,6 +51,7 @@ local categoryMode = "active"
 local trp3Options = {}
 local calls = {}
 local stylingEnabled = true
+local highlightEnabled = false
 local function count(name) calls[name] = (calls[name] or 0) + 1 end
 local ns = {
     EnsureDB = function() count("db") end,
@@ -60,7 +62,7 @@ local ns = {
     GetCategoryMode = function() return categoryMode end,
     GetAppearanceSetting = function(key) return appearance[key] end,
     GetTRP3Setting = function(key) return trp3Options[key] or false end,
-    GetInterruptibleHighlightEnabled = function() return false end,
+    GetInterruptibleHighlightEnabled = function() return highlightEnabled end,
     GetThreatEnabled = function() return false end,
     GetHideCritterCompanionNames = function() return false end,
     PriorityColorForState = function() return 1, 0, 0 end,
@@ -76,7 +78,7 @@ local ns = {
     BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
     FRIENDLY_COLOR_CVARS = {},
 }
-for _, file in ipairs({ "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "NameplateFrames.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
+for _, file in ipairs({ "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "NameplateFrames.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
     assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", ns)
 end
 equal(#frames, 1, "one event frame")
@@ -180,6 +182,31 @@ trp3Options = { useRoleplayingName = true, showFullTitle = true }
 ns.RefreshAll()
 equal(plateFrame.name.text, "Roleplay Name", "TRP3 name retained")
 equal(plateFrame.SNPFullTitleText.shown, true, "name-only long title shown")
+-- Combat changes presentation without changing the Friendly classification.
+appearance.namePlacement = "INSIDE"
+local oldNameStyle = {}
+for key, value in pairs(plateFrame.SNPNameStyle) do oldNameStyle[key] = value end
+events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
+events.scripts.OnUpdate(events, 0.5)
+equal(plateFrame.SNPState, "friendly", "combat does not change category")
+equal(plateFrame.healthBar.shown, true, "friendly combat bar")
+equal(plateFrame.SNPFullTitleText.shown, false, "friendly combat hides long title")
+equal(plateFrame.SNPInsideName.shown, true, "friendly combat inside name")
+equal(plateFrame.healthBar.height, 14, "friendly combat padding")
+equal(plateFrame.name.g, 1, "bar name is white")
+plateFrame.SNPNameStyle = oldNameStyle
+equal(ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get()), false, "stale cache rejected")
+events.scripts.OnUpdate(events, 0.5)
+equal(plateFrame.healthBar.shown, true, "stale drift cannot undo combat bar")
+events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
+-- A Blizzard name hook must apply the whole new decision before the queued refresh.
+hooks[2].callback(plateFrame)
+equal(plateFrame.healthBar.shown, false, "name hook applies combat exit")
+equal(plateFrame.SNPFullTitleText.shown, true, "combat exit restores title")
+equal(plateFrame.SNPInsideName.shown, false, "combat exit removes inside name")
+equal(plateFrame.name.alpha, 1, "combat exit restores floating name")
+equal(plateFrame.healthBar.height, 20, "combat exit restores height")
+
 unit = { reaction = 3 }
 appearance.namePlacement = "INSIDE"
 ns.RefreshAll()
@@ -201,6 +228,54 @@ ns.RestoreAll()
 equal(plateFrame.SNPState, nil, "master restoration reachable")
 C_NamePlate.GetNamePlateForUnit = function() return nil end
 C_NamePlate.GetNamePlates = function() return {} end
+
+-- Existing cast effects and their Blizzard icon hook obey the shared decision.
+C_NamePlate.GetNamePlateForUnit = function() return plate end
+C_NamePlate.GetNamePlates = function() return {plate} end
+unit = { player = true, faction = "Alliance", reaction = 5 }
+plateFrame.castBar = Region()
+plateFrame.castBar.Icon = Region()
+local castOverlay = Region()
+function castOverlay:SetShown(shown) self.shown = shown end
+plateFrame.SNPInterruptibleHighlight = {
+    owner = plateFrame, castBar = plateFrame.castBar, frame = castOverlay, border = {},
+}
+highlightEnabled = true
+ns.RefreshAll()
+equal(castOverlay.shown, false, "name-only cast effect hidden")
+events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
+events.scripts.OnUpdate(events, 0.5)
+equal(castOverlay.shown, true, "combat cast effect follows Blizzard icon")
+local iconHook = hooks[#hooks].callback
+events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
+events.scripts.OnUpdate(events, 0.5)
+iconHook(plateFrame.castBar.Icon, true)
+equal(castOverlay.shown, false, "icon hook cannot revive name-only effect")
+highlightEnabled = false
+-- If a bar remains shown despite a requested hide, titles must remain hidden.
+local hideBar = plateFrame.healthBar.Hide
+plateFrame.healthBar.Hide = function() end
+plateFrame.healthBar.shown = true
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.shown, false, "observed bar suppresses title")
+plateFrame.healthBar.Hide = hideBar
+ns.RefreshAll()
+
+-- Missing bars use a colored floating name and permit a title even in combat.
+C_NamePlate.GetNamePlateForUnit = function() return plate end
+C_NamePlate.GetNamePlates = function() return {plate} end
+local savedBar = plateFrame.healthBar
+plateFrame.healthBar = nil
+unit = { reaction = 3 }
+events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
+events.scripts.OnUpdate(events, 0.5)
+equal(plateFrame.SNPPresentation.showHealthBar, false, "no fabricated health bar")
+equal(plateFrame.SNPPresentation.nameOnly, true, "missing bar uses name color")
+equal(plateFrame.name.g, 0, "missing-bar priority color")
+equal(plateFrame.SNPFullTitleText.shown, true, "missing bar allows long title")
+plateFrame.healthBar = savedBar
+events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
+ns.RestoreAll()
 
 -- Context events still run with styling disabled; combat state is independent.
 stylingEnabled = false
@@ -248,6 +323,82 @@ assert(plateFrame.SNPState, "protected frame refreshed after lockdown")
 plateFrame.IsProtected = nil
 C_NamePlate.GetNamePlateForUnit = function() return nil end
 C_NamePlate.GetNamePlates = function() return {} end
+
+-- Disabled styling still retries restoration after combat lockdown ends.
+C_NamePlate.GetNamePlateForUnit = function() return plate end
+C_NamePlate.GetNamePlates = function() return {plate} end
+unit = { player = true, faction = "Alliance", reaction = 5 }
+appearance.namePlacement = "INSIDE"
+locked = false
+ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
+ns.RefreshAll()
+equal(plateFrame.healthBar.height, 14, "styled height before lockdown")
+plateFrame.IsProtected = function() return true end
+locked = true
+ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
+stylingEnabled = false
+ns.RestoreAll()
+events.scripts.OnUpdate(events, 0.5)
+assert(plateFrame.SNPState, "protected style retained until safe restoration")
+locked = false
+events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
+events.scripts.OnUpdate(events, 0.5)
+equal(plateFrame.SNPState, nil, "disabled styling restoration retried")
+equal(plateFrame.SNPPresentation, nil, "presentation cache cleared on restore")
+equal(plateFrame.SNPInsideName.shown, false, "deferred inside name hidden")
+equal(plateFrame.healthBar.height, 20, "deferred original height restored")
+plateFrame.IsProtected = nil
+stylingEnabled = true
+ns.RefreshAll()
+local baseForbidden = true
+plate.IsForbidden = function() return baseForbidden end
+stylingEnabled = false
+ns.RestoreAll()
+events.scripts.OnUpdate(events, 0.5)
+assert(plateFrame.SNPState, "forbidden base plate restoration postponed")
+baseForbidden = false
+events.scripts.OnUpdate(events, 0.5)
+equal(plateFrame.SNPState, nil, "base plate restoration retried with styling off")
+plate.IsForbidden = nil
+stylingEnabled = true
+categoryMode = "active"
+ns.RefreshAll()
+local frameForbidden = true
+plateFrame.IsForbidden = function() return frameForbidden end
+categoryMode = "inactive"
+ns.RefreshAll()
+frameForbidden = false
+events.scripts.OnUpdate(events, 0.5)
+equal(plateFrame.SNPState, nil, "inactive restoration after access returns without context event")
+plateFrame.IsForbidden = nil
+categoryMode = "active"
+ns.RefreshAll()
+-- Deferred removed-unit cleanup cannot clear a newly styled recycled frame.
+plateFrame.IsProtected = function() return true end
+locked = true
+ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
+C_NamePlate.GetNamePlateForUnit = function() return nil end
+events.scripts.OnEvent(events, "NAME_PLATE_UNIT_REMOVED", "nameplate1")
+plateFrame.unit = "nameplate2"
+locked = false
+ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
+C_NamePlate.GetNamePlateForUnit = function() return plate end
+ns.RefreshAll()
+equal(plateFrame.SNPOriginalUnit, "nameplate2", "recycled frame captures current owner")
+events.scripts.OnUpdate(events, 0.5)
+assert(plateFrame.SNPState, "old pending cleanup does not clear recycled style")
+equal(plateFrame.name.text, "Roleplay Name", "recycled name remains")
+plateFrame.IsProtected = nil
+plateFrame.unit = "nameplate1"
+ns.RefreshAll()
+
+-- Removed plate lookup may already be gone; retain the last known frame for cleanup.
+C_NamePlate.GetNamePlateForUnit = function() return nil end
+C_NamePlate.GetNamePlates = function() return {} end
+events.scripts.OnEvent(events, "NAME_PLATE_UNIT_REMOVED", "nameplate1")
+equal(plateFrame.SNPState, nil, "removed known frame cleaned")
+equal(plateFrame.name.text, "", "removed name cleared")
+appearance.namePlacement = "ABOVE"
 
 -- Execute the diagnostic path: the extracted targeting predicate must remain available.
 local output, originalPrint = {}, print

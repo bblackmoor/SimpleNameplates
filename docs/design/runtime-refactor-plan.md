@@ -1,6 +1,6 @@
 # World-context and entity-presentation runtime refactor
 
-Status: phases 1–3 implemented through 1.0.104; experimental replacement removed in 1.0.105; phases 4–5 pending. This follows the completed original settings refactor and is a separate five-phase sequence.
+Status: phases 1–4 implemented through 1.0.106; experimental replacement removed in 1.0.105; phase 5 client verification pending. This follows the completed original settings refactor and is a separate five-phase sequence.
 
 ## Baseline and accepted rules
 
@@ -55,16 +55,24 @@ Eligibility requires readable directional attackability for a player or player-c
 
 Current category keys are attacking, hostile, neutral, friendly, useful, and useless. Old keys are discarded without aliases or conversion; current valid values, unrelated preferences, profiles, and restoration records survive. In 1.0.104 replacement CVars were separated from priority categories and required all categories Active. The replacement feature was removed in 1.0.105; its valid saved original CVar values are retained solely for restoration. Friendly class-color controls also respect the Active modes of possible player combat priorities. Independent critter hiding remains intact.
 
-Local tests cover precedence, PvP/sanctuary/duels, hostile interactive NPCs, directional Neutral classification, minions, unknown/secret/missing/failed observations, saved-field validation, CVar release/resume, and diagnostic reporting. The combat-dependent bar policy and specific context/entity presentation rules remain phase 4. Client verification remains pending.
+Local tests cover precedence, PvP/sanctuary/duels, hostile interactive NPCs, directional Neutral classification, minions, unknown/secret/missing/failed observations, saved-field validation, CVar release/resume, and diagnostic reporting. Phase 4 subsequently implements the combat-dependent bar policy and context/entity presentation rules. Client verification remains pending.
 
-The removal in 1.0.105 eliminates the permanent friendly-player name-only CVar claim identified during phase-4 readiness review. Phase 4 must still add a presentation decision shared by style/repair/text/title paths and deferred frame restoration after restrictions end, including when styling is disabled. World-name visibility is owned by Blizzard; the independent critter control remains.
+The removal in 1.0.105 eliminates the permanent friendly-player name-only CVar claim identified during phase-4 readiness review. Phase 4 in 1.0.106 adds the shared presentation decision and deferred frame restoration, including when styling is disabled. World-name visibility is owned by Blizzard; the independent critter control remains.
 
 ## Phase 4 — Specific presentation rules
 
-- [ ] Select narrowly scoped context/entity presentation rules with shared fallbacks.
-- [ ] Start with opposite-faction players in sanctuary versus PvP-capable areas.
-- [ ] Implement the accepted combat-dependent health-bar and TRP3-title policy.
-- [ ] Keep category-wide CVar policies separate from per-frame operations.
+- [x] Select narrowly scoped context/entity presentation rules with shared fallbacks.
+- [x] Start with opposite-faction players in sanctuary versus PvP-capable areas.
+- [x] Implement the accepted combat-dependent health-bar and TRP3-title policy.
+- [x] Keep category-wide CVar policies separate from per-frame operations.
+
+`PresentationRules.Resolve` receives cached context, entity facts, category, capabilities, and behavior mode. It returns style/restore/skip plus independent health/cast/indicator and name/title decisions. Named sanctuary, eligible-PvP, and non-PvP opposite-player rules can be edited individually without changing the shared fallback or classification. Readable permissions remain authoritative; named locations are not hardcoded.
+
+All Active supported bars appear during player combat; out of combat, Attacking/Hostile/Neutral use them. Missing bars use category-colored floating names. Bar names are white; above/inside layout and sizing apply to every displayed bar. Unknown combat falls back to Blizzard presentation. TRP3 long titles are suppressed for requested/observed bars or unavailable shown state on an existing bar. Styling, both repair hooks, threat, cast effects, cached text repair, and diagnostics share the decision. Stale context/decision/bar caches trigger full re-evaluation rather than restoring an old layout.
+
+`NameplateRestoration.lua` captures original visibility and queues inaccessible frames/base plates for retry, including while styling is disabled. Previously blocked refreshes also retry when access returns without needing a context event. Removed units use their last known frame for safe cleanup; delayed callbacks do not revive removed units. Combat CVar writes and experimental name replacement are not introduced.
+
+Local checks cover all six categories, rule scope, combat transitions, missing bars, observed title suppression, stale caches, cast hooks, original sizing/visibility, and restoration after frame or base-plate restrictions end with styling disabled. Client permissions and actual layouts remain unverified.
 
 ## Phase 5 — Client verification
 

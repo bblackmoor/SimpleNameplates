@@ -8,7 +8,6 @@ local AccessibleNumber, AccessibleValue = ns.AccessibleNumber, ns.AccessibleValu
 local PriorityColorForState, FontPath = ns.PriorityColorForState, ns.FontPath
 local GetAppearanceSetting, GetTRP3Setting = ns.GetAppearanceSetting, ns.GetTRP3Setting
 local GetThreatEnabled = ns.GetThreatEnabled
-local IsNameOnlyState = ns.NameplateClassification.IsNameOnlyState
 local GetHealthBar = ns.NameplateFrames.GetHealthBar
 
 local function UpdateNameText(frame)
@@ -57,11 +56,13 @@ local function EnsureFullTitleText(frame)
     return fullTitle
 end
 
-local function StyleFullTitle(frame, state, text, baseNameSize)
+local function StyleFullTitle(frame, state, text, baseNameSize, decision, context)
     local fullTitle = frame.SNPFullTitleText
     -- Long titles are useful on name-only plates, but add too much visual
     -- noise to units whose health bars are visible.
-    if not text or not IsNameOnlyState(state) then
+    local bar = GetHealthBar(frame, context)
+    local barShown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(bar, "IsShown", context))
+    if not text or not decision.showFullTitle or (bar and barShown ~= false) then
         if fullTitle then fullTitle:SetText(""); fullTitle:Hide() end
         return
     end
@@ -94,11 +95,11 @@ local function RestoreOriginalBarHeight(frame, bar, context)
     frame.SNPOriginalHealthBarsContainerHeight = nil
 end
 
-local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context)
+local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context, decision)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return false, baseNameSize end
     local inside = GetAppearanceSetting("namePlacement") == "INSIDE"
-        and not IsNameOnlyState(state) and bar ~= nil
+        and decision and decision.showHealthBar and bar ~= nil
     if not inside then
         RestoreOriginalBarHeight(frame, bar, context)
         return false, baseNameSize
@@ -199,16 +200,17 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.frame = frame
 end
 
-local function StyleName(frame, state, context)
+local function StyleName(frame, state, context, decision)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return end
+    if not decision or decision.action ~= "style" then return end
     local name = frame and frame.name
     if not name then return end
     local fullTitle, displayName = UpdateNameText(frame)
     local baseSize = GetAppearanceSetting("nameSize") or 12
     local bar = GetHealthBar(frame, context)
-    local nameOnly = IsNameOnlyState(state)
-    local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize, context)
+    local nameOnly = decision.nameOnly
+    local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize, context, decision)
     local rightInset = GetThreatEnabled() and -42 or -3
     PositionName(frame, name, bar, nameOnly, inside, rightInset)
 
@@ -229,9 +231,10 @@ local function StyleName(frame, state, context)
     else
         RestoreNameDisplay(frame, context)
     end
-    StyleFullTitle(frame, state, fullTitle, baseSize)
+    StyleFullTitle(frame, state, fullTitle, baseSize, decision, context)
     CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
         nameOnly, inside, rightInset, bar)
+    frame.SNPNameStyle.presentation = decision
 end
 
 local function NearlyEqual(a, b)
@@ -239,11 +242,22 @@ local function NearlyEqual(a, b)
     return type(a) == "number" and type(b) == "number" and math.abs(a - b) < 0.001
 end
 
+local function CacheIsCurrent(frame, expected, context)
+    local decision = frame.SNPPresentation
+    if not decision or expected.presentation ~= decision or decision.contextRevision ~= context.revision then return false end
+    local bar = GetHealthBar(frame, context)
+    if expected.bar ~= bar then return false end
+    local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(bar, "IsShown", context))
+    if shown ~= nil and shown ~= decision.showHealthBar then return false end
+    return true
+end
+
 local function CachedNameHasDrifted(frame, context)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return false end
     local name, expected = frame and frame.name, frame and frame.SNPNameStyle
     if not name or not expected then return false end
+    if not CacheIsCurrent(frame, expected, context) then return true end
     -- FontString text can be a secret string in Midnight. Never read or compare
     -- it here; the secure Blizzard name-update hook and unit events repair text.
     local font, size, flags = name:GetFont()
@@ -289,9 +303,9 @@ end
 
 local function RepairCachedName(frame, context)
     context = context or GetContext()
-    if not CanAccessFrame(frame, context) then return end
+    if not CanAccessFrame(frame, context) then return false end
     local name, expected = frame and frame.name, frame and frame.SNPNameStyle
-    if not name or not expected then return end
+    if not name or not expected or not CacheIsCurrent(frame, expected, context) then return false end
     name:SetText(expected.text)
     name:SetFont(expected.font, expected.size, expected.flags)
     name:SetShadowColor(0, 0, 0, 1)
@@ -326,6 +340,7 @@ local function RepairCachedName(frame, context)
     else
         RestoreNameDisplay(frame, context)
     end
+    return true
 end
 
 

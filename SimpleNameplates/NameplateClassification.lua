@@ -18,13 +18,7 @@ local function StateForUnit(unit, context)
     return state, rule, facts
 end
 
-local function IsNameOnlyState(state)
-    -- Phase 4 adds the independent combat-dependent bar policy.
-    return state == "friendly" or state == "useful" or state == "useless"
-end
-
 ns.NameplateClassification = {
     StateForUnit = StateForUnit, Classify = Classify,
     TargetsPlayerControlledUnit = ns.EntityFacts.TargetsPlayerControlledUnit,
-    IsNameOnlyState = IsNameOnlyState,
 }

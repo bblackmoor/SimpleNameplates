@@ -10,16 +10,22 @@ local GetUnitFrame, GetHealthBar = ns.NameplateFrames.GetUnitFrame, ns.Nameplate
 local ApplySimpleStyle = ns.NameplatePresentation.ApplySimpleStyle
 local RepairHealthColor, RepairName =
     ns.NameplatePresentation.RepairHealthColor, ns.NameplatePresentation.RepairName
-local RestoreFrame = ns.NameplatePresentation.RestoreFrame
-local RestoreOriginalBarHeight, RestoreNameDisplay =
-    ns.NameplateText.RestoreOriginalBarHeight, ns.NameplateText.RestoreNameDisplay
+local Restoration = ns.NameplateRestoration
+local knownFrames = {}
+local pendingUnits = {}
+local removedUnits = {}
+local pendingPlates = setmetatable({}, {__mode = "k"})
 local CachedNameHasDrifted, RepairCachedName =
     ns.NameplateText.CachedNameHasDrifted, ns.NameplateText.RepairCachedName
 
 local function RefreshUnit(unit)
+    if removedUnits[unit] then return end
     local context = WorldContext.Get()
     local frame = GetUnitFrame(unit, context)
-    if frame then ApplySimpleStyle(frame, context) end
+    if frame then
+        knownFrames[unit], pendingUnits[unit] = frame, nil
+        ApplySimpleStyle(frame, context)
+    else pendingUnits[unit] = true end
 end
 
 local function RefreshAll()
@@ -28,7 +34,12 @@ local function RefreshAll()
     local context = WorldContext.Get()
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
         local frame = GetFrameFromPlate(plate, context)
-        if frame then ApplySimpleStyle(frame, context) end
+        if frame then
+            local unit = ns.AccessibleValue(frame.unit)
+            if type(unit) == "string" then knownFrames[unit], removedUnits[unit] = frame, nil end
+            pendingPlates[plate] = nil
+            ApplySimpleStyle(frame, context)
+        else pendingPlates[plate] = true end
     end
 end
 
@@ -36,8 +47,7 @@ local function RestoreAll()
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     local context = WorldContext.Get()
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
-        local frame = GetFrameFromPlate(plate, context)
-        if frame then RestoreFrame(frame, context) end
+        Restoration.RequestPlate(plate, context)
     end
 end
 
@@ -130,23 +140,15 @@ local function HandleCVarUpdate(cvarName)
 end
 
 local function CleanupRemovedNameplate(unit)
-    local context = WorldContext.Get()
-    local frame = GetUnitFrame(unit, context)
-    if frame then
-        RestoreOriginalBarHeight(frame, GetHealthBar(frame, context), context)
-        if frame.name then frame.name:SetText("") end
-        if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
-        if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
-        RestoreNameDisplay(frame, context)
-        frame.SNPNameStyle = nil
-        frame.SNPState = nil
-        if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
-    end
-    dirtyUnits[unit] = nil
+    local frame = knownFrames[unit] or GetUnitFrame(unit, WorldContext.Get())
+    Restoration.Request(frame, WorldContext.Get(), unit)
+    knownFrames[unit], dirtyUnits[unit], pendingUnits[unit] = nil, nil, nil
+    removedUnits[unit] = true
 end
 
 local function HandleNameplateEvent(event, unit)
     if event == "NAME_PLATE_UNIT_ADDED" then
+        removedUnits[unit] = nil
         RefreshUnit(unit)
         -- One delayed pass covers late nameplate initialization; the Blizzard
         -- hooks and cached drift check handle subsequent changes.
@@ -180,6 +182,7 @@ local function HandleEvent(_, event, unit)
         return
     end
     if event == "CVAR_UPDATE" then HandleCVarUpdate(unit); return end
+    if event == "NAME_PLATE_UNIT_REMOVED" then CleanupRemovedNameplate(unit); return end
     if not GetStylingEnabled() then return end
     if HandleNameplateEvent(event, unit) then return end
     if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_SOFT_INTERACT_CHANGED" then QueueRefreshAll(); return end
@@ -197,18 +200,38 @@ events:SetScript("OnEvent", HandleEvent)
 -- profile access, threat checks, and health-bar styling remain event-driven.
 local reconcileElapsed = 0
 events:SetScript("OnUpdate", function(_, elapsed)
+    reconcileElapsed = reconcileElapsed + elapsed
+    local reconcile = reconcileElapsed >= 0.50
+    local context = WorldContext.Get()
+    if reconcile then
+        reconcileElapsed = 0
+        Restoration.Retry(context)
+        for plate in pairs(pendingPlates) do
+            if not GetStylingEnabled() then
+                if Restoration.RequestPlate(plate, context) then pendingPlates[plate] = nil end
+            else
+                local frame = GetFrameFromPlate(plate, context)
+                if frame then
+                    pendingPlates[plate] = nil
+                    local unit = ns.AccessibleValue(frame.unit)
+                    if type(unit) == "string" then knownFrames[unit], removedUnits[unit] = frame, nil end
+                    ApplySimpleStyle(frame, context)
+                end
+            end
+        end
+        if GetStylingEnabled() then
+            for unit in pairs(pendingUnits) do RefreshUnit(unit) end
+        end
+    end
     if not GetStylingEnabled() then return end
     FlushQueuedRefreshes()
-    reconcileElapsed = reconcileElapsed + elapsed
-    if reconcileElapsed < 0.50 then return end
-    reconcileElapsed = 0
+    if not reconcile then return end
 
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
-    local context = WorldContext.Get()
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
         local frame = GetFrameFromPlate(plate, context)
         if frame and frame.SNPState and CachedNameHasDrifted(frame, context) then
-            RepairCachedName(frame, context)
+            if not RepairCachedName(frame, context) then ApplySimpleStyle(frame, context) end
         end
     end
 end)

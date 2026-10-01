@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.106
+
+* Completed runtime phase 4: added independent presentation rules with narrow sanctuary/PvP/non-PvP opposite-player cases and shared defaults.
+* During player combat, all Active entities with supported accessible bars display them; out of combat only Attacking, Hostile, and Neutral use bars. Missing bars use colored names; Inactive or unknown-combat presentation falls back to Blizzard.
+* Names, TRP3 titles, sizing, threat, cast effects, and both Blizzard repair hooks share the decision. Stale caches cannot restore an old combat layout. Long titles are suppressed for requested/observed bars or unknown shown state on an existing bar.
+* Added original-visibility capture and restoration retries after restrictions end, including while styling is disabled, plus blocked-refresh and removed-unit cleanup handling. No nameplate-visibility CVar claims were introduced.
+* Expanded runtime regressions and added pure rule tests. Phase 5 live-client verification remains pending.
+
 ## 1.0.105
 
 * Removed experimental Blizzard overhead-name replacement, including its control, defaults, saved preference, runtime APIs/actions, CVar claims, and diagnostic field.

@@ -21,7 +21,9 @@ local function InstallInterruptibleHighlightHook(highlight)
     local overlay = highlight.frame
     local ok = pcall(hooksecurefunc, icon, "SetShown", function(_, shown)
         if not CanAccessFrame(highlight.owner, GetContext()) then return end
-        if GetStylingEnabled() and GetInterruptibleHighlightEnabled() then
+        local decision = highlight.owner.SNPPresentation
+        if GetStylingEnabled() and GetInterruptibleHighlightEnabled()
+            and decision and decision.showCastBar then
             SetInterruptibleHighlightShown(overlay, shown)
         else
             overlay:Hide()
@@ -107,9 +109,13 @@ local function EnsureInterruptibleHighlight(frame, context)
     return highlight
 end
 
-local function UpdateInterruptibleHighlight(frame, context)
+local function UpdateInterruptibleHighlight(frame, context, decision)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return end
+    if not decision or not decision.showCastBar or not GetInterruptibleHighlightEnabled() then
+        if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
+        return
+    end
     local highlight = EnsureInterruptibleHighlight(frame, context)
     if not highlight then return end
 

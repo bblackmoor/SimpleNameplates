@@ -306,11 +306,11 @@ local function AddPriorityColorControls(context)
     CreatePriorityColorRow(context, "3. Can attack me — Neutral", "neutral",
         "Health bar for entities that can attack you without a higher priority")
     CreatePriorityColorRow(context, "4. Player — Friendly", "friendly",
-        "Name of any player not meeting a higher priority")
+        "Colored name out of combat; colored health bar in combat when supported")
     CreatePriorityColorRow(context, "5. Interactive NPC — Useful", "useful",
-        "Name of NPCs with readable interaction evidence and no higher priority")
+        "Interactive NPC: colored name out of combat; health bar in combat when supported")
     CreatePriorityColorRow(context, "6. Otherwise — Useless", "useless",
-        "Name of remaining entities; unknown facts remain separate from this fallback")
+        "Remaining entity: colored name out of combat; health bar in combat when supported")
 end
 
 local function AddLockedColorControls(context)

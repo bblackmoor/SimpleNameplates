@@ -5,12 +5,11 @@ local GetContext = ns.WorldContext.Get
 local UnitDetailedThreatSituation = UnitDetailedThreatSituation
 local AccessibleNumber, FontPath = ns.AccessibleNumber, ns.FontPath
 local GetAppearanceSetting, GetThreatEnabled = ns.GetAppearanceSetting, ns.GetThreatEnabled
-local IsNameOnlyState = ns.NameplateClassification.IsNameOnlyState
 local GetHealthBar = ns.NameplateFrames.GetHealthBar
 
-local function EnsureThreatText(frame)
+local function EnsureThreatText(frame, context)
     if frame.SNPThreatText then return frame.SNPThreatText end
-    local bar = GetHealthBar(frame)
+    local bar = GetHealthBar(frame, context)
     if not bar then return nil end
     local threatText = bar:CreateFontString(nil, "OVERLAY")
     threatText:SetPoint("RIGHT", bar, "RIGHT", -3, 0)
@@ -20,10 +19,14 @@ local function EnsureThreatText(frame)
     return threatText
 end
 
-local function UpdateThreatText(frame, state, context)
+local function UpdateThreatText(frame, state, context, decision)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return end
-    local threatText = EnsureThreatText(frame)
+    if not decision or not decision.showHealthBar then
+        if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
+        return
+    end
+    local threatText = EnsureThreatText(frame, context)
     if not threatText then return end
     local threatSize = 9
     if GetAppearanceSetting("namePlacement") == "INSIDE" then
@@ -32,7 +35,6 @@ local function UpdateThreatText(frame, state, context)
     end
     threatText:SetFont(FontPath(GetAppearanceSetting("threatFont")), threatSize, "OUTLINE")
     if not GetThreatEnabled() then threatText:SetText(""); return end
-    if IsNameOnlyState(state) then threatText:SetText(""); return end
     local _, _, scaled, raw = UnitDetailedThreatSituation("player", frame.unit)
     local percent = AccessibleNumber(raw) or AccessibleNumber(scaled)
     if percent then threatText:SetFormattedText("%.0f%%", percent) else threatText:SetText("") end
