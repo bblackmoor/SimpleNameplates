@@ -2,6 +2,8 @@
 local addon, ns = ...
 if not ns.EnsureDB then return end
 local C_NamePlate = C_NamePlate
+local WorldContext = ns.WorldContext
+local GetFrameFromPlate = ns.NameplateFrames.GetFrameFromPlate
 local GetStylingEnabled, GetReplaceBlizzardOverheadNames =
     ns.GetStylingEnabled, ns.GetReplaceBlizzardOverheadNames
 local StateForUnit = ns.NameplateClassification.StateForUnit
@@ -16,38 +18,43 @@ local CachedNameHasDrifted, RepairCachedName =
     ns.NameplateText.CachedNameHasDrifted, ns.NameplateText.RepairCachedName
 
 local function RefreshUnit(unit)
-    local frame = GetUnitFrame(unit)
-    if frame then ApplySimpleStyle(frame) end
+    local context = WorldContext.Get()
+    local frame = GetUnitFrame(unit, context)
+    if frame then ApplySimpleStyle(frame, context) end
 end
 
 local function RefreshAll()
     if not GetStylingEnabled() then return end
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
+    local context = WorldContext.Get()
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
-        if plate.UnitFrame then ApplySimpleStyle(plate.UnitFrame) end
+        local frame = GetFrameFromPlate(plate, context)
+        if frame then ApplySimpleStyle(frame, context) end
     end
 end
 
 local function RestoreAll()
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
+    local context = WorldContext.Get()
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
-        if plate.UnitFrame then RestoreFrame(plate.UnitFrame) end
+        local frame = GetFrameFromPlate(plate, context)
+        if frame then RestoreFrame(frame, context) end
     end
 end
 
 if hooksecurefunc and CompactUnitFrame_UpdateHealthColor then
-    hooksecurefunc("CompactUnitFrame_UpdateHealthColor", RepairHealthColor)
+    hooksecurefunc("CompactUnitFrame_UpdateHealthColor", function(frame) RepairHealthColor(frame, WorldContext.Get()) end)
 end
 
 -- Blizzard recolors the name FontString in its name update path, which occurs
 -- after NAME_PLATE_UNIT_ADDED in several situations (mounting, range changes,
 -- recycled plates, etc.). Reapply our configured color after Blizzard finishes that pass.
 if hooksecurefunc and CompactUnitFrame_UpdateName then
-    hooksecurefunc("CompactUnitFrame_UpdateName", RepairName)
+    hooksecurefunc("CompactUnitFrame_UpdateName", function(frame) RepairName(frame, WorldContext.Get()) end)
 end
 
 local events = CreateFrame("Frame")
-for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_REGEN_ENABLED","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","CVAR_UPDATE"}) do
+for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_REGEN_ENABLED","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","CVAR_UPDATE","PLAYER_ENTERING_WORLD","ZONE_CHANGED","ZONE_CHANGED_INDOORS","ZONE_CHANGED_NEW_AREA","WAR_MODE_STATUS_UPDATE","PLAYER_FLAGS_CHANGED","PVP_TIMER_UPDATE","PLAYER_REGEN_DISABLED"}) do
     events:RegisterEvent(event)
 end
 
@@ -125,13 +132,14 @@ local function HandleCVarUpdate(cvarName)
 end
 
 local function CleanupRemovedNameplate(unit)
-    local frame = GetUnitFrame(unit)
+    local context = WorldContext.Get()
+    local frame = GetUnitFrame(unit, context)
     if frame then
-        RestoreOriginalBarHeight(frame, GetHealthBar(frame))
+        RestoreOriginalBarHeight(frame, GetHealthBar(frame, context), context)
         if frame.name then frame.name:SetText("") end
         if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
         if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
-        RestoreNameDisplay(frame)
+        RestoreNameDisplay(frame, context)
         frame.SNPNameStyle = nil
         frame.SNPState = nil
         if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
@@ -155,10 +163,16 @@ local function HandleNameplateEvent(event, unit)
 end
 
 local function HandleEvent(_, event, unit)
+    if WorldContext.HandlesEvent(event, unit) then
+        local _, changed = WorldContext.Refresh(event)
+        if changed or event == "PLAYER_ENTERING_WORLD"
+            or event == "UNIT_FLAGS" or event == "UNIT_FACTION" then QueueRefreshAll() end
+    end
     if event == "ADDON_LOADED" then
         if unit ~= addon then return end
         events:UnregisterEvent("ADDON_LOADED")
         ns.EnsureDB()
+        WorldContext.Refresh(event)
         return
     end
     if event == "PLAYER_LOGIN" then HandlePlayerLogin(); return end
@@ -192,10 +206,11 @@ events:SetScript("OnUpdate", function(_, elapsed)
     reconcileElapsed = 0
 
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
+    local context = WorldContext.Get()
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
-        local frame = plate.UnitFrame
-        if frame and frame.SNPState and CachedNameHasDrifted(frame) then
-            RepairCachedName(frame)
+        local frame = GetFrameFromPlate(plate, context)
+        if frame and frame.SNPState and CachedNameHasDrifted(frame, context) then
+            RepairCachedName(frame, context)
         end
     end
 end)

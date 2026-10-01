@@ -1,5 +1,8 @@
 -- Simple Nameplates: unit names, TRP3 titles, layout, and cached text repair.
 local _, ns = ...
+local CanAccessFrame = ns.PresentationCapabilities.CanAccessFrame
+local GetContext = ns.WorldContext.Get
+local AccessibleBoolean = ns.AccessibleBoolean
 local UnitName = UnitName
 local AccessibleNumber, AccessibleValue = ns.AccessibleNumber, ns.AccessibleValue
 local PriorityColorForState, FontPath = ns.PriorityColorForState, ns.FontPath
@@ -76,7 +79,9 @@ local function StyleFullTitle(frame, state, text, baseNameSize)
     fullTitle:Show()
 end
 
-local function RestoreOriginalBarHeight(frame, bar)
+local function RestoreOriginalBarHeight(frame, bar, context)
+    context = context or GetContext()
+    if not CanAccessFrame(frame, context) then return end
     if not frame then return end
     if bar and frame.SNPOriginalBarHeight then
         bar:SetHeight(frame.SNPOriginalBarHeight)
@@ -89,23 +94,25 @@ local function RestoreOriginalBarHeight(frame, bar)
     frame.SNPOriginalHealthBarsContainerHeight = nil
 end
 
-local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize)
+local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context)
+    context = context or GetContext()
+    if not CanAccessFrame(frame, context) then return false, baseNameSize end
     local inside = GetAppearanceSetting("namePlacement") == "INSIDE"
         and not IsNameOnlyState(state) and bar ~= nil
     if not inside then
-        RestoreOriginalBarHeight(frame, bar)
+        RestoreOriginalBarHeight(frame, bar, context)
         return false, baseNameSize
     end
 
     if not frame.SNPOriginalBarHeight then
-        local originalHeight = bar:GetHeight()
+        local originalHeight = AccessibleNumber(bar:GetHeight())
         if type(originalHeight) == "number" and originalHeight > 0 then
             frame.SNPOriginalBarHeight = originalHeight
         end
     end
     local container = frame.HealthBarsContainer
     if container and not frame.SNPOriginalHealthBarsContainerHeight then
-        local originalHeight = container:GetHeight()
+        local originalHeight = AccessibleNumber(container:GetHeight())
         if type(originalHeight) == "number" and originalHeight > 0 then
             frame.SNPOriginalHealthBarsContainerHeight = originalHeight
         end
@@ -169,7 +176,9 @@ local function ShowInsideName(frame, bar, text, fontPath, size, rightInset)
     frame.name:SetAlpha(0)
 end
 
-local function RestoreNameDisplay(frame)
+local function RestoreNameDisplay(frame, context)
+    context = context or GetContext()
+    if not CanAccessFrame(frame, context) then return end
     if frame.SNPInsideName then frame.SNPInsideName:Hide() end
     if frame.name then frame.name:SetAlpha(1) end
 end
@@ -190,14 +199,16 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.frame = frame
 end
 
-local function StyleName(frame, state)
+local function StyleName(frame, state, context)
+    context = context or GetContext()
+    if not CanAccessFrame(frame, context) then return end
     local name = frame and frame.name
     if not name then return end
     local fullTitle, displayName = UpdateNameText(frame)
     local baseSize = GetAppearanceSetting("nameSize") or 12
-    local bar = GetHealthBar(frame)
+    local bar = GetHealthBar(frame, context)
     local nameOnly = IsNameOnlyState(state)
-    local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize)
+    local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize, context)
     local rightInset = GetThreatEnabled() and -42 or -3
     PositionName(frame, name, bar, nameOnly, inside, rightInset)
 
@@ -216,7 +227,7 @@ local function StyleName(frame, state)
     if inside then
         ShowInsideName(frame, bar, displayName, fontPath, size, rightInset)
     else
-        RestoreNameDisplay(frame)
+        RestoreNameDisplay(frame, context)
     end
     StyleFullTitle(frame, state, fullTitle, baseSize)
     CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
@@ -224,15 +235,20 @@ local function StyleName(frame, state)
 end
 
 local function NearlyEqual(a, b)
+    a, b = AccessibleNumber(a), AccessibleNumber(b)
     return type(a) == "number" and type(b) == "number" and math.abs(a - b) < 0.001
 end
 
-local function CachedNameHasDrifted(frame)
+local function CachedNameHasDrifted(frame, context)
+    context = context or GetContext()
+    if not CanAccessFrame(frame, context) then return false end
     local name, expected = frame and frame.name, frame and frame.SNPNameStyle
     if not name or not expected then return false end
     -- FontString text can be a secret string in Midnight. Never read or compare
     -- it here; the secure Blizzard name-update hook and unit events repair text.
     local font, size, flags = name:GetFont()
+    font, size, flags = AccessibleValue(font), AccessibleNumber(size), AccessibleValue(flags)
+    if font == nil or size == nil or flags == nil then return false end
     if font ~= expected.font or not NearlyEqual(size, expected.size) or flags ~= expected.flags then
         return true
     end
@@ -246,7 +262,7 @@ local function CachedNameHasDrifted(frame)
     end
     if expected.inside then
         local insideName = frame.SNPInsideName
-        if not insideName or not insideName:IsShown() or not NearlyEqual(name:GetAlpha(), 0) then
+        if not insideName or AccessibleBoolean(insideName:IsShown()) ~= true or not NearlyEqual(name:GetAlpha(), 0) then
             return true
         end
     elseif not NearlyEqual(name:GetAlpha(), 1) then
@@ -271,7 +287,9 @@ local function CachedNameHasDrifted(frame)
     return false
 end
 
-local function RepairCachedName(frame)
+local function RepairCachedName(frame, context)
+    context = context or GetContext()
+    if not CanAccessFrame(frame, context) then return end
     local name, expected = frame and frame.name, frame and frame.SNPNameStyle
     if not name or not expected then return end
     name:SetText(expected.text)
@@ -306,7 +324,7 @@ local function RepairCachedName(frame)
         ShowInsideName(frame, expected.bar, expected.text, expected.font,
             expected.size, expected.rightInset or -3)
     else
-        RestoreNameDisplay(frame)
+        RestoreNameDisplay(frame, context)
     end
 end
 

@@ -306,7 +306,7 @@ for line in toc:lines() do
 end
 toc:close()
 equal(table.concat(modules, ","),
-    "Defaults.lua,Core.lua,ManagedNames.lua,Database.lua,TRP3.lua,NameplateClassification.lua,NameplateFrames.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsTRP3.lua,Settings.lua",
+    "Defaults.lua,Core.lua,WorldContext.lua,ManagedNames.lua,Database.lua,TRP3.lua,NameplateClassification.lua,PresentationCapabilities.lua,NameplateFrames.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsTRP3.lua,Settings.lua",
     "TOC module order")
 
 print("Core behavior smoke: passed")

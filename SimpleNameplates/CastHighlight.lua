@@ -1,5 +1,7 @@
 -- Simple Nameplates: Blizzard-driven interruptible-cast border and pulse.
 local _, ns = ...
+local CanAccessFrame = ns.PresentationCapabilities.CanAccessFrame
+local GetContext = ns.WorldContext.Get
 local GetStylingEnabled = ns.GetStylingEnabled
 local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
 local EffectColor = ns.EffectColor
@@ -18,6 +20,7 @@ local function InstallInterruptibleHighlightHook(highlight)
 
     local overlay = highlight.frame
     local ok = pcall(hooksecurefunc, icon, "SetShown", function(_, shown)
+        if not CanAccessFrame(highlight.owner, GetContext()) then return end
         if GetStylingEnabled() and GetInterruptibleHighlightEnabled() then
             SetInterruptibleHighlightShown(overlay, shown)
         else
@@ -28,8 +31,10 @@ local function InstallInterruptibleHighlightHook(highlight)
     return ok
 end
 
-local function EnsureInterruptibleHighlight(frame)
-    local castBar = GetCastBar(frame)
+local function EnsureInterruptibleHighlight(frame, context)
+    context = context or GetContext()
+    if not CanAccessFrame(frame, context) then return end
+    local castBar = GetCastBar(frame, context)
     if not castBar then return nil end
     local existing = frame.SNPInterruptibleHighlight
     if existing and existing.castBar == castBar then
@@ -41,7 +46,7 @@ local function EnsureInterruptibleHighlight(frame)
     local overlay = CreateFrame("Frame", nil, castBar)
     overlay:SetPoint("TOPLEFT", castBar, "TOPLEFT", -5, 5)
     overlay:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 5, -5)
-    local healthBar = GetHealthBar(frame)
+    local healthBar = GetHealthBar(frame, context)
     local highestFrameLevel = castBar:GetFrameLevel()
     if healthBar then highestFrameLevel = math.max(highestFrameLevel, healthBar:GetFrameLevel()) end
     overlay:SetFrameLevel(highestFrameLevel + 20)
@@ -69,6 +74,7 @@ local function EnsureInterruptibleHighlight(frame)
 
     local highlight = {
         castBar = castBar,
+        owner = frame,
         frame = overlay,
         backing = CreateBorder(0, 6, 6),
         border = CreateBorder(2, 4, 7),
@@ -101,8 +107,10 @@ local function EnsureInterruptibleHighlight(frame)
     return highlight
 end
 
-local function UpdateInterruptibleHighlight(frame)
-    local highlight = EnsureInterruptibleHighlight(frame)
+local function UpdateInterruptibleHighlight(frame, context)
+    context = context or GetContext()
+    if not CanAccessFrame(frame, context) then return end
+    local highlight = EnsureInterruptibleHighlight(frame, context)
     if not highlight then return end
 
     local r, g, b = EffectColor("interruptible")

@@ -1,5 +1,7 @@
 -- Simple Nameplates: optional readable threat percentage on health bars.
 local _, ns = ...
+local CanAccessFrame = ns.PresentationCapabilities.CanAccessFrame
+local GetContext = ns.WorldContext.Get
 local UnitDetailedThreatSituation = UnitDetailedThreatSituation
 local AccessibleNumber, FontPath = ns.AccessibleNumber, ns.FontPath
 local GetAppearanceSetting, GetThreatEnabled = ns.GetAppearanceSetting, ns.GetThreatEnabled
@@ -18,7 +20,9 @@ local function EnsureThreatText(frame)
     return threatText
 end
 
-local function UpdateThreatText(frame, state)
+local function UpdateThreatText(frame, state, context)
+    context = context or GetContext()
+    if not CanAccessFrame(frame, context) then return end
     local threatText = EnsureThreatText(frame)
     if not threatText then return end
     local threatSize = 9

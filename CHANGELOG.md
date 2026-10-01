@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.103
+
+* Completed runtime refactor phase 2: added cached, event-driven world context, including independent player-combat and combat-lockdown facts and desired versus active War Mode. Unknown values remain distinct from false.
+* Centralized frame and region access assessment for refresh, hooks, styling, restoration, cleanup, drift repair, and cast effects.
+* Expanded read-only `/snp debug` reporting for world context, frame capabilities, and observed visibility; diagnostics no longer creates cast overlays or hooks.
+* Added context/access regression checks and the phase-2 client checklist. Existing categories, settings, and health-bar policy remain unchanged.
+
 ## 1.0.102
 
 * Completed runtime refactor phase 1: separated frame access, name/title layout and repair, threat text, cast highlighting, presentation/restoration, runtime events, and diagnostics into focused modules.

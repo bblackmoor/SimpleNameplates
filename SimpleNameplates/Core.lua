@@ -58,17 +58,17 @@ local function ShowNameplateConflictWarning()
 end
 
 local function AccessibleNumber(v)
-    if v == nil or issecretvalue(v) or not canaccessvalue(v) or type(v) ~= "number" then return nil end
+    if issecretvalue(v) or not canaccessvalue(v) or v == nil or type(v) ~= "number" then return nil end
     return v
 end
 
 local function AccessibleBoolean(v)
-    if v == nil or issecretvalue(v) or not canaccessvalue(v) or type(v) ~= "boolean" then return nil end
+    if issecretvalue(v) or not canaccessvalue(v) or v == nil or type(v) ~= "boolean" then return nil end
     return v
 end
 
 local function AccessibleValue(v)
-    if v == nil or issecretvalue(v) or not canaccessvalue(v) then return nil end
+    if issecretvalue(v) or not canaccessvalue(v) or v == nil then return nil end
     return v
 end
 

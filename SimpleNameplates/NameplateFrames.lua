@@ -1,29 +1,32 @@
--- Simple Nameplates: shared access to Blizzard nameplate regions.
+-- Simple Nameplates: access to assessed Blizzard nameplate regions.
 local _, ns = ...
-local C_NamePlate = C_NamePlate
+local Capabilities = ns.PresentationCapabilities
 
-local function GetUnitFrame(unit)
-    local plate = C_NamePlate and C_NamePlate.GetNamePlateForUnit and C_NamePlate.GetNamePlateForUnit(unit)
-    return plate and plate.UnitFrame or nil
+local function GetUnitFrame(unit, context)
+    return Capabilities.InspectUnit(unit, context).frame
 end
 
-local function GetHealthBar(frame)
-    return frame and (frame.healthBar or (frame.HealthBarsContainer and frame.HealthBarsContainer.healthBar)) or nil
+local function GetFrameFromPlate(plate, context)
+    local frame = Capabilities.SafeField(plate, "UnitFrame", context)
+    return Capabilities.InspectFrame(frame, context).frame
 end
 
-local function GetCastBar(frame)
-    return frame and (frame.castBar or frame.CastBar) or nil
+local function GetHealthBar(frame, context)
+    local assessment = Capabilities.InspectFrame(frame, context)
+    if assessment.canAccess then return assessment.healthBar end
 end
 
-local function SetShownSafe(region, shown)
-    if not region then return end
+local function GetCastBar(frame, context)
+    local assessment = Capabilities.InspectFrame(frame, context)
+    if assessment.canAccess then return assessment.castBar end
+end
+
+local function SetShownSafe(region, shown, context)
+    if Capabilities.ObjectStatus(region, context or ns.WorldContext.Get()) ~= "accessible" then return end
     if shown then region:Show() else region:Hide() end
 end
 
-
 ns.NameplateFrames = {
-    GetUnitFrame = GetUnitFrame,
-    GetHealthBar = GetHealthBar,
-    GetCastBar = GetCastBar,
-    SetShownSafe = SetShownSafe,
+    GetUnitFrame = GetUnitFrame, GetFrameFromPlate = GetFrameFromPlate,
+    GetHealthBar = GetHealthBar, GetCastBar = GetCastBar, SetShownSafe = SetShownSafe,
 }

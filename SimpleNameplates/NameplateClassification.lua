@@ -108,7 +108,7 @@ local function NonPlayerState(unit, reaction)
     return "other"
 end
 
-local function StateForUnit(unit)
+local function StateForUnit(unit, context)
     local reaction = AccessibleNumber(UnitReaction(unit, "player"))
     if AccessibleBoolean(UnitIsPlayer(unit)) == true then return PlayerState(unit, reaction) end
     if IsPlayerControlledUnit(unit) then return PlayerControlledUnitState(unit) end

@@ -10,8 +10,8 @@ local AccessibleBoolean, AccessibleNumber, AccessibleValue =
 local StateForUnit, IsNameOnlyState =
     ns.NameplateClassification.StateForUnit, ns.NameplateClassification.IsNameOnlyState
 local TargetsPlayerControlledUnit = ns.NameplateClassification.TargetsPlayerControlledUnit
-local GetUnitFrame, GetCastBar = ns.NameplateFrames.GetUnitFrame, ns.NameplateFrames.GetCastBar
-local EnsureInterruptibleHighlight = ns.CastHighlight.EnsureInterruptibleHighlight
+local Capabilities = ns.PresentationCapabilities
+local GetContext = ns.WorldContext.Get
 local GetStylingEnabled, GetReplaceBlizzardOverheadNames =
     ns.GetStylingEnabled, ns.GetReplaceBlizzardOverheadNames
 local PriorityColorForState, GetCategoryMode = ns.PriorityColorForState, ns.GetCategoryMode
@@ -28,26 +28,35 @@ local function DebugValue(value)
     return value == nil and "restricted/unavailable" or tostring(value)
 end
 
-local function DebugRegionValue(region, methodName, valueType)
+local function DebugRegionValue(region, methodName, valueType, context)
     if not region then return "not found" end
-    local method = region[methodName]
-    if type(method) ~= "function" then return "unavailable" end
-    local ok, value = pcall(method, region)
-    if not ok then return "unavailable" end
-
-    if valueType == "boolean" then
-        value = AccessibleBoolean(value)
-        if value == nil then return "restricted/unavailable" end
-        return value and "yes" or "no"
-    end
-
+    local value = Capabilities.ReadRegion(region, methodName, context)
+    if valueType == "boolean" then return DebugBoolean(value) end
     return DebugValue(value)
+end
+
+local function DebugContext(context)
+    print("|cff0cd29fSimple Nameplates context:|r revision " .. context.revision
+        .. "; initialized: " .. DebugBoolean(context.initialized))
+    print("  Zone: " .. DebugValue(context.zone) .. "; subzone: " .. DebugValue(context.subzone)
+        .. "; map: " .. DebugValue(context.mapID) .. "; territory: " .. DebugValue(context.territory)
+        .. "; sanctuary: " .. DebugBoolean(context.sanctuary)
+        .. "; territory faction: " .. DebugValue(context.territoryFaction)
+        .. "; subzone PvP: " .. DebugBoolean(context.subzonePvP))
+    print("  Instance: " .. DebugBoolean(context.inInstance) .. "; type: " .. DebugValue(context.instanceType)
+        .. "; name: " .. DebugValue(context.instanceName) .. "; player faction: " .. DebugValue(context.playerFaction))
+    print("  War Mode desired: " .. DebugBoolean(context.warModeDesired)
+        .. "; active: " .. DebugBoolean(context.warModeActive)
+        .. "; player PvP: " .. DebugBoolean(context.playerPvP)
+        .. "; free-for-all: " .. DebugBoolean(context.freeForAll)
+        .. "; player combat: " .. DebugBoolean(context.inCombat)
+        .. "; combat lockdown: " .. DebugBoolean(context.combatLockdown))
 end
 
 local function DebugClassification(unit, state, hasNameplate)
     local display, colorHex
-    if not hasNameplate and GetReplaceBlizzardOverheadNames() then
-        display = "replacement requested; no nameplate frame"
+    if not hasNameplate then
+        display = "no accessible nameplate; world-name display unknown"
         colorHex = "not displayed by Simple Nameplates"
     else
         local r, g, b = PriorityColorForState(state)
@@ -76,52 +85,55 @@ local function DebugUnitRelationships(unit, reaction)
         .. "; targeting your controlled unit: " .. (TargetsPlayerControlledUnit(unit) and "yes" or "no"))
 end
 
-local function DebugNameRegion(unitFrame)
-    local nameRegion = unitFrame and unitFrame.name or nil
-    local nameParent = nameRegion and nameRegion.GetParent and nameRegion:GetParent() or nil
+local function DebugNameRegion(assessment, context)
+    local nameRegion = assessment.canAccess and assessment.name or nil
+    local nameParent = Capabilities.ReadRegion(nameRegion, "GetParent", context)
     print("  Name region: " .. (nameRegion and "found" or "not found")
-        .. "; text: " .. DebugRegionValue(nameRegion, "GetText")
-        .. "; shown: " .. DebugRegionValue(nameRegion, "IsShown", "boolean")
-        .. "; visible: " .. DebugRegionValue(nameRegion, "IsVisible", "boolean")
-        .. "; alpha: " .. DebugRegionValue(nameRegion, "GetAlpha"))
-    print("  Name parent: " .. (nameParent and "found" or "not found")
-        .. "; shown: " .. DebugRegionValue(nameParent, "IsShown", "boolean")
-        .. "; visible: " .. DebugRegionValue(nameParent, "IsVisible", "boolean")
-        .. "; alpha: " .. DebugRegionValue(nameParent, "GetAlpha"))
+        .. "; text: " .. DebugRegionValue(nameRegion, "GetText", nil, context)
+        .. "; shown: " .. DebugRegionValue(nameRegion, "IsShown", "boolean", context)
+        .. "; visible: " .. DebugRegionValue(nameRegion, "IsVisible", "boolean", context)
+        .. "; alpha: " .. DebugRegionValue(nameRegion, "GetAlpha", nil, context))
+    print("  Name parent shown: " .. DebugRegionValue(nameParent, "IsShown", "boolean", context)
+        .. "; visible: " .. DebugRegionValue(nameParent, "IsVisible", "boolean", context))
 end
 
-local function DebugInterruptibleHighlight(unitFrame)
-    local castBar = GetCastBar(unitFrame)
-    local highlight = unitFrame and EnsureInterruptibleHighlight(unitFrame) or nil
-    local icon = castBar and castBar.Icon or nil
-    local highlightShown = false
-    if highlight and highlight.frame then
-        local ok, shown = pcall(highlight.frame.IsShown, highlight.frame)
-        highlightShown = ok and shown == true
-    end
+local function DebugPresentation(assessment, context)
+    print("  Presentation access: " .. assessment.status .. "; blocked region: " .. DebugValue(assessment.reason)
+        .. "; name: " .. DebugBoolean(assessment.hasName)
+        .. "; health bar: " .. DebugBoolean(assessment.hasHealthBar)
+        .. "; cast bar: " .. DebugBoolean(assessment.hasCastBar))
+    local bar = assessment.canAccess and assessment.healthBar or nil
+    print("  Health bar shown: " .. DebugRegionValue(bar, "IsShown", "boolean", context)
+        .. "; visible: " .. DebugRegionValue(bar, "IsVisible", "boolean", context))
+    local castBar = assessment.canAccess and assessment.castBar or nil
+    local icon = Capabilities.SafeField(castBar, "Icon", context)
+    local highlight = Capabilities.SafeField(assessment.frame, "SNPInterruptibleHighlight", context)
+    local overlay = Capabilities.SafeField(highlight, "frame", context)
+    local hookedIcon = Capabilities.SafeField(highlight, "hookedIcon", context)
     print("  Interruptible highlight: enabled "
         .. (GetInterruptibleHighlightEnabled() and "yes" or "no")
-        .. "; cast bar found " .. (castBar and "yes" or "no")
         .. "; cast icon found " .. (icon and "yes" or "no")
-        .. "; hook installed " .. (highlight and highlight.hookedIcon == icon and icon ~= nil and "yes" or "no")
-        .. "; highlight shown " .. (highlightShown and "yes" or "no"))
+        .. "; hook installed " .. (icon and hookedIcon == icon and "yes" or "no")
+        .. "; highlight shown " .. DebugRegionValue(overlay, "IsShown", "boolean", context))
 end
 
-local function DebugUnit(unit)
+local function DebugUnit(unit, context)
+    context = context or GetContext()
+    DebugContext(context)
     if AccessibleBoolean(UnitExists(unit)) ~= true then
         print("|cff0cd29fSimple Nameplates:|r No target selected.")
         return
     end
 
     local name = DebugValue(UnitName(unit))
-    local state = StateForUnit(unit)
+    local state = StateForUnit(unit, context)
     local reaction = AccessibleNumber(UnitReaction(unit, "player"))
-    local unitFrame = GetUnitFrame(unit)
+    local assessment = Capabilities.InspectUnit(unit, context)
     print("|cff0cd29fSimple Nameplates debug:|r " .. name)
-    DebugClassification(unit, state, unitFrame ~= nil)
+    DebugClassification(unit, state, assessment.canAccess)
     DebugUnitRelationships(unit, reaction)
-    DebugNameRegion(unitFrame)
-    DebugInterruptibleHighlight(unitFrame)
+    DebugNameRegion(assessment, context)
+    DebugPresentation(assessment, context)
 end
 
 

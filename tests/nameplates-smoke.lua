@@ -40,20 +40,22 @@ end
 function UnitFactionGroup(who) return who == "player" and "Alliance" or unit.faction end
 function UnitReaction() return unit.reaction end
 function UnitIsPVP() return unit.pvp or false end
-function UnitExists() return true end
+local unitExists = true
+function UnitExists() return unitExists end
 function UnitName() return "Diagnostic Target" end
 
 local appearance = { namePlacement = "ABOVE", nameSize = 12, nameFont = "ARIALN", threatFont = "ARIALN" }
 local categoryMode = "active"
 local trp3Options = {}
 local calls = {}
+local stylingEnabled = true
 local function count(name) calls[name] = (calls[name] or 0) + 1 end
 local ns = {
     EnsureDB = function() count("db") end,
     AccessibleNumber = function(value) return type(value) == "number" and value or nil end,
     AccessibleBoolean = function(value) return type(value) == "boolean" and value or nil end,
-    AccessibleValue = function(value) return type(value) ~= "table" and value or nil end,
-    GetStylingEnabled = function() return true end,
+    AccessibleValue = function(value) return value end,
+    GetStylingEnabled = function() return stylingEnabled end,
     GetCategoryMode = function() return categoryMode end,
     GetAppearanceSetting = function(key) return appearance[key] end,
     GetTRP3Setting = function(key) return trp3Options[key] or false end,
@@ -75,7 +77,7 @@ local ns = {
     BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
     FRIENDLY_COLOR_CVARS = {},
 }
-for _, file in ipairs({ "NameplateClassification.lua", "NameplateFrames.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
+for _, file in ipairs({ "WorldContext.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "NameplateFrames.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
     assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", ns)
 end
 equal(#frames, 1, "one event frame")
@@ -85,7 +87,7 @@ equal(hooks[1].name, "CompactUnitFrame_UpdateHealthColor", "health hook")
 equal(hooks[2].name, "CompactUnitFrame_UpdateName", "name hook")
 local countEvents = 0
 for _, registered in pairs(events.registered) do countEvents = countEvents + registered end
-equal(countEvents, 13, "one registration for each event")
+equal(countEvents, 21, "one registration for each event")
 assert(events.scripts.OnEvent and events.scripts.OnUpdate, "event/update scripts installed")
 events.scripts.OnEvent(events, "ADDON_LOADED", "AnotherAddon")
 equal(calls.db, nil, "other addon ignored")
@@ -199,6 +201,53 @@ equal(plateFrame.SNPState, nil, "master restoration reachable")
 C_NamePlate.GetNamePlateForUnit = function() return nil end
 C_NamePlate.GetNamePlates = function() return {} end
 
+-- Context events still run with styling disabled; combat state is independent.
+stylingEnabled = false
+function GetZoneText() return "Silvermoon City" end
+function GetSubZoneText() return "Shared" end
+function InCombatLockdown() return false end
+C_PvP = { GetZonePVPInfo = function() return "sanctuary", false end }
+events.scripts.OnEvent(events, "ZONE_CHANGED")
+equal(ns.WorldContext.Get().sanctuary, true, "context updated with styling off")
+events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
+equal(ns.WorldContext.Get().inCombat, true, "combat cached with styling off")
+equal(ns.WorldContext.Get().combatLockdown, false, "lockdown separate from combat")
+stylingEnabled = true
+-- All mutation entry points skip forbidden frames, including direct Blizzard hooks.
+local forbidden = setmetatable({ IsForbidden = function() return true end }, {
+    __index = function(_, key) error("forbidden frame inspected: " .. key) end,
+    __newindex = function() error("forbidden frame modified") end,
+})
+C_NamePlate.GetNamePlateForUnit = function() return {UnitFrame = forbidden} end
+C_NamePlate.GetNamePlates = function() return {{UnitFrame = forbidden}} end
+ns.RefreshAll()
+ns.RestoreAll()
+hooks[1].callback(forbidden)
+hooks[2].callback(forbidden)
+events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnEvent(events, "NAME_PLATE_UNIT_REMOVED", "nameplate1")
+ns.NameplateText.RestoreNameDisplay(forbidden)
+equal(ns.NameplateText.CachedNameHasDrifted(forbidden), false, "forbidden drift skipped")
+ns.CastHighlight.EnsureInterruptibleHighlight(forbidden)
+ns.CastHighlight.UpdateInterruptibleHighlight(forbidden)
+-- A protected frame skipped in lockdown is styled again after combat exit.
+local locked = true
+function InCombatLockdown() return locked end
+plateFrame.IsProtected = function() return true end
+C_NamePlate.GetNamePlateForUnit = function() return plate end
+C_NamePlate.GetNamePlates = function() return {plate} end
+plateFrame.SNPState = nil
+ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
+ns.RefreshAll()
+equal(plateFrame.SNPState, nil, "protected frame skipped during lockdown")
+locked = false
+events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
+events.scripts.OnUpdate(events, 0.5)
+assert(plateFrame.SNPState, "protected frame refreshed after lockdown")
+plateFrame.IsProtected = nil
+C_NamePlate.GetNamePlateForUnit = function() return nil end
+C_NamePlate.GetNamePlates = function() return {} end
+
 -- Execute the diagnostic path: the extracted targeting predicate must remain available.
 local output, originalPrint = {}, print
 print = function(message) output[#output + 1] = message end
@@ -206,6 +255,24 @@ unit = { player = true, faction = "Horde", canAttack = true, targetPlayer = true
 ns.DebugUnit("nameplate1")
 assert(table.concat(output, "\n"):find("targeting your controlled unit: yes", 1, true),
     "diagnostics use the classification targeting predicate")
+-- Diagnostics may read an accessible cast bar but must not create an overlay or hook.
+local frameCount, hookCount = #frames, #hooks
+plateFrame.castBar = Region()
+C_NamePlate.GetNamePlateForUnit = function() return plate end
+plateFrame.SNPInterruptibleHighlight = nil
+ns.DebugUnit("nameplate1")
+equal(#frames, frameCount, "diagnostic creates no frame")
+equal(#hooks, hookCount, "diagnostic installs no hook")
+equal(plateFrame.SNPInterruptibleHighlight, nil, "diagnostic creates no overlay")
+C_NamePlate.GetNamePlateForUnit = function() return {UnitFrame = forbidden} end
+ns.DebugUnit("nameplate1")
+assert(table.concat(output, "\n"):find("Presentation access: forbidden", 1, true), "forbidden diagnosed")
+output = {}
+unitExists = false
+ns.DebugUnit("target")
+assert(table.concat(output, "\n"):find("Simple Nameplates context:", 1, true), "no-target context")
+assert(table.concat(output, "\n"):find("No target selected.", 1, true), "no-target reported")
+unitExists = true
 print = originalPrint
 
 local visited, largest = {}, 0

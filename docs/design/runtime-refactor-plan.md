@@ -1,6 +1,6 @@
 # World-context and entity-presentation runtime refactor
 
-Status: phase 1 implemented in 1.0.102; phases 2–5 pending. This follows the completed original settings refactor and is a separate five-phase sequence.
+Status: phases 1–2 implemented through 1.0.103; phases 3–5 pending. This follows the completed original settings refactor and is a separate five-phase sequence.
 
 ## Baseline and accepted rules
 
@@ -35,9 +35,13 @@ Respect restricted frames and combat restrictions; do not assume a frame or perm
 
 ## Phase 2 — World context and capabilities
 
-- [ ] Add event-driven cached context and centralized capability assessment.
-- [ ] Pass context explicitly to its consumers and refresh visible entities after relevant changes.
-- [ ] Report context, capabilities, and unavailable information in diagnostics.
+- [x] Add event-driven cached context and centralized capability assessment.
+- [x] Pass context explicitly to its consumers and refresh visible entities after relevant changes.
+- [x] Report context, capabilities, and unavailable information in diagnostics.
+
+Context records overlapping facts, rather than assigning one exclusive label: zone/subzone/map, instance type/name, territory/sanctuary, player faction, desired and active War Mode, PvP/FFA flags, player combat, and combat lockdown. Login, world entry, zone/subzone, PvP/faction/flag, and combat events update it even when styling is off. Unchanged observations retain the snapshot and revision; presentation reads the cache. Unknown API results remain nil, separate from false. No location-name rules are hardcoded.
+
+Capability assessment distinguishes missing, forbidden, combat-restricted, unknown, and accessible frames/regions. Refreshes, repair hooks, drift checks, cleanup, cast effects, and restoration skip blocked frames. Protected frames are conservatively skipped during lockdown and revisited on combat exit. Region presence is reported separately and does not guarantee every UI operation. Diagnostics read existing presentation without creating overlays or hooks, including context reporting without a target. Client verification remains pending.
 
 ## Phase 3 — Entity facts and revised classification
 

@@ -89,7 +89,9 @@ Saved settings are validated individually in their current locations. Recognized
 
 The main **Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
 
-`Diagnostics.lua` owns targeted-unit reporting. Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting priority category, category mode, display treatment, color, nameplate availability, and whether experimental overhead replacement is enabled. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the visibility hook was installed, and the highlight is currently shown. Restricted Midnight values are identified rather than inspected.
+`WorldContext.lua` caches zone/subzone/map, instance, territory/sanctuary, player faction, desired and active War Mode, PvP/FFA flags, player combat, and combat lockdown on relevant events, including while styling is disabled. Presentation reads this cache; location names do not determine permissions. `PresentationCapabilities.lua` assesses individual frames and regions and skips forbidden, unknown, or combat-restricted access.
+
+`Diagnostics.lua` owns read-only context and targeted-unit reporting. `/snp debug` reports the cached world context even without a target, keeping unknown values distinct from false. With a target, it reports presentation access status and observed health-bar visibility; missing nameplates do not establish whether Blizzard world names are displayed. Diagnostics inspects existing cast effects without creating frames or hooks. Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting priority category, category mode, display treatment, color, nameplate availability, and whether experimental overhead replacement is enabled. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the visibility hook was installed, and the highlight is currently shown. Restricted Midnight values are identified rather than inspected.
 
 All settings pages scroll when their contents do not fit the available window height.
 
@@ -119,7 +121,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Development
 
-The [original staged refactor plan](docs/design/implementation-plan.md), [world-context runtime plan](docs/design/runtime-refactor-plan.md), and [source ownership guide](docs/design/settings-architecture.md) describe the Global behavior and appearance Profile boundaries. Run `lua tests/core-behavior-smoke.lua`, `lua tests/settings-smoke.lua`, and `lua tests/nameplates-smoke.lua` from the repository root for the local behavioral checks. The [live WoW checklist](docs/design/live-wow-verification.md) records integration checks that require the game client.
+The [original staged refactor plan](docs/design/implementation-plan.md), [world-context runtime plan](docs/design/runtime-refactor-plan.md), and [source ownership guide](docs/design/settings-architecture.md) describe the Global behavior and appearance Profile boundaries. Run `lua tests/core-behavior-smoke.lua`, `lua tests/settings-smoke.lua`, `lua tests/nameplates-smoke.lua`, and `lua tests/world-context-smoke.lua` from the repository root for the local behavioral checks. The [live WoW checklist](docs/design/live-wow-verification.md) records integration checks that require the game client.
 
 ## AI Disclaimer
 
