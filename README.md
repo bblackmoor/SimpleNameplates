@@ -94,18 +94,13 @@ Type `/snp debug` with a unit targeted to report its detected type, reaction, fa
 
 All settings pages scroll when their contents do not fit the available window height.
 
-## Download
-
-Permanent, ready-to-install ZIP files are available from the [GitHub Releases](https://github.com/bblackmoor/SimpleNameplates/releases) page. Each release contains a `SimpleNameplates-<version>.zip` archive.
-
-Every commit to `main` also creates a development build under [GitHub Actions](https://github.com/bblackmoor/SimpleNameplates/actions/workflows/release.yml). Development archives are named `SimpleNameplates-<version>-dev-<commit>.zip` and retained for 90 days. A version tag such as `v1.0.73` publishes the corresponding permanent release.
-
-## Installation
+## Download and Installation
 
 1. Exit World of Warcraft.
-2. Extract `SimpleNameplates` into `_retail_/Interface/AddOns/`.
-3. Enable **Simple Nameplates**.
-4. Log in.
+2. On the [repository page](https://github.com/bblackmoor/SimpleNameplates), choose **Code → Download ZIP**.
+3. Extract the downloaded ZIP and open the outer repository folder (usually `SimpleNameplates-main`).
+4. Copy the inner `SimpleNameplates` addon folder into WoW's `_retail_/Interface/AddOns/` directory. The installed file should be `_retail_/Interface/AddOns/SimpleNameplates/SimpleNameplates.toc`.
+5. Start World of Warcraft, enable **Simple Nameplates** in the AddOns list, and log in.
 
 ## Other Nameplate Addons
 
