@@ -1,0 +1,321 @@
+-- Simple Nameplates: unit names, TRP3 titles, layout, and cached text repair.
+local _, ns = ...
+local UnitName = UnitName
+local AccessibleNumber, AccessibleValue = ns.AccessibleNumber, ns.AccessibleValue
+local PriorityColorForState, FontPath = ns.PriorityColorForState, ns.FontPath
+local GetAppearanceSetting, GetTRP3Setting = ns.GetAppearanceSetting, ns.GetTRP3Setting
+local GetThreatEnabled = ns.GetThreatEnabled
+local IsNameOnlyState = ns.NameplateClassification.IsNameOnlyState
+local GetHealthBar = ns.NameplateFrames.GetHealthBar
+
+local function UpdateNameText(frame)
+    local name, unit = frame and frame.name, frame and frame.unit
+    if not name or not unit then return nil end
+    -- UnitName can be secret in Midnight. FontString:SetText can display that
+    -- value directly; do not replace it with an empty string.
+    local unitName = UnitName(unit)
+    local displayName = unitName
+    local fullTitle
+    local info = ns.TRP3 and ns.TRP3.GetDisplayInfo(unit)
+
+    if info then
+        if GetTRP3Setting("useRoleplayingName") and info.roleplayingName then
+            displayName = info.roleplayingName
+        end
+
+        local prefix
+        if GetTRP3Setting("showOOC") and info.isOutOfCharacter then
+            prefix = "[OOC]"
+        elseif GetTRP3Setting("showShortTitle") then
+            prefix = info.shortTitle
+        end
+        -- Lua cannot concatenate a secret unit name. Retain the raw name
+        -- when it is restricted; a readable TRP3 name can still use the prefix.
+        if prefix and AccessibleValue(displayName) then
+            displayName = prefix .. " " .. displayName
+        end
+
+        if GetTRP3Setting("showFullTitle") then fullTitle = info.fullTitle end
+    end
+
+    name:SetText(displayName)
+    return fullTitle, displayName
+end
+
+local function EnsureFullTitleText(frame)
+    if frame.SNPFullTitleText then return frame.SNPFullTitleText end
+    -- Supply a template so the FontString is valid immediately, including
+    -- during TRP3 callbacks that refresh a plate in the frame it is created.
+    local fullTitle = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    fullTitle:SetJustifyH("LEFT")
+    fullTitle:SetWordWrap(false)
+    fullTitle:SetMaxLines(1)
+    frame.SNPFullTitleText = fullTitle
+    return fullTitle
+end
+
+local function StyleFullTitle(frame, state, text, baseNameSize)
+    local fullTitle = frame.SNPFullTitleText
+    -- Long titles are useful on name-only plates, but add too much visual
+    -- noise to units whose health bars are visible.
+    if not text or not IsNameOnlyState(state) then
+        if fullTitle then fullTitle:SetText(""); fullTitle:Hide() end
+        return
+    end
+
+    fullTitle = EnsureFullTitleText(frame)
+    local titleSize = math.max(6, math.floor(baseNameSize * 0.8 + 0.5))
+    fullTitle:SetFont(FontPath(GetAppearanceSetting("nameFont")), titleSize, "OUTLINE")
+    fullTitle:SetText(text)
+    fullTitle:SetShadowColor(0, 0, 0, 1)
+    fullTitle:SetShadowOffset(1, -1)
+    fullTitle:ClearAllPoints()
+    fullTitle:SetPoint("TOP", frame.name, "BOTTOM", 0, -1)
+    fullTitle:SetJustifyH("CENTER")
+    fullTitle:SetTextColor(PriorityColorForState(state))
+    fullTitle:Show()
+end
+
+local function RestoreOriginalBarHeight(frame, bar)
+    if not frame then return end
+    if bar and frame.SNPOriginalBarHeight then
+        bar:SetHeight(frame.SNPOriginalBarHeight)
+    end
+    local container = frame.HealthBarsContainer
+    if container and frame.SNPOriginalHealthBarsContainerHeight then
+        container:SetHeight(frame.SNPOriginalHealthBarsContainerHeight)
+    end
+    frame.SNPOriginalBarHeight = nil
+    frame.SNPOriginalHealthBarsContainerHeight = nil
+end
+
+local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize)
+    local inside = GetAppearanceSetting("namePlacement") == "INSIDE"
+        and not IsNameOnlyState(state) and bar ~= nil
+    if not inside then
+        RestoreOriginalBarHeight(frame, bar)
+        return false, baseNameSize
+    end
+
+    if not frame.SNPOriginalBarHeight then
+        local originalHeight = bar:GetHeight()
+        if type(originalHeight) == "number" and originalHeight > 0 then
+            frame.SNPOriginalBarHeight = originalHeight
+        end
+    end
+    local container = frame.HealthBarsContainer
+    if container and not frame.SNPOriginalHealthBarsContainerHeight then
+        local originalHeight = container:GetHeight()
+        if type(originalHeight) == "number" and originalHeight > 0 then
+            frame.SNPOriginalHealthBarsContainerHeight = originalHeight
+        end
+    end
+
+    local insideNameSize = math.floor(baseNameSize * 0.8 + 0.5)
+    local barHeight = insideNameSize + 4
+    bar:SetHeight(barHeight)
+    if container then container:SetHeight(barHeight) end
+    return true, insideNameSize
+end
+
+local function PositionName(frame, name, bar, nameOnly, inside, rightInset)
+    if nameOnly then
+        name:ClearAllPoints()
+        if bar then
+            name:SetPoint("BOTTOM", bar, "TOP", 0, 2)
+        else
+            name:SetPoint("BOTTOM", frame, "TOP", 0, 2)
+        end
+        name:SetJustifyH("CENTER")
+    elseif inside then
+        name:ClearAllPoints()
+        name:SetPoint("LEFT", bar, "LEFT", 3, 0)
+        name:SetPoint("RIGHT", bar, "RIGHT", rightInset, 0)
+        name:SetJustifyH("LEFT")
+    elseif bar then
+        name:ClearAllPoints()
+        name:SetPoint("BOTTOMLEFT", bar, "TOPLEFT", 0, 2)
+        name:SetJustifyH("LEFT")
+    end
+end
+
+local function GetInsideName(frame, bar)
+    local insideName = frame.SNPInsideName
+    if insideName and frame.SNPInsideNameBar == bar then return insideName end
+    if insideName then insideName:Hide() end
+    insideName = bar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    insideName:SetDrawLayer("OVERLAY", 7)
+    insideName:SetWordWrap(false)
+    insideName:SetMaxLines(1)
+    frame.SNPInsideName = insideName
+    frame.SNPInsideNameBar = bar
+    return insideName
+end
+
+local function ShowInsideName(frame, bar, text, fontPath, size, rightInset)
+    local insideName = GetInsideName(frame, bar)
+    insideName:SetText(text)
+    insideName:SetFont(fontPath, size, "OUTLINE")
+    insideName:SetShadowColor(0, 0, 0, 1)
+    insideName:SetShadowOffset(1, -1)
+    insideName:SetTextColor(1, 1, 1, 1)
+    insideName:ClearAllPoints()
+    insideName:SetPoint("LEFT", bar, "LEFT", 3, 0)
+    insideName:SetPoint("RIGHT", bar, "RIGHT", rightInset, 0)
+    insideName:SetJustifyH("LEFT")
+    insideName:Show()
+    -- Leave Blizzard's name shown for its health-text visibility logic, but
+    -- avoid drawing a second copy behind the bar.
+    frame.name:SetAlpha(0)
+end
+
+local function RestoreNameDisplay(frame)
+    if frame.SNPInsideName then frame.SNPInsideName:Hide() end
+    if frame.name then frame.name:SetAlpha(1) end
+end
+
+local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
+        nameOnly, inside, rightInset, bar)
+    local expected = frame.SNPNameStyle or {}
+    frame.SNPNameStyle = expected
+    expected.text = displayName
+    expected.font = fontPath
+    expected.size = size
+    expected.flags = "OUTLINE"
+    expected.r, expected.g, expected.b = nameR, nameG, nameB
+    expected.nameOnly = nameOnly
+    expected.inside = inside == true
+    expected.rightInset = rightInset
+    expected.bar = bar
+    expected.frame = frame
+end
+
+local function StyleName(frame, state)
+    local name = frame and frame.name
+    if not name then return end
+    local fullTitle, displayName = UpdateNameText(frame)
+    local baseSize = GetAppearanceSetting("nameSize") or 12
+    local bar = GetHealthBar(frame)
+    local nameOnly = IsNameOnlyState(state)
+    local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize)
+    local rightInset = GetThreatEnabled() and -42 or -3
+    PositionName(frame, name, bar, nameOnly, inside, rightInset)
+
+    local fontPath = FontPath(GetAppearanceSetting("nameFont"))
+    name:SetFont(fontPath, size, "OUTLINE")
+    name:SetShadowColor(0, 0, 0, 1)
+    name:SetShadowOffset(1, -1)
+    local nameR, nameG, nameB = 1, 1, 1
+    if nameOnly then nameR, nameG, nameB = PriorityColorForState(state) end
+    -- Blizzard also tints nameplate text with UnitSelectionColor through the
+    -- FontString's vertex color. Keep that tint neutral so the configured
+    -- Simple Nameplates color is displayed exactly.
+    name:SetVertexColor(1, 1, 1, 1)
+    name:SetTextColor(nameR, nameG, nameB, 1)
+    name:Show()
+    if inside then
+        ShowInsideName(frame, bar, displayName, fontPath, size, rightInset)
+    else
+        RestoreNameDisplay(frame)
+    end
+    StyleFullTitle(frame, state, fullTitle, baseSize)
+    CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
+        nameOnly, inside, rightInset, bar)
+end
+
+local function NearlyEqual(a, b)
+    return type(a) == "number" and type(b) == "number" and math.abs(a - b) < 0.001
+end
+
+local function CachedNameHasDrifted(frame)
+    local name, expected = frame and frame.name, frame and frame.SNPNameStyle
+    if not name or not expected then return false end
+    -- FontString text can be a secret string in Midnight. Never read or compare
+    -- it here; the secure Blizzard name-update hook and unit events repair text.
+    local font, size, flags = name:GetFont()
+    if font ~= expected.font or not NearlyEqual(size, expected.size) or flags ~= expected.flags then
+        return true
+    end
+    if expected.inside and expected.bar
+        and not NearlyEqual(expected.bar:GetHeight(), expected.size + 4) then
+        return true
+    end
+    if expected.inside and frame.HealthBarsContainer
+        and not NearlyEqual(frame.HealthBarsContainer:GetHeight(), expected.size + 4) then
+        return true
+    end
+    if expected.inside then
+        local insideName = frame.SNPInsideName
+        if not insideName or not insideName:IsShown() or not NearlyEqual(name:GetAlpha(), 0) then
+            return true
+        end
+    elseif not NearlyEqual(name:GetAlpha(), 1) then
+        return true
+    end
+
+    local r, g, b = name:GetTextColor()
+    if not NearlyEqual(r, expected.r) or not NearlyEqual(g, expected.g) or not NearlyEqual(b, expected.b) then
+        return true
+    end
+
+    local rawVertexR, rawVertexG, rawVertexB, rawVertexA = name:GetVertexColor()
+    local vertexR = AccessibleNumber(rawVertexR)
+    local vertexG = AccessibleNumber(rawVertexG)
+    local vertexB = AccessibleNumber(rawVertexB)
+    local vertexA = AccessibleNumber(rawVertexA)
+    if not NearlyEqual(vertexR, 1) or not NearlyEqual(vertexG, 1)
+        or not NearlyEqual(vertexB, 1) or not NearlyEqual(vertexA, 1) then
+        return true
+    end
+
+    return false
+end
+
+local function RepairCachedName(frame)
+    local name, expected = frame and frame.name, frame and frame.SNPNameStyle
+    if not name or not expected then return end
+    name:SetText(expected.text)
+    name:SetFont(expected.font, expected.size, expected.flags)
+    name:SetShadowColor(0, 0, 0, 1)
+    name:SetShadowOffset(1, -1)
+    name:SetVertexColor(1, 1, 1, 1)
+    name:SetTextColor(expected.r, expected.g, expected.b, 1)
+    if expected.inside and expected.bar then
+        expected.bar:SetHeight(expected.size + 4)
+        if frame.HealthBarsContainer then frame.HealthBarsContainer:SetHeight(expected.size + 4) end
+    end
+    if expected.nameOnly then
+        name:ClearAllPoints()
+        if expected.bar then
+            name:SetPoint("BOTTOM", expected.bar, "TOP", 0, 2)
+        else
+            name:SetPoint("BOTTOM", expected.frame, "TOP", 0, 2)
+        end
+    elseif expected.bar then
+        name:ClearAllPoints()
+        if expected.inside then
+            name:SetPoint("LEFT", expected.bar, "LEFT", 3, 0)
+            name:SetPoint("RIGHT", expected.bar, "RIGHT", expected.rightInset or -42, 0)
+        else
+            name:SetPoint("BOTTOMLEFT", expected.bar, "TOPLEFT", 0, 2)
+        end
+    end
+    name:SetJustifyH(expected.nameOnly and "CENTER" or "LEFT")
+    name:Show()
+    if expected.inside and expected.bar then
+        ShowInsideName(frame, expected.bar, expected.text, expected.font,
+            expected.size, expected.rightInset or -3)
+    else
+        RestoreNameDisplay(frame)
+    end
+end
+
+
+ns.NameplateText = {
+    StyleName = StyleName,
+    RestoreOriginalBarHeight = RestoreOriginalBarHeight,
+    ApplyConfiguredBarHeight = ApplyConfiguredBarHeight,
+    RestoreNameDisplay = RestoreNameDisplay,
+    CachedNameHasDrifted = CachedNameHasDrifted,
+    RepairCachedName = RepairCachedName,
+}

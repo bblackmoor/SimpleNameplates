@@ -2,6 +2,8 @@
 
 Status: Phases 0–6 repository work implemented; live WoW checks remain open. The version-2 saved-data shape is unchanged.
 
+The subsequent world-context/runtime work has its own [five-phase plan](runtime-refactor-plan.md); its phase 1 is now implemented.
+
 See [saved-data-model.md](saved-data-model.md), [settings-architecture.md](settings-architecture.md), [phase-1-baseline.md](phase-1-baseline.md), and [live-wow-verification.md](live-wow-verification.md). This adapts the RP Emote Menu readability work to Simple Nameplates without adding Themes. Data/code-boundary changes and settings presentation changes were kept in distinct commits.
 
 ## Phase 0 — Analysis and design

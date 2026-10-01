@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.102
+
+* Completed runtime refactor phase 1: separated frame access, name/title layout and repair, threat text, cast highlighting, presentation/restoration, runtime events, and diagnostics into focused modules.
+* Fixed `/snp debug` calling an unavailable targeting helper by sharing the classification predicate explicitly.
+* Extended runtime checks for presentation, TRP3 titles, inside-bar sizing, drift repair, restoration, diagnostics, and module load order. Current category and combat behavior remain unchanged.
+
 ## 1.0.101
 
 * Removed Hide Blizzard-controlled minion names and its dedicated defaults, saved setting, CVar claims, and runtime callbacks.

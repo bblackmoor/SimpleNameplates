@@ -122,5 +122,6 @@ end
 
 ns.NameplateClassification = {
     StateForUnit = StateForUnit,
+    TargetsPlayerControlledUnit = TargetsPlayerControlledUnit,
     IsNameOnlyState = IsNameOnlyState,
 }

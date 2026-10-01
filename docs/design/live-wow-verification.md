@@ -26,3 +26,11 @@ Status: pending. These checks require a World of Warcraft client; local Lua stub
 - [ ] Target and update plates during combat and after reload/logout. Confirm frame repair, name visibility, and diagnostic output without restricted-value inspection or Lua errors.
 
 The repository smoke scripts cover saved-data validation, settings callbacks, classification, and event/hook registration. Record client observations here; do not close these items from stub results alone.
+
+## World-context/runtime refactor: pending client matrix
+
+Test Silvermoon Shared and Silvermoon Horde separately, including transitions between them; also test Stormwind, Eversong Woods, Zul'Aman, and dungeon/raid instances. Record faction, War Mode/PvP state, client build, and the observed presentation. These are test locations, not hardcoded context categories.
+
+- [ ] After phase 1, confirm the existing category behavior, fonts, TRP3 titles, cast highlight, inside-bar placement, restoration, and `/snp debug` still work after the module split.
+- [ ] After phases 2–4, check context changes and the same entity's presentation across boundaries, including accessible and restricted frames.
+- [ ] After phase 4, in combat show health bars for all Active entities where supported; out of combat show bars only for Neutral, Hostile, and Attacking. Inactive categories keep Blizzard presentation. Refresh when entering/leaving combat; suppress TRP3 long titles whenever a health bar is displayed.
