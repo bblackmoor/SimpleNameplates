@@ -14,11 +14,11 @@ local GetReplaceBlizzardOverheadNames, SetReplaceBlizzardOverheadNames =
 
 local CATEGORY_ROWS = {
     { "1. Attacking me", "attacking", "Includes attacks on pets, guardians, and minions; overrides 2–6" },
-    { "2. Will attack me if it notices me", "hostile", "Aggressive units not currently attacking me" },
-    { "3. Attackable by me, but not hostile", "unfriendlyNPC", "Units that will not initiate combat" },
-    { "4. Opposite-faction PC", "unfriendlyPC", "Non-attackable opponents; attackable opponents use 1 or 2" },
-    { "5. My-faction PC", "friendlyPC", "Same-faction player characters" },
-    { "6. Anything else Simple Nameplates can color", "other", "Friendly NPCs and other unmatched colorable units" },
+    { "2. Will attack me — Hostile", "hostile", "Aggressive NPCs and eligible PvP opponents" },
+    { "3. Can attack me — Neutral", "neutral", "Can attack you without meeting a higher priority" },
+    { "4. Player — Friendly", "friendly", "Any player not meeting a higher priority; faction remains a separate fact" },
+    { "5. Interactive NPC — Useful", "useful", "Readable interaction evidence; hostile interaction targets use higher priorities" },
+    { "6. Otherwise — Useless", "useless", "Fallback for remaining entities; unknown facts are reported in diagnostics" },
 }
 
 local function CreateBehaviorToggle(context, labelText, noteText, getter, setter, onChanged)
@@ -125,7 +125,7 @@ local function AddBehaviorOverheadNameControls(context)
     context.layout:Space(6)
     AddSection(context.content, context.layout, "BLIZZARD OVERHEAD NAMES")
     CreateBehaviorToggle(context, "Replace Blizzard overhead names (experimental)",
-        "Requests name-only player, minion, and NPC plates, then hides matching world names. A unit may have no visible name if Blizzard does not create a plate.",
+        "Requires all six categories Active because Blizzard CVars overlap them. Requests matching nameplates and hides world names; a unit may have no visible replacement.",
         GetReplaceBlizzardOverheadNames, SetReplaceBlizzardOverheadNames, RefreshNameplates)
     CreateBehaviorToggle(context, "Hide critter and companion names",
         "Hides Blizzard overhead names for noncombat critters and companions.",

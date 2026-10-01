@@ -6,23 +6,23 @@ local BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {
 }
 ns.BLIZZARD_CRITTER_COMPANION_NAME_CVARS = BLIZZARD_CRITTER_COMPANION_NAME_CVARS
 
--- Category-aware world-name management. Each CVar is captured once, may be
+-- Blizzard-family world-name management. Each CVar is captured once, may be
 -- claimed by several options, and is restored only when nothing still needs it.
-local CATEGORY_REPLACEMENT_CVAR_VALUES = {
-    hostile = {
+local REPLACEMENT_CVAR_FAMILIES = {
+    hostileNPC = {
         UnitNameHostleNPC = "0",
         nameplateShowEnemies = "1",
     },
-    unfriendlyPC = {
+    enemyPlayer = {
         UnitNameEnemyPlayerName = "0",
         nameplateShowEnemies = "1",
     },
-    friendlyPC = {
+    friendlyPlayer = {
         UnitNameFriendlyPlayerName = "0",
         nameplateShowFriendlyPlayers = "1",
         nameplateShowOnlyNameForFriendlyPlayerUnits = "1",
     },
-    other = {
+    npcsAndMinions = {
         UnitNameFriendlyMinionName = "0",
         UnitNameEnemyMinionName = "0",
         UnitNameFriendlyPetName = "0",
@@ -64,7 +64,7 @@ local function RegisterManagedCVars(values)
     end
 end
 RegisterManagedCVars(SHARED_REPLACEMENT_CVAR_VALUES)
-for _, values in pairs(CATEGORY_REPLACEMENT_CVAR_VALUES) do RegisterManagedCVars(values) end
+for _, values in pairs(REPLACEMENT_CVAR_FAMILIES) do RegisterManagedCVars(values) end
 for _, cvar in ipairs(BLIZZARD_CRITTER_COMPANION_NAME_CVARS) do RegisterManagedCVars({ [cvar] = "0" }) end
 table.sort(MANAGED_NAME_CVARS)
 ns.OVERHEAD_REPLACEMENT_CVARS = MANAGED_NAME_CVARS
@@ -102,14 +102,14 @@ end
 
 local function AddReplacementCVarSettings(desired, global)
     if not global.replaceBlizzardOverheadNames then return end
-    local replacementActive
-    for _, state in ipairs({ "hostile", "unfriendlyPC", "friendlyPC", "other" }) do
-        if global.categoryModes[state] == "active" then
-            MergeCVarValues(desired, CATEGORY_REPLACEMENT_CVAR_VALUES[state])
-            replacementActive = true
-        end
+    -- Blizzard CVars select broad name/plate families, not priority categories.
+    -- Shared plate controls can affect every category. Mixed Active/Inactive
+    -- modes therefore retain Blizzard CVars instead of making partial claims.
+    for _, state in ipairs({ "attacking", "hostile", "neutral", "friendly", "useful", "useless" }) do
+        if global.categoryModes[state] ~= "active" then return end
     end
-    if replacementActive then MergeCVarValues(desired, SHARED_REPLACEMENT_CVAR_VALUES) end
+    for _, values in pairs(REPLACEMENT_CVAR_FAMILIES) do MergeCVarValues(desired, values) end
+    MergeCVarValues(desired, SHARED_REPLACEMENT_CVAR_VALUES)
 end
 
 local function AddExplicitHiddenNameCVarSettings(desired, global)
@@ -246,7 +246,8 @@ local friendlyColorCVarOriginals = {}
 local friendlyColorCVarsCaptured = false
 
 DisableFriendlyClassColors = function()
-    if GetCategoryMode("friendlyPC") ~= "active" then
+    if GetCategoryMode("friendly") ~= "active" or GetCategoryMode("hostile") ~= "active"
+        or GetCategoryMode("attacking") ~= "active" then
         RestoreFriendlyClassColors()
         return
     end

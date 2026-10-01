@@ -85,7 +85,7 @@ function InCombatLockdown() return false end
 
 local active, refreshes, styling = "Default", 0, true
 local attacking = { 1, 0, 0 }
-local modes = { friendlyPC = "active" }
+local modes = { friendly = "active" }
 local profile = { nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE" }
 local ns = {
     VERSION = "1.0.test", SOURCE_URL = "https://github.com/bblackmoor/SimpleNameplates",

@@ -1,12 +1,12 @@
 # World-context and entity-presentation runtime refactor
 
-Status: phases 1–2 implemented through 1.0.103; phases 3–5 pending. This follows the completed original settings refactor and is a separate five-phase sequence.
+Status: phases 1–3 implemented through 1.0.104; phases 4–5 pending. This follows the completed original settings refactor and is a separate five-phase sequence.
 
 ## Baseline and accepted rules
 
 Preserve the 1.0.101 baseline during phase 1: current six categories with Active/Inactive only, no dedicated minion-name hide switch, critter/companion hiding and experimental overhead replacement retained, and individual saved-field validation without aliases or conversion. Valid settings and CVar restoration records remain usable regardless of the schema marker.
 
-The planned classifier evaluates first-match priority:
+The phase-3 classifier evaluates first-match priority:
 1. Attacking me.
 2. Aggressive NPC or eligible PvP opponent: Hostile.
 3. Can attack me without meeting the earlier conditions: Neutral.
@@ -45,9 +45,17 @@ Capability assessment distinguishes missing, forbidden, combat-restricted, unkno
 
 ## Phase 3 — Entity facts and revised classification
 
-- [ ] Collect entity facts separately from category selection.
-- [ ] Implement the accepted six first-match categories.
-- [ ] Update defaults, settings, documentation, and validation together without conversion code.
+- [x] Collect entity facts separately from category selection.
+- [x] Implement the accepted six first-match categories.
+- [x] Update defaults, settings, documentation, and validation together without conversion code.
+
+`EntityFacts.lua` collects readable observations using the cached context. `NameplateClassification.Classify(facts)` is independent of APIs and returns the first matching state and winning rule. `StateForUnit(unit, context)` returns state, rule, and facts. Targeting only contributes attacking evidence for a potentially dangerous entity; friendly units looking at the player are not promoted. Threat/target detection remains best effort, including controlled units.
+
+Eligibility requires readable directional attackability for a player or player-controlled opponent. PvP flags, faction, and desired War Mode alone cannot promote it. Actual readable permissions remain authoritative for duels even if territory normally suppresses PvP. Useful requires readable NPC interaction evidence; unavailable data remains unknown and may leave the category at Useless without proving non-usefulness. Diagnostics shares these facts and reports configured versus observed presentation correctly.
+
+Current category keys are attacking, hostile, neutral, friendly, useful, and useless. Old keys are discarded without aliases or conversion; current valid values, unrelated preferences, profiles, and restoration records survive. Replacement CVars are named by their Blizzard family instead of falsely identifying them with priority categories. Because shared controls overlap all categories, experimental replacement requires all six Active and releases its claims in mixed modes. Friendly class-color controls also respect the Active modes of possible player combat priorities. Independent critter hiding remains intact.
+
+Local tests cover precedence, PvP/sanctuary/duels, hostile interactive NPCs, directional Neutral classification, minions, unknown/secret/missing/failed observations, saved-field validation, CVar release/resume, and diagnostic reporting. The combat-dependent bar policy and specific context/entity presentation rules remain phase 4. Client verification remains pending.
 
 ## Phase 4 — Specific presentation rules
 

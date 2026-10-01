@@ -1,15 +1,9 @@
 -- Simple Nameplates: targeted-unit relationship and presentation diagnostics.
 local _, ns = ...
 local UnitExists, UnitName = UnitExists, UnitName
-local UnitIsPlayer, UnitPlayerControlled = UnitIsPlayer, UnitPlayerControlled
-local UnitIsOwnerOrControllerOfUnit = UnitIsOwnerOrControllerOfUnit
-local UnitReaction, UnitFactionGroup = UnitReaction, UnitFactionGroup
-local UnitCanAttack, UnitIsPVP, UnitThreatSituation = UnitCanAttack, UnitIsPVP, UnitThreatSituation
-local AccessibleBoolean, AccessibleNumber, AccessibleValue =
-    ns.AccessibleBoolean, ns.AccessibleNumber, ns.AccessibleValue
+local AccessibleBoolean, AccessibleValue = ns.AccessibleBoolean, ns.AccessibleValue
 local StateForUnit, IsNameOnlyState =
     ns.NameplateClassification.StateForUnit, ns.NameplateClassification.IsNameOnlyState
-local TargetsPlayerControlledUnit = ns.NameplateClassification.TargetsPlayerControlledUnit
 local Capabilities = ns.PresentationCapabilities
 local GetContext = ns.WorldContext.Get
 local GetStylingEnabled, GetReplaceBlizzardOverheadNames =
@@ -53,36 +47,45 @@ local function DebugContext(context)
         .. "; combat lockdown: " .. DebugBoolean(context.combatLockdown))
 end
 
-local function DebugClassification(unit, state, hasNameplate)
+local function DebugClassification(state, rule, hasNameplate)
+    local enabled, mode = GetStylingEnabled(), GetCategoryMode(state)
     local display, colorHex
     if not hasNameplate then
-        display = "no accessible nameplate; world-name display unknown"
-        colorHex = "not displayed by Simple Nameplates"
+        display, colorHex = "no accessible nameplate; world-name display unknown", "unavailable"
+    elseif not enabled or mode == "inactive" then
+        display, colorHex = "Blizzard presentation", "Blizzard-controlled"
     else
         local r, g, b = PriorityColorForState(state)
         colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5),
             math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
         display = IsNameOnlyState(state) and "colored name only" or "white name with colored health bar"
     end
-    print("  Styling enabled: " .. (GetStylingEnabled() and "yes" or "no")
-        .. "; overhead replacement: " .. (GetReplaceBlizzardOverheadNames() and "yes" or "no")
-        .. "; nameplate frame: " .. (hasNameplate and "yes" or "no")
-        .. "; detected state: " .. state .. "; mode: " .. GetCategoryMode(state)
-        .. "; display: " .. display .. "; color: " .. colorHex)
+    print("  Styling enabled: " .. (enabled and "yes" or "no")
+        .. "; overhead replacement requested: " .. (GetReplaceBlizzardOverheadNames() and "yes" or "no")
+        .. "; detected state: " .. state .. "; winning rule: " .. rule .. "; mode: " .. mode
+        .. "; configured display: " .. display .. "; configured color: " .. colorHex)
 end
 
-local function DebugUnitRelationships(unit, reaction)
-    print("  Player: " .. DebugBoolean(UnitIsPlayer(unit))
-        .. "; player-controlled: " .. DebugBoolean(UnitPlayerControlled(unit))
-        .. "; owned/controlled by you: " .. DebugBoolean(UnitIsOwnerOrControllerOfUnit and UnitIsOwnerOrControllerOfUnit("player", unit)))
-    print("  Reaction: " .. (reaction and tostring(reaction) or "restricted/unavailable")
-        .. "; faction: " .. DebugValue(UnitFactionGroup(unit))
-        .. "; you can attack: " .. DebugBoolean(UnitCanAttack("player", unit))
-        .. "; it can attack you: " .. DebugBoolean(UnitCanAttack(unit, "player"))
-        .. "; PvP flagged: " .. DebugBoolean(UnitIsPVP(unit)))
-    print("  Threat on you: " .. DebugValue(UnitThreatSituation("player", unit))
-        .. "; threat on pet: " .. DebugValue(UnitThreatSituation("pet", unit))
-        .. "; targeting your controlled unit: " .. (TargetsPlayerControlledUnit(unit) and "yes" or "no"))
+local function DebugUnitRelationships(facts)
+    print("  Player: " .. DebugBoolean(facts.isPlayer)
+        .. "; player-controlled: " .. DebugBoolean(facts.playerControlled)
+        .. "; owned/controlled by you: " .. DebugBoolean(facts.ownedByPlayer)
+        .. "; NPC: " .. DebugBoolean(facts.isNPC))
+    print("  Reaction: " .. DebugValue(facts.reaction)
+        .. "; faction: " .. DebugValue(facts.faction)
+        .. "; opposite faction: " .. DebugBoolean(facts.oppositeFaction)
+        .. "; you can attack: " .. DebugBoolean(facts.canAttackThem)
+        .. "; it can attack you: " .. DebugBoolean(facts.canAttackYou)
+        .. "; PvP flagged: " .. DebugBoolean(facts.pvpFlagged)
+        .. "; eligible PvP opponent: " .. DebugBoolean(facts.eligiblePvPOpponent))
+    print("  Threat on you: " .. DebugValue(facts.playerThreat)
+        .. "; threat on pet: " .. DebugValue(facts.petThreat)
+        .. "; targeting your controlled unit: " .. DebugBoolean(facts.targetsYourControlledUnit)
+        .. "; attacking: " .. DebugBoolean(facts.attacking))
+    print("  Aggressive NPC: " .. DebugBoolean(facts.aggressiveNPC)
+        .. "; interactable: " .. DebugBoolean(facts.interactable)
+        .. "; useful NPC: " .. DebugBoolean(facts.usefulNPC)
+        .. "; facts context revision: " .. DebugValue(facts.contextRevision))
 end
 
 local function DebugNameRegion(assessment, context)
@@ -126,12 +129,11 @@ local function DebugUnit(unit, context)
     end
 
     local name = DebugValue(UnitName(unit))
-    local state = StateForUnit(unit, context)
-    local reaction = AccessibleNumber(UnitReaction(unit, "player"))
+    local state, rule, facts = StateForUnit(unit, context)
     local assessment = Capabilities.InspectUnit(unit, context)
     print("|cff0cd29fSimple Nameplates debug:|r " .. name)
-    DebugClassification(unit, state, assessment.canAccess)
-    DebugUnitRelationships(unit, reaction)
+    DebugClassification(state, rule, assessment.canAccess)
+    DebugUnitRelationships(facts)
     DebugNameRegion(assessment, context)
     DebugPresentation(assessment, context)
 end

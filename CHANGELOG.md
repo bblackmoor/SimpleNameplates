@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.104
+
+* Completed runtime phase 3: separated entity facts from classification and implemented Attacking, Hostile, Neutral, Friendly, Useful, and Useless in first-match order.
+* Eligible PvP opponents use readable attackability; a PvP flag alone no longer promotes sanctuary/non-eligible players. Faction and interaction facts remain independent of category; higher combat priorities override NPC usefulness.
+* Updated defaults, High Contrast, settings rows, validation, and documentation together. Obsolete category fields are discarded without conversion; valid current settings remain.
+* Experimental overhead replacement now requires every category Active because its CVars overlap categories; mixed modes restore replacement originals. Independent critter control remains.
+* Diagnostics reports shared facts and the winning rule, and correctly describes Inactive/disabled styling as Blizzard presentation. Added entity and regression coverage; the phase-4 combat bar policy and live-client checks remain pending.
+
 ## 1.0.103
 
 * Completed runtime refactor phase 2: added cached, event-driven world context, including independent player-combat and combat-lockdown facts and desired versus active War Mode. Unknown values remain distinct from false.

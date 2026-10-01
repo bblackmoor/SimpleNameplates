@@ -8,18 +8,18 @@ end
 local DEFAULT_PRIORITY_COLORS = {
     attacking = RGB8(255, 0, 0),
     hostile = RGB8(255, 102, 0),
-    unfriendlyNPC = RGB8(255, 204, 0),
-    unfriendlyPC = RGB8(102, 102, 255),
-    friendlyPC = RGB8(51, 204, 51),
-    other = RGB8(51, 204, 255),
+    neutral = RGB8(255, 204, 0),
+    friendly = RGB8(51, 204, 51),
+    useful = RGB8(51, 204, 255),
+    useless = RGB8(153, 153, 153),
 }
 local DEFAULT_CATEGORY_MODES = {
     attacking = "active",
     hostile = "active",
-    unfriendlyNPC = "active",
-    unfriendlyPC = "active",
-    friendlyPC = "active",
-    other = "active",
+    neutral = "active",
+    friendly = "active",
+    useful = "active",
+    useless = "active",
 }
 local DEFAULT_EFFECT_COLORS = {
     interruptible = RGB8(0, 255, 255),
@@ -29,10 +29,10 @@ local COLOR_PRESETS = {
         priorityColors = {
             attacking = RGB8(255, 0, 255),
             hostile = RGB8(255, 102, 0),
-            unfriendlyNPC = RGB8(255, 255, 0),
-            unfriendlyPC = RGB8(0, 102, 255),
-            friendlyPC = RGB8(0, 255, 255),
-            other = RGB8(255, 255, 255),
+            neutral = RGB8(255, 255, 0),
+            friendly = RGB8(0, 255, 255),
+            useful = RGB8(0, 102, 255),
+            useless = RGB8(255, 255, 255),
         },
         effectColors = {
             interruptible = RGB8(0, 255, 0),

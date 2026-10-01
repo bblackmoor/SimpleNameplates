@@ -300,17 +300,17 @@ local function AddPriorityColorControls(context)
     end)
 
     CreatePriorityColorRow(context, "1. Attacking me", "attacking",
-        "Health bar; includes attacks on pets, guardians, and minions; overrides 2–6")
-    CreatePriorityColorRow(context, "2. Will attack me if it notices me", "hostile",
-        "Health bar for aggressive units not currently attacking me")
-    CreatePriorityColorRow(context, "3. Attackable by me, but not hostile", "unfriendlyNPC",
-        "Health bar for units that will not initiate combat")
-    CreatePriorityColorRow(context, "4. Opposite-faction PC", "unfriendlyPC",
-        "Name when not attackable; attackable opponents use 1 or 2")
-    CreatePriorityColorRow(context, "5. My-faction PC", "friendlyPC",
-        "Name of same-faction player characters")
-    CreatePriorityColorRow(context, "6. Anything else Simple Nameplates can color", "other",
-        "Name of friendly NPCs and other unmatched colorable units")
+        "Health bar; includes attacks on your controlled units; overrides 2–6")
+    CreatePriorityColorRow(context, "2. Will attack me — Hostile", "hostile",
+        "Health bar for aggressive NPCs and eligible PvP opponents")
+    CreatePriorityColorRow(context, "3. Can attack me — Neutral", "neutral",
+        "Health bar for entities that can attack you without a higher priority")
+    CreatePriorityColorRow(context, "4. Player — Friendly", "friendly",
+        "Name of any player not meeting a higher priority")
+    CreatePriorityColorRow(context, "5. Interactive NPC — Useful", "useful",
+        "Name of NPCs with readable interaction evidence and no higher priority")
+    CreatePriorityColorRow(context, "6. Otherwise — Useless", "useless",
+        "Name of remaining entities; unknown facts remain separate from this fallback")
 end
 
 local function AddLockedColorControls(context)

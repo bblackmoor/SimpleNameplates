@@ -43,6 +43,7 @@ function UnitIsPVP() return unit.pvp or false end
 local unitExists = true
 function UnitExists() return unitExists end
 function UnitName() return "Diagnostic Target" end
+function UnitIsInteractable() return unit.interactable or false end
 
 local appearance = { namePlacement = "ABOVE", nameSize = 12, nameFont = "ARIALN", threatFont = "ARIALN" }
 local categoryMode = "active"
@@ -53,7 +54,7 @@ local function count(name) calls[name] = (calls[name] or 0) + 1 end
 local ns = {
     EnsureDB = function() count("db") end,
     AccessibleNumber = function(value) return type(value) == "number" and value or nil end,
-    AccessibleBoolean = function(value) return type(value) == "boolean" and value or nil end,
+    AccessibleBoolean = function(value) if type(value) == "boolean" then return value end end,
     AccessibleValue = function(value) return value end,
     GetStylingEnabled = function() return stylingEnabled end,
     GetCategoryMode = function() return categoryMode end,
@@ -77,7 +78,7 @@ local ns = {
     BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
     FRIENDLY_COLOR_CVARS = {},
 }
-for _, file in ipairs({ "WorldContext.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "NameplateFrames.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
+for _, file in ipairs({ "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "NameplateFrames.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
     assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", ns)
 end
 equal(#frames, 1, "one event frame")
@@ -87,7 +88,7 @@ equal(hooks[1].name, "CompactUnitFrame_UpdateHealthColor", "health hook")
 equal(hooks[2].name, "CompactUnitFrame_UpdateName", "name hook")
 local countEvents = 0
 for _, registered in pairs(events.registered) do countEvents = countEvents + registered end
-equal(countEvents, 21, "one registration for each event")
+equal(countEvents, 22, "one registration for each event")
 assert(events.scripts.OnEvent and events.scripts.OnUpdate, "event/update scripts installed")
 events.scripts.OnEvent(events, "ADDON_LOADED", "AnotherAddon")
 equal(calls.db, nil, "other addon ignored")
@@ -109,13 +110,15 @@ assert(ns.RefreshAll and ns.RestoreAll and ns.DebugUnit and ns.StateForUnit, "ru
 local cases = {
     { label = "attacking NPC", data = { reaction = 3, aggro = true }, state = "attacking" },
     { label = "hostile NPC", data = { reaction = 3 }, state = "hostile" },
-    { label = "attackable neutral", data = { reaction = 4 }, state = "unfriendlyNPC" },
-    { label = "opposing PC", data = { player = true, faction = "Horde", reaction = 2 }, state = "unfriendlyPC" },
+    { label = "attackable neutral", data = { reaction = 4, canAttackUs = true }, state = "neutral" },
+    { label = "opposing PC", data = { player = true, faction = "Horde", reaction = 2 }, state = "friendly" },
     { label = "attackable opposing PC", data = { player = true, faction = "Horde", canAttack = true }, state = "hostile" },
-    { label = "same faction PC", data = { player = true, faction = "Alliance", reaction = 5 }, state = "friendlyPC" },
-    { label = "controlled pet", data = { controlled = true, reaction = 5 }, state = "other" },
-    { label = "friendly NPC", data = { reaction = 5 }, state = "other" },
-    { label = "restricted reaction fallback", data = { reaction = {} }, state = "other" },
+    { label = "same faction PC", data = { player = true, faction = "Alliance", reaction = 5 }, state = "friendly" },
+    { label = "controlled pet", data = { controlled = true, reaction = 5 }, state = "useless" },
+    { label = "friendly NPC", data = { reaction = 5 }, state = "useless" },
+    { label = "useful NPC", data = { reaction = 5, interactable = true }, state = "useful" },
+    { label = "hostile vendor", data = { reaction = 3, interactable = true }, state = "hostile" },
+    { label = "restricted reaction fallback", data = { reaction = {} }, state = "useless" },
 }
 for _, case in ipairs(cases) do
     unit = case.data
@@ -264,6 +267,15 @@ ns.DebugUnit("nameplate1")
 equal(#frames, frameCount, "diagnostic creates no frame")
 equal(#hooks, hookCount, "diagnostic installs no hook")
 equal(plateFrame.SNPInterruptibleHighlight, nil, "diagnostic creates no overlay")
+output = {}
+categoryMode = "inactive"
+ns.DebugUnit("nameplate1")
+assert(table.concat(output, "\n"):find("configured display: Blizzard presentation", 1, true), "inactive diagnosed")
+categoryMode = "active"
+stylingEnabled = false
+ns.DebugUnit("nameplate1")
+assert(table.concat(output, "\n"):find("configured color: Blizzard-controlled", 1, true), "disabled diagnosed")
+stylingEnabled = true
 C_NamePlate.GetNamePlateForUnit = function() return {UnitFrame = forbidden} end
 ns.DebugUnit("nameplate1")
 assert(table.concat(output, "\n"):find("Presentation access: forbidden", 1, true), "forbidden diagnosed")

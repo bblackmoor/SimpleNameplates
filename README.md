@@ -9,11 +9,11 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | Priority | Category | Default color | Display |
 | --- | --- | --- | --- |
 | 1 | Attacking me | Red | Health bar; includes attacks on your controlled units |
-| 2 | Will attack me if it notices me | Orange | Health bar |
-| 3 | Attackable by me, but not hostile | Yellow | Health bar |
-| 4 | Opposite-faction PC | Periwinkle blue | Name when not attackable; attackable opponents use priority 1 or 2 |
-| 5 | My-faction PC | Green | Name |
-| 6 | Anything else Simple Nameplates can color | Light blue | Name; includes friendly NPCs and unmatched colorable units |
+| 2 | Hostile | Orange | Health bar; aggressive NPCs and eligible PvP opponents |
+| 3 | Neutral | Yellow | Health bar; can attack you without meeting an earlier priority |
+| 4 | Friendly | Green | Name; any player not meeting an earlier priority |
+| 5 | Useful | Light blue | Name; NPC with readable interaction evidence |
+| 6 | Useless | Gray | Name; remaining entities, with unknown facts retained separately |
 | — | Interruptible cast | Cyan | Optional pulsing cast-bar border |
 | — | Blizzard-controlled overhead names | Locked | Some opposing PCs, minions, interactive NPCs, and vendors |
 
@@ -22,6 +22,10 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 Simple Nameplates does **not** draw its own replacement nameplates.
 
 Instead, it keeps Blizzard's normal Midnight nameplates and recolors their existing health bars and names. Blizzard remains responsible for creating each nameplate and for health depletion, casting, channels, target treatment, and other standard nameplate behavior. Simple Nameplates classifies addon-accessible units into its six Priority Colors.
+
+Entity observations are collected separately in `EntityFacts.lua`, then the first matching priority wins. Faction, player control/ownership, directional attackability, interaction evidence, and unknown values remain separate facts. Thus an opposing player in sanctuary can be Friendly while retaining its opposite-faction identity; a hostile interactive NPC uses the higher combat priority. A PvP flag or desired War Mode alone does not establish an eligible opponent. Readable attackability determines eligibility, including duels; contextual sanctuary evidence prevents a flag-only inference.
+
+Useful currently means readable `UnitIsInteractable` evidence on an NPC. This is not a permanent vendor/service catalog, and friendliness or overhead-name color alone is insufficient. Missing, failed, or secret observations remain unknown. Useless is the remaining-entity fallback, not a claim that unknown entities offer no interaction.
 
 This avoids duplicate nameplates and preserves the normal Blizzard nameplate functionality.
 
@@ -51,11 +55,11 @@ Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp 
 
 Profiles are shared account-wide, while each character remembers its active profile. **Create** starts with factory-default appearance settings; **Copy** duplicates the complete active profile. Profiles can be renamed and deleted, except **Default**, which is the permanent fallback. Deleting a profile moves characters assigned to it back to Default.
 
-The editable bundled profiles are **Default** and **High Contrast**. High Contrast uses magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, blue `#0066FF`, cyan `#00FFFF`, and white `#FFFFFF` for Priority Colors 1–6; and green `#00FF00` for interruptible casts. **Restore Bundled Profiles** resets both bundles and recreates High Contrast if it was deleted or renamed. Custom profiles are left untouched.
+The editable bundled profiles are **Default** and **High Contrast**. High Contrast uses magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, cyan `#00FFFF`, blue `#0066FF`, and white `#FFFFFF` for Priority Colors 1–6; and green `#00FF00` for interruptible casts. **Restore Bundled Profiles** resets both bundles and recreates High Contrast if it was deleted or renamed. Custom profiles are left untouched.
 
 Priority Colors 1–3 put their color on visible health bars and leave the name white for contrast. Priority Colors 4–6 are name-only whenever Simple Nameplates can style an addon-accessible frame.
 
-Blizzard's separate overhead world names are not addon-accessible and cannot be recolored directly. **Replace Blizzard overhead names (experimental)** hides selected world-name categories and requests corresponding Blizzard nameplates so priorities 4–6 can style them. Blizzard still decides whether a unit receives a nameplate, so the experiment can leave a unit without a visible name. Any WoW CVar changed by the addon is restored when no current option needs it or Simple Nameplates styling is disabled.
+Blizzard's separate overhead world names are not addon-accessible and cannot be recolored directly. **Replace Blizzard overhead names (experimental)** hides selected world-name categories and requests corresponding Blizzard nameplates so priorities 4–6 can style them. Blizzard still decides whether a unit receives a nameplate, so the experiment can leave a unit without a visible name. Replacement requires all six categories Active: its broad Blizzard CVars overlap priority categories, so setting any category Inactive releases all replacement claims. The preference stays enabled and replacement resumes when all categories are Active again. Independent critter/companion hiding remains separately controlled. Any WoW CVar changed by the addon is restored when no current option needs it or Simple Nameplates styling is disabled.
 
 **Hide critter and companion names** controls ordinary overhead names for noncombat critters and companions. Their prior WoW settings are restored when disabled.
 
@@ -83,7 +87,7 @@ Each field has its own toggle. To keep nameplates readable, roleplaying names ar
 
 Look-and-feel settings are stored in named appearance profiles: Priority Colors, effect colors and toggles, fonts, sizing, placement, and threat display. Addon behavior and user preferences are global: styling enablement, category handling, Blizzard overhead-name controls, and TRP3 integration.
 
-Saved settings are validated individually in their current locations. Recognized valid values are retained regardless of the saved schema marker; invalid and unknown settings are silently discarded, with defaults supplying missing values. No old settings are renamed, relocated, or converted.
+Saved settings are validated individually in their current locations. Recognized valid values are retained regardless of the saved schema marker; invalid and unknown settings are silently discarded, with defaults supplying missing values. The current category keys are `attacking`, `hostile`, `neutral`, `friendly`, `useful`, and `useless`. Obsolete category fields are discarded; valid current fields and unrelated settings remain. No old settings are renamed, relocated, or converted.
 
 ## About and Diagnostics
 
@@ -91,7 +95,7 @@ The main **Simple Nameplates** AddOns page is an About screen showing the addon 
 
 `WorldContext.lua` caches zone/subzone/map, instance, territory/sanctuary, player faction, desired and active War Mode, PvP/FFA flags, player combat, and combat lockdown on relevant events, including while styling is disabled. Presentation reads this cache; location names do not determine permissions. `PresentationCapabilities.lua` assesses individual frames and regions and skips forbidden, unknown, or combat-restricted access.
 
-`Diagnostics.lua` owns read-only context and targeted-unit reporting. `/snp debug` reports the cached world context even without a target, keeping unknown values distinct from false. With a target, it reports presentation access status and observed health-bar visibility; missing nameplates do not establish whether Blizzard world names are displayed. Diagnostics inspects existing cast effects without creating frames or hooks. Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting priority category, category mode, display treatment, color, nameplate availability, and whether experimental overhead replacement is enabled. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the visibility hook was installed, and the highlight is currently shown. Restricted Midnight values are identified rather than inspected.
+`Diagnostics.lua` owns read-only context and targeted-unit reporting. `/snp debug` reports the cached world context even without a target, keeping unknown values distinct from false. With a target, it reports presentation access status and observed health-bar visibility; missing nameplates do not establish whether Blizzard world names are displayed. Diagnostics inspects existing cast effects without creating frames or hooks. Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting priority category, category mode, display treatment, color, nameplate availability, and whether experimental overhead replacement is enabled. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the visibility hook was installed, and the highlight is currently shown. The winning classification rule and its entity facts are reported together. Configured styling is distinguished from observed visibility; disabled styling and Inactive categories report Blizzard presentation. Restricted Midnight values are identified rather than inspected.
 
 All settings pages scroll when their contents do not fit the available window height.
 
@@ -121,7 +125,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Development
 
-The [original staged refactor plan](docs/design/implementation-plan.md), [world-context runtime plan](docs/design/runtime-refactor-plan.md), and [source ownership guide](docs/design/settings-architecture.md) describe the Global behavior and appearance Profile boundaries. Run `lua tests/core-behavior-smoke.lua`, `lua tests/settings-smoke.lua`, `lua tests/nameplates-smoke.lua`, and `lua tests/world-context-smoke.lua` from the repository root for the local behavioral checks. The [live WoW checklist](docs/design/live-wow-verification.md) records integration checks that require the game client.
+The [original staged refactor plan](docs/design/implementation-plan.md), [world-context runtime plan](docs/design/runtime-refactor-plan.md), and [source ownership guide](docs/design/settings-architecture.md) describe the Global behavior and appearance Profile boundaries. Run `lua tests/core-behavior-smoke.lua`, `lua tests/settings-smoke.lua`, `lua tests/nameplates-smoke.lua`, `lua tests/world-context-smoke.lua`, and `lua tests/entity-facts-smoke.lua` from the repository root for the local behavioral checks. The independent combat-dependent health-bar policy is scheduled for runtime phase 4; currently priorities 1–3 use bars and 4–6 use names. The [live WoW checklist](docs/design/live-wow-verification.md) records integration checks that require the game client.
 
 ## AI Disclaimer
 

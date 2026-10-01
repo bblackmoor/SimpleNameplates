@@ -48,7 +48,7 @@ local db = ns.EnsureDB()
 equal(db.schemaVersion, 2, "schema")
 equal(ns.GetActiveProfileName(), "Default", "fresh selection")
 equal(ns.GetStylingEnabled(), true, "master default")
-equal(ns.GetCategoryMode("friendlyPC"), "active", "category default")
+equal(ns.GetCategoryMode("friendly"), "active", "category default")
 equal(ns.GetTRP3Enabled(), false, "TRP3 default")
 equal(ns.GetThreatEnabled(), true, "threat default")
 equal(ns.GetInterruptibleHighlightEnabled(), false, "cast default")
@@ -99,7 +99,7 @@ equal(blue, 1, "restore blue")
 SimpleNameplatesDB = {
     schemaVersion = 2,
     global = {
-        stylingEnabled = false, categoryModes = { friendlyPC = "hide", hostile = "bad" },
+        stylingEnabled = false, categoryModes = { friendly = "hide", hostile = "bad" },
         trp3 = { enabled = true, showOOC = "wrong" },
         managedNameCVarOriginals = {
             UnitNameFriendlyPlayerName = "original",
@@ -119,7 +119,7 @@ SimpleNameplatesDB = {
 ns = loadCore()
 db = ns.EnsureDB()
 equal(ns.GetStylingEnabled(), false, "valid global retained")
-equal(ns.GetCategoryMode("friendlyPC"), "active", "removed category mode discarded")
+equal(ns.GetCategoryMode("friendly"), "active", "removed category mode discarded")
 equal(ns.GetCategoryMode("hostile"), "active", "invalid category reset")
 equal(ns.GetTRP3Enabled(), true, "valid TRP3 retained")
 equal(ns.GetTRP3Setting("showOOC"), true, "invalid TRP3 reset")
@@ -131,9 +131,9 @@ equal(ns.PriorityColorForState("attacking"), 0.4, "valid color retained")
 equal(ns.GetActiveProfileName(), "Default", "invalid assignment reset")
 equal(db.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName, "original", "ledger retained")
 equal(db.global.managedNameCVarOriginals.InventedCVar, nil, "unknown ledger entry dropped")
-ns.SetCategoryMode("friendlyPC", "inactive")
-ns.SetCategoryMode("friendlyPC", "hide")
-equal(ns.GetCategoryMode("friendlyPC"), "inactive", "removed category mode rejected by setter")
+ns.SetCategoryMode("friendly", "inactive")
+ns.SetCategoryMode("friendly", "hide")
+equal(ns.GetCategoryMode("friendly"), "inactive", "removed category mode rejected by setter")
 -- A schema marker does not discard valid fields; no legacy aliases are converted.
 for _, marker in ipairs({ 999, false }) do
     SimpleNameplatesDB = {
@@ -142,7 +142,7 @@ for _, marker in ipairs({ 999, false }) do
             stylingEnabled = false,
             hideBlizzardMinionNames = true,
             hideCritterCompanionNames = true,
-            categoryModes = { hostile = "inactive", other = "invalid" },
+            categoryModes = { hostile = "inactive", useless = "invalid" },
             legacyStylingEnabled = true,
         },
         profiles = {
@@ -157,7 +157,7 @@ for _, marker in ipairs({ 999, false }) do
     equal(db.schemaVersion, 2, "current schema marker")
     equal(ns.GetStylingEnabled(), false, "valid setting retained across schema markers")
     equal(ns.GetCategoryMode("hostile"), "inactive", "valid mode retained")
-    equal(ns.GetCategoryMode("other"), "active", "invalid mode discarded")
+    equal(ns.GetCategoryMode("useless"), "active", "invalid mode discarded")
     equal(db.profiles.Default.appearance.nameSize, 25, "valid appearance retained")
     equal(db.profiles.Default.appearance.nameFont, "ARIALN", "invalid font discarded")
     equal(ns.GetActiveProfileName(), "Custom", "valid selection retained")
@@ -176,14 +176,14 @@ equal(cvars.UnitNameFriendlyPlayerName, "0", "replacement applies name CVar")
 equal(cvars.nameplateShowFriendlyPlayers, "1", "replacement requests player plates")
 equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
     "original", "capture original once")
-ns.SetCategoryMode("friendlyPC", "active")
+ns.SetCategoryMode("friendly", "active")
 ns.SetReplaceBlizzardOverheadNames(true)
 equal(cvars.UnitNameFriendlyPlayerName, "0", "replacement claims name CVar")
 equal(cvars.nameplateShowFriendlyPlayers, "1", "replacement claims plate CVar")
-ns.SetCategoryMode("friendlyPC", "inactive")
+ns.SetCategoryMode("friendly", "inactive")
 equal(cvars.UnitNameFriendlyPlayerName, "original", "last name claim restored")
 equal(cvars.nameplateShowFriendlyPlayers, "original-plates", "last plate claim restored")
-ns.SetCategoryMode("friendlyPC", "active")
+ns.SetCategoryMode("friendly", "active")
 ns = loadCore()
 ns.EnsureDB()
 ns.RestoreOverheadNameSettings()
@@ -191,7 +191,7 @@ equal(cvars.UnitNameFriendlyPlayerName, "original", "reload restore original")
 equal(next(SimpleNameplatesDB.global.managedNameCVarOriginals), nil, "restore clears ledger")
 inCombat = true
 local before = #writes
-ns.SetCategoryMode("friendlyPC", "active")
+ns.SetCategoryMode("friendly", "active")
 equal(#writes, before, "combat defers writes")
 inCombat = false
 ns.ApplyPendingManagedNameSettings()
@@ -206,7 +206,7 @@ ns = fresh()
 cvars.UnitNameFriendlyPlayerName = "custom"
 ns.SetReplaceBlizzardOverheadNames(true)
 rejectedWrites.UnitNameFriendlyPlayerName = true
-ns.SetCategoryMode("friendlyPC", "inactive")
+ns.SetCategoryMode("friendly", "inactive")
 equal(cvars.UnitNameFriendlyPlayerName, "0", "failed restore leaves modified CVar")
 equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
     "custom", "failed restore retains original")
@@ -221,7 +221,7 @@ equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerN
     nil, "successful retry clears original")
 
 -- An explicit restore in combat waits until combat ends, keeping the ledger.
-ns.SetCategoryMode("friendlyPC", "active")
+ns.SetCategoryMode("friendly", "active")
 inCombat = true
 ns.RestoreOverheadNameSettings()
 equal(SimpleNameplatesDB.global.managedNameCVarOriginals.UnitNameFriendlyPlayerName,
@@ -295,6 +295,55 @@ ns.ApplyManagedNameSettings()
 equal(cvars.UnitNameFriendlyPlayerName, "pre-hide-original", "old category hide CVar restored")
 equal(next(db.global.managedNameCVarOriginals), nil, "old category claims cleared")
 
+-- Current category fields survive; obsolete category keys are discarded without conversion.
+SimpleNameplatesDB = {
+    schemaVersion = 999,
+    global = {categoryModes = {
+        attacking = "inactive", hostile = "active", neutral = "inactive", friendly = "active",
+        useful = "inactive", useless = "active", friendlyPC = "inactive", unfriendlyPC = "inactive",
+        unfriendlyNPC = "inactive", other = "inactive",
+    }},
+    profiles = {Default = {priorityColors = {
+        attacking = {r = 0.1, g = 0.2, b = 0.3}, neutral = {r = 0.4, g = 0.5, b = 0.6},
+        useful = {r = 0.7, g = 0.8, b = 0.9}, friendlyPC = {r = 1, g = 0, b = 1},
+        unfriendlyPC = {r = 1, g = 0, b = 1}, unfriendlyNPC = {r = 1, g = 0, b = 1},
+        other = {r = 1, g = 0, b = 1},
+    }, appearance = {nameSize = 19}}},
+}
+ns = loadCore()
+db = ns.EnsureDB()
+equal(ns.GetCategoryMode("neutral"), "inactive", "valid new mode retained")
+equal(ns.PriorityColorForState("neutral"), 0.4, "valid new color retained")
+equal(ns.PriorityColorForState("useful"), 0.7, "useful color retained")
+equal(ns.GetAppearanceSetting("nameSize"), 19, "unrelated appearance retained")
+for _, key in ipairs({"friendlyPC", "unfriendlyPC", "unfriendlyNPC", "other"}) do
+    equal(db.global.categoryModes[key], nil, "obsolete mode discarded: " .. key)
+    equal(db.profiles.Default.priorityColors[key], nil, "obsolete color discarded: " .. key)
+end
+equal(ns.PriorityColorForState("friendly"), 51 / 255, "old player color not converted")
+local categoryCount = 0
+for _ in pairs(db.global.categoryModes) do categoryCount = categoryCount + 1 end
+equal(categoryCount, 6, "exactly six current categories")
+
+-- Replacement CVars overlap categories: any Inactive category releases all replacement claims.
+ns = fresh()
+cvars.UnitNameFriendlyPlayerName = "world-original"
+cvars.nameplateShowAll = "plates-original"
+ns.SetReplaceBlizzardOverheadNames(true)
+for _, state in ipairs({"attacking", "hostile", "neutral", "friendly", "useful", "useless"}) do
+    ns.SetCategoryMode(state, "inactive")
+    equal(cvars.UnitNameFriendlyPlayerName, "world-original", "mixed modes release replacement: " .. state)
+    equal(cvars.nameplateShowAll, "plates-original", "shared plate original restored: " .. state)
+    ns.SetCategoryMode(state, "active")
+    equal(cvars.UnitNameFriendlyPlayerName, "0", "all Active resumes replacement: " .. state)
+end
+local friendlyCVar = ns.FRIENDLY_COLOR_CVARS[1]
+cvars[friendlyCVar] = "class-before"
+ns.DisableFriendlyClassColors()
+ns.SetCategoryMode("hostile", "inactive")
+ns.DisableFriendlyClassColors()
+equal(cvars[friendlyCVar], "class-before", "friendly class CVar respects possible hostile duel")
+
 -- All declared addon modules must exist, compile, and load in dependency order.
 local toc = assert(io.open("SimpleNameplates/SimpleNameplates.toc", "r"))
 local modules = {}
@@ -306,7 +355,7 @@ for line in toc:lines() do
 end
 toc:close()
 equal(table.concat(modules, ","),
-    "Defaults.lua,Core.lua,WorldContext.lua,ManagedNames.lua,Database.lua,TRP3.lua,NameplateClassification.lua,PresentationCapabilities.lua,NameplateFrames.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsTRP3.lua,Settings.lua",
+    "Defaults.lua,Core.lua,WorldContext.lua,ManagedNames.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,NameplateFrames.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsTRP3.lua,Settings.lua",
     "TOC module order")
 
 print("Core behavior smoke: passed")

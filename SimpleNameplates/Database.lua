@@ -392,7 +392,7 @@ end
 local function PriorityColorForState(state)
     local color = ActiveProfile().priorityColors[state]
         or DEFAULT_PRIORITY_COLORS[state]
-        or DEFAULT_PRIORITY_COLORS.other
+        or DEFAULT_PRIORITY_COLORS.useless
     return color.r, color.g, color.b
 end
 

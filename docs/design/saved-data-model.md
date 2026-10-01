@@ -39,7 +39,7 @@ A valid version-2 saved database separates behavior from look and feel. The stru
 | Setting | Owner | Reason |
 | --- | --- | --- |
 | `stylingEnabled` | Global | Master addon behavior |
-| Six `categoryModes` (active/inactive) | Global | Per-category behavior and managed Blizzard CVars |
+| Six `categoryModes` (attacking/hostile/neutral/friendly/useful/useless; active/inactive) | Global | Per-category behavior and managed Blizzard CVars |
 | `hideCritterCompanionNames`, `replaceBlizzardOverheadNames` | Global | Blizzard name management |
 | `trp3.enabled`, `useRoleplayingName`, `showShortTitle`, `showFullTitle`, `showOOC` | Global | TRP3 integration and display policy |
 | Six `priorityColors`, `effectColors.interruptible` | Profile | Appearance colors |
@@ -57,3 +57,7 @@ Default and High Contrast are editable account-wide Profiles. Default always exi
 ## CVar safety and compatibility
 
 Managed overhead-name original values are persisted in `global.managedNameCVarOriginals` and must survive the refactor unchanged until restored. Some friendly class-color original values are held in memory separately. Keep combat deferral, capture-before-set, and restoration on disable or when no longer managed. A code-layout refactor has no reason to bump `schemaVersion`; it remains descriptive metadata rather than a reason to reset valid settings. The saved schema marker does not reject an otherwise valid setting. Recognized fields are validated in their current locations without conversion; retain valid restoration-ledger entries until they are restored.
+
+## Runtime phase-3 category fields
+
+Both Global category modes and Profile priority colors recognize only `attacking`, `hostile`, `neutral`, `friendly`, `useful`, and `useless`. Valid values at these keys are retained. The obsolete `unfriendlyNPC`, `unfriendlyPC`, `friendlyPC`, and `other` keys are discarded without remapping. Unrelated valid preferences, profile selections, and managed-CVar restoration records remain valid. The schema marker remains 2; it never overrides individual field validation.
