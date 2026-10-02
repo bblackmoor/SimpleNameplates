@@ -28,6 +28,74 @@ local function DebugRegionValue(region, methodName, valueType, context)
     return DebugValue(value)
 end
 
+local function ReadUnitAPI(fn, ...)
+    if type(fn) ~= "function" then return nil end
+    local ok, value = pcall(fn, ...)
+    if ok then return AccessibleValue(value) end
+end
+
+local function SameUnit(candidate, unit)
+    if type(candidate) ~= "string" then return nil end
+    local same = AccessibleBoolean(ReadUnitAPI(UnitIsUnit, candidate, unit))
+    if same ~= nil then return same end
+    -- Never use displayed names for identity; readable GUIDs are a fallback.
+    local a, b = ReadUnitAPI(UnitGUID, candidate), ReadUnitAPI(UnitGUID, unit)
+    if type(a) == "string" and a ~= "" and type(b) == "string" and b ~= "" then
+        return a == b
+    end
+end
+
+local function FindDiagnosticPlates(unit, context)
+    local matches, seen = {}, {}
+    local direct = Capabilities.InspectUnit(unit, context)
+    if direct.frame then
+        matches[#matches + 1] = {assessment = direct, source = "direct lookup"}
+        seen[direct.frame] = true
+    end
+    local plates = ReadUnitAPI(C_NamePlate and C_NamePlate.GetNamePlates)
+    local scanned, unknown = 0, 0
+    if type(plates) == "table" then
+        for _, plate in pairs(plates) do
+            scanned = scanned + 1
+            local frame = Capabilities.SafeField(plate, "UnitFrame", context)
+            local token = Capabilities.SafeField(frame, "unit", context)
+            local same = SameUnit(token, unit)
+            if same == true and not seen[frame] then
+                matches[#matches + 1] = {assessment = Capabilities.InspectFrame(frame, context),
+                    source = "enumerated unit match", token = token}
+                seen[frame] = true
+            elseif same == nil then unknown = unknown + 1 end
+        end
+    end
+    return matches, direct, scanned, unknown, type(plates) == "table"
+end
+
+local function DebugAddonText(assessment, context)
+    local frame = assessment.frame
+    local function Field(object, key) return Capabilities.SafeField(object, key, context) end
+    local cached = Field(frame, "SNPNameStyle")
+    local decision = Field(frame, "SNPPresentation")
+    print("  Simple Nameplates markers: state " .. DebugValue(Field(frame, "SNPState"))
+        .. "; frame unit: " .. DebugValue(Field(frame, "unit"))
+        .. "; original unit: " .. DebugValue(Field(frame, "SNPOriginalUnit"))
+        .. "; restoring: " .. DebugBoolean(Field(frame, "SNPRestoring")))
+    print("  Cached name style: " .. (cached and "found" or "not found")
+        .. "; text: " .. DebugValue(Field(cached, "text"))
+        .. "; name-only: " .. DebugBoolean(Field(cached, "nameOnly"))
+        .. "; inside bar: " .. DebugBoolean(Field(cached, "inside")))
+    print("  Cached presentation: action " .. DebugValue(Field(decision, "action"))
+        .. "; color: " .. DebugValue(Field(decision, "colorState"))
+        .. "; revision: " .. DebugValue(Field(decision, "contextRevision"))
+        .. "; current revision: " .. context.revision)
+    for _, key in ipairs({"SNPInsideName", "SNPFullTitleText"}) do
+        local region = Field(frame, key)
+        print("  " .. key .. ": " .. (region and "found" or "not found")
+            .. "; text: " .. DebugRegionValue(region, "GetText", nil, context)
+            .. "; shown: " .. DebugRegionValue(region, "IsShown", "boolean", context)
+            .. "; visible: " .. DebugRegionValue(region, "IsVisible", "boolean", context))
+    end
+end
+
 local function DebugContext(context)
     print("|cff0cd29fSimple Nameplates context:|r revision " .. context.revision
         .. "; initialized: " .. DebugBoolean(context.initialized))
@@ -133,12 +201,28 @@ local function DebugUnit(unit, context)
 
     local name = DebugValue(UnitName(unit))
     local state, rule, facts = StateForUnit(unit, context)
-    local assessment = Capabilities.InspectUnit(unit, context)
+    local matches, direct, scanned, unknown, enumerationAvailable = FindDiagnosticPlates(unit, context)
+    local assessment = matches[1] and matches[1].assessment or direct
     print("|cff0cd29fSimple Nameplates debug:|r " .. name)
+    print("  Nameplate lookup: direct " .. direct.status .. "; enumeration available: "
+        .. DebugBoolean(enumerationAvailable) .. "; scanned: " .. scanned
+        .. "; matching frames: " .. #matches .. "; identity unavailable: " .. unknown)
     DebugClassification(state, rule, assessment, context, facts)
     DebugUnitRelationships(facts)
-    DebugNameRegion(assessment, context)
-    DebugPresentation(assessment, context)
+    if #matches == 0 then
+        DebugNameRegion(assessment, context)
+        DebugPresentation(assessment, context)
+        print("  No matching nameplate identified; world-name source remains unknown.")
+    else
+        for index, match in ipairs(matches) do
+            print("  Matching nameplate " .. index .. ": " .. match.source
+                .. "; token: " .. DebugValue(match.token
+                    or Capabilities.SafeField(match.assessment.frame, "unit", context)))
+            DebugNameRegion(match.assessment, context)
+            DebugPresentation(match.assessment, context)
+            DebugAddonText(match.assessment, context)
+        end
+    end
 end
 
 

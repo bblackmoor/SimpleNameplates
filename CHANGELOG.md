@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.108
+
+* Expanded `/snp debug` to search existing nameplates for the selected unit when direct lookup misses it, using readable unit identity rather than displayed names.
+* Reports matching frames, lookup restrictions, Simple Nameplates styling markers, cached text/presentation, and inside-name/long-title regions to investigate duplicate labels without changing name visibility.
+
 ## 1.0.107
 
 * Added independent sanctuary color defaults: sky blue (#87CEEB) for same-faction players, light grey (#D3D3D3) for useful NPCs, and medium grey (#999999) for other NPCs.

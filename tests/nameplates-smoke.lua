@@ -435,6 +435,59 @@ ns.DebugUnit("nameplate1")
 assert(table.concat(output, "\n"):find("Presentation access: forbidden", 1, true), "forbidden diagnosed")
 output = {}
 unitExists = false
+-- Target aliases can miss direct lookup while an enumerated plate matches.
+unitExists = true
+local previousIsUnit, previousGUID = UnitIsUnit, UnitGUID
+local previousLookup, previousList = C_NamePlate.GetNamePlateForUnit, C_NamePlate.GetNamePlates
+local cachedStyle = plateFrame.SNPNameStyle
+plateFrame.SNPNameStyle = {text = "Cached diagnostic label", nameOnly = true, inside = false}
+local diagnosticStyle = plateFrame.SNPNameStyle
+local beforeFrames, beforeHooks = #frames, #hooks
+C_NamePlate.GetNamePlateForUnit = function(token)
+    if token == "target" then return nil end
+    return plate
+end
+C_NamePlate.GetNamePlates = function() return {plate, plate} end
+UnitIsUnit = function(a, b) return a == "nameplate1" and b == "target" end
+ns.DebugUnit("target")
+local report = table.concat(output, "\n")
+assert(report:find("direct missing", 1, true), "target direct lookup miss reported")
+assert(report:find("matching frames: 1", 1, true), "enumeration finds and deduplicates matching frame")
+assert(report:find("enumerated unit match", 1, true), "lookup source reported")
+assert(report:find("Cached name style: found", 1, true), "addon cached text reported")
+assert(report:find("SNPFullTitleText: found", 1, true), "addon title region reported")
+equal(plateFrame.SNPNameStyle, diagnosticStyle, "diagnostic does not rewrite cached style")
+equal(#frames, beforeFrames, "enumerated diagnostic creates no frames")
+equal(#hooks, beforeHooks, "enumerated diagnostic creates no hooks")
+
+output = {}
+UnitIsUnit = function() error("identity unavailable") end
+UnitGUID = function(token)
+    if token == "target" or token == "nameplate1" then return "Creature-Match" end
+end
+ns.DebugUnit("target")
+assert(table.concat(output, "\n"):find("matching frames: 1", 1, true), "readable GUID fallback")
+
+output = {}
+UnitGUID = function() return {} end
+ns.DebugUnit("target")
+report = table.concat(output, "\n")
+assert(report:find("matching frames: 0", 1, true), "unreadable identity never matches by name")
+assert(report:find("identity unavailable: 2", 1, true), "unknown identity reported")
+
+output = {}
+C_NamePlate.GetNamePlates = function() return { {IsForbidden = function() return true end} } end
+ns.DebugUnit("target")
+assert(table.concat(output, "\n"):find("matching frames: 0", 1, true), "forbidden candidate skipped")
+output = {}
+C_NamePlate.GetNamePlates = function() error("enumeration unavailable") end
+ns.DebugUnit("target")
+assert(table.concat(output, "\n"):find("enumeration available: no", 1, true), "failed enumeration reported")
+UnitIsUnit, UnitGUID = previousIsUnit, previousGUID
+plateFrame.SNPNameStyle = cachedStyle
+C_NamePlate.GetNamePlateForUnit, C_NamePlate.GetNamePlates = previousLookup, previousList
+output = {}
+unitExists = false
 ns.DebugUnit("target")
 assert(table.concat(output, "\n"):find("Simple Nameplates context:", 1, true), "no-target context")
 assert(table.concat(output, "\n"):find("No target selected.", 1, true), "no-target reported")
