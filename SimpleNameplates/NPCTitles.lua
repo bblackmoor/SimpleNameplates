@@ -86,8 +86,30 @@ end
 
 -- Session-only, bounded by GUID: token reuse and same-name NPCs cannot inherit
 -- another entity's subtitle. A missing title on a nameplate is not a deletion.
-local known, order = {}, {}
-local function Remember(guid, title, useful)
+local known, order, knownNames = {}, {}, {}
+local function UnitNameKey(unit)
+    local name = Read(UnitName, unit)
+    if type(name) ~= "string" or name == "" then return nil end
+    return name:lower()
+end
+
+local function RememberName(unit, title, useful)
+    local key = UnitNameKey(unit)
+    if not key then return end
+    local cached = knownNames[key]
+    if cached and cached.title ~= title then
+        -- A shared NPC name with conflicting verified subtitles is ambiguous;
+        -- never use that name as an identity fallback.
+        knownNames[key] = {ambiguous = true}
+        return
+    end
+    if not (cached and cached.ambiguous) then
+        knownNames[key] = {title = title, useful = useful == true}
+    end
+end
+
+local function Remember(guid, unit, title, useful)
+    RememberName(unit, title, useful)
     if not guid then return end
     if not known[guid] then
         order[#order + 1] = guid
@@ -121,7 +143,7 @@ local function GetTitle(unit, facts)
     if data then title, reason = Extract(data, unit) end
     local guid = GUID(unit)
     if title then
-        Remember(guid, title, facts.interactable)
+        Remember(guid, unit, title, facts.interactable)
         return title, "unit tooltip", facts.interactable == true
     end
     -- Full world-unit tooltips can include subtitles omitted by nameplate
@@ -135,16 +157,25 @@ local function GetTitle(unit, facts)
                 local sourceTitle = sourceData and Extract(sourceData, source)
                 if sourceTitle then
                     local useful = Read(UnitIsInteractable, source) == true
-                    Remember(guid, sourceTitle, useful)
+                    Remember(guid, source, sourceTitle, useful)
                     return sourceTitle, source .. " tooltip (verified GUID)", useful
                 end
             end
         end
         local cached = known[guid]
         if cached then return cached.title, "cached verified GUID", cached.useful end
+    else
+        -- Some accessible nameplate tokens expose a readable NPC name but no
+        -- GUID. In that case only, reuse a session title learned from a full
+        -- verified NPC tooltip with the same name. Conflicting titles disable
+        -- the fallback for that name.
+        local cached = knownNames[UnitNameKey(unit)]
+        if cached and not cached.ambiguous then
+            return cached.title, "cached NPC name (GUID unavailable)", cached.useful
+        end
     end
     return nil, reason .. (guid and "; no verified source or cached subtitle"
-        or "; NPC GUID unavailable for subtitle fallback")
+        or "; no unambiguous cached NPC-name subtitle")
 end
 
 local function Inspect(unit, facts)
