@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.111
+
+* NPC title diagnostics now distinguish missing APIs/data, failed reads, restricted fields, rejected line layouts, and unsupported or empty subtitles.
+* `/snp debug` reports up to twelve readable tooltip line types and left/right texts for the target and each scanned NPC nameplate, with explicit field-access status. Diagnostic text escapes tooltip markup; no visible tooltip is created or changed.
+
 ## 1.0.110
 
 * Reads NPC subtitles such as "Voidforge Steward" from readable structured unit-tooltip data and displays them in angle brackets below addon-controlled name-only NPC labels at 80% of the name size.

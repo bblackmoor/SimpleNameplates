@@ -43,8 +43,40 @@ equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), "<Voidforge Steward>"
 equal(ns.NPCTitles.GetTitle("player", {isNPC = false}), nil, "player excluded")
 equal(ns.NPCTitles.GetTitle("unknown", {}), nil, "unknown excluded")
 equal(calls, 1, "no player or unknown tooltip reads")
+local info = ns.NPCTitles.Inspect("nameplate1", {isNPC = true})
+equal(calls, 2, "inspection reads tooltip once")
+equal(info.title, "<Voidforge Steward>", "inspection title")
+equal(info.reason, "title extracted", "successful extraction reason")
+equal(#info.lines, 3, "snapshot ends at absent line")
+equal(info.lines[2].lineType, 0, "subtitle type snapshot")
+equal(info.lines[2].left, "Voidforge Steward", "subtitle text snapshot")
+equal(info.lines[2].rightStatus, "absent", "missing right column explicit")
+equal(info.truncated, false, "short snapshot not truncated")
+data = tooltip("Quest text")
+data.lines[2].type = 17
+C_TooltipInfo.GetUnit = function() return data end
+info = ns.NPCTitles.Inspect("nameplate1", {isNPC = true})
+equal(info.reason, "layout rejected: line 2 type 17; expected 0", "layout rejection distinguished")
+equal(info.lines[2].left, "Quest text", "rejected layout still readable")
+equal(data.lines[2].type, 17, "inspection preserves source")
+data = tooltip(secret)
+C_TooltipInfo.GetUnit = function() return data end
+info = ns.NPCTitles.Inspect("nameplate1", {isNPC = true})
+equal(info.reason, "subtitle left text restricted", "restricted field distinguished")
+equal(info.lines[2].leftStatus, "restricted", "restricted snapshot status")
+equal(info.lines[2].left, nil, "restricted value omitted")
+data = tooltip("Title")
+for i = 4, 13 do data.lines[i] = {type = 0, leftText = "Extra"} end
+C_TooltipInfo.GetUnit = function() return data end
+info = ns.NPCTitles.Inspect("nameplate1", {isNPC = true})
+equal(#info.lines, 12, "snapshot bounded")
+equal(info.truncated, true, "extra lines reported")
+C_TooltipInfo.GetUnit = function() return nil end
+equal(ns.NPCTitles.Inspect("nameplate1", {isNPC = true}).reason, "no tooltip data returned", "missing data distinguished")
 C_TooltipInfo.GetUnit = function() error("blocked") end
 equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), nil, "blocked API")
+equal(ns.NPCTitles.Inspect("nameplate1", {isNPC = true}).reason, "tooltip API call failed", "failed API distinguished")
 C_TooltipInfo = nil
 equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), nil, "missing API")
+equal(ns.NPCTitles.Inspect("nameplate1", {isNPC = true}).reason, "tooltip API unavailable", "missing API distinguished")
 print("NPC titles smoke: passed")

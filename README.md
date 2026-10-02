@@ -107,6 +107,8 @@ The diagnostic also enumerates existing nameplates and matches their unit tokens
 
 Every enumerated nameplate is also listed, even if it does not match the target, with its current unit token/name, displayed name, base/frame/text visibility, original unit token, and cached addon text. This helps identify stale labels on frames assigned to another unit. Inaccessible regions remain marked unavailable rather than read.
 
+NPC tooltip diagnostics distinguish unavailable APIs/data, restricted fields, and parser rejection. For the target and each scanned NPC, the report lists up to twelve tooltip lines with numeric line type, left/right text, and field-access status. This helps verify live subtitle layouts without changing the visible tooltip or guessing that every second line is a title.
+
 All settings pages scroll when their contents do not fit the available window height.
 
 ## Download and Installation
