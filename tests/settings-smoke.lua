@@ -171,10 +171,14 @@ equal(table.concat({categories[1].name,categories[2].name,categories[3].name,cat
 ns.RegisterSettingsPanel()
 equal(#categories, 5, "one-time registration")
 equal(SLASH_SNP1, "/snp", "slash registration")
-for _, route in ipairs({{"",3},{"behavior",3},{"about",1},{"profiles",2},{"appearance",3},{"colors",4},{"trp3",5}}) do
+for _, route in ipairs({{"",3},{"about",1},{"profiles",2},{"appearance",3},{"colors",4},{"trp3",5}}) do
     SlashCmdList.SNP(route[1])
     equal(opened[#opened], route[2], "route " .. route[1])
 end
+local openedBeforeObsoleteCommand = #opened
+SlashCmdList.SNP("behavior")
+equal(#opened, openedBeforeObsoleteCommand, "obsolete behavior command does not open a page")
+
 for _, c in ipairs(categories) do
     if c.panel.scripts and c.panel.scripts.OnShow then c.panel.scripts.OnShow(c.panel) end
 end

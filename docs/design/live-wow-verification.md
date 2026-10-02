@@ -12,7 +12,7 @@ Status: pending. These checks require a World of Warcraft client; local Lua stub
 
 ## Settings and Blizzard names
 
-- [ ] About, Behavior, Appearance, and TRP3 render once, scroll correctly, and maintain the expected layout and controls; `/snp`, `/snp colors`, `/snp trp3`, `/snp about`, and `/snp debug` route correctly.
+- [ ] About, Profiles, Appearance, Colors, and TRP3 render once, scroll correctly, and maintain the expected layout and controls; `/snp`, `/snp profiles`, `/snp appearance`, `/snp colors`, `/snp trp3`, `/snp about`, and `/snp debug` route correctly.
 - [ ] Exercise Active and Inactive for all six priority categories on representative addon-accessible units. Confirm first-match priority and threat/effect behavior; no category Hide option is available.
 - [ ] Confirm experimental replacement is absent. Load valid stored originals from previous replacement use and verify player/NPC/minion names and nameplate-visibility CVars restore, including with styling disabled or restoration deferred by combat. Failed writes retain originals until successful. Verify critter/companion hiding still captures/restores its own CVar independently; no taint or secret-value errors.
 - [ ] Disable and re-enable styling; addon visuals and inside-bar sizing restore and reapply correctly without losing Global modes or the selected Profile.

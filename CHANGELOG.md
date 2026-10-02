@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.127
+
+* Removes the obsolete behavior command alias and its help references. Startup setup guidance points to Appearance.
+* Keeps Enable Simple Nameplates global; appearance-profile selection and resets do not change it.
+
 ## 1.0.126
 
 * Moves global Active/Inactive category handling to thumb switches beside their colors, including synchronized sanctuary copies. Colors remain profile-specific.

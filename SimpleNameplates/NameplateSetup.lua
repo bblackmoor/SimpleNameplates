@@ -82,7 +82,7 @@ local function Disable()
     ns.RestoreManagedNameSettings()
     ns.RestoreFriendlyClassColors()
     if ns.RestoreAll then ns.RestoreAll() end
-    print("Simple Nameplates styling is disabled. Enable it again in /snp behavior.")
+    print("Simple Nameplates styling is disabled. Enable it again in /snp appearance.")
 end
 
 local function ShowReview(issues, failure)

@@ -3,7 +3,7 @@ local _, ns = ...
 local settingsCategory
 local categories = {}
 local aliases = {
-    [""] = "Appearance", behavior = "Appearance", general = "Appearance", config = "Appearance",
+    [""] = "Appearance", general = "Appearance", config = "Appearance",
     options = "Appearance", settings = "Appearance", about = "About",
     profiles = "Profiles", profile = "Profiles",
     appearance = "Appearance", text = "Appearance", font = "Appearance", fonts = "Appearance",
@@ -31,7 +31,7 @@ local function RegisterSettingsPanel()
         end
         local category = aliases[command] and categories[aliases[command]]
         if category then Settings.OpenToCategory(category:GetID())
-        else print("|cff0cd29fSimple Nameplates:|r /snp, /snp behavior, /snp profiles, /snp appearance, /snp colors, /snp trp3, /snp debug, /snp about") end
+        else print("|cff0cd29fSimple Nameplates:|r /snp, /snp profiles, /snp appearance, /snp colors, /snp trp3, /snp debug, /snp about") end
     end
 end
 ns.RegisterSettingsPanel = RegisterSettingsPanel

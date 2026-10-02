@@ -101,7 +101,6 @@ local function CreateAboutPanel()
     AddDescription(content, layout,
         "/snp or /snp appearance — Appearance settings\n" ..
         "/snp profiles — Manage appearance profiles\n" ..
-        "/snp behavior — Alias for Appearance\n" ..
         "/snp colors — Color settings\n" ..
         "/snp trp3 — TRP3 settings\n" ..
         "/snp debug — Explain the current target\n" ..
