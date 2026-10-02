@@ -46,6 +46,10 @@ local function Resolve(context, facts, state, capabilities, enabled, mode)
         result.action, result.reason = "skip", capabilities.status
     elseif not enabled or mode == "inactive" then
         result.action, result.reason = "restore", "Blizzard presentation"
+    elseif facts.widgetsOnly == true then
+        -- This is a widget anchor, not another actor label. Preserve its widgets.
+        result.action, result.reason = "style", "widget-only plate: suppress text"
+        result.suppressText, result.nameOnly, result.showFullTitle = true, true, false
     elseif context.inCombat == nil then
         result.action, result.reason = "restore", "player combat unavailable"
     else

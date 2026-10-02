@@ -47,6 +47,7 @@ local function Collect(unit, context)
         canAttackYou = canAttackYou, canAttackThem = canAttackThem,
         pvpFlagged = Boolean(Read(UnitIsPVP, unit)),
         interactable = Boolean(Read(UnitIsInteractable, unit)),
+        widgetsOnly = Boolean(Read(UnitNameplateShowsWidgetsOnly, unit)),
         targetsYourControlledUnit = TargetsPlayerControlledUnit(unit),
     }
     if unitFaction and context.playerFaction then

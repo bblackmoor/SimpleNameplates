@@ -200,10 +200,23 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.frame = frame
 end
 
+local function SuppressText(frame, context)
+    -- Do not hide/reparent the unit frame or touch widget containers.
+    if frame.name then frame.name:SetAlpha(0) end
+    for _, key in ipairs({"SNPInsideName", "SNPFullTitleText", "SNPThreatText"}) do
+        ns.NameplateFrames.SetShownSafe(frame[key], false, context)
+    end
+end
+
 local function StyleName(frame, state, context, decision)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return end
     if not decision or decision.action ~= "style" then return end
+    if decision.suppressText then
+        SuppressText(frame, context)
+        frame.SNPNameStyle = {suppressed = true, presentation = decision}
+        return
+    end
     local name = frame and frame.name
     if not name then return end
     local fullTitle, displayName = UpdateNameText(frame)
@@ -245,6 +258,13 @@ end
 local function CacheIsCurrent(frame, expected, context)
     local decision = frame.SNPPresentation
     if not decision or expected.presentation ~= decision or decision.contextRevision ~= context.revision then return false end
+    if type(UnitNameplateShowsWidgetsOnly) == "function" then
+        local ok, value = pcall(UnitNameplateShowsWidgetsOnly, frame.unit)
+        local widgetsOnly
+        if ok then widgetsOnly = AccessibleBoolean(value) end
+        if type(widgetsOnly) == "boolean" and widgetsOnly ~= (decision.suppressText == true) then return false end
+    end
+    if expected.suppressed then return true end
     local bar = GetHealthBar(frame, context)
     if expected.bar ~= bar then return false end
     local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(bar, "IsShown", context))
@@ -258,6 +278,14 @@ local function CachedNameHasDrifted(frame, context)
     local name, expected = frame and frame.name, frame and frame.SNPNameStyle
     if not name or not expected then return false end
     if not CacheIsCurrent(frame, expected, context) then return true end
+    if expected.suppressed then
+        if not NearlyEqual(name:GetAlpha(), 0) then return true end
+        for _, key in ipairs({"SNPInsideName", "SNPFullTitleText", "SNPThreatText"}) do
+            local shown = ns.PresentationCapabilities.ReadRegion(frame[key], "IsShown", context)
+            if AccessibleBoolean(shown) == true then return true end
+        end
+        return false
+    end
     -- FontString text can be a secret string in Midnight. Never read or compare
     -- it here; the secure Blizzard name-update hook and unit events repair text.
     local font, size, flags = name:GetFont()
@@ -306,6 +334,7 @@ local function RepairCachedName(frame, context)
     if not CanAccessFrame(frame, context) then return false end
     local name, expected = frame and frame.name, frame and frame.SNPNameStyle
     if not name or not expected or not CacheIsCurrent(frame, expected, context) then return false end
+    if expected.suppressed then SuppressText(frame, context); return true end
     name:SetText(expected.text)
     name:SetFont(expected.font, expected.size, expected.flags)
     name:SetShadowColor(0, 0, 0, 1)

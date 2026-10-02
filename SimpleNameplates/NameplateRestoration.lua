@@ -16,6 +16,7 @@ local function Capture(frame, assessment, context)
         values[key] = ns.AccessibleBoolean(Cap.ReadRegion(frame[key], "IsShown", context))
     end
     values.healthBar = ns.AccessibleBoolean(Cap.ReadRegion(assessment.healthBar, "IsShown", context))
+    values.nameAlpha = ns.AccessibleNumber(Cap.ReadRegion(assessment.name, "GetAlpha", context))
     frame.SNPOriginalVisibility = values
     frame.SNPOriginalUnit = ns.AccessibleValue(frame.unit)
 end
@@ -43,6 +44,7 @@ local function Request(frame, context, removedUnit)
         if original[key] ~= nil then SetShownSafe(frame[key], original[key], context) end
     end
     if original.healthBar ~= nil then SetShownSafe(assessment.healthBar, original.healthBar, context) end
+    if original.nameAlpha ~= nil and assessment.name then assessment.name:SetAlpha(original.nameAlpha) end
     frame.SNPNameStyle, frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = nil, nil, nil, nil
     frame.SNPOriginalVisibility, frame.SNPOriginalUnit = nil, nil
     if removedUnit and ns.AccessibleValue(frame.unit) == removedUnit then

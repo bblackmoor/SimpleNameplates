@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.117
+
+* Suppresses name/title text on confirmed widget-only plates in Active categories while preserving their frames, widgets, and Blizzard bar visibility. Ordinary plates continue displaying NPC names and service titles.
+* Repairs text suppression after Blizzard updates and restores original name opacity when styling is disabled, the category becomes Inactive, or a frame changes plate type.
+* Added regressions for simultaneous widget-only/ordinary NPC plates, text drift, frame reuse, unavailable flags, and restoration.
+
 ## 1.0.116
 
 * Limits `/snp debug` plate details to the target, its direct lookup, and plates with the same readable unit name. Nearby unrelated units no longer flood the chat history.

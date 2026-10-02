@@ -676,6 +676,82 @@ print = originalPrint
 UnitIsUnit, UnitNameplateShowsWidgetsOnly, C_CVar = oldIsUnit, oldWidgetsOnly, oldCVar
 C_TooltipInfo = nil
 
+-- One NPC can have an ordinary plate plus a separate widget anchor.
+ns.RestoreAll()
+ns.TRP3 = nil
+unit = {reaction = 5, interactable = true,
+    names = {nameplate1 = "Orin Straylight", nameplate21 = "Orin Straylight"}}
+local widgetFrame = Region()
+widgetFrame.unit, widgetFrame.name = "nameplate21", Region()
+widgetFrame.name:SetAlpha(0.7)
+widgetFrame.healthBar, widgetFrame.HealthBarsContainer = Region(), Region()
+widgetFrame.WidgetContainer = Region()
+widgetFrame.SNPFullTitleText, widgetFrame.SNPInsideName = Region(), Region()
+local widgetPlate = {UnitFrame = widgetFrame}
+C_NamePlate.GetNamePlates = function() return {widgetPlate, plate} end
+C_TooltipInfo = {GetUnit = function() return {lines = {
+    {type = 2, leftText = "Orin Straylight"},
+    {type = 0, leftText = "Voidforge Steward"}, {type = 47, leftText = "Level 90"},
+}} end}
+local widgetMode = true
+UnitNameplateShowsWidgetsOnly = function(token) return token == "nameplate21" and widgetMode end
+ns.RefreshAll()
+equal(widgetFrame.name.alpha, 0, "widget actor name suppressed")
+equal(widgetFrame.SNPFullTitleText.shown, false, "widget title suppressed")
+equal(widgetFrame.SNPInsideName.shown, false, "widget inside name suppressed")
+equal(widgetFrame.shown, true, "widget frame preserved")
+equal(widgetFrame.WidgetContainer.shown, true, "widget container preserved")
+equal(widgetFrame.healthBar.shown, true, "widget bar visibility untouched")
+equal(widgetFrame.HealthBarsContainer.shown, true, "widget bar ancestor untouched")
+equal(plateFrame.name.alpha, 1, "ordinary actor name remains visible")
+equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "ordinary plate retains service title")
+equal(plateFrame.SNPFullTitleText.shown, true, "ordinary service title visible")
+equal(plateFrame.name.g, 211 / 255, "ordinary useful sanctuary color retained")
+widgetFrame.name:SetAlpha(1)
+widgetFrame.SNPFullTitleText:Show()
+events.scripts.OnUpdate(events, 0.5)
+equal(widgetFrame.name.alpha, 0, "widget name drift repaired")
+equal(widgetFrame.SNPFullTitleText.shown, false, "widget title drift repaired")
+widgetFrame.name:SetAlpha(1)
+hooks[2].callback(widgetFrame)
+equal(widgetFrame.name.alpha, 0, "Blizzard name hook preserves suppression")
+categoryMode = "inactive"
+ns.NameplatePresentation.ApplySimpleStyle(widgetFrame)
+equal(widgetFrame.name.alpha, 0.7, "inactive restores original name opacity")
+equal(widgetFrame.SNPPresentation, nil, "inactive clears suppression decision")
+categoryMode = "active"
+ns.RefreshAll()
+stylingEnabled = false
+ns.RestoreAll()
+equal(widgetFrame.name.alpha, 0.7, "disabled restores original name opacity")
+equal(widgetFrame.WidgetContainer.shown, true, "restoration preserves widgets")
+stylingEnabled = true
+ns.RefreshAll()
+widgetMode = false
+events.scripts.OnUpdate(events, 0.5)
+equal(widgetFrame.name.alpha, 1, "widget-to-ordinary transition restores name")
+equal(widgetFrame.SNPFullTitleText.shown, true, "widget-to-ordinary transition styles title")
+widgetMode = true
+events.scripts.OnUpdate(events, 0.5)
+equal(widgetFrame.name.alpha, 0, "ordinary-to-widget transition suppresses text")
+equal(widgetFrame.healthBar.shown, true, "transition restores Blizzard bar before suppression")
+UnitNameplateShowsWidgetsOnly = function() error("restricted") end
+ns.RefreshAll()
+equal(widgetFrame.name.alpha, 1, "unavailable widget flag never confirms suppression")
+UnitNameplateShowsWidgetsOnly = function() return {} end
+ns.RefreshAll()
+equal(widgetFrame.name.alpha, 1, "nonboolean widget flag never confirms suppression")
+UnitNameplateShowsWidgetsOnly = function(token) return token == "nameplate21" end
+ns.RefreshAll()
+widgetFrame.unit = "nameplate22"
+UnitNameplateShowsWidgetsOnly = function() return false end
+ns.NameplatePresentation.ApplySimpleStyle(widgetFrame)
+equal(widgetFrame.name.alpha, 1, "recycled widget frame becomes ordinary")
+equal(widgetFrame.SNPOriginalUnit, "nameplate22", "recycled frame captures new unit")
+ns.RestoreAll()
+UnitNameplateShowsWidgetsOnly = oldWidgetsOnly
+C_TooltipInfo = nil
+
 local visited, largest = {}, 0
 local function CheckUpvalues(fn)
     if visited[fn] then return end

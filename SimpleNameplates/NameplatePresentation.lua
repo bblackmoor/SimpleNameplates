@@ -34,9 +34,17 @@ local function ApplySimpleStyle(frame, context)
     local state, _, facts = Classify(unit, context)
     local decision = Resolve(context, facts, state, assessment, ns.GetStylingEnabled(), ns.GetCategoryMode(state))
     if decision.action ~= "style" then Restore.Request(frame, context); return end
+    local previous = frame.SNPPresentation
+    if previous and (previous.suppressText == true) ~= (decision.suppressText == true) then
+        if not Restore.Request(frame, context) then return end
+    end
     Restore.Cancel(frame)
     Restore.Capture(frame, assessment, context)
     frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = state, decision, facts
+    if decision.suppressText then
+        Text.StyleName(frame, state, context, decision)
+        return
+    end
     ApplyVisibility(frame, decision, assessment, context)
     Text.StyleName(frame, state, context, decision)
     if decision.showHealthBar then assessment.healthBar:SetStatusBarColor(ns.PriorityColorForState(decision.colorState)) end
