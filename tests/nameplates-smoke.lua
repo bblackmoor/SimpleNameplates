@@ -42,7 +42,10 @@ function UnitReaction() return unit.reaction end
 function UnitIsPVP() return unit.pvp or false end
 local unitExists = true
 function UnitExists() return unitExists end
-function UnitName(token) return unit.names and unit.names[token] or "Diagnostic Target" end
+function UnitName(token)
+    if unit.unavailableNames then error("restricted name") end
+    return unit.names and unit.names[token] or "Diagnostic Target"
+end
 function UnitAffectingCombat() return false end
 function UnitIsInteractable() return unit.interactable or false end
 
@@ -460,7 +463,7 @@ equal(plateFrame.SNPNameStyle, diagnosticStyle, "diagnostic does not rewrite cac
 equal(#frames, beforeFrames, "enumerated diagnostic creates no frames")
 equal(#hooks, beforeHooks, "enumerated diagnostic creates no hooks")
 
--- Nonmatching frames must still expose readable displayed and cached text.
+-- Unrelated frames are counted but do not flood chat, even with stale displayed text.
 output = {}
 local previousNameText = plateFrame.name.text
 plateFrame.unit = "nameplate2"
@@ -470,16 +473,49 @@ unit.names = {nameplate2 = "Different NPC"}
 ns.DebugUnit("target")
 report = table.concat(output, "\n")
 assert(report:find("matching frames: 0", 1, true), "nonmatching frame remains unmatched")
-assert(report:find("Scanned nameplate 1: token nameplate2; unit name: Different NPC; matches target: no", 1, true),
-    "nonmatching current identity printed")
-assert(report:find("Name region: found; text: Orin Straylight", 1, true), "nonmatching displayed text printed")
-assert(report:find("Cached name style: found; text: Orin Straylight", 1, true), "nonmatching cache printed")
-assert(report:find("Scanned nameplate 2:", 1, true), "every enumerated entry printed")
+assert(report:find("scanned: 2", 1, true), "unrelated enumeration counted")
+assert(report:find("unique relevant frames: 0", 1, true), "unrelated details omitted")
+assert(not report:find("Different NPC", 1, true), "unrelated unit not dumped")
+assert(not report:find("text: Orin Straylight", 1, true), "stale displayed name not used to select a plate")
 equal(plateFrame.name.text, "Orin Straylight", "diagnostic does not repair stale text")
 equal(plateFrame.unit, "nameplate2", "diagnostic does not change unit")
 equal(plateFrame.SNPNameStyle, diagnosticStyle, "nonmatching cache untouched")
 equal(#frames, beforeFrames, "nonmatching diagnostic creates no frames")
 equal(#hooks, beforeHooks, "nonmatching diagnostic creates no hooks")
+
+-- Both Orin presentations remain visible together, without claiming name-based identity.
+output = {}
+local secondFrame = {unit = "nameplate3", name = Region()}
+secondFrame.name:SetText("Orin Straylight")
+local secondPlate = {UnitFrame = secondFrame}
+local nearby = {plate, secondPlate, plate}
+for index = 1, 50 do
+    local token = "nearby" .. index
+    unit.names[token] = "Unrelated " .. index
+    nearby[#nearby + 1] = {UnitFrame = {unit = token}}
+end
+unit.names.target, unit.names.nameplate2, unit.names.nameplate3 = "Orin Straylight", "Orin Straylight", "Orin Straylight"
+C_NamePlate.GetNamePlates = function() return nearby end
+UnitNameplateShowsWidgetsOnly = function(token) return token == "nameplate2" end
+ns.DebugUnit("target")
+report = table.concat(output, "\n")
+assert(report:find("matching frames: 0", 1, true), "same names never count as identity matches")
+assert(report:find("unique relevant frames: 2", 1, true), "both same-name frames selected and deduplicated")
+assert(report:find("token nameplate2; unit name: Orin Straylight; matches target: no; same name: yes", 1, true), "widget candidate distinguished")
+assert(report:find("token nameplate3; unit name: Orin Straylight; matches target: no; same name: yes", 1, true), "ordinary candidate distinguished")
+assert(report:find("Plate kind [nameplate2]: softinteract match: no; widgets only: yes", 1, true), "widget plate retained")
+assert(report:find("Plate kind [nameplate3]: softinteract match: no; widgets only: no", 1, true), "ordinary plate retained")
+assert(not report:find("Unrelated", 1, true), "crowded surroundings omitted")
+local _, detailsCount = report:gsub("Relevant nameplate", "")
+equal(detailsCount, 2, "each relevant frame detailed once")
+assert(#output < 85, "two presentations fit a bounded report despite 50 nearby units")
+output = {}
+unit.unavailableNames = true
+ns.DebugUnit("target")
+assert(table.concat(output, "\n"):find("unique relevant frames: 0", 1, true), "unavailable names never associate plates")
+unit.unavailableNames = nil
+UnitNameplateShowsWidgetsOnly = nil
+C_NamePlate.GetNamePlates = function() return {plate, plate} end
 plateFrame.unit = "nameplate1"
 plateFrame.name:SetText(previousNameText)
 unit.names = nil
@@ -503,7 +539,7 @@ output = {}
 C_NamePlate.GetNamePlates = function() return { {IsForbidden = function() return true end} } end
 ns.DebugUnit("target")
 assert(table.concat(output, "\n"):find("matching frames: 0", 1, true), "forbidden candidate skipped")
-assert(table.concat(output, "\n"):find("Base plate access: forbidden", 1, true), "forbidden scanned entry reported")
+assert(table.concat(output, "\n"):find("identity unavailable: 1", 1, true), "forbidden candidate counted without details")
 output = {}
 C_NamePlate.GetNamePlates = function() error("enumeration unavailable") end
 ns.DebugUnit("target")

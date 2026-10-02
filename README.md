@@ -97,6 +97,8 @@ Saved settings are validated individually in their current locations. Recognized
 
 ## About and Diagnostics
 
+`/snp debug` limits detailed plate reports to the targeted unit, its direct nameplate lookup, and plates sharing its readable unit name. Same-name candidates are explicitly distinguished from identity matches, and each relevant frame is printed once. Unrelated nearby plates contribute only to scan counts, keeping duplicate presentations together in chat.
+
 The main **Simple Nameplates** AddOns page is an About screen showing the addon version, author, category, license, source repository, and slash commands. The displayed version is read directly from the addon's `.toc` metadata so it cannot drift from the installed release. Click the source URL to open a copy-ready dialog.
 
 `WorldContext.lua` caches zone/subzone/map, instance, territory/sanctuary, player faction, desired and active War Mode, PvP/FFA flags, player combat, and combat lockdown on relevant events, including while styling is disabled. Presentation reads this cache; location names do not determine permissions. `PresentationCapabilities.lua` assesses individual frames and regions and skips forbidden, unknown, or combat-restricted access.

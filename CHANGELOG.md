@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.116
+
+* Limits `/snp debug` plate details to the target, its direct lookup, and plates with the same readable unit name. Nearby unrelated units no longer flood the chat history.
+* Distinguishes same-name diagnostic candidates from verified target identity, retains widget-only and subtitle reports, and prints each relevant frame only once.
+* Added regression coverage for unrelated plates, duplicate enumeration, multiple same-name presentations, and unavailable names.
+
 ## 1.0.115
 
 * Tries a structured `unit:<GUID>` hyperlink tooltip first for confirmed NPC subtitles, then retains the working unit-token and GUID/name cache fallbacks. Missing, failed, restricted, or rejected hyperlink data does not prevent fallback.
