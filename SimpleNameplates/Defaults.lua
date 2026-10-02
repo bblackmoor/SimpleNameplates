@@ -10,11 +10,9 @@ local DEFAULT_PRIORITY_COLORS = {
     hostile = RGB8(255, 102, 0),
     neutral = RGB8(255, 204, 0),
     friendly = RGB8(51, 204, 51),
-    useful = RGB8(51, 204, 255),
+    useful = RGB8(211, 211, 211),
     useless = RGB8(153, 153, 153),
     sanctuaryFriendly = RGB8(135, 206, 235),
-    sanctuaryUseful = RGB8(211, 211, 211),
-    sanctuaryUseless = RGB8(153, 153, 153),
 }
 local DEFAULT_CATEGORY_MODES = {
     attacking = "active",

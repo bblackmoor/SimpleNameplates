@@ -22,7 +22,8 @@ local function region(kind, parent, template)
         SetTextColor = function() end, SetJustifyH = function() end,
         GetStringWidth = function(self) return #(self.text or "") * 8 end,
         GetStringHeight = function() return 16 end,
-        SetColorTexture = function() end, SetBackdrop = function() end,
+        SetColorTexture = function(self, r, g, b) self.color = {r, g, b} end,
+        SetBackdrop = function() end,
         SetBackdropColor = function() end, SetBackdropBorderColor = function() end,
         SetScrollChild = function(self, value) self.scrollChild = value end,
         SetScript = function(self, event, fn) self.scripts = self.scripts or {}; self.scripts[event] = fn end,
@@ -86,6 +87,7 @@ function InCombatLockdown() return false end
 local active, refreshes, styling = "Default", 0, true
 local trp3Enabled, trp3Settings, trp3Refreshes = false, { showFullTitle = true }, 0
 local attacking = { 1, 0, 0 }
+local npcColors = { useful = {0.8, 0.8, 0.8}, useless = {0.6, 0.6, 0.6} }
 local modes = { friendly = "active" }
 local profile = { nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE" }
 local ns = {
@@ -93,8 +95,14 @@ local ns = {
     FONT_OPTIONS = { { value = "ARIALN", label = "Arial Narrow" } },
     MIN_NAME_SIZE = 8, MAX_NAME_SIZE = 36,
     DEFAULT_PROFILE_NAME = "Default",
-    PriorityColorForState = function() return unpack(attacking) end,
-    SetPriorityColor = function(_, r, g, b) attacking = { r, g, b } end,
+    PriorityColorForState = function(state) return unpack(npcColors[state] or attacking) end,
+    SetPriorityColor = function(state, r, g, b)
+        if npcColors[state] then npcColors[state] = {r, g, b}
+        else attacking = {r, g, b} end
+    end,
+    ResetPriorityColor = function(state)
+        if npcColors[state] then npcColors[state] = {0.7, 0.7, 0.7} end
+    end,
     EffectColor = function() return 0, 1, 1 end,
     GetCategoryMode = function(key) return modes[key] or "active" end,
     SetCategoryMode = function(key, value) modes[key] = value end,
@@ -127,7 +135,7 @@ local ns = {
     TRP3 = { IsAvailable = function() return false end, Refresh = function() trp3Refreshes = trp3Refreshes + 1 end },
 }
 for _, name in ipairs({
-    "ResetPriorityColor", "SetEffectColor", "ResetEffectColor",
+    "SetEffectColor", "ResetEffectColor",
     "ResetAllColors", "SetInterruptibleHighlightEnabled",
     "SetThreatEnabled", "SetHideCritterCompanionNames",
 }) do ns[name] = function() end end
@@ -228,6 +236,50 @@ ColorPickerFrame.options.swatchFunc()
 equal(attacking[1], 0.4, "color picker applies")
 ColorPickerFrame.options.cancelFunc()
 equal(attacking[1], 1, "color picker cancel restores")
+
+-- Duplicate NPC controls share a saved key and repaint together in both directions.
+local function colorRow(labelText)
+    local row
+    for _, item in ipairs(frames) do
+        if item.kind == "FontString" and item.text == labelText then row = item.parent; break end
+    end
+    assert(row, "color row " .. labelText)
+    local swatch, reset, fill
+    for _, item in ipairs(frames) do
+        if item.parent == row and item.kind == "Button" then
+            if item.template == "BackdropTemplate" then swatch = item end
+            if item.text == "Reset" then reset = item end
+        end
+    end
+    for _, item in ipairs(frames) do
+        if item.kind == "Texture" and item.parent == swatch then fill = item; break end
+    end
+    return assert(swatch), assert(reset), assert(fill)
+end
+for _, case in ipairs({
+    {"useful", "5. Interactive NPC — Useful", "Interactive NPC — Useful", 0.8},
+    {"useless", "6. Otherwise — Useless", "Other NPC — Useless", 0.6},
+}) do
+    local first, firstReset, firstFill = colorRow(case[2])
+    local second, secondReset, secondFill = colorRow(case[3])
+    first:Click()
+    ColorPickerFrame.options.swatchFunc()
+    equal(npcColors[case[1]][1], 0.4, "priority copy updates shared NPC color")
+    equal(firstFill.color[1], 0.4, "priority swatch updates")
+    equal(secondFill.color[1], 0.4, "sanctuary swatch updates immediately")
+    ColorPickerFrame.options.cancelFunc()
+    equal(firstFill.color[1], case[4], "cancel restores priority swatch")
+    equal(secondFill.color[1], case[4], "cancel restores sanctuary swatch")
+    second:Click()
+    ColorPickerFrame.options.swatchFunc()
+    equal(firstFill.color[1], 0.4, "sanctuary edit repaints priority copy")
+    secondReset:Click()
+    equal(firstFill.color[1], 0.7, "sanctuary reset repaints priority copy")
+    equal(secondFill.color[1], 0.7, "sanctuary reset repaints own copy")
+    firstReset:Click()
+    equal(secondFill.color[1], 0.7, "priority reset repaints sanctuary copy")
+end
+
 print("Settings smoke: passed")
 
 for _, item in ipairs(frames) do

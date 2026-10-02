@@ -70,8 +70,8 @@ local ns = {
     GetHideCritterCompanionNames = function() return false end,
     PriorityColorForState = function(state)
         if state == "sanctuaryFriendly" then return 135 / 255, 206 / 255, 235 / 255 end
-        if state == "sanctuaryUseful" then return 211 / 255, 211 / 255, 211 / 255 end
-        if state == "sanctuaryUseless" then return 153 / 255, 153 / 255, 153 / 255 end
+        if state == "useful" then return 211 / 255, 211 / 255, 211 / 255 end
+        if state == "useless" then return 153 / 255, 153 / 255, 153 / 255 end
         return 1, 0, 0
     end,
     EffectColor = function() return 0, 1, 1 end,

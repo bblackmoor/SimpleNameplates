@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.122
+
+* Uses one Useful color and one Useless color per appearance profile, shared inside and outside sanctuaries and across combat states. Both settings copies update immediately on picker changes, cancellation, and reset.
+* Keeps existing Priority Colors values; obsolete separate sanctuary NPC color fields are discarded by ordinary validation without migration. Factory defaults are light grey for Useful and medium grey for Useless; High Contrast keeps its blue and white defaults.
+* Retains the separate same-faction player sanctuary color and higher danger priorities. Updates developer notes and regression checks.
+
 ## 1.0.121
 
 * Reorganizes Appearance below the existing profile controls into Shared Appearance, Out of Combat, and In Combat sections. Fonts, sizes, Priority Colors, and sanctuary colors remain shared.

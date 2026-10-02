@@ -30,10 +30,6 @@ local function ColorState(context, facts, state)
         if state == "friendly" and facts.isPlayer == true and facts.oppositeFaction == false then
             return "sanctuaryFriendly"
         end
-        if facts.isNPC == true then
-            if state == "useful" then return "sanctuaryUseful" end
-            if state == "useless" then return "sanctuaryUseless" end
-        end
     end
     return state
 end

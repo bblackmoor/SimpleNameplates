@@ -12,7 +12,7 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | 2 | Hostile | Orange | Health bar; aggressive NPCs and eligible PvP opponents |
 | 3 | Neutral | Yellow | Health bar; can attack you without meeting an earlier priority |
 | 4 | Friendly | Green | Name out of combat; health bar in combat when supported |
-| 5 | Useful | Light blue | Interactive NPC: name out of combat; supported bar in combat |
+| 5 | Useful | Light grey | Interactive NPC: name out of combat; supported bar in combat |
 | 6 | Useless | Gray | Remaining entities: name out of combat; supported bar in combat |
 | — | Interruptible cast | Cyan | Optional pulsing cast-bar border |
 | — | Native overhead names without an accessible plate | Unchanged | Entity types and contexts are recorded below |
@@ -25,7 +25,7 @@ Instead, it keeps Blizzard's normal Midnight nameplates and recolors their exist
 
 Entity observations are collected separately in `EntityFacts.lua`, then the first matching priority wins. Faction, player control/ownership, directional attackability, interaction evidence, and unknown values remain separate facts. Thus an opposing player in sanctuary can be Friendly while retaining its opposite-faction identity; a hostile interactive NPC uses the higher combat priority. A PvP flag or desired War Mode alone does not establish an eligible opponent. Readable attackability determines eligibility, including duels; contextual sanctuary evidence prevents a flag-only inference.
 
-Appearance profiles also have three independent sanctuary colors: same-faction players default to sky blue (`#87CEEB`), useful NPCs to light grey (`#D3D3D3`), and other NPCs to medium grey (`#999999`). These apply only to their non-danger categories in sanctuaries; combat danger colors take priority. Opposite-faction players retain their existing colors. Each sanctuary color can be edited or reset, and Reset Colors includes all three. Existing profiles receive the new defaults for missing values. Colors affect only addon-accessible nameplates; Blizzard-controlled overhead names remain unchanged.
+Appearance profiles have one Useful color (light grey `#D3D3D3` by default) and one Useless color (medium grey `#999999` by default), shared inside and outside sanctuaries and across combat states. Their controls appear in both Priority Colors and Sanctuary Colors; editing, cancelling a picker change, or resetting either copy updates both. Existing Priority Colors choices remain authoritative; obsolete separate sanctuary NPC colors are discarded during normal settings validation. Same-faction Friendly players retain a separate sanctuary color, sky blue (`#87CEEB`) by default. Higher danger categories always keep their own colors. Opposite-faction players retain their existing colors. Reset Colors resets all current colors. Colors affect only addon-accessible nameplates; Blizzard-controlled overhead names remain unchanged.
 
 Useful currently means readable `UnitIsInteractable` evidence on an NPC. This is not a permanent vendor/service catalog, and friendliness or overhead-name color alone is insufficient. Missing, failed, or secret observations remain unknown. Useless is the remaining-entity fallback, not a claim that unknown entities offer no interaction.
 

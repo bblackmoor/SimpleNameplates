@@ -34,6 +34,8 @@ SimpleNameplatesDB = {
 
 A valid version-2 saved database separates behavior from look and feel. The structural refactor kept this shape and version. Validation reconstructs settings from defaults, discards invalid and unknown fields, and retains recognized valid settings regardless of the saved schema marker. No one-off migration or import/export facility is needed.
 
+Useful and Useless each have one `priorityColors` entry per profile, used in all world and combat contexts. The Priority and Sanctuary sections edit the same entries. `sanctuaryFriendly` remains a separate player color. The former `sanctuaryUseful` and `sanctuaryUseless` fields are unknown settings and are discarded during validation; valid `useful` and `useless` values are retained without conversion.
+
 ## Ownership inventory
 
 | Setting | Owner | Reason |

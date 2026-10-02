@@ -29,8 +29,8 @@ equal(sanctuary.showHealthBar, false, "sanctuary out-of-combat name")
 equal(sanctuary.colorState, "friendly", "opposite-faction color unchanged")
 for _, case in ipairs({
     {facts = {isPlayer = true, oppositeFaction = false}, state = "friendly", color = "sanctuaryFriendly"},
-    {facts = {isNPC = true}, state = "useful", color = "sanctuaryUseful"},
-    {facts = {isNPC = true}, state = "useless", color = "sanctuaryUseless"},
+    {facts = {isNPC = true}, state = "useful", color = "useful"},
+    {facts = {isNPC = true}, state = "useless", color = "useless"},
     {facts = {isPlayer = true}, state = "friendly", color = "friendly"},
     {facts = {playerControlled = true, isNPC = false}, state = "useless", color = "useless"},
     {facts = {isNPC = true, usefulNPC = true}, state = "hostile", color = "hostile"},

@@ -57,8 +57,8 @@ equal(ns.GetAppearanceSetting("namePlacement"), "ABOVE", "placement default")
 equal(ns.PriorityColorForState("attacking"), 1, "default red component")
 for _, case in ipairs({
     {"sanctuaryFriendly", 135, 206, 235},
-    {"sanctuaryUseful", 211, 211, 211},
-    {"sanctuaryUseless", 153, 153, 153},
+    {"useful", 211, 211, 211},
+    {"useless", 153, 153, 153},
 }) do
     local r, g, b = ns.PriorityColorForState(case[1])
     equal(r, case[2] / 255, "sanctuary default red")
@@ -72,6 +72,8 @@ for _, case in ipairs({
     ns.DeleteActiveProfile()
     ns.ResetPriorityColor(case[1])
 end
+equal(ns.EnsureDB().profiles.Default.priorityColors.sanctuaryUseful, nil, "no separate useful sanctuary setting")
+equal(ns.EnsureDB().profiles.Default.priorityColors.sanctuaryUseless, nil, "no separate useless sanctuary setting")
 equal(ns.SetActiveProfileName("High Contrast"), true, "select bundled")
 equal(ns.GetActiveProfileName(), "High Contrast", "bundled selected")
 equal(ns.PriorityColorForState("attacking"), 1, "contrast red component")
@@ -331,6 +333,8 @@ SimpleNameplatesDB = {
     }},
     profiles = {Default = {priorityColors = {
         attacking = {r = 0.1, g = 0.2, b = 0.3}, neutral = {r = 0.4, g = 0.5, b = 0.6},
+        sanctuaryUseful = {r = 0.2, g = 0.2, b = 0.2},
+        sanctuaryUseless = {r = 0.3, g = 0.3, b = 0.3},
         useful = {r = 0.7, g = 0.8, b = 0.9}, friendlyPC = {r = 1, g = 0, b = 1},
         unfriendlyPC = {r = 1, g = 0, b = 1}, unfriendlyNPC = {r = 1, g = 0, b = 1},
         other = {r = 1, g = 0, b = 1},
@@ -342,7 +346,7 @@ equal(ns.GetCategoryMode("neutral"), "inactive", "valid new mode retained")
 equal(ns.PriorityColorForState("neutral"), 0.4, "valid new color retained")
 equal(ns.PriorityColorForState("useful"), 0.7, "useful color retained")
 equal(ns.GetAppearanceSetting("nameSize"), 19, "unrelated appearance retained")
-for _, key in ipairs({"friendlyPC", "unfriendlyPC", "unfriendlyNPC", "other"}) do
+for _, key in ipairs({"friendlyPC", "unfriendlyPC", "unfriendlyNPC", "other", "sanctuaryUseful", "sanctuaryUseless"}) do
     equal(db.global.categoryModes[key], nil, "obsolete mode discarded: " .. key)
     equal(db.profiles.Default.priorityColors[key], nil, "obsolete color discarded: " .. key)
 end

@@ -259,8 +259,9 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
         self:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
         GameTooltip:Hide()
     end)
+    local function RefreshSwatches() RunRefreshers(context.swatchRefreshers) end
     swatch:SetScript("OnClick", function()
-        OpenColorPicker(getColor, setColor, UpdateSwatch)
+        OpenColorPicker(getColor, setColor, RefreshSwatches)
     end)
 
     local resetOne = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
@@ -269,7 +270,7 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
     resetOne:SetText("Reset")
     resetOne:SetScript("OnClick", function()
         resetColor()
-        UpdateSwatch()
+        RefreshSwatches()
         RefreshNameplates()
     end)
 end
@@ -341,10 +342,10 @@ local function AddPriorityColorControls(context)
     AddSection(context.content, context.layout, "SANCTUARY COLORS")
     CreatePriorityColorRow(context, "Same-faction player", "sanctuaryFriendly",
         "Sanctuary only; higher combat priorities keep their normal colors")
-    CreatePriorityColorRow(context, "Interactive NPC — Useful", "sanctuaryUseful",
-        "Sanctuary only; higher combat priorities keep their normal colors")
-    CreatePriorityColorRow(context, "Other NPC — Useless", "sanctuaryUseless",
-        "Sanctuary only; applies to NPCs in the Otherwise category")
+    CreatePriorityColorRow(context, "Interactive NPC — Useful", "useful",
+        "Shared with Priority Colors; higher danger priorities keep their own colors")
+    CreatePriorityColorRow(context, "Other NPC — Useless", "useless",
+        "Shared with Priority Colors; applies to NPCs in the Otherwise category")
 end
 
 local function AddLockedColorControls(context)

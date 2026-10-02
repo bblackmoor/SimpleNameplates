@@ -75,8 +75,8 @@ flowchart TD
 | --- | --- |
 | Any danger category | Its danger color, including in sanctuary |
 | Sanctuary, same-faction Friendly PC | Sky blue by default |
-| Sanctuary, Useful NPC | Light grey by default |
-| Sanctuary, Useless NPC | Medium grey by default |
+| Useful category, any context | Shared Useful color; light grey by default |
+| Useless category, any context | Shared Useless color; medium grey by default |
 | Sanctuary, opposite-faction PC | Existing category color if an accessible plate exists; native overhead label otherwise |
 | Other or unknown context/identity | Existing category color; no inferred sanctuary override |
 
