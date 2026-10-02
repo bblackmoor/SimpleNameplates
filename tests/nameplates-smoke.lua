@@ -566,6 +566,7 @@ ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.shown, true, "NPC title restored after combat")
 C_TooltipInfo.GetUnit = function() return {lines = {{type = 2}, {type = 47}}} end
+unit.names = {nameplate1 = "Different NPC", target = "Different NPC"}
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.shown, false, "missing subtitle clears previous title")
 equal(plateFrame.SNPFullTitleText.text, "", "old NPC service text cleared")
@@ -576,6 +577,7 @@ C_TooltipInfo = nil
 UNIT_LEVEL_TEMPLATE = "Level %d"
 UnitLevel = function() return 90 end
 local currentGUID = "Creature-Orin"
+unit.names = {nameplate1 = "Orin Straylight", target = "Orin Straylight"}
 UnitGUID = function(token)
     if token == "nameplate1" then return currentGUID end
     if token == "target" then return "Creature-Orin" end
@@ -592,10 +594,15 @@ equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "sparse plate res
 equal(plateFrame.SNPFullTitleText.shown, true, "resolved service title visible")
 equal(plateFrame.name.g, 211 / 255, "verified useful NPC name light grey")
 equal(plateFrame.SNPFullTitleText.g, 211 / 255, "verified useful NPC title light grey")
+currentGUID = "Creature-Orin-Plate"
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "unmatched readable GUID resolves by NPC name")
+equal(plateFrame.SNPEntityFacts.npcTitleSource, "cached NPC name (GUID unmatched)", "weaker association reported")
 UnitGUID = function(token) if token == "nameplate1" then return currentGUID end end
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "title survives target change")
 currentGUID = "Creature-Other"
+unit.names = {nameplate1 = "Different NPC"}
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.shown, false, "token reuse clears service title")
 equal(plateFrame.name.g, 153 / 255, "token reuse clears useful evidence")

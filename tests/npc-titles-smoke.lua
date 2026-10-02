@@ -131,4 +131,24 @@ ns.NPCTitles.GetTitle("target", {isNPC = true, interactable = true})
 local fallbackTitle, fallbackSource = ns.NPCTitles.GetTitle("nameplate1", {isNPC = true})
 equal(fallbackTitle, "<Voidforge Steward>", "no-GUID plate uses cached verified NPC name")
 equal(fallbackSource, "cached NPC name (GUID unavailable)", "name fallback source reported")
+
+-- A cold unmatched-GUID plate must discover the target's title without a
+-- prior target GetTitle call or a debug command.
+UnitName = function(token)
+    if token == "nameplate1" or token == "target" then return "Cold Test Steward" end
+end
+UnitGUID = function(token)
+    if token == "nameplate1" then return "Creature-Cold-Plate" end
+    if token == "target" then return "Creature-Cold-Target" end
+end
+title, source, useful = ns.NPCTitles.GetTitle("nameplate1", {isNPC = true, interactable = false})
+equal(title, "<Voidforge Steward>", "cold unmatched GUID learns matching-name target")
+equal(source, "cached NPC name (GUID unmatched)", "unmatched GUID fallback source")
+equal(useful, true, "name fallback carries observed interaction evidence")
+data.lines[2].leftText = "Different Service"
+ns.NPCTitles.GetTitle("target", {isNPC = true})
+equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), nil, "conflicting name titles block fallback")
+-- Exact identity remains authoritative despite ambiguity in the name cache.
+UnitGUID = function() return "Creature-Cold-Target" end
+equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), "<Different Service>", "GUID preferred over ambiguous name")
 print("NPC titles smoke: passed")

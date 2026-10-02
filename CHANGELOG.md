@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.114
+
+* Allows unambiguous NPC-name subtitle fallback when a readable nameplate GUID cannot be associated with a fuller world-unit tooltip, as well as when GUIDs are unavailable.
+* Learns matching-name target, mouseover, and soft-interaction NPC subtitles during normal rendering, without requiring a debug command. Exact GUID evidence remains preferred, and name associations never populate the exact-GUID cache.
+* Bounds both session caches to 256 entries. Conflicting subtitles block name fallback; diagnostics distinguish unmatched and unavailable GUIDs.
+* Added regressions for cold title discovery, readable unmatched GUIDs, conflicting names, exact-GUID precedence, and nameplate title/color presentation.
+
 ## 1.0.113
 
 * When an NPC nameplate exposes a readable name but no GUID, it can reuse an unambiguous subtitle previously learned from a verified full NPC tooltip with the same name.

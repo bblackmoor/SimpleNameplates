@@ -84,9 +84,9 @@ local function Extract(data, unit)
     return CleanTitle(left)
 end
 
--- Session-only, bounded by GUID: token reuse and same-name NPCs cannot inherit
--- another entity's subtitle. A missing title on a nameplate is not a deletion.
-local known, order, knownNames = {}, {}, {}
+-- Session-only caches. Prefer exact GUIDs; name fallback is heuristic and
+-- disabled once conflicting subtitles have been observed for a shared name.
+local known, order, knownNames, nameOrder = {}, {}, {}, {}
 local function UnitNameKey(unit)
     local name = Read(UnitName, unit)
     if type(name) ~= "string" or name == "" then return nil end
@@ -97,6 +97,10 @@ local function RememberName(unit, title, useful)
     local key = UnitNameKey(unit)
     if not key then return end
     local cached = knownNames[key]
+    if not cached then
+        nameOrder[#nameOrder + 1] = key
+        if #nameOrder > 256 then knownNames[table.remove(nameOrder, 1)] = nil end
+    end
     if cached and cached.title ~= title then
         -- A shared NPC name with conflicting verified subtitles is ambiguous;
         -- never use that name as an identity fallback.
@@ -164,18 +168,31 @@ local function GetTitle(unit, facts)
         end
         local cached = known[guid]
         if cached then return cached.title, "cached verified GUID", cached.useful end
-    else
-        -- Some accessible nameplate tokens expose a readable NPC name but no
-        -- GUID. In that case only, reuse a session title learned from a full
-        -- verified NPC tooltip with the same name. Conflicting titles disable
-        -- the fallback for that name.
-        local cached = knownNames[UnitNameKey(unit)]
-        if cached and not cached.ambiguous then
-            return cached.title, "cached NPC name (GUID unavailable)", cached.useful
-        end
     end
-    return nil, reason .. (guid and "; no verified source or cached subtitle"
-        or "; no unambiguous cached NPC-name subtitle")
+    -- A readable nameplate GUID can differ from the world-unit GUID. Learn
+    -- full matching-name tooltips during rendering, without requiring debug.
+    -- Do not promote this weaker association into the exact-GUID cache.
+    local key = UnitNameKey(unit)
+    if key then
+        for _, source in ipairs({"target", "mouseover", "softinteract"}) do
+            if source ~= unit and UnitNameKey(source) == key
+                and Read(UnitIsPlayer, source) == false
+                and Read(UnitPlayerControlled, source) == false then
+                local sourceData = ReadTooltip(source, {isNPC = true})
+                local sourceTitle = sourceData and Extract(sourceData, source)
+                if sourceTitle then
+                    Remember(GUID(source), source, sourceTitle, Read(UnitIsInteractable, source) == true)
+                end
+            end
+        end
+        local cached = knownNames[key]
+        if cached and not cached.ambiguous then
+            return cached.title, guid and "cached NPC name (GUID unmatched)"
+                or "cached NPC name (GUID unavailable)", cached.useful
+        end
+        if cached and cached.ambiguous then return nil, reason .. "; conflicting NPC-name subtitles" end
+    end
+    return nil, reason .. "; no unambiguous cached NPC-name subtitle"
 end
 
 local function Inspect(unit, facts)
