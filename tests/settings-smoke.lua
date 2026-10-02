@@ -84,6 +84,7 @@ function strtrim(value) return value:match("^%s*(.-)%s*$") end
 function InCombatLockdown() return false end
 
 local active, refreshes, styling = "Default", 0, true
+local trp3Enabled, trp3Settings, trp3Refreshes = false, { showFullTitle = true }, 0
 local attacking = { 1, 0, 0 }
 local modes = { friendly = "active" }
 local profile = { nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE" }
@@ -112,8 +113,10 @@ local ns = {
     SetStylingEnabled = function(value) styling = value end,
     GetThreatEnabled = function() return true end,
     GetInterruptibleHighlightEnabled = function() return false end,
-    GetTRP3Enabled = function() return false end,
-    GetTRP3Setting = function() return true end,
+    GetTRP3Enabled = function() return trp3Enabled end,
+    SetTRP3Enabled = function(value) trp3Enabled = value end,
+    GetTRP3Setting = function(key) return trp3Settings[key] ~= false end,
+    SetTRP3Setting = function(key, value) trp3Settings[key] = value end,
     GetHideCritterCompanionNames = function() return false end,
     RefreshAll = function() refreshes = refreshes + 1 end,
     DisableFriendlyClassColors = function() end,
@@ -121,13 +124,12 @@ local ns = {
     RestoreManagedNameSettings = function() end,
     RestoreFriendlyClassColors = function() end,
     RestoreAll = function() end,
-    TRP3 = { IsAvailable = function() return false end, Refresh = function() end },
+    TRP3 = { IsAvailable = function() return false end, Refresh = function() trp3Refreshes = trp3Refreshes + 1 end },
 }
 for _, name in ipairs({
     "ResetPriorityColor", "SetEffectColor", "ResetEffectColor",
     "ResetAllColors", "SetInterruptibleHighlightEnabled",
     "SetThreatEnabled", "SetHideCritterCompanionNames",
-    "SetTRP3Enabled", "SetTRP3Setting",
 }) do ns[name] = function() end end
 
 local function loadSettings()
@@ -158,6 +160,31 @@ local function button(text)
         if item.kind == "Button" and item.text == text then return item end
     end
 end
+local function switchFor(labelText)
+    for _, item in ipairs(frames) do
+        if item.kind == "Button" and item.width == 44 then
+            for _, label in ipairs(frames) do
+                if label.parent == item.parent and label.text == labelText then return item end
+            end
+        end
+    end
+end
+-- Moving the title control retains its global value, callback, and master gate.
+local fullTitle = assert(switchFor("Show TRP3 long title beneath the name"))
+equal(fullTitle:GetChecked(), true, "existing full-title value retained")
+equal(fullTitle:IsEnabled(), false, "title disabled with TRP3 integration off")
+local trp3Master = assert(switchFor("Display TRP3 profile information"))
+trp3Master:Click()
+categories[3].panel.scripts.OnShow(categories[3].panel)
+equal(fullTitle:IsEnabled(), true, "title enabled when integration enabled")
+local beforeTitleRefresh = trp3Refreshes
+fullTitle:Click()
+equal(trp3Settings.showFullTitle, false, "moved control updates original global key")
+equal(trp3Refreshes, beforeTitleRefresh + 1, "title change refreshes TRP3 presentation")
+trp3Master:Click()
+categories[3].panel.scripts.OnShow(categories[3].panel)
+equal(fullTitle:IsEnabled(), false, "title gate refreshed after integration disabled")
+equal(fullTitle:GetChecked(), false, "disabled integration preserves title choice")
 assert(button("Create") and button("Copy") and button("Rename") and button("Delete"),
     "Profile action buttons")
 button("Create"):Click()

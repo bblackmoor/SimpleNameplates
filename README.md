@@ -87,17 +87,19 @@ Simple Nameplates styles accessible nameplates supplied by the game; it has no s
 
 **Hide critter and companion names** controls ordinary overhead names for noncombat critters and companions. Their prior WoW settings are restored when disabled.
 
-The Text and Layout section provides:
+The Appearance page keeps profiles at the top, then groups presentation by combat state:
 
-* The unit-name font.
-* A shared 8–36 point size for addon-controlled floating names and names above health bars.
-* A separate threat-percentage font.
-* Whether names appear above or inside visible health bars.
-* Whether available threat percentages are displayed.
+| Section | Controls and presentation |
+| --- | --- |
+| Shared Appearance | Unit-name font, shared 8–36 point name size, Priority Colors, sanctuary colors, and native-label information. Reset Appearance still resets text/layout settings across both combat sections. |
+| Out of Combat | Explains name-only presentation and automatic NPC service titles; contains the existing TRP3 long-title switch. Danger categories retain supported bars. |
+| In Combat | Health-bar name placement, threat-percentage font/display, and interruptible cast highlighting. Every Active category uses supported bars during combat. |
+
+These sections reorganize existing controls; they do not create independent combat profiles, duplicate fonts/colors, or change when settings apply. Bar controls also apply to danger-category bars out of combat. Name-only titles can remain visible in combat if no supported health bar is available. The TRP3 long-title switch retains its existing global saved value and is disabled when TRP3 display integration is off; the other TRP3 integration controls remain on the TRP3 page.
 
 Both fonts default to WoW's built-in **Arial Narrow** with a normal outline, and names default to 12 points. Other standard Blizzard fonts are available without an external font library. Inside-bar names use 80% of the selected size, rounded to the nearest point. Their health bars resize to leave two UI units above and below the text, then return to Blizzard's original height when names move above the bar or Simple Nameplates styling is disabled. Name-only plates are unaffected by the placement setting; Friendly, Useful, and Useless use the same above/inside layout when their supported bars appear during combat. Blizzard-controlled overhead names have no nameplate frame, so their size and font remain controlled by the game.
 
-Three locked color rows document Blizzard-controlled periwinkle-blue opposing-player/minion names, yellow interactive-NPC names, and green vendor-NPC names. The optional interruptible highlight is a pulsing, solid-color border with a dark outer edge around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to casts and channels, and preserves Blizzard's normal non-interruptible shield treatment.
+Three information rows describe native PC/minion, interactive-NPC, and vendor-NPC world-label colors. These describe native labels, not blanket unalterable entity categories; separate accessible NPC plates can be styled. The optional interruptible highlight is a pulsing, solid-color border with a dark outer edge around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to casts and channels, and preserves Blizzard's normal non-interruptible shield treatment.
 
 ## TRP3 Integration
 

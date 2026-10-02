@@ -121,42 +121,68 @@ local function AddNameSizeNote(content, layout)
     layout:Add(note, 24, 42, 6)
 end
 
-local function AddTextAndLayoutControls(content, layout, refreshers)
-    AddSectionResetButton(content, layout, "TEXT AND LAYOUT", "Reset Appearance", function()
+local function AddSharedAppearanceControls(content, layout, refreshers)
+    AddSectionResetButton(content, layout, "SHARED APPEARANCE", "Reset Appearance", function()
         ResetAppearance()
         SetThreatEnabled(true)
         for _, refresh in ipairs(refreshers) do refresh() end
         RefreshNameplates()
     end)
+    AddDescription(content, layout,
+        "Fonts, name size, and colors are shared between combat states. Reset Appearance resets text and layout in both sections below.", 40)
 
     CreateAppearanceDropdown(content, layout, refreshers, "Name font", ns.FONT_OPTIONS,
         function() return GetAppearanceSetting("nameFont") end,
         function(value) SetAppearanceSetting("nameFont", value) end)
     AddNameSizeControl(content, layout, refreshers)
     AddNameSizeNote(content, layout)
-    CreateAppearanceDropdown(content, layout, refreshers, "Threat-percentage font", ns.FONT_OPTIONS,
-        function() return GetAppearanceSetting("threatFont") end,
-        function(value) SetAppearanceSetting("threatFont", value) end)
+end
+
+local function AddOutOfCombatControls(context)
+    local content, layout = context.content, context.layout
+    layout:Space(8)
+    AddSection(content, layout, "OUT OF COMBAT")
+    AddDescription(content, layout,
+        "Friendly players and Useful/Otherwise NPCs use colored names with available titles. " ..
+        "Attacking, Hostile, and Neutral entities retain supported bars. NPC service titles appear " ..
+        "automatically beneath name-only labels at 80% of the name size; visible health bars hide full titles.", 74)
+    if ns.AddTRP3FullTitleControl then
+        ns.AddTRP3FullTitleControl(content, layout, context.toggleRefreshers)
+    end
+    AddDescription(content, layout,
+        "TRP3 title integration is global and applies to every appearance profile. Other TRP3 options remain on the TRP3 page. " ..
+        "Name-only titles can also appear in combat when no supported health bar is available.", 58)
+end
+
+local function AddInCombatTextControls(content, layout, refreshers)
+    AddSection(content, layout, "IN COMBAT")
+    AddDescription(content, layout,
+        "Every Active category uses supported health and cast bars while you are in combat. " ..
+        "The controls below apply whenever those bars are visible, including danger categories out of combat. " ..
+        "Fonts and colors come from Shared Appearance.", 62)
     CreateAppearanceDropdown(content, layout, refreshers, "Health-bar name placement", {
         { value = "ABOVE", label = "Above bar" }, { value = "INSIDE", label = "Inside bar" },
     }, function() return GetAppearanceSetting("namePlacement") end,
         function(value) SetAppearanceSetting("namePlacement", value) end)
+    CreateAppearanceDropdown(content, layout, refreshers, "Threat-percentage font", ns.FONT_OPTIONS,
+        function() return GetAppearanceSetting("threatFont") end,
+        function(value) SetAppearanceSetting("threatFont", value) end)
     AddThreatControl(content, layout, refreshers)
 end
 
 local function RegisterAppearancePopups()
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
-        text = "Blizzard draws non-attackable opposing-faction players and many player-controlled pets, guardians, totems, and minions as engine-level overhead names in periwinkle blue rather than as addon-accessible nameplate text.\n\nSimple Nameplates leaves those world names under Blizzard control. It styles name text only when Blizzard supplies an accessible nameplate.",
+        text = "Nonattackable opposite-faction PCs in sanctuary have been observed with native periwinkle overhead labels and no matching addon-accessible plate. That presentation remains outside the addon's control. The verified entity types and world contexts are listed in About.\n\nNative pet, guardian, totem, and minion world labels are also separate from nameplate text. Simple Nameplates styles those entities only where Blizzard supplies an accessible plate.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["SNP_BLIZZARD_INTERACTIVE_INFO"] = {
-        text = "Blizzard draws interactive NPCs, including city guards that offer directions, as engine-level yellow overhead names rather than as addon-accessible nameplate text. Simple Nameplates leaves world names under Blizzard control and styles only accessible nameplates supplied by Blizzard.",
+        text = "Blizzard's native interactive-NPC world labels are separate from addon-accessible nameplates. Their native color is controlled by the game.\n\nInteractive NPCs can also have ordinary nameplates that Simple Nameplates styles, including service titles when verified. Enable Friendly NPC Nameplates for ordinary friendly NPC plates. A native world-label color does not establish whether a separate plate is available.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["SNP_BLIZZARD_VENDOR_INFO"] = {
-        text = "Blizzard draws vendor NPCs as engine-level green overhead names rather than as addon-accessible nameplate text. Simple Nameplates leaves world names under Blizzard control and styles only accessible nameplates supplied by Blizzard.",
+        text = "Blizzard's native vendor-NPC world labels are separate from addon-accessible nameplates. Their native color is controlled by the game.\n\nVendor NPCs can also have ordinary nameplates that Simple Nameplates styles, including service titles when verified. Enable Friendly NPC Nameplates for ordinary friendly NPC plates. Vendors are not a blanket unalterable entity category.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
@@ -324,11 +350,11 @@ end
 local function AddLockedColorControls(context)
     context.layout:Space(6)
     AddSection(context.content, context.layout, "BLIZZARD-CONTROLLED OVERHEAD NAMES")
-    CreateLockedColorRow(context, "Opposite-faction PCs and player-controlled minions",
+    CreateLockedColorRow(context, "Native PC and player-controlled minion world labels",
         102 / 255, 102 / 255, 1, "SNP_BLIZZARD_OVERHEAD_INFO")
-    CreateLockedColorRow(context, "Interactive NPCs",
+    CreateLockedColorRow(context, "Native interactive-NPC world labels",
         1, 1, 0, "SNP_BLIZZARD_INTERACTIVE_INFO")
-    CreateLockedColorRow(context, "Vendor NPCs",
+    CreateLockedColorRow(context, "Native vendor-NPC world labels",
         0, 1, 0, "SNP_BLIZZARD_VENDOR_INFO")
 end
 
@@ -356,7 +382,7 @@ local function CreateAppearancePanel()
     local panel, content, layout = CreateScrollablePanel("Appearance")
     AddTitle(content, layout, "Simple Nameplates — Appearance")
     AddDescription(content, layout,
-        "Profiles contain every look-and-feel setting. Profiles are shared account-wide; each character remembers its selection.")
+        "Profiles share fonts and colors across combat states. Below, presentation is grouped by Out of Combat and In Combat. Each character remembers its profile.", 42)
     RegisterAppearancePopups()
 
     local context = {
@@ -368,10 +394,13 @@ local function CreateAppearancePanel()
     AddProfileControls(content, layout, context.toggleRefreshers,
         function() RefreshAppearanceControls(context) end)
     layout:Space(8)
-    AddTextAndLayoutControls(content, layout, context.toggleRefreshers)
+    AddSharedAppearanceControls(content, layout, context.toggleRefreshers)
     layout:Space(8)
     AddPriorityColorControls(context)
     AddLockedColorControls(context)
+    AddOutOfCombatControls(context)
+    layout:Space(8)
+    AddInCombatTextControls(content, layout, context.toggleRefreshers)
     AddCastBarControls(context)
 
     panel:SetScript("OnShow", function() RefreshAppearanceControls(context) end)

@@ -4,6 +4,32 @@ local U = ns.SettingsUI
 local CreateScrollablePanel, AddTitle, AddDescription, CreateSwitch =
     U.CreateScrollablePanel, U.AddTitle, U.AddDescription, U.CreateSwitch
 
+-- The existing global long-title option lives beside name-only presentation.
+-- Resolve this helper at panel creation time, after all settings modules load.
+local function AddTRP3FullTitleControl(content, layout, refreshers)
+    local row = CreateFrame("Frame", nil, content)
+    row:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(row, 24, 34, 4)
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT")
+    label:SetText("Show TRP3 long title beneath the name")
+    local option = CreateSwitch(row, function(checked)
+        ns.SetTRP3Setting("showFullTitle", checked)
+        if ns.TRP3 then ns.TRP3.Refresh() end
+    end)
+    option:SetPoint("LEFT", label, "RIGHT", 12, 0)
+    local function Refresh()
+        option:SetChecked(ns.GetTRP3Setting("showFullTitle"))
+        local enabled = ns.GetTRP3Enabled()
+        option:SetEnabled(enabled)
+        local shade = enabled and 1 or 0.5
+        label:SetTextColor(shade, shade, shade, 1)
+    end
+    refreshers[#refreshers + 1] = Refresh
+    Refresh()
+end
+ns.AddTRP3FullTitleControl = AddTRP3FullTitleControl
+
 local function CreateTRP3Panel()
     local panel, content, layout = CreateScrollablePanel("TRP3")
     AddTitle(content, layout, "Simple Nameplates — TRP3")
@@ -48,13 +74,12 @@ local function CreateTRP3Panel()
     CreateOption("Use TRP3 roleplaying full name", "useRoleplayingName")
     CreateOption("Show short title before the name", "showShortTitle")
     CreateOption("Show [OOC] instead of the short title", "showOOC")
-    CreateOption("Show long title beneath the name", "showFullTitle")
 
     local note = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     note:SetPoint("RIGHT", content, "RIGHT", -20, 0)
     note:SetJustifyH("LEFT")
-    note:SetText("Long titles appear beneath names at 80% of the name size and are hidden for units with visible health bars. If no cached TRP3 profile or selected field is available, the normal WoW name is used.")
-    layout:Add(note, 24, 40)
+    note:SetText("The long-title switch is under Appearance → Out of Combat. It remains a global TRP3 setting. Long titles are hidden for units with visible health bars. If no cached profile or selected field is available, the normal WoW name is used.")
+    layout:Add(note, 24, 58)
 
     local function Refresh()
         enabled:SetChecked(ns.GetTRP3Enabled())

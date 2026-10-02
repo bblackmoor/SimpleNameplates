@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.121
+
+* Reorganizes Appearance below the existing profile controls into Shared Appearance, Out of Combat, and In Combat sections. Fonts, sizes, Priority Colors, and sanctuary colors remain shared.
+* Groups health-bar name placement, threat font/display, and cast highlighting under In Combat, explaining that they also apply to danger-category bars out of combat.
+* Moves the existing global TRP3 long-title switch to Appearance / Out of Combat, preserves its saved value and integration enablement, and keeps other TRP3 options on their existing page. NPC service titles remain automatic.
+* Preserves runtime presentation, profile/reset behavior, and all existing saved-setting keys; no separate combat configuration or data migration.
+
 ## 1.0.120
 
 * Describes presentation limits by entity type and world context, removing individual character names from the README, About notes, and developer review.
