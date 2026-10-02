@@ -15,7 +15,7 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | 5 | Useful | Light blue | Interactive NPC: name out of combat; supported bar in combat |
 | 6 | Useless | Gray | Remaining entities: name out of combat; supported bar in combat |
 | — | Interruptible cast | Cyan | Optional pulsing cast-bar border |
-| — | Native overhead names without an accessible plate | Unchanged | Named observations and contexts are recorded below |
+| — | Native overhead names without an accessible plate | Unchanged | Entity types and contexts are recorded below |
 
 ## How It Works
 
@@ -39,17 +39,15 @@ Only values changed through the setup dialog are backed up, separately for each 
 
 ## Known Presentation Limits
 
-Keep this register updated with the **actual character name and context** whenever in-game verification shows a presentation that Simple Nameplates cannot alter. The same cases appear in the addon's About notes. Record a resolution when one is demonstrated; do not silently discard an unresolved case or present it as a settings fix.
+Keep this register updated by **entity type and world context** whenever in-game verification shows a presentation that Simple Nameplates cannot alter. Individual character names are not relevant. The same limits appear in the addon's About notes. Record a resolution when one is demonstrated; do not silently discard an unresolved limitation or present it as a settings fix.
 
-| Name | Context observed | Presentation the addon cannot currently alter | Evidence / status |
+| Entity type | World context observed | Presentation the addon cannot currently alter | Evidence / status |
 | --- | --- | --- | --- |
-| Tawfee | Silvermoon City, The Bazaar; sanctuary; Alliance viewer, Horde PC; neither can attack the other | Native purple overhead name and guild/title presentation: color, font, size, text, and position | 2026-10-02: direct lookup missing; 23 accessible plates scanned, zero matches. Unresolved. |
-| Talonhorn | Silvermoon City, The Bazaar; sanctuary; Alliance viewer, Horde PC; neither can attack the other | Native purple overhead name and guild/title presentation | 2026-10-02: direct lookup missing; five accessible plates scanned, zero matches. Unresolved. |
-| Éibhear | Silvermoon City, The Bazaar; sanctuary; Alliance viewer, Horde PC; neither can attack the other | Native purple overhead name and guild/title presentation | 2026-10-02: direct lookup missing; 11 accessible plates scanned, zero matches. Unresolved. |
+| Opposite-faction PCs, nonattackable in either direction | Sanctuary; verified in Silvermoon City, The Bazaar, with an Alliance viewer and Horde PCs | Native purple overhead name and guild/title presentation: color, font, size, text, and position | 2026-10-02: repeated direct lookups missing; nearby accessible-plate scans found zero matching frames. Unresolved. |
 
 Friendly-player, enemy, and always-show nameplate settings were enabled during the investigation. Only Show Names was also tested off without producing matching frames. These limits remain unresolved after repeated investigation; no supported workaround was demonstrated in the Blizzard/Plater review. This records the current result, not proof that no solution could ever exist. Other entities need their own evidence before being added. See [the source review](docs/design/nameplate-settings-review.md).
 
-**Resolved case:** Orin Straylight, Silvermoon City sanctuary: a widget-only plate and an ordinary NPC plate produced duplicate labels. v1.0.117 suppresses the widget-only actor text while preserving widgets; the ordinary name and `<Voidforge Steward>` title remain styled. Kirana and Eldara Dawnrunner acquired accessible ordinary plates when Friendly NPC Nameplates was enabled. These NPCs are not listed as currently unalterable.
+**Resolved contexts:** Friendly service NPCs in Silvermoon sanctuary: a widget-only plate and an ordinary NPC plate could produce duplicate labels. v1.0.117 suppresses the widget-only actor text while preserving widgets; ordinary NPC names and service titles remain styled. Ordinary friendly NPC plates become available when Friendly NPC Nameplates is enabled. These contexts are not listed as currently unalterable.
 
 The [evaluation decision tree in the developer notes](docs/design/evaluation-overview.md) documents the actual implemented order for entity classification, context colors, and presentation access.
 
@@ -85,7 +83,7 @@ For Active categories, when the player is out of combat, only Attacking, Hostile
 
 `PresentationRules.lua` selects narrow rules for opposite-faction players in sanctuary, eligible PvP, and non-PvP contexts, with a shared fallback for other entities. Those rules do not change classification or infer PvP eligibility from the zone name. A sanctuary opponent normally uses a colored name out of combat and a supported bar during player combat; an eligible opponent uses a bar in both cases. Actual attackability and higher combat priorities still apply.
 
-Simple Nameplates styles accessible nameplates supplied by the game; it has no supported direct styling path for separate native overhead world names. The named cases above document where this prevents the requested presentation. Plate-visibility changes require the startup review's Apply choice. The former experimental overhead replacement option has been removed; its saved toggle is discarded without conversion. Previously captured original Blizzard values are restored, with failed or combat-restricted restoration retried and originals retained until success. Any WoW CVar still changed by the addon is restored when its option is disabled or styling is disabled.
+Simple Nameplates styles accessible nameplates supplied by the game; it has no supported direct styling path for separate native overhead world names. The entity types and world contexts above document where this prevents the requested presentation. Plate-visibility changes require the startup review's Apply choice. The former experimental overhead replacement option has been removed; its saved toggle is discarded without conversion. Previously captured original Blizzard values are restored, with failed or combat-restricted restoration retried and originals retained until success. Any WoW CVar still changed by the addon is restored when its option is disabled or styling is disabled.
 
 **Hide critter and companion names** controls ordinary overhead names for noncombat critters and companions. Their prior WoW settings are restored when disabled.
 

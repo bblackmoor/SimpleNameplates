@@ -1,9 +1,13 @@
 # Changelog
 
+## 1.0.120
+
+* Describes presentation limits by entity type and world context, removing individual character names from the README, About notes, and developer review.
+
 ## 1.0.119
 
-* Records unresolved presentation limits by actual character name and context in the README and in-game About notes: Tawfee, Talonhorn, and Éibhear, opposite-faction PCs in Silvermoon sanctuary without accessible matching plates.
-* Distinguishes those unresolved cases from Orin's resolved duplicate widget-plate text and ordinary NPC visibility fixed by enabling friendly NPC plates.
+* Records unresolved presentation limits in the README and in-game About notes: nonattackable opposite-faction PCs in Silvermoon sanctuary without accessible matching plates.
+* Distinguishes those unresolved contexts from resolved duplicate widget-plate text on NPCs and ordinary NPC visibility fixed by enabling friendly NPC plates.
 * Documents the actual implemented evaluation order and decision trees in the developer notes. No runtime classification change.
 
 ## 1.0.118
@@ -47,7 +51,7 @@
 
 ## 1.0.112
 
-* Accepts NPC subtitles followed by a plain level line when its text matches WoW's localized level template and the unit's readable level, including Orin Straylight's observed tooltip layout.
+* Accepts NPC subtitles followed by a plain level line when its text matches WoW's localized level template and the unit's readable level, including the observed service-NPC tooltip layout.
 * Fills missing nameplate subtitles from target, mouseover, or soft-interaction tooltips only when readable NPC GUIDs match; remembers up to 256 NPC subtitles for the session and refreshes on mouseover changes.
 * Uses the resolved subtitle beneath name-only NPC labels and carries verified interaction evidence into useful-NPC classification, allowing the sanctuary useful color to apply to both name and title. Subtitles alone do not establish usefulness.
 * Diagnostics report the resolved title source and unavailable identity. Added regressions for sparse tooltips, localization, target changes, restricted identities, token reuse, and sanctuary presentation.

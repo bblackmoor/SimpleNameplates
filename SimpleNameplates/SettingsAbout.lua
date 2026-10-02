@@ -5,12 +5,11 @@ local CreateScrollablePanel, AddTitle, AddDescription =
     U.CreateScrollablePanel, U.AddTitle, U.AddDescription
 local VERSION, SOURCE_URL = ns.VERSION, ns.SOURCE_URL
 
--- Keep observed names and contexts here, not a blanket claim about every
--- opposite-faction player or all NPCs. Mirror the register in the README.
+-- Record entity types and observed world contexts, not individual names.
+-- Mirror the register in the README without generalizing to untested contexts.
 local PRESENTATION_LIMITS = {
-    { "Tawfee", "Silvermoon City / The Bazaar; sanctuary; opposite-faction PC" },
-    { "Talonhorn", "Silvermoon City / The Bazaar; sanctuary; opposite-faction PC" },
-    { "Éibhear", "Silvermoon City / The Bazaar; sanctuary; opposite-faction PC" },
+    { "Opposite-faction PCs, nonattackable in either direction",
+      "Sanctuary; observed in Silvermoon City / The Bazaar with an Alliance viewer and Horde PCs" },
 }
 
 local function CreateAboutPanel()
@@ -73,16 +72,16 @@ local function CreateAboutPanel()
     layout:Space(12)
     U.AddSection(content, layout, "KNOWN PRESENTATION LIMITS")
     AddDescription(content, layout,
-        "These observed characters have native overhead names but no matching addon-accessible " ..
+        "These observed entity/context combinations have native overhead names but no matching addon-accessible " ..
         "plate. Simple Nameplates currently cannot change their name color, font, size, titles, or layout. " ..
         "Visibility settings were enabled; no supported workaround was found.", 76)
     for _, case in ipairs(PRESENTATION_LIMITS) do
-        AddDescription(content, layout, case[1] .. " — " .. case[2], 42)
+        AddDescription(content, layout, case[1] .. " — " .. case[2], 58)
     end
     AddDescription(content, layout,
         "Recorded 2026-10-02. This is an observed limitation, not proof that every opposite-faction " ..
-        "PC is inaccessible in every context. Orin Straylight's duplicate widget-plate label was " ..
-        "resolved in v1.0.117; his ordinary NPC name and service title can be styled.", 70)
+        "PC is inaccessible in every context. Duplicate actor text on widget-only NPC plates was " ..
+        "resolved in v1.0.117; ordinary NPC names and service titles can be styled.", 70)
     layout:Finish()
     return panel
 end
