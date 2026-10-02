@@ -95,6 +95,8 @@ end
 
 local function ValidateProfileAppearance(profile, saved)
     local savedAppearance = type(saved.appearance) == "table" and saved.appearance or {}
+    profile.appearance.matchSanctuaryFont = SavedBoolean(savedAppearance.matchSanctuaryFont,
+        profile.appearance.matchSanctuaryFont)
     profile.appearance.nameFont = FONT_BY_VALUE[savedAppearance.nameFont]
         and savedAppearance.nameFont or profile.appearance.nameFont
     if IsFiniteNumber(savedAppearance.nameSize)
@@ -376,7 +378,9 @@ end
 
 local function SetAppearanceSetting(key, value)
     local appearance = ActiveProfile().appearance
-    if (key == "nameFont" or key == "threatFont") and FONT_BY_VALUE[value] then
+    if key == "matchSanctuaryFont" and type(value) == "boolean" then
+        appearance[key] = value
+    elseif (key == "nameFont" or key == "threatFont") and FONT_BY_VALUE[value] then
         appearance[key] = value
     elseif key == "nameSize" and type(value) == "number" then
         appearance[key] = math.max(MIN_NAME_SIZE,

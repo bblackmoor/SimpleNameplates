@@ -36,6 +36,8 @@ A valid version-2 saved database separates behavior from look and feel. The stru
 
 Useful and Useless each have one `priorityColors` entry per profile, used in all world and combat contexts. The Priority and Sanctuary sections edit the same entries. `sanctuaryFriendly` remains a separate player color. The former `sanctuaryUseful` and `sanctuaryUseless` fields are unknown settings and are discarded during validation; valid `useful` and `useless` values are retained without conversion.
 
+`appearance.matchSanctuaryFont` is a per-profile boolean, enabled by default. It selects Blizzard's localized world-name font face in sanctuaries without replacing the saved `nameFont`. Profile copies retain it and Reset Appearance restores the default; invalid or missing values use the default.
+
 ## Ownership inventory
 
 | Setting | Owner | Reason |

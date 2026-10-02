@@ -75,7 +75,10 @@ local ns = {
         return 1, 0, 0
     end,
     EffectColor = function() return 0, 1, 1 end,
-    FontPath = function() return "Fonts\\ARIALN.TTF" end,
+    FontPath = function(value)
+        if value == "FRIZQT" then return "Fonts\\FRIZQT__.TTF" end
+        return "Fonts\\ARIALN.TTF"
+    end,
     ApplyCritterCompanionNameVisibility = function() count("critters") end,
     DisableFriendlyClassColors = function() count("classColors") end,
     ApplyPendingManagedNameSettings = function() count("pending") end,
@@ -581,6 +584,44 @@ for _, case in ipairs({
     equal(plateFrame.healthBar.barG, case.green, "sanctuary health repair")
 end
 
+-- Match the localized world-name face without changing size or outline.
+appearance.matchSanctuaryFont = true
+SystemFont_World = {GetFont = function() return "Fonts\\WorldLocalized.ttf", 64, "" end}
+unit = {reaction = 5, interactable = true}
+ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
+ns.RefreshAll()
+equal(plateFrame.name.font, "Fonts\\WorldLocalized.ttf", "sanctuary uses localized world font")
+equal(plateFrame.name.size, 12, "sanctuary preserves name size")
+equal(plateFrame.name.flags, "OUTLINE", "sanctuary preserves outline")
+equal(plateFrame.SNPFullTitleText.font, "Fonts\\WorldLocalized.ttf", "sanctuary TRP3 title font")
+plateFrame.name:SetFont("Fonts\\Drift.ttf", 12, "OUTLINE")
+events.scripts.OnUpdate(events, 0.5)
+equal(plateFrame.name.font, "Fonts\\WorldLocalized.ttf", "cached repair retains sanctuary font")
+appearance.matchSanctuaryFont = false
+events.scripts.OnUpdate(events, 0.5)
+equal(plateFrame.name.font, "Fonts\\ARIALN.TTF", "switch off invalidates font cache")
+equal(plateFrame.SNPFullTitleText.font, "Fonts\\ARIALN.TTF", "switch off refreshes title font")
+appearance.matchSanctuaryFont = true
+appearance.namePlacement = "INSIDE"
+ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
+ns.RefreshAll()
+equal(plateFrame.SNPInsideName.font, "Fonts\\WorldLocalized.ttf", "inside-bar sanctuary font")
+C_PvP = {GetZonePVPInfo = function() return "friendly", false end}
+ns.WorldContext.Refresh("ZONE_CHANGED_NEW_AREA")
+ns.RefreshAll()
+equal(plateFrame.name.font, "Fonts\\ARIALN.TTF", "leaving sanctuary restores selected font")
+equal(plateFrame.SNPInsideName.font, "Fonts\\ARIALN.TTF", "leaving sanctuary restores inside font")
+appearance.namePlacement = "ABOVE"
+C_PvP = {GetZonePVPInfo = function() return "sanctuary", false end}
+ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
+ns.RefreshAll()
+equal(plateFrame.name.font, "Fonts\\WorldLocalized.ttf", "reentering sanctuary restores matching font")
+SystemFont_World = {GetFont = function() error("unavailable") end}
+ns.RefreshAll()
+equal(plateFrame.name.font, "Fonts\\FRIZQT__.TTF", "unavailable world font falls back to Friz Quadrata")
+SystemFont_World = nil
+appearance.matchSanctuaryFont = false
+
 -- NPC service titles appear without TRP3 and follow name-only/bar visibility.
 Enum = {TooltipDataLineType = {None = 0, UnitName = 2, UnitLevel = 47}}
 C_TooltipInfo = {GetUnit = function()
@@ -595,6 +636,12 @@ equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "NPC service titl
 equal(plateFrame.SNPFullTitleText.shown, true, "NPC service title shown below floating name")
 equal(plateFrame.SNPFullTitleText.size, 10, "NPC title uses rounded eighty-percent size")
 equal(plateFrame.SNPFullTitleText.g, 211 / 255, "NPC title uses sanctuary useful color")
+appearance.matchSanctuaryFont = true
+SystemFont_World = {GetFont = function() return "Fonts\\WorldLocalized.ttf" end}
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.font, "Fonts\\WorldLocalized.ttf", "NPC service title uses sanctuary font")
+appearance.matchSanctuaryFont = false
+SystemFont_World = nil
 ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.shown, false, "NPC title hidden with health bar")

@@ -121,6 +121,27 @@ local function AddNameSizeNote(content, layout)
     layout:Add(note, 24, 42, 6)
 end
 
+local function AddSanctuaryFontControl(content, layout, refreshers)
+    local row = CreateFrame("Frame", nil, content)
+    row:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    layout:Add(row, 24, 30, 4)
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT")
+    label:SetText("Match Blizzard font in sanctuaries")
+    local toggle = CreateSwitch(row, function(checked)
+        SetAppearanceSetting("matchSanctuaryFont", checked)
+        RefreshNameplates()
+    end)
+    toggle:SetPoint("LEFT", label, "RIGHT", 12, 0)
+    local function Refresh() toggle:SetChecked(GetAppearanceSetting("matchSanctuaryFont")) end
+    refreshers[#refreshers + 1] = Refresh
+    Refresh()
+    AddDescription(content, layout,
+        "Uses Blizzard's native world-name font for accessible names and titles in sanctuaries. " ..
+        "Your selected Name font applies elsewhere, or everywhere when this switch is off. " ..
+        "Size, outline, colors, and placement keep their current settings.", 56)
+end
+
 local function AddSharedAppearanceControls(content, layout, refreshers)
     AddSectionResetButton(content, layout, "SHARED APPEARANCE", "Reset Appearance", function()
         ResetAppearance()
@@ -134,6 +155,7 @@ local function AddSharedAppearanceControls(content, layout, refreshers)
     CreateAppearanceDropdown(content, layout, refreshers, "Name font", ns.FONT_OPTIONS,
         function() return GetAppearanceSetting("nameFont") end,
         function(value) SetAppearanceSetting("nameFont", value) end)
+    AddSanctuaryFontControl(content, layout, refreshers)
     AddNameSizeControl(content, layout, refreshers)
     AddNameSizeNote(content, layout)
 end

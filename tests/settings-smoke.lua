@@ -89,7 +89,7 @@ local trp3Enabled, trp3Settings, trp3Refreshes = false, { showFullTitle = true }
 local attacking = { 1, 0, 0 }
 local npcColors = { useful = {0.8, 0.8, 0.8}, useless = {0.6, 0.6, 0.6} }
 local modes = { friendly = "active" }
-local profile = { nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE" }
+local profile = { matchSanctuaryFont = true, nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE" }
 local ns = {
     VERSION = "1.0.test", SOURCE_URL = "https://github.com/bblackmoor/SimpleNameplates",
     FONT_OPTIONS = { { value = "ARIALN", label = "Arial Narrow" } },
@@ -177,6 +177,16 @@ local function switchFor(labelText)
         end
     end
 end
+local sanctuaryFont = assert(switchFor("Match Blizzard font in sanctuaries"))
+equal(sanctuaryFont:GetChecked(), true, "sanctuary matching switch reflects profile")
+local beforeFontRefresh = refreshes
+sanctuaryFont:Click()
+equal(profile.matchSanctuaryFont, false, "switch changes profile font choice")
+equal(refreshes, beforeFontRefresh + 1, "font switch refreshes nameplates")
+profile.matchSanctuaryFont = true
+categories[3].panel.scripts.OnShow(categories[3].panel)
+equal(sanctuaryFont:GetChecked(), true, "profile refresh synchronizes font switch")
+
 -- Moving the title control retains its global value, callback, and master gate.
 local fullTitle = assert(switchFor("Show TRP3 long title beneath the name"))
 equal(fullTitle:GetChecked(), true, "existing full-title value retained")

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.123
+
+* Adds the profile setting "Match Blizzard font in sanctuaries," enabled by default and included in Reset Appearance.
+* Uses Blizzard's localized SystemFont_World font face for accessible names and NPC/TRP3 titles in sanctuaries, including names inside health bars. Preserves selected fonts elsewhere, size, outline, colors, placement, and the separate threat font.
+* Invalidates cached name styling when the effective font changes; adds regression checks for defaults, profile values, the switch, sanctuary transitions, titles, and bar names.
+
 ## 1.0.122
 
 * Uses one Useful color and one Useless color per appearance profile, shared inside and outside sanctuaries and across combat states. Both settings copies update immediately on picker changes, cancellation, and reset.

@@ -80,6 +80,8 @@ flowchart TD
 | Sanctuary, opposite-faction PC | Existing category color if an accessible plate exists; native overhead label otherwise |
 | Other or unknown context/identity | Existing category color; no inferred sanctuary override |
 
+After the presentation decision, `NameplateText` chooses the effective name/title font. In sanctuary with the profile's `matchSanctuaryFont` enabled, it reads the localized `SystemFont_World` face (Friz Quadrata fallback); otherwise it uses the selected profile Name font. The same face reaches floating names, inside-bar names, and NPC/TRP3 titles. Only the face changes. Cached style repair checks that the effective face still matches before reusing a cached decision.
+
 For ordinary Active plates, when the viewer is in combat, show supported health and cast bars for every category. Out of combat, show them for danger categories; Friendly/Useful/Useless use a name and available title. Visible health bars hide full titles and make names white; unsupported bars cannot be invented. Category color applies to the bar or floating name as appropriate. NPC service subtitles and optional TRP3 titles use their own verified data sources.
 
 Startup setting compatibility is checked before enabling styling; it is a prerequisite, not another entity category. The [known presentation limits in the README](../../README.md#known-presentation-limits) and in-game About notes record entity types and world contexts where classification succeeds but no matching accessible frame is supplied. Individual character names are irrelevant to these limits. Missing frames must never be reported as a solved settings problem.

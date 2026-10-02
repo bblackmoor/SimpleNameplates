@@ -10,6 +10,22 @@ local GetAppearanceSetting, GetTRP3Setting = ns.GetAppearanceSetting, ns.GetTRP3
 local GetThreatEnabled = ns.GetThreatEnabled
 local GetHealthBar = ns.NameplateFrames.GetHealthBar
 
+local function NameFontPath(context)
+    if context.sanctuary == true and GetAppearanceSetting("matchSanctuaryFont") == true then
+        -- The engine's world-label font family is localized by Blizzard.
+        -- Read only its face: preserve the profile's size and our outline/layout.
+        if SystemFont_World and type(SystemFont_World.GetFont) == "function" then
+            local ok, path = pcall(SystemFont_World.GetFont, SystemFont_World)
+            if ok then
+                path = AccessibleValue(path)
+                if type(path) == "string" and path ~= "" then return path end
+            end
+        end
+        return FontPath("FRIZQT")
+    end
+    return FontPath(GetAppearanceSetting("nameFont"))
+end
+
 local function UpdateNameText(frame)
     local name, unit = frame and frame.name, frame and frame.unit
     if not name or not unit then return nil end
@@ -69,7 +85,7 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
 
     fullTitle = EnsureFullTitleText(frame)
     local titleSize = math.max(6, math.floor(baseNameSize * 0.8 + 0.5))
-    fullTitle:SetFont(FontPath(GetAppearanceSetting("nameFont")), titleSize, "OUTLINE")
+    fullTitle:SetFont(NameFontPath(context), titleSize, "OUTLINE")
     fullTitle:SetText(text)
     fullTitle:SetShadowColor(0, 0, 0, 1)
     fullTitle:SetShadowOffset(1, -1)
@@ -227,7 +243,7 @@ local function StyleName(frame, state, context, decision)
     local rightInset = GetThreatEnabled() and -42 or -3
     PositionName(frame, name, bar, nameOnly, inside, rightInset)
 
-    local fontPath = FontPath(GetAppearanceSetting("nameFont"))
+    local fontPath = NameFontPath(context)
     name:SetFont(fontPath, size, "OUTLINE")
     name:SetShadowColor(0, 0, 0, 1)
     name:SetShadowOffset(1, -1)
@@ -265,6 +281,7 @@ local function CacheIsCurrent(frame, expected, context)
         if type(widgetsOnly) == "boolean" and widgetsOnly ~= (decision.suppressText == true) then return false end
     end
     if expected.suppressed then return true end
+    if expected.font ~= NameFontPath(context) then return false end
     local bar = GetHealthBar(frame, context)
     if expected.bar ~= bar then return false end
     local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(bar, "IsShown", context))

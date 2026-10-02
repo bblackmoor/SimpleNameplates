@@ -52,6 +52,17 @@ equal(ns.GetCategoryMode("friendly"), "active", "category default")
 equal(ns.GetTRP3Enabled(), false, "TRP3 default")
 equal(ns.GetThreatEnabled(), true, "threat default")
 equal(ns.GetInterruptibleHighlightEnabled(), false, "cast default")
+equal(ns.GetAppearanceSetting("matchSanctuaryFont"), true, "sanctuary matching default")
+ns.SetAppearanceSetting("matchSanctuaryFont", false)
+equal(ns.CopyActiveProfile("Font copy"), true, "copy sanctuary font choice")
+equal(ns.GetAppearanceSetting("matchSanctuaryFont"), false, "copied sanctuary font choice")
+ns.ResetAppearance()
+equal(ns.GetAppearanceSetting("matchSanctuaryFont"), true, "reset sanctuary matching default")
+ns.DeleteActiveProfile()
+equal(ns.GetAppearanceSetting("matchSanctuaryFont"), false, "profile choice independent")
+ns.ResetAppearance()
+ns.SetAppearanceSetting("matchSanctuaryFont", "false")
+equal(ns.GetAppearanceSetting("matchSanctuaryFont"), true, "invalid setter ignored")
 equal(ns.GetAppearanceSetting("nameSize"), 12, "name size default")
 equal(ns.GetAppearanceSetting("namePlacement"), "ABOVE", "placement default")
 equal(ns.PriorityColorForState("attacking"), 1, "default red component")
@@ -338,7 +349,7 @@ SimpleNameplatesDB = {
         useful = {r = 0.7, g = 0.8, b = 0.9}, friendlyPC = {r = 1, g = 0, b = 1},
         unfriendlyPC = {r = 1, g = 0, b = 1}, unfriendlyNPC = {r = 1, g = 0, b = 1},
         other = {r = 1, g = 0, b = 1},
-    }, appearance = {nameSize = 19}}},
+    }, appearance = {nameSize = 19, matchSanctuaryFont = false}}},
 }
 ns = loadCore()
 db = ns.EnsureDB()
@@ -346,6 +357,7 @@ equal(ns.GetCategoryMode("neutral"), "inactive", "valid new mode retained")
 equal(ns.PriorityColorForState("neutral"), 0.4, "valid new color retained")
 equal(ns.PriorityColorForState("useful"), 0.7, "useful color retained")
 equal(ns.GetAppearanceSetting("nameSize"), 19, "unrelated appearance retained")
+equal(ns.GetAppearanceSetting("matchSanctuaryFont"), false, "saved false matching choice retained")
 for _, key in ipairs({"friendlyPC", "unfriendlyPC", "unfriendlyNPC", "other", "sanctuaryUseful", "sanctuaryUseless"}) do
     equal(db.global.categoryModes[key], nil, "obsolete mode discarded: " .. key)
     equal(db.profiles.Default.priorityColors[key], nil, "obsolete color discarded: " .. key)
