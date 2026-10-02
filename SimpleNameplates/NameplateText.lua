@@ -17,7 +17,7 @@ local function UpdateNameText(frame)
     -- value directly; do not replace it with an empty string.
     local unitName = UnitName(unit)
     local displayName = unitName
-    local fullTitle = ns.NPCTitles and ns.NPCTitles.GetTitle(unit, frame.SNPEntityFacts)
+    local fullTitle = frame.SNPEntityFacts and frame.SNPEntityFacts.npcTitle
     local info = ns.TRP3 and ns.TRP3.GetDisplayInfo(unit)
 
     if info then

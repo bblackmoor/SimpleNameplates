@@ -93,7 +93,7 @@ equal(hooks[1].name, "CompactUnitFrame_UpdateHealthColor", "health hook")
 equal(hooks[2].name, "CompactUnitFrame_UpdateName", "name hook")
 local countEvents = 0
 for _, registered in pairs(events.registered) do countEvents = countEvents + registered end
-equal(countEvents, 22, "one registration for each event")
+equal(countEvents, 23, "one registration for each event")
 assert(events.scripts.OnEvent and events.scripts.OnUpdate, "event/update scripts installed")
 events.scripts.OnEvent(events, "ADDON_LOADED", "AnotherAddon")
 equal(calls.db, nil, "other addon ignored")
@@ -569,6 +569,36 @@ C_TooltipInfo.GetUnit = function() return {lines = {{type = 2}, {type = 47}}} en
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.shown, false, "missing subtitle clears previous title")
 equal(plateFrame.SNPFullTitleText.text, "", "old NPC service text cleared")
+C_TooltipInfo = nil
+
+-- Match the screenshot: sparse plate tooltip, fuller target tooltip, false
+-- UnitIsUnit, and different interaction evidence on the two unit tokens.
+UNIT_LEVEL_TEMPLATE = "Level %d"
+UnitLevel = function() return 90 end
+local currentGUID = "Creature-Orin"
+UnitGUID = function(token)
+    if token == "nameplate1" then return currentGUID end
+    if token == "target" then return "Creature-Orin" end
+end
+UnitIsInteractable = function(token) return token == "target" end
+C_TooltipInfo = {GetUnit = function(token)
+    local lines = {{type = 2, leftText = "Orin Straylight"}}
+    if token == "target" then lines[#lines + 1] = {type = 0, leftText = "Voidforge Steward"} end
+    lines[#lines + 1] = {type = 0, leftText = "Level 90"}
+    return {lines = lines}
+end}
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "sparse plate resolves target subtitle")
+equal(plateFrame.SNPFullTitleText.shown, true, "resolved service title visible")
+equal(plateFrame.name.g, 211 / 255, "verified useful NPC name light grey")
+equal(plateFrame.SNPFullTitleText.g, 211 / 255, "verified useful NPC title light grey")
+UnitGUID = function(token) if token == "nameplate1" then return currentGUID end end
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "title survives target change")
+currentGUID = "Creature-Other"
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.shown, false, "token reuse clears service title")
+equal(plateFrame.name.g, 153 / 255, "token reuse clears useful evidence")
 C_TooltipInfo = nil
 
 local visited, largest = {}, 0

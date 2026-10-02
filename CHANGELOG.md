@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.112
+
+* Accepts NPC subtitles followed by a plain level line when its text matches WoW's localized level template and the unit's readable level, including Orin Straylight's observed tooltip layout.
+* Fills missing nameplate subtitles from target, mouseover, or soft-interaction tooltips only when readable NPC GUIDs match; remembers up to 256 NPC subtitles for the session and refreshes on mouseover changes.
+* Uses the resolved subtitle beneath name-only NPC labels and carries verified interaction evidence into useful-NPC classification, allowing the sanctuary useful color to apply to both name and title. Subtitles alone do not establish usefulness.
+* Diagnostics report the resolved title source and unavailable identity. Added regressions for sparse tooltips, localization, target changes, restricted identities, token reuse, and sanctuary presentation.
+
 ## 1.0.111
 
 * NPC title diagnostics now distinguish missing APIs/data, failed reads, restricted fields, rejected line layouts, and unsupported or empty subtitles.

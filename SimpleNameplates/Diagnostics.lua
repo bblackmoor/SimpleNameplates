@@ -206,6 +206,10 @@ local function TooltipField(value, status)
 end
 
 local function DebugNPCTooltip(unit, facts)
+    if facts.isNPC == true then
+        print("  Resolved NPC title: " .. (facts.npcTitle or "(none)")
+            .. "; source: " .. (facts.npcTitleSource or "unavailable"))
+    end
     local info = ns.NPCTitles.Inspect(unit, facts)
     print("  NPC tooltip [" .. unit .. "]: title " .. (info.title or "(none)")
         .. "; result: " .. info.reason)

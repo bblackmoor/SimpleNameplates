@@ -79,4 +79,47 @@ equal(ns.NPCTitles.Inspect("nameplate1", {isNPC = true}).reason, "tooltip API ca
 C_TooltipInfo = nil
 equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), nil, "missing API")
 equal(ns.NPCTitles.Inspect("nameplate1", {isNPC = true}).reason, "tooltip API unavailable", "missing API distinguished")
+
+-- The live target layout has a plain localized level line, not UnitLevel type.
+UNIT_LEVEL_TEMPLATE = "Level %d"
+UnitLevel = function() return 90 end
+data = tooltip("Voidforge Steward")
+data.lines[3].type = 0
+equal(ns.NPCTitles.Extract(data, "target"), "<Voidforge Steward>", "plain level verified against unit")
+UNIT_LEVEL_TEMPLATE = "Niveau %d"
+data.lines[3].leftText = "Niveau 90"
+equal(ns.NPCTitles.Extract(data, "target"), "<Voidforge Steward>", "localized plain level")
+data.lines[3].leftText = "Niveau 89"
+equal(ns.NPCTitles.Extract(data, "target"), nil, "wrong level rejected")
+data.lines[3].leftText = "Quest status"
+equal(ns.NPCTitles.Extract(data, "target"), nil, "generic status rejected")
+UNIT_LEVEL_TEMPLATE = "Level %d"
+data.lines[3].leftText = "Level 90"
+local plateGUID = "Creature-Orin"
+UnitGUID = function(token)
+    if token == "nameplate1" then return plateGUID end
+    if token == "target" then return "Creature-Orin" end
+end
+UnitIsUnit = function() return false end
+UnitIsPlayer = function() return false end
+UnitPlayerControlled = function() return false end
+UnitIsInteractable = function(token) return token == "target" end
+C_TooltipInfo = {GetUnit = function(token)
+    if token == "target" then return data end
+    return {lines = {{type = 2, leftText = "Orin Straylight"}, {type = 0, leftText = "Level 90"}}}
+end}
+local title, source, useful = ns.NPCTitles.GetTitle("nameplate1", {isNPC = true, interactable = false})
+equal(title, "<Voidforge Steward>", "full target subtitle fills sparse plate tooltip")
+equal(source, "target tooltip (verified GUID)", "GUID equality works despite false UnitIsUnit")
+equal(useful, true, "verified interaction evidence carried")
+UnitGUID = function(token) if token == "nameplate1" then return plateGUID end end
+title, source, useful = ns.NPCTitles.GetTitle("nameplate1", {isNPC = true})
+equal(title, "<Voidforge Steward>", "title retained after target changes")
+equal(source, "cached verified GUID", "session cache source")
+plateGUID = "Creature-Other"
+equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), nil, "reused token cannot inherit title")
+plateGUID = secret
+equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), nil, "restricted identity cannot inherit title")
+plateGUID = nil
+equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), nil, "same name alone cannot inherit title")
 print("NPC titles smoke: passed")

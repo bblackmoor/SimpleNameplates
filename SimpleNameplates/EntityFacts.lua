@@ -76,7 +76,14 @@ local function Collect(unit, context)
     elseif facts.targetsYourControlledUnit == true and dangerous == true then targetAttack = true end
     facts.attacking = Either(facts.aggroOnYourControlledUnit, targetAttack)
     -- Friendliness and overhead color are not evidence of useful interaction.
-    if facts.isNPC == true then facts.usefulNPC = facts.interactable
+    if facts.isNPC == true then
+        local titleUseful
+        if ns.NPCTitles then
+            facts.npcTitle, facts.npcTitleSource, titleUseful = ns.NPCTitles.GetTitle(unit, facts)
+        end
+        -- A subtitle alone does not prove a service. Carry affirmative
+        -- interaction evidence only from the same verified NPC.
+        facts.usefulNPC = titleUseful == true or facts.interactable
     elseif facts.isNPC == false then facts.usefulNPC = false end
     return facts
 end

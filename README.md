@@ -35,7 +35,7 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 
 ## What's Displayed
 
-NPC subtitles such as `<Voidforge Steward>` are read from structured unit-tooltip data and displayed beneath addon-controlled name-only NPC labels at 80% of the name size, in the same color. They do not require TRP3 and are hidden with visible health bars. The reader accepts only a single plain subtitle between the typed unit-name and level lines; missing, restricted, or ambiguous layouts omit the title. This does not suppress Blizzard's separate overhead label or establish that every titled NPC is useful. `/snp debug` reports the detected NPC subtitle.
+NPC subtitles such as `<Voidforge Steward>` are read from structured unit-tooltip data and displayed beneath addon-controlled name-only NPC labels at 80% of the name size, in the same color. They do not require TRP3 and are hidden with visible health bars. The reader accepts a single plain subtitle between the typed unit-name line and a typed level line or plain level text verified against WoW's localized template and the unit's level. When a nameplate tooltip omits its subtitle, the addon can use a fuller target, mouseover, or soft-interaction tooltip with the same readable NPC GUID. Up to 256 verified subtitles are retained for the session; token reuse and matching names alone cannot transfer them. Verified interaction evidence from the same NPC also contributes to useful-NPC classification. Unresolved or restricted data omits the title. This does not suppress Blizzard's separate overhead label or establish that every titled NPC is useful. `/snp debug` reports the detected NPC subtitle.
 
 * Normal Blizzard unit name and health bar
 * Normal health depletion as the unit takes damage
@@ -107,7 +107,7 @@ The diagnostic also enumerates existing nameplates and matches their unit tokens
 
 Every enumerated nameplate is also listed, even if it does not match the target, with its current unit token/name, displayed name, base/frame/text visibility, original unit token, and cached addon text. This helps identify stale labels on frames assigned to another unit. Inaccessible regions remain marked unavailable rather than read.
 
-NPC tooltip diagnostics distinguish unavailable APIs/data, restricted fields, and parser rejection. For the target and each scanned NPC, the report lists up to twelve tooltip lines with numeric line type, left/right text, and field-access status. This helps verify live subtitle layouts without changing the visible tooltip or guessing that every second line is a title.
+NPC tooltip diagnostics report the resolved title source and distinguish unavailable APIs/data or identity, restricted fields, and parser rejection. For the target and each scanned NPC, the report lists up to twelve tooltip lines with numeric line type, left/right text, and field-access status. This helps verify live subtitle layouts without changing the visible tooltip or guessing that every second line is a title.
 
 All settings pages scroll when their contents do not fit the available window height.
 

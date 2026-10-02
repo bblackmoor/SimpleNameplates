@@ -1,6 +1,11 @@
 -- Simple Nameplates: NPC subtitles from readable structured unit tooltips.
 local _, ns = ...
 local Value, Number = ns.AccessibleValue, ns.AccessibleNumber
+local function Read(fn, ...)
+    if type(fn) ~= "function" then return nil end
+    local ok, value = pcall(fn, ...)
+    if ok then return Value(value) end
+end
 
 local function Restricted(value)
     return (issecretvalue and issecretvalue(value))
@@ -31,7 +36,22 @@ local function CleanTitle(text)
     return "<" .. text .. ">", "title extracted"
 end
 
-local function Extract(data)
+local function PlainLevel(text, unit)
+    text = Value(text)
+    local level = Number(Read(UnitLevel, unit))
+    if type(text) ~= "string" or not level or level < 1 then return false end
+    text = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+    for _, key in ipairs({"TOOLTIP_UNIT_LEVEL", "UNIT_LEVEL_TEMPLATE"}) do
+        local template = Value(_G[key])
+        if type(template) == "string" then
+            local ok, expected = pcall(string.format, template, level)
+            if ok and text == expected then return true end
+        end
+    end
+    return false
+end
+
+local function Extract(data, unit)
     local types = Enum and Enum.TooltipDataLineType
     if not types or not types.UnitName or not types.UnitLevel or not types.None then
         return nil, "required tooltip line enums unavailable"
@@ -39,7 +59,7 @@ local function Extract(data)
     local lines, status = Field(data, "lines")
     if type(lines) ~= "table" then return nil, "tooltip lines " .. status end
     -- There is no service-title enum. Accept only the single plain subtitle
-    -- immediately between the name and typed level line. Never use a generic
+    -- immediately between the name and verified level line. Never use a generic
     -- second line (which could instead be a level, quest, owner, or status).
     for index, expected in ipairs({types.UnitName, types.None, types.UnitLevel}) do
         local line, lineStatus = Field(lines, index)
@@ -47,7 +67,9 @@ local function Extract(data)
         local lineType, typeStatus = Field(line, "type")
         lineType = Number(lineType)
         if lineType == nil then return nil, "line " .. index .. " type " .. typeStatus end
-        if lineType ~= expected then
+        local plainLevel = index == 3 and lineType == types.None
+            and PlainLevel(Field(line, "leftText"), unit)
+        if lineType ~= expected and not plainLevel then
             return nil, "layout rejected: line " .. index .. " type " .. lineType .. "; expected " .. expected
         end
     end
@@ -60,6 +82,23 @@ local function Extract(data)
     local left, leftStatus = Field(subtitle, "leftText")
     if leftStatus ~= "readable" then return nil, "subtitle left text " .. leftStatus end
     return CleanTitle(left)
+end
+
+-- Session-only, bounded by GUID: token reuse and same-name NPCs cannot inherit
+-- another entity's subtitle. A missing title on a nameplate is not a deletion.
+local known, order = {}, {}
+local function Remember(guid, title, useful)
+    if not guid then return end
+    if not known[guid] then
+        order[#order + 1] = guid
+        if #order > 256 then known[table.remove(order, 1)] = nil end
+    end
+    known[guid] = {title = title, useful = useful == true}
+end
+
+local function GUID(unit)
+    local guid = Read(UnitGUID, unit)
+    if type(guid) == "string" and guid ~= "" then return guid end
 end
 
 local function ReadTooltip(unit, facts)
@@ -76,16 +115,43 @@ local function ReadTooltip(unit, facts)
 end
 
 local function GetTitle(unit, facts)
+    if not facts or facts.isNPC ~= true then return nil, "unit not confirmed NPC" end
     local data, reason = ReadTooltip(unit, facts)
-    if not data then return nil, reason end
-    return Extract(data)
+    local title
+    if data then title, reason = Extract(data, unit) end
+    local guid = GUID(unit)
+    if title then
+        Remember(guid, title, facts.interactable)
+        return title, "unit tooltip", facts.interactable == true
+    end
+    -- Full world-unit tooltips can include subtitles omitted by nameplate
+    -- tokens. Verify readable GUID equality even when UnitIsUnit says false.
+    if guid then
+        for _, source in ipairs({"target", "mouseover", "softinteract"}) do
+            if source ~= unit and GUID(source) == guid
+                and Read(UnitIsPlayer, source) == false
+                and Read(UnitPlayerControlled, source) == false then
+                local sourceData = ReadTooltip(source, {isNPC = true})
+                local sourceTitle = sourceData and Extract(sourceData, source)
+                if sourceTitle then
+                    local useful = Read(UnitIsInteractable, source) == true
+                    Remember(guid, sourceTitle, useful)
+                    return sourceTitle, source .. " tooltip (verified GUID)", useful
+                end
+            end
+        end
+        local cached = known[guid]
+        if cached then return cached.title, "cached verified GUID", cached.useful end
+    end
+    return nil, reason .. (guid and "; no verified source or cached subtitle"
+        or "; NPC GUID unavailable for subtitle fallback")
 end
 
 local function Inspect(unit, facts)
     local data, reason = ReadTooltip(unit, facts)
     local result = {reason = reason, lines = {}}
     if not data then return result end
-    result.title, result.reason = Extract(data)
+    result.title, result.reason = Extract(data, unit)
     local lines = Field(data, "lines")
     if type(lines) ~= "table" then return result end
     -- Bounded diagnostic-only snapshot; never construct or mutate a tooltip.
