@@ -157,6 +157,7 @@ local function CreateAppearancePanel()
         GetInterruptibleHighlightEnabled, SetInterruptibleHighlightEnabled, RefreshNameplates)
     AddDescription(content, layout,
         "Pulses the cast-bar border when Blizzard reports an interruptible cast or channel. Its color is on Colors.")
+    ns.AddGlobalAppearanceControls(content, layout, refreshers)
     AddSection(content, layout, "Reset text and layout")
     AddDescription(content, layout,
         "Restores this profile's fonts, name size, sanctuary font matching, and name placement, and enables threat display. " ..

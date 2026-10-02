@@ -3,8 +3,8 @@ local _, ns = ...
 local settingsCategory
 local categories = {}
 local aliases = {
-    [""] = "Behavior", behavior = "Behavior", general = "Behavior", config = "Behavior",
-    options = "Behavior", settings = "Behavior", about = "About",
+    [""] = "Appearance", behavior = "Appearance", general = "Appearance", config = "Appearance",
+    options = "Appearance", settings = "Appearance", about = "About",
     profiles = "Profiles", profile = "Profiles",
     appearance = "Appearance", text = "Appearance", font = "Appearance", fonts = "Appearance",
     colors = "Colors", color = "Colors", trp3 = "TRP3", rp = "TRP3",
@@ -15,7 +15,7 @@ local function RegisterSettingsPanel()
     settingsCategory = Settings.RegisterCanvasLayoutCategory(ns.SettingsPanels.About(), "Simple Nameplates")
     categories.About = settingsCategory
     Settings.RegisterAddOnCategory(settingsCategory)
-    for _, name in ipairs({"Behavior", "Profiles", "Appearance", "Colors", "TRP3"}) do
+    for _, name in ipairs({"Profiles", "Appearance", "Colors", "TRP3"}) do
         categories[name] = Settings.RegisterCanvasLayoutSubcategory(settingsCategory, ns.SettingsPanels[name](), name)
     end
     SLASH_SNP1 = "/snp"

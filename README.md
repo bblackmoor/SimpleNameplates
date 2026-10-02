@@ -62,11 +62,11 @@ NPC subtitles such as `<Voidforge Steward>` are read first from structured GUID 
 * Optional threat percentage at the right side of the health bar when Midnight exposes a non-secret threat percentage
 * Optional pulsing cyan border around interruptible cast bars
 
-## Behavior Settings
+## Global behavior
 
-Open **Options → AddOns → Simple Nameplates → Behavior**, or type `/snp`. This page contains global addon behavior and user preferences: the master styling toggle, category handling, and Blizzard overhead-name controls.
+Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp`. Category activation is on **Colors** (`/snp colors`). Enable styling and Hide critter/companion names are global controls on Appearance; category activation is beside each category color on Colors.
 
-The six categories are evaluated from top to bottom. The first matching category wins. Every category has an Active / Inactive behavior selector; category hiding is not available:
+The six categories are evaluated from top to bottom. The first matching category wins. Every category has an Active / Inactive thumb switch; category hiding is not available:
 
 * **Active** applies its Priority Color and Simple Nameplates styling, including threat percentage when Midnight exposes a readable value.
 * **Inactive** leaves Blizzard's display unchanged for that category. Restoration of previously styled restricted frames is retried when access returns, including while styling is disabled.
@@ -78,13 +78,12 @@ The settings pages are organized by purpose. Changes apply immediately and are s
 | Page | Contents | Command |
 | --- | --- | --- |
 | About | Version, source, commands, presentation limits, and informational native-label swatches | `/snp about` |
-| Behavior | Global styling, category handling, and critter/companion name visibility | `/snp behavior` or `/snp` |
 | Profiles | Select, create, copy, rename, delete, and restore appearance profiles | `/snp profiles` |
-| Appearance | Fonts, sizing, sanctuary font matching, bar-name layout, threat display, and cast-highlight switch | `/snp appearance` |
-| Colors | Priority, sanctuary, and cast-highlight colors | `/snp colors` |
+| Appearance | Fonts, sizing, layout, display effects, plus global styling and critter/companion visibility switches | `/snp appearance` or `/snp` |
+| Colors | Profile colors and global Active/Inactive category switches | `/snp colors` |
 | TRP3 | All global RP-name, title, and OOC options | `/snp trp3` |
 
-Appearance and Colors each have a compact Selected profile control; profile-management actions are on Profiles.
+Appearance and Colors each have a compact Selected profile control; profile-management actions are on Profiles. Global Enable styling and Hide critter/companion switches are above Reset text and layout on Appearance. Category switches sit beside their color swatches on Colors: On means Active, Off means Inactive. Sanctuary copies share the same global Player/Useful/Useless category settings; the sanctuary player switch affects the entire Player category. None of these switches changes with the appearance profile or color/text resets. The former Behavior tab is removed; `/snp behavior` remains an alias for Appearance.
 
 Profiles are shared account-wide, while each character remembers its active profile. **Create** starts with factory-default appearance settings; **Copy** duplicates the complete active profile. Profiles can be renamed and deleted, except **Default**, which is the permanent fallback. Deleting a profile moves characters assigned to it back to Default.
 

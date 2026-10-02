@@ -99,9 +99,9 @@ local function CreateAboutPanel()
 
     U.AddSection(content, layout, "Commands")
     AddDescription(content, layout,
-        "/snp or /snp behavior — Behavior settings\n" ..
+        "/snp or /snp appearance — Appearance settings\n" ..
         "/snp profiles — Manage appearance profiles\n" ..
-        "/snp appearance — Text and layout settings\n" ..
+        "/snp behavior — Alias for Appearance\n" ..
         "/snp colors — Color settings\n" ..
         "/snp trp3 — TRP3 settings\n" ..
         "/snp debug — Explain the current target\n" ..

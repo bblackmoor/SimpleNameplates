@@ -33,13 +33,13 @@ The settings UI uses scroll layout, thumb switches, circled-i links, aligned set
 | `SettingsControls.lua` | Shared scroll layout, switches, info links, section helpers, and refresh helper |
 | `SettingsAbout.lua` | Metadata, commands, limitations and read-only native-label examples |
 | `SettingsTRP3.lua` | Global TRP3 preferences |
-| `SettingsBehavior.lua` | Global addon, categories, and Blizzard name handling |
+| `SettingsBehavior.lua` | Global styling/critter controls embedded on Appearance, retaining setup/restoration callbacks |
 | `SettingsProfiles.lua` | Profiles page and compact selectors reused on Appearance/Colors |
 | `SettingsAppearance.lua` | Profile fonts, text/layout, threat display, and cast-highlight switch |
-| `SettingsColors.lua` | Profile colors, picker rollback, shared duplicate controls and scoped resets |
+| `SettingsColors.lua` | Profile colors, global category switches, picker rollback, synchronized duplicates and scoped resets |
 | `Settings.lua` | Settings registration and slash routes |
 
-The pages are About, Behavior, Profiles, Appearance, Colors, and TRP3 in that order. Each visual page refreshes its compact profile selector and controls on show; selecting a profile immediately refreshes the current page and nameplates. Management is confined to Profiles. Hidden pages reread the active profile when shown. No saved values are relocated or converted.
+The pages are About, Profiles, Appearance, Colors, and TRP3 in that order. Appearance embeds the global styling/critter switches before the text reset; Colors embeds global category switches beside color swatches. Behavior no longer has a page; its slash command aliases Appearance. Each visual page refreshes its compact profile selector and controls on show; selecting a profile immediately refreshes the current page and nameplates. Management is confined to Profiles. Hidden pages reread the active profile when shown. No saved values are relocated or converted. Category switches write `global.categoryModes` as `active`/`inactive`, synchronize sanctuary copies immediately, and refresh class-color handling and plates. The sanctuary player switch shares Friendly category activation. Color resets and profile changes never alter these modes or the global appearance switches.
 
 The hierarchy is page title, sentence-case yellow section heading, white setting label, muted description. A common control column holds switches, dropdowns, sliders, and swatches. Row resets/info links follow the control. Section actions occupy their own rows below controls, never share a heading row. Descriptions are measured at the available width and the scroll layout reflows on page show and resize.
 

@@ -123,7 +123,7 @@ local function CreateProfilesPanel()
     U.AddTitle(content, layout, "Profiles")
     AddDescription(content, layout,
         "Appearance profiles are shared account-wide. Each character remembers its selected profile. " ..
-        "Behavior and TRP3 preferences are global.")
+        "Category activation, addon behavior, and TRP3 preferences are global.")
     local refreshers = {}
     local function Refresh() U.RunRefreshers(refreshers) end
     AddProfileSelector(content, layout, refreshers, Refresh)

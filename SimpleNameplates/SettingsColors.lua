@@ -1,4 +1,4 @@
--- Simple Nameplates: profile color settings.
+-- Simple Nameplates: profile colors and global category activation.
 local _, ns = ...
 local U = ns.SettingsUI
 local AddSection, AddDescription, RunRefreshers, RefreshNameplates =
@@ -26,7 +26,7 @@ local function OpenColorPicker(getColor, setColor, updateSwatch)
     })
 end
 
-local function CreateColorRow(context, text, displayText, getColor, setColor, resetColor)
+local function CreateColorRow(context, text, displayText, getColor, setColor, resetColor, modeKey)
     local row = U.CreateSettingRow(context.content, context.layout, text)
     local swatch = CreateFrame("Button", nil, row, "BackdropTemplate")
     swatch:SetSize(26, 26)
@@ -54,9 +54,31 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
     end)
     local function RefreshSwatches() RunRefreshers(context.swatchRefreshers) end
     swatch:SetScript("OnClick", function() OpenColorPicker(getColor, setColor, RefreshSwatches) end)
+    local resetAnchor = swatch
+    if modeKey then
+        local toggle = U.CreateSwitch(row, function(checked)
+            ns.SetCategoryMode(modeKey, checked and "active" or "inactive")
+            ns.DisableFriendlyClassColors()
+            RunRefreshers(context.refreshers)
+            RefreshNameplates()
+        end)
+        toggle:SetPoint("LEFT", swatch, "RIGHT", 8, 0)
+        local status = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        status:SetPoint("LEFT", toggle, "RIGHT", 8, 0)
+        status:SetWidth(56)
+        status:SetJustifyH("LEFT")
+        local function RefreshMode()
+            local active = ns.GetCategoryMode(modeKey) == "active"
+            toggle:SetChecked(active)
+            status:SetText(active and "Active" or "Inactive")
+        end
+        context.refreshers[#context.refreshers + 1] = RefreshMode
+        RefreshMode()
+        resetAnchor = status
+    end
     local reset = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
     reset:SetSize(54, 22)
-    reset:SetPoint("LEFT", swatch, "RIGHT", 8, 0)
+    reset:SetPoint("LEFT", resetAnchor, "RIGHT", 8, 0)
     reset:SetText("Reset")
     reset:SetScript("OnClick", function()
         resetColor()
@@ -70,11 +92,14 @@ local function CreatePriorityColorRow(context, text, state, displayText)
     CreateColorRow(context, text, displayText,
         function() return PriorityColorForState(state) end,
         function(r, g, b) SetPriorityColor(state, r, g, b) end,
-        function() ResetPriorityColor(state) end)
+        function() ResetPriorityColor(state) end, state == "sanctuaryFriendly" and "friendly" or state)
 end
 
 local function AddPriorityColorControls(context)
     AddSection(context.content, context.layout, "Priority colors")
+    AddDescription(context.content, context.layout,
+        "The switch beside each color is global: Active applies addon styling; Inactive leaves Blizzard presentation. " ..
+        "Colors remain profile settings and can be edited while inactive.")
     CreatePriorityColorRow(context, "1. Attacking me", "attacking",
         "Health bar; includes attacks on your controlled units; overrides 2–6")
     CreatePriorityColorRow(context, "2. Will attack me — Hostile", "hostile",
@@ -97,6 +122,9 @@ local function AddPriorityColorControls(context)
     end)
 
     AddSection(context.content, context.layout, "Sanctuary colors")
+    AddDescription(context.content, context.layout,
+        "These switches share the global Player, Useful, and Useless category settings above. " ..
+        "The player switch affects the whole Player category, not just sanctuary players.")
     CreatePriorityColorRow(context, "Same-faction player", "sanctuaryFriendly",
         "Sanctuary only; higher combat priorities keep their normal colors")
     CreatePriorityColorRow(context, "Interactive NPC — Useful", "useful",

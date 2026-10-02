@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.126
+
+* Moves global Active/Inactive category handling to thumb switches beside their colors, including synchronized sanctuary copies. Colors remain profile-specific.
+* Moves global Enable styling and Hide critter/companion switches above Reset text and layout on Appearance, preserving startup compatibility checks and restoration behavior.
+* Removes the empty Behavior tab; `/snp` and the existing behavior/general/settings aliases open Appearance. Reset actions do not alter the global switches.
+
 ## 1.0.125
 
 * Reorganizes settings into About, Behavior, Profiles, Appearance, Colors, and TRP3. Appearance/Colors keep compact profile selectors; management actions move to Profiles.

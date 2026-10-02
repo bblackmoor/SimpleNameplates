@@ -91,7 +91,8 @@ function InCombatLockdown() return false end
 local active, refreshes, styling = "Default", 0, true
 local trp3Enabled, trp3Settings, trp3Refreshes = false, { showFullTitle = true }, 0
 local resetStates, allColorResets = {}, 0
-local threatEnabled, castEnabled = true, false
+local threatEnabled, castEnabled, hideCritters = true, false, false
+local setupAllowed, setupChecks = true, 0
 local attacking = { 1, 0, 0 }
 local npcColors = { useful = {0.8, 0.8, 0.8}, useless = {0.6, 0.6, 0.6} }
 local modes = { friendly = "active" }
@@ -138,7 +139,9 @@ local ns = {
     SetTRP3Enabled = function(value) trp3Enabled = value end,
     GetTRP3Setting = function(key) return trp3Settings[key] ~= false end,
     SetTRP3Setting = function(key, value) trp3Settings[key] = value end,
-    GetHideCritterCompanionNames = function() return false end,
+    GetHideCritterCompanionNames = function() return hideCritters end,
+    SetHideCritterCompanionNames = function(value) hideCritters = value end,
+    CheckNameplateSetup = function() setupChecks = setupChecks + 1; return setupAllowed end,
     RefreshAll = function() refreshes = refreshes + 1 end,
     DisableFriendlyClassColors = function() end,
     ApplyManagedNameSettings = function() end,
@@ -149,7 +152,7 @@ local ns = {
 }
 for _, name in ipairs({
     "SetEffectColor", "ResetEffectColor",
-    "SetHideCritterCompanionNames",
+
 }) do ns[name] = function() end end
 
 local function loadSettings()
@@ -162,13 +165,13 @@ end
 loadSettings()
 assert(ns.RegisterSettingsPanel, "settings registration API")
 ns.RegisterSettingsPanel()
-equal(#categories, 6, "About and five subcategories")
-equal(table.concat({categories[1].name,categories[2].name,categories[3].name,categories[4].name,categories[5].name,categories[6].name}, ","),
-    "Simple Nameplates,Behavior,Profiles,Appearance,Colors,TRP3", "tab order")
+equal(#categories, 5, "About and four subcategories")
+equal(table.concat({categories[1].name,categories[2].name,categories[3].name,categories[4].name,categories[5].name}, ","),
+    "Simple Nameplates,Profiles,Appearance,Colors,TRP3", "tab order")
 ns.RegisterSettingsPanel()
-equal(#categories, 6, "one-time registration")
+equal(#categories, 5, "one-time registration")
 equal(SLASH_SNP1, "/snp", "slash registration")
-for _, route in ipairs({{"",2},{"about",1},{"profiles",3},{"appearance",4},{"colors",5},{"trp3",6}}) do
+for _, route in ipairs({{"",3},{"behavior",3},{"about",1},{"profiles",2},{"appearance",3},{"colors",4},{"trp3",5}}) do
     SlashCmdList.SNP(route[1])
     equal(opened[#opened], route[2], "route " .. route[1])
 end
@@ -196,7 +199,7 @@ sanctuaryFont:Click()
 equal(profile.matchSanctuaryFont, false, "switch changes profile font choice")
 equal(refreshes, beforeFontRefresh + 1, "font switch refreshes nameplates")
 profile.matchSanctuaryFont = true
-categories[4].panel.scripts.OnShow(categories[4].panel)
+categories[3].panel.scripts.OnShow(categories[3].panel)
 equal(sanctuaryFont:GetChecked(), true, "profile refresh synchronizes font switch")
 
 -- Keeping title controls together retains the global value and master gate.
@@ -205,14 +208,14 @@ equal(fullTitle:GetChecked(), true, "existing full-title value retained")
 equal(fullTitle:IsEnabled(), false, "title disabled with TRP3 integration off")
 local trp3Master = assert(switchFor("Display TRP3 profile information"))
 trp3Master:Click()
-categories[6].panel.scripts.OnShow(categories[6].panel)
+categories[5].panel.scripts.OnShow(categories[5].panel)
 equal(fullTitle:IsEnabled(), true, "title enabled when integration enabled")
 local beforeTitleRefresh = trp3Refreshes
 fullTitle:Click()
 equal(trp3Settings.showFullTitle, false, "moved control updates original global key")
 equal(trp3Refreshes, beforeTitleRefresh + 1, "title change refreshes TRP3 presentation")
 trp3Master:Click()
-categories[6].panel.scripts.OnShow(categories[6].panel)
+categories[5].panel.scripts.OnShow(categories[5].panel)
 equal(fullTitle:IsEnabled(), false, "title gate refreshed after integration disabled")
 equal(fullTitle:GetChecked(), false, "disabled integration preserves title choice")
 assert(button("Create") and button("Copy") and button("Rename") and button("Delete"),
@@ -325,9 +328,9 @@ local function selectorFor(panel)
         end
     end
 end
-local profilesSelector = assert(selectorFor(categories[3].panel))
-local appearanceSelector = assert(selectorFor(categories[4].panel))
-local colorsSelector = assert(selectorFor(categories[5].panel))
+local profilesSelector = assert(selectorFor(categories[2].panel))
+local appearanceSelector = assert(selectorFor(categories[3].panel))
+local colorsSelector = assert(selectorFor(categories[4].panel))
 menuOptions = {}
 colorsSelector.initialize(nil, 1)
 for _, option in ipairs(menuOptions) do
@@ -335,16 +338,16 @@ for _, option in ipairs(menuOptions) do
 end
 equal(active, "High Contrast", "Colors selector changes shared active profile")
 equal(colorsSelector.selected, "High Contrast", "Colors selector updates immediately")
+categories[2].panel.scripts.OnShow(categories[2].panel)
 categories[3].panel.scripts.OnShow(categories[3].panel)
-categories[4].panel.scripts.OnShow(categories[4].panel)
 equal(profilesSelector.selected, "High Contrast", "Profiles selector refreshes on show")
 equal(appearanceSelector.selected, "High Contrast", "Appearance selector refreshes on show")
-assert(belongsTo(button("Create"), categories[3].panel), "management belongs to Profiles")
-assert(belongsTo(fullTitle, categories[6].panel), "long-title switch belongs to TRP3")
+assert(belongsTo(button("Create"), categories[2].panel), "management belongs to Profiles")
+assert(belongsTo(fullTitle, categories[5].panel), "long-title switch belongs to TRP3")
 local _, _, effectFill = colorRow("Interruptible cast highlight")
-assert(belongsTo(effectFill, categories[5].panel), "cast color belongs to Colors")
+assert(belongsTo(effectFill, categories[4].panel), "cast color belongs to Colors")
 local castSwitch = assert(switchFor("Highlight interruptible casts and channels"))
-assert(belongsTo(castSwitch, categories[4].panel), "cast toggle belongs to Appearance")
+assert(belongsTo(castSwitch, categories[3].panel), "cast toggle belongs to Appearance")
 resetStates = {}
 button("Reset priority colors"):Click()
 equal(table.concat(resetStates, ","), "attacking,hostile,neutral,friendly,useful,useless", "priority reset scope")
@@ -359,6 +362,56 @@ equal(profile.matchSanctuaryFont, true, "text reset restores sanctuary switch")
 equal(threatEnabled, true, "text reset preserves prior threat-enable behavior")
 equal(castEnabled, true, "text reset preserves cast toggle")
 equal(allColorResets, 1, "text reset does not reset colors")
+-- Category switches are global, with duplicate sanctuary rows synchronized.
+local function modeSwitch(labelText)
+    return assert(switchFor(labelText), "category switch " .. labelText)
+end
+local usefulSwitch = modeSwitch("5. Interactive NPC — Useful")
+local sanctuaryUseful = modeSwitch("Interactive NPC — Useful")
+local uselessSwitch = modeSwitch("6. Otherwise — Useless")
+local sanctuaryUseless = modeSwitch("Other NPC — Useless")
+for _, case in ipairs({
+    {usefulSwitch, sanctuaryUseful, "useful"},
+    {uselessSwitch, sanctuaryUseless, "useless"},
+    {modeSwitch("4. Player — Friendly"), modeSwitch("Same-faction player"), "friendly"},
+}) do
+    case[1]:Click()
+    equal(modes[case[3]], "inactive", "switch stores global inactive mode")
+    equal(case[2]:GetChecked(), false, "sanctuary copy synchronizes immediately")
+    case[2]:Click()
+    equal(modes[case[3]], "active", "sanctuary switch restores global active mode")
+    equal(case[1]:GetChecked(), true, "priority copy synchronizes immediately")
+end
+for _, labelText in ipairs({"1. Attacking me", "2. Will attack me — Hostile", "3. Can attack me — Neutral"}) do
+    local toggle = modeSwitch(labelText)
+    assert(belongsTo(toggle, categories[4].panel), "danger category toggle belongs to Colors")
+    toggle:Click()
+    equal(toggle:GetChecked(), false, "danger toggle supports inactive")
+    toggle:Click()
+end
+assert(belongsTo(stylingSwitch, categories[3].panel), "master switch moved to Appearance")
+local hideSwitch = assert(switchFor("Hide critter and companion names"))
+assert(belongsTo(hideSwitch, categories[3].panel), "critter switch moved to Appearance")
+hideSwitch:Click()
+equal(hideCritters, true, "moved critter switch retains global setter")
+-- The enable control retains its startup compatibility check.
+stylingSwitch:Click()
+equal(styling, true, "moved enable switch enables styling")
+equal(setupChecks, 1, "enabling checks compatibility")
+usefulSwitch:Click()
+button("Reset text and layout"):Click()
+button("Reset all profile colors"):Click()
+equal(styling, true, "reset retains global styling choice")
+equal(hideCritters, true, "reset retains critter choice")
+equal(modes.useful, "inactive", "reset retains global category mode")
+assert(stylingSwitch.parent.points.TOPLEFT[4] > button("Reset text and layout").points.TOPLEFT[4], "enable control precedes text reset")
+assert(hideSwitch.parent.points.TOPLEFT[4] > button("Reset text and layout").points.TOPLEFT[4], "critter control precedes text reset")
+-- No activation toggle is invented for the effect color; its display switch stays on Appearance.
+local effectSwatch = colorRow("Interruptible cast highlight")
+for _, item in ipairs(frames) do
+    assert(not (item.parent == effectSwatch.parent and item.kind == "Button" and item.width == 44), "effect color has no category mode")
+end
+
 -- Shared layout remeasures wrapped descriptions and keeps actions on their own rows.
 local sample, content, layout = ns.SettingsUI.CreateScrollablePanel("Sample")
 local description = ns.SettingsUI.AddDescription(content, layout, "Wrapped description")
