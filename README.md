@@ -25,6 +25,8 @@ Instead, it keeps Blizzard's normal Midnight nameplates and recolors their exist
 
 Entity observations are collected separately in `EntityFacts.lua`, then the first matching priority wins. Faction, player control/ownership, directional attackability, interaction evidence, and unknown values remain separate facts. Thus an opposing player in sanctuary can be Friendly while retaining its opposite-faction identity; a hostile interactive NPC uses the higher combat priority. A PvP flag or desired War Mode alone does not establish an eligible opponent. Readable attackability determines eligibility, including duels; contextual sanctuary evidence prevents a flag-only inference.
 
+Appearance profiles also have three independent sanctuary colors: same-faction players default to sky blue (`#87CEEB`), useful NPCs to light grey (`#D3D3D3`), and other NPCs to medium grey (`#999999`). These apply only to their non-danger categories in sanctuaries; combat danger colors take priority. Opposite-faction players retain their existing colors. Each sanctuary color can be edited or reset, and Reset Colors includes all three. Existing profiles receive the new defaults for missing values. Colors affect only addon-accessible nameplates; Blizzard-controlled overhead names remain unchanged.
+
 Useful currently means readable `UnitIsInteractable` evidence on an NPC. This is not a permanent vendor/service catalog, and friendliness or overhead-name color alone is insufficient. Missing, failed, or secret observations remain unknown. Useless is the remaining-entity fallback, not a claim that unknown entities offer no interaction.
 
 This avoids duplicate nameplates and preserves the normal Blizzard nameplate functionality.

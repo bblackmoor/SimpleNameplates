@@ -26,6 +26,24 @@ local facts = {isPlayer = true, oppositeFaction = true, eligiblePvPOpponent = fa
 local sanctuary = Resolve({sanctuary = true, inCombat = false}, facts, "friendly", cap, true, "active")
 equal(sanctuary.ruleID, "oppositePlayerSanctuary", "sanctuary rule")
 equal(sanctuary.showHealthBar, false, "sanctuary out-of-combat name")
+equal(sanctuary.colorState, "friendly", "opposite-faction color unchanged")
+for _, case in ipairs({
+    {facts = {isPlayer = true, oppositeFaction = false}, state = "friendly", color = "sanctuaryFriendly"},
+    {facts = {isNPC = true}, state = "useful", color = "sanctuaryUseful"},
+    {facts = {isNPC = true}, state = "useless", color = "sanctuaryUseless"},
+    {facts = {isPlayer = true}, state = "friendly", color = "friendly"},
+    {facts = {playerControlled = true, isNPC = false}, state = "useless", color = "useless"},
+    {facts = {isNPC = true, usefulNPC = true}, state = "hostile", color = "hostile"},
+    {facts = {isPlayer = true, oppositeFaction = false}, state = "attacking", color = "attacking"},
+    {facts = {isNPC = true}, state = "neutral", color = "neutral"},
+}) do
+    for _, inCombat in ipairs({false, true}) do
+        equal(Resolve({sanctuary = true, inCombat = inCombat}, case.facts, case.state, cap, true, "active").colorState,
+            case.color, "sanctuary color: " .. case.state)
+    end
+    equal(Resolve({sanctuary = false, inCombat = false}, case.facts, case.state, cap, true, "active").colorState,
+        case.state, "outside sanctuary: " .. case.state)
+end
 equal(Resolve({sanctuary = true, inCombat = true}, facts, "friendly", cap, true, "active").showHealthBar,
     true, "sanctuary combat bar")
 facts.eligiblePvPOpponent = true

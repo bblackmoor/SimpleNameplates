@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.107
+
+* Added independent sanctuary color defaults: sky blue (#87CEEB) for same-faction players, light grey (#D3D3D3) for useful NPCs, and medium grey (#999999) for other NPCs.
+* Sanctuary colors are editable and resettable in Appearance profiles, including existing profiles that lack these new values. Combat danger categories and opposite-faction colors retain their existing behavior.
+* Applied the selected sanctuary color consistently to accessible name text, TRP3 long titles, and supported health bars. Blizzard-controlled world names remain under Blizzard control.
+
 ## 1.0.106
 
 * Completed runtime phase 4: added independent presentation rules with narrow sanctuary/PvP/non-PvP opposite-player cases and shared defaults.

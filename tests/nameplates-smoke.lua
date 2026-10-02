@@ -65,7 +65,12 @@ local ns = {
     GetInterruptibleHighlightEnabled = function() return highlightEnabled end,
     GetThreatEnabled = function() return false end,
     GetHideCritterCompanionNames = function() return false end,
-    PriorityColorForState = function() return 1, 0, 0 end,
+    PriorityColorForState = function(state)
+        if state == "sanctuaryFriendly" then return 135 / 255, 206 / 255, 235 / 255 end
+        if state == "sanctuaryUseful" then return 211 / 255, 211 / 255, 211 / 255 end
+        if state == "sanctuaryUseless" then return 153 / 255, 153 / 255, 153 / 255 end
+        return 1, 0, 0
+    end,
     EffectColor = function() return 0, 1, 1 end,
     FontPath = function() return "Fonts\\ARIALN.TTF" end,
     ApplyCritterCompanionNameVisibility = function() count("critters") end,
@@ -435,6 +440,32 @@ assert(table.concat(output, "\n"):find("Simple Nameplates context:", 1, true), "
 assert(table.concat(output, "\n"):find("No target selected.", 1, true), "no-target reported")
 unitExists = true
 print = originalPrint
+
+-- The shared sanctuary decision reaches text, titles, bars, and repair hooks.
+C_NamePlate.GetNamePlateForUnit = function() return plate end
+C_NamePlate.GetNamePlates = function() return {plate} end
+C_PvP = {GetZonePVPInfo = function() return "sanctuary", false end}
+for _, case in ipairs({
+    {data = {player = true, faction = "Alliance", reaction = 5}, green = 206 / 255},
+    {data = {reaction = 5, interactable = true}, green = 211 / 255},
+    {data = {reaction = 5}, green = 153 / 255},
+    {data = {player = true, faction = "Horde", reaction = 5}, green = 0},
+}) do
+    unit = case.data
+    ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
+    ns.RefreshAll()
+    equal(plateFrame.name.g, case.green, "sanctuary floating name")
+    equal(plateFrame.SNPFullTitleText.g, case.green, "sanctuary title")
+    plateFrame.name:SetTextColor(0, 0, 0)
+    hooks[2].callback(plateFrame)
+    equal(plateFrame.name.g, case.green, "sanctuary name repair")
+    ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
+    ns.RefreshAll()
+    equal(plateFrame.healthBar.barG, case.green, "sanctuary combat bar")
+    plateFrame.healthBar:SetStatusBarColor(0, 0, 0)
+    hooks[1].callback(plateFrame)
+    equal(plateFrame.healthBar.barG, case.green, "sanctuary health repair")
+end
 
 local visited, largest = {}, 0
 local function CheckUpvalues(fn)

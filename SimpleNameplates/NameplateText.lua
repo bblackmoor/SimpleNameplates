@@ -76,7 +76,7 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
     fullTitle:ClearAllPoints()
     fullTitle:SetPoint("TOP", frame.name, "BOTTOM", 0, -1)
     fullTitle:SetJustifyH("CENTER")
-    fullTitle:SetTextColor(PriorityColorForState(state))
+    fullTitle:SetTextColor(PriorityColorForState(decision.colorState or state))
     fullTitle:Show()
 end
 
@@ -219,7 +219,7 @@ local function StyleName(frame, state, context, decision)
     name:SetShadowColor(0, 0, 0, 1)
     name:SetShadowOffset(1, -1)
     local nameR, nameG, nameB = 1, 1, 1
-    if nameOnly then nameR, nameG, nameB = PriorityColorForState(state) end
+    if nameOnly then nameR, nameG, nameB = PriorityColorForState(decision.colorState or state) end
     -- Blizzard also tints nameplate text with UnitSelectionColor through the
     -- FontString's vertex color. Keep that tint neutral so the configured
     -- Simple Nameplates color is displayed exactly.

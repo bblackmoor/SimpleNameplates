@@ -55,6 +55,23 @@ equal(ns.GetInterruptibleHighlightEnabled(), false, "cast default")
 equal(ns.GetAppearanceSetting("nameSize"), 12, "name size default")
 equal(ns.GetAppearanceSetting("namePlacement"), "ABOVE", "placement default")
 equal(ns.PriorityColorForState("attacking"), 1, "default red component")
+for _, case in ipairs({
+    {"sanctuaryFriendly", 135, 206, 235},
+    {"sanctuaryUseful", 211, 211, 211},
+    {"sanctuaryUseless", 153, 153, 153},
+}) do
+    local r, g, b = ns.PriorityColorForState(case[1])
+    equal(r, case[2] / 255, "sanctuary default red")
+    equal(g, case[3] / 255, "sanctuary default green")
+    equal(b, case[4] / 255, "sanctuary default blue")
+    ns.SetPriorityColor(case[1], 0.2, 0.3, 0.4)
+    equal(ns.CopyActiveProfile("Sanctuary copy"), true, "copy sanctuary colors")
+    equal(ns.PriorityColorForState(case[1]), 0.2, "copied sanctuary customization")
+    ns.ResetPriorityColor(case[1])
+    equal(ns.PriorityColorForState(case[1]), case[2] / 255, "reset sanctuary color")
+    ns.DeleteActiveProfile()
+    ns.ResetPriorityColor(case[1])
+end
 equal(ns.SetActiveProfileName("High Contrast"), true, "select bundled")
 equal(ns.GetActiveProfileName(), "High Contrast", "bundled selected")
 equal(ns.PriorityColorForState("attacking"), 1, "contrast red component")
@@ -330,6 +347,7 @@ for _, key in ipairs({"friendlyPC", "unfriendlyPC", "unfriendlyNPC", "other"}) d
     equal(db.profiles.Default.priorityColors[key], nil, "obsolete color discarded: " .. key)
 end
 equal(ns.PriorityColorForState("friendly"), 51 / 255, "old player color not converted")
+equal(ns.PriorityColorForState("sanctuaryFriendly"), 135 / 255, "existing profile receives sanctuary default")
 local categoryCount = 0
 for _ in pairs(db.global.categoryModes) do categoryCount = categoryCount + 1 end
 equal(categoryCount, 6, "exactly six current categories")

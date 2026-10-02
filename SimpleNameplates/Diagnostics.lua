@@ -56,7 +56,7 @@ local function DebugClassification(state, rule, assessment, context, facts)
     elseif decision.action == "restore" then
         display, colorHex = "Blizzard presentation", "Blizzard-controlled"
     else
-        local r, g, b = PriorityColorForState(state)
+        local r, g, b = PriorityColorForState(decision.colorState)
         colorHex = string.format("#%02X%02X%02X", math.floor(r * 255 + 0.5),
             math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
         display = decision.nameOnly and "colored name only" or "white name with colored health bar"

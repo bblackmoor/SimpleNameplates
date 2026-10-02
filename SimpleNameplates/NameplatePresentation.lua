@@ -39,7 +39,7 @@ local function ApplySimpleStyle(frame, context)
     frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = state, decision, facts
     ApplyVisibility(frame, decision, assessment, context)
     Text.StyleName(frame, state, context, decision)
-    if decision.showHealthBar then assessment.healthBar:SetStatusBarColor(ns.PriorityColorForState(state)) end
+    if decision.showHealthBar then assessment.healthBar:SetStatusBarColor(ns.PriorityColorForState(decision.colorState)) end
     ns.NameplateThreat.UpdateThreatText(frame, state, context, decision)
     ns.CastHighlight.UpdateInterruptibleHighlight(frame, context, decision)
 end

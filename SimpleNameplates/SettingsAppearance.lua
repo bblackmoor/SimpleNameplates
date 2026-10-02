@@ -311,6 +311,14 @@ local function AddPriorityColorControls(context)
         "Interactive NPC: colored name out of combat; health bar in combat when supported")
     CreatePriorityColorRow(context, "6. Otherwise — Useless", "useless",
         "Remaining entity: colored name out of combat; health bar in combat when supported")
+
+    AddSection(context.content, context.layout, "SANCTUARY COLORS")
+    CreatePriorityColorRow(context, "Same-faction player", "sanctuaryFriendly",
+        "Sanctuary only; higher combat priorities keep their normal colors")
+    CreatePriorityColorRow(context, "Interactive NPC — Useful", "sanctuaryUseful",
+        "Sanctuary only; higher combat priorities keep their normal colors")
+    CreatePriorityColorRow(context, "Other NPC — Useless", "sanctuaryUseless",
+        "Sanctuary only; applies to NPCs in the Otherwise category")
 end
 
 local function AddLockedColorControls(context)
