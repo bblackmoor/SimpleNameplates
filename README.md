@@ -25,7 +25,7 @@ Instead, it keeps Blizzard's normal Midnight nameplates and recolors their exist
 
 Entity observations are collected separately in `EntityFacts.lua`, then the first matching priority wins. Faction, player control/ownership, directional attackability, interaction evidence, and unknown values remain separate facts. Thus an opposing player in sanctuary can be Friendly while retaining its opposite-faction identity; a hostile interactive NPC uses the higher combat priority. A PvP flag or desired War Mode alone does not establish an eligible opponent. Readable attackability determines eligibility, including duels; contextual sanctuary evidence prevents a flag-only inference.
 
-Appearance profiles have one Useful color (light grey `#D3D3D3` by default) and one Useless color (medium grey `#999999` by default), shared inside and outside sanctuaries and across combat states. Their controls appear in both Priority Colors and Sanctuary Colors; editing, cancelling a picker change, or resetting either copy updates both. Existing Priority Colors choices remain authoritative; obsolete separate sanctuary NPC colors are discarded during normal settings validation. Same-faction Friendly players retain a separate sanctuary color, sky blue (`#87CEEB`) by default. Higher danger categories always keep their own colors. Opposite-faction players retain their existing colors. Reset Colors resets all current colors. Colors affect only addon-accessible nameplates; Blizzard-controlled overhead names remain unchanged.
+Appearance profiles have one Useful color (light grey `#D3D3D3` by default) and one Useless color (medium grey `#999999` by default), shared inside and outside sanctuaries and across combat states. Their controls appear in both Priority Colors and Sanctuary Colors; editing, cancelling a picker change, or resetting either copy updates both. Existing Priority Colors choices remain authoritative; obsolete separate sanctuary NPC colors are discarded during normal settings validation. Same-faction Friendly players retain a separate sanctuary color, sky blue (`#87CEEB`) by default. Higher danger categories always keep their own colors. Opposite-faction players retain their existing colors. Reset all profile colors resets all current colors; Reset priority colors resets only the six category colors. Colors affect only addon-accessible nameplates; Blizzard-controlled overhead names remain unchanged.
 
 Useful currently means readable `UnitIsInteractable` evidence on an NPC. This is not a permanent vendor/service catalog, and friendliness or overhead-name color alone is insufficient. Missing, failed, or secret observations remain unknown. Useless is the remaining-entity fallback, not a claim that unknown entities offer no interaction.
 
@@ -73,11 +73,22 @@ The six categories are evaluated from top to bottom. The first matching category
 
 ## Appearance Profiles and Settings
 
-Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp appearance`. This page contains every profile-controlled setting: profile management, text and layout, Priority Colors, Blizzard-controlled color information, and visual effects. Changes apply immediately and are saved between sessions.
+The settings pages are organized by purpose. Changes apply immediately and are saved between sessions.
+
+| Page | Contents | Command |
+| --- | --- | --- |
+| About | Version, source, commands, presentation limits, and informational native-label swatches | `/snp about` |
+| Behavior | Global styling, category handling, and critter/companion name visibility | `/snp behavior` or `/snp` |
+| Profiles | Select, create, copy, rename, delete, and restore appearance profiles | `/snp profiles` |
+| Appearance | Fonts, sizing, sanctuary font matching, bar-name layout, threat display, and cast-highlight switch | `/snp appearance` |
+| Colors | Priority, sanctuary, and cast-highlight colors | `/snp colors` |
+| TRP3 | All global RP-name, title, and OOC options | `/snp trp3` |
+
+Appearance and Colors each have a compact Selected profile control; profile-management actions are on Profiles.
 
 Profiles are shared account-wide, while each character remembers its active profile. **Create** starts with factory-default appearance settings; **Copy** duplicates the complete active profile. Profiles can be renamed and deleted, except **Default**, which is the permanent fallback. Deleting a profile moves characters assigned to it back to Default.
 
-The editable bundled profiles are **Default** and **High Contrast**. High Contrast uses magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, cyan `#00FFFF`, blue `#0066FF`, and white `#FFFFFF` for Priority Colors 1–6; and green `#00FF00` for interruptible casts. **Restore Bundled Profiles** resets both bundles and recreates High Contrast if it was deleted or renamed. Custom profiles are left untouched.
+The editable bundled profiles are **Default** and **High Contrast**. High Contrast uses magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, cyan `#00FFFF`, blue `#0066FF`, and white `#FFFFFF` for Priority Colors 1–6; and green `#00FF00` for interruptible casts. **Restore bundled profiles** resets both bundles and recreates High Contrast if it was deleted or renamed. Custom profiles are left untouched.
 
 For Active categories, when the player is out of combat, only Attacking, Hostile, and Neutral use supported health bars. When the player is in combat, every entity with an accessible, supported health bar uses it. Visible bars receive the category color and names become white; entities without a supported bar use a colored floating name. Inactive categories keep Blizzard presentation. Unknown player combat state also falls back to Blizzard presentation.
 
@@ -87,21 +98,23 @@ Simple Nameplates styles accessible nameplates supplied by the game; it has no s
 
 **Hide critter and companion names** controls ordinary overhead names for noncombat critters and companions. Their prior WoW settings are restored when disabled.
 
-The Appearance page keeps profiles at the top, then groups presentation by combat state:
+Appearance groups presentation by combat state:
 
 | Section | Controls and presentation |
 | --- | --- |
-| Shared Appearance | Unit-name font, shared 8–36 point name size, Priority Colors, sanctuary colors, and native-label information. Reset Appearance still resets text/layout settings across both combat sections. |
-| Out of Combat | Explains name-only presentation and automatic NPC service titles; contains the existing TRP3 long-title switch. Danger categories retain supported bars. |
-| In Combat | Health-bar name placement, threat-percentage font/display, and interruptible cast highlighting. Every Active category uses supported bars during combat. |
+| Fonts and sizing | Unit-name font, shared 8–36 point name size, and sanctuary font matching |
+| Out of combat | Explains floating names and automatic NPC service titles; danger categories retain supported bars |
+| In combat | Bar-name placement, threat font/display, and interruptible-cast highlighting; also applies whenever bars appear out of combat |
 
-These sections reorganize existing controls; they do not create independent combat profiles, duplicate fonts/colors, or change when settings apply. Bar controls also apply to danger-category bars out of combat. Name-only titles can remain visible in combat if no supported health bar is available. The TRP3 long-title switch retains its existing global saved value and is disabled when TRP3 display integration is off; the other TRP3 integration controls remain on the TRP3 page.
+The sections use the same saved settings in both combat states. All TRP3 options, including the global long-title switch, are together on TRP3. Name-only titles can remain visible in combat if no supported health bar is available.
+
+Headings use sentence case, labels use normal white text, and muted descriptions wrap below the relevant row. Controls share a common column. Individual resets follow their controls; section actions appear beneath the section's controls, with explicit scope. **Reset text and layout** retains the previous appearance-reset behavior: it resets fonts, sizing, sanctuary font matching and name placement, and enables threat display. Colors and the cast-highlight switch keep their values.
 
 **Match Blizzard font in sanctuaries** is enabled by default in each appearance profile. It uses Blizzard's localized native world-name font face for addon-controlled names and NPC/TRP3 titles throughout sanctuary areas, including names inside health bars. Turn it off to use the selected Name font everywhere. Outside sanctuaries, the selected font applies normally. Sizes, outlines, colors, positioning, and the separate threat font retain their existing behavior. This improves consistency with inaccessible opposite-faction PC labels; it does not make those labels editable or guarantee identical sizing and outlines.
 
 The selected Name font defaults to WoW's built-in **Friz Quadrata**, the threat-percentage font defaults to **Arial Narrow**, both use a normal outline, and names default to 21 points. Other standard Blizzard fonts are available without an external font library. Inside-bar names use 80% of the selected size, rounded to the nearest point. Their health bars resize to leave two UI units above and below the text, then return to Blizzard's original height when names move above the bar or Simple Nameplates styling is disabled. Name-only plates are unaffected by the placement setting; Friendly, Useful, and Useless use the same above/inside layout when their supported bars appear during combat. Blizzard-controlled overhead names have no nameplate frame, so their size and font remain controlled by the game.
 
-Three information rows describe native PC/minion, interactive-NPC, and vendor-NPC world-label colors. These describe native labels, not blanket unalterable entity categories; separate accessible NPC plates can be styled. The optional interruptible highlight is a pulsing, solid-color border with a dark outer edge around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to casts and channels, and preserves Blizzard's normal non-interruptible shield treatment.
+About contains three informational swatches for native opposite-faction PC sanctuary labels, interactive-NPC labels, and vendor-NPC labels. These describe native labels, not blanket unalterable entity categories; separate accessible NPC plates can be styled. The optional interruptible highlight is a pulsing, solid-color border with a dark outer edge around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to casts and channels, and preserves Blizzard's normal non-interruptible shield treatment.
 
 ## TRP3 Integration
 

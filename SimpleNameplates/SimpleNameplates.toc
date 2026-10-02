@@ -3,7 +3,7 @@
 ## Category: Unit Frames
 ## Notes: Colors accessible Blizzard plates. Known limit: opposite-faction PC world names in sanctuary; entity types and contexts are listed in About.
 ## Author: Brandon Blackmoor <bblackmoor@blackgate.net>
-## Version: 1.0.124
+## Version: 1.0.125
 ## OptionalDeps: totalRP3
 ## SavedVariables: SimpleNameplatesDB
 ## IconTexture: Interface\Icons\INV_Misc_Eye_01
@@ -35,5 +35,6 @@ SettingsAbout.lua
 SettingsBehavior.lua
 SettingsProfiles.lua
 SettingsAppearance.lua
+SettingsColors.lua
 SettingsTRP3.lua
 Settings.lua

@@ -50,7 +50,7 @@ end
 
 local function CreateProfileButtons(content, layout)
     local buttonRow = CreateFrame("Frame", nil, content)
-    buttonRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
+    buttonRow.SNPLayoutFullWidth = true
     layout:Add(buttonRow, 24, 24, 8)
     local buttons = {}
     for index, definition in ipairs({
@@ -86,66 +86,69 @@ local function InstallProfileButtonScripts(buttons, changed)
     end)
 end
 
-local function AddProfileControls(content, layout, refreshers, onChanged)
-    RegisterProfileDialogs()
-    local section = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    section:SetText("PROFILES")
-    layout:Add(section, 24, 20, 6)
-    AddDescription(content, layout,
-        "Profiles hold appearance settings and are shared account-wide. Each character remembers its selected profile.", 40)
-
-    local profileRow = CreateFrame("Frame", nil, content)
-    profileRow:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    layout:Add(profileRow, 24, 42, 6)
-    local label = profileRow:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    label:SetPoint("LEFT", 0, 0)
-    label:SetText("Selected profile")
-    local profileDropdown = CreateFrame("Frame", nil, profileRow, "UIDropDownMenuTemplate")
-    profileDropdown:SetPoint("LEFT", label, "RIGHT", -4, 0)
-    UIDropDownMenu_SetWidth(profileDropdown, 235)
-
-    local buttons = CreateProfileButtons(content, layout)
-    local rename, delete = buttons[3], buttons[4]
-    local function Changed()
-        onChanged()
-        RefreshNameplates()
-    end
-    InstallProfileButtonScripts(buttons, Changed)
-
-    local restore = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
-    restore:SetSize(172, 24)
-    restore:SetText("Restore Bundled Profiles")
-    layout:Add(restore, 24, 24, 6)
-    restore:SetScript("OnClick", function()
-        StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil,
-            { onChanged = Changed })
-    end)
-    AddDescription(content, layout,
-        "Default can be edited and restored, but not renamed or deleted. Create starts with bundled defaults; Copy uses the selected profile. Restore replaces Default and High Contrast.", 48)
-
+-- Compact selector shared by the visual pages; management remains here.
+local function AddProfileSelector(content, layout, refreshers, onChanged)
+    local row = U.CreateSettingRow(content, layout, "Selected profile")
+    local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
+    dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X - 16, 0)
+    UIDropDownMenu_SetWidth(dropdown, 190)
     local function Refresh()
         local active = ns.GetActiveProfileName()
-        UIDropDownMenu_SetSelectedValue(profileDropdown, active)
-        UIDropDownMenu_SetText(profileDropdown, active)
-        local protected = active == ns.DEFAULT_PROFILE_NAME
-        rename:SetEnabled(not protected)
-        delete:SetEnabled(not protected)
+        UIDropDownMenu_SetSelectedValue(dropdown, active)
+        UIDropDownMenu_SetText(dropdown, active)
     end
-    UIDropDownMenu_Initialize(profileDropdown, function(_, level)
+    local function Changed()
+        Refresh()
+        if onChanged then onChanged() end
+        RefreshNameplates()
+    end
+    UIDropDownMenu_Initialize(dropdown, function(_, level)
         for _, profileName in ipairs(ns.GetProfileNames()) do
             local name = profileName
             local info = UIDropDownMenu_CreateInfo()
             info.text, info.value = name, name
             info.checked = ns.GetActiveProfileName() == name
-            info.func = function()
-                ns.SetActiveProfileName(name)
-                Changed()
-            end
+            info.func = function() ns.SetActiveProfileName(name); Changed() end
             UIDropDownMenu_AddButton(info, level)
         end
     end)
     refreshers[#refreshers + 1] = Refresh
     Refresh()
 end
+ns.AddProfileSelector = AddProfileSelector
 
-ns.AddProfileControls = AddProfileControls
+local function CreateProfilesPanel()
+    RegisterProfileDialogs()
+    local panel, content, layout = U.CreateScrollablePanel("Profiles")
+    U.AddTitle(content, layout, "Profiles")
+    AddDescription(content, layout,
+        "Appearance profiles are shared account-wide. Each character remembers its selected profile. " ..
+        "Behavior and TRP3 preferences are global.")
+    local refreshers = {}
+    local function Refresh() U.RunRefreshers(refreshers) end
+    AddProfileSelector(content, layout, refreshers, Refresh)
+    U.AddSection(content, layout, "Manage profiles")
+    AddDescription(content, layout,
+        "Create starts with factory defaults. Copy duplicates the selected profile. " ..
+        "Default can be edited but cannot be renamed or deleted.")
+    local buttons = CreateProfileButtons(content, layout)
+    local function Changed() Refresh(); RefreshNameplates() end
+    InstallProfileButtonScripts(buttons, Changed)
+    refreshers[#refreshers + 1] = function()
+        local protected = ns.GetActiveProfileName() == ns.DEFAULT_PROFILE_NAME
+        buttons[3]:SetEnabled(not protected)
+        buttons[4]:SetEnabled(not protected)
+    end
+    U.AddSection(content, layout, "Restore bundled profiles")
+    AddDescription(content, layout,
+        "Replaces the appearance settings in Default and High Contrast and recreates High Contrast if missing. " ..
+        "Custom profiles are left unchanged.")
+    U.AddActionButton(content, layout, "Restore bundled profiles", function()
+        StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil, {onChanged = Changed})
+    end, 210)
+    panel:SetScript("OnShow", Refresh)
+    Refresh()
+    layout:Finish()
+    return panel
+end
+ns.SettingsPanels.Profiles = CreateProfilesPanel

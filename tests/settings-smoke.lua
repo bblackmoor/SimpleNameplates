@@ -11,7 +11,9 @@ local function region(kind, parent, template)
     local item = { kind = kind, parent = parent, template = template, enabled = true }
     frames[#frames + 1] = item
     local methods = {
-        SetPoint = function() end, ClearAllPoints = function() end,
+        SetPoint = function(self, point, relative, relativePoint, x, y)
+            self.points = self.points or {}; self.points[point] = {relative, relativePoint, x, y}
+        end, ClearAllPoints = function(self) self.points = {} end,
         SetAllPoints = function() end, SetSize = function(self, w, h) self.width, self.height = w, h end,
         SetWidth = function(self, w) self.width = w end,
         SetHeight = function(self, h) self.height = h end,
@@ -21,12 +23,13 @@ local function region(kind, parent, template)
         GetText = function(self) return self.text end,
         SetTextColor = function() end, SetJustifyH = function() end,
         GetStringWidth = function(self) return #(self.text or "") * 8 end,
-        GetStringHeight = function() return 16 end,
+        GetStringHeight = function(self) return self.naturalHeight or 16 end,
         SetColorTexture = function(self, r, g, b) self.color = {r, g, b} end,
         SetBackdrop = function() end,
         SetBackdropColor = function() end, SetBackdropBorderColor = function() end,
         SetScrollChild = function(self, value) self.scrollChild = value end,
         SetScript = function(self, event, fn) self.scripts = self.scripts or {}; self.scripts[event] = fn end,
+        GetScript = function(self, event) return self.scripts and self.scripts[event] end,
         SetEnabled = function(self, yes) self.enabled = yes end,
         IsEnabled = function(self) return self.enabled end,
         SetMinMaxValues = function() end, SetValueStep = function() end,
@@ -59,7 +62,8 @@ function UIDropDownMenu_SetSelectedValue(item, value) item.selected = value end
 function UIDropDownMenu_SetText(item, value) item.text = value end
 function UIDropDownMenu_Initialize(item, fn) item.initialize = fn end
 function UIDropDownMenu_CreateInfo() return {} end
-function UIDropDownMenu_AddButton() end
+local menuOptions = {}
+function UIDropDownMenu_AddButton(info) menuOptions[#menuOptions + 1] = info end
 StaticPopupDialogs = {}
 function StaticPopup_Show(key, text, _, data)
     popups[#popups + 1] = { key = key, text = text, data = data }
@@ -86,6 +90,8 @@ function InCombatLockdown() return false end
 
 local active, refreshes, styling = "Default", 0, true
 local trp3Enabled, trp3Settings, trp3Refreshes = false, { showFullTitle = true }, 0
+local resetStates, allColorResets = {}, 0
+local threatEnabled, castEnabled = true, false
 local attacking = { 1, 0, 0 }
 local npcColors = { useful = {0.8, 0.8, 0.8}, useless = {0.6, 0.6, 0.6} }
 local modes = { friendly = "active" }
@@ -101,6 +107,7 @@ local ns = {
         else attacking = {r, g, b} end
     end,
     ResetPriorityColor = function(state)
+        resetStates[#resetStates + 1] = state
         if npcColors[state] then npcColors[state] = {0.7, 0.7, 0.7} end
     end,
     EffectColor = function() return 0, 1, 1 end,
@@ -108,7 +115,10 @@ local ns = {
     SetCategoryMode = function(key, value) modes[key] = value end,
     GetAppearanceSetting = function(key) return profile[key] end,
     SetAppearanceSetting = function(key, value) profile[key] = value end,
-    ResetAppearance = function() profile.nameSize = 12 end,
+    ResetAppearance = function()
+        profile.nameSize, profile.nameFont, profile.threatFont = 21, "FRIZQT", "ARIALN"
+        profile.namePlacement, profile.matchSanctuaryFont = "ABOVE", true
+    end,
     GetActiveProfileName = function() return active end,
     GetProfileNames = function() return { "Default", "High Contrast" } end,
     SetActiveProfileName = function(name) active = name; return true end,
@@ -119,8 +129,11 @@ local ns = {
     RestoreBundledProfiles = function() active = "Default" end,
     GetStylingEnabled = function() return styling end,
     SetStylingEnabled = function(value) styling = value end,
-    GetThreatEnabled = function() return true end,
-    GetInterruptibleHighlightEnabled = function() return false end,
+    GetThreatEnabled = function() return threatEnabled end,
+    SetThreatEnabled = function(value) threatEnabled = value end,
+    GetInterruptibleHighlightEnabled = function() return castEnabled end,
+    SetInterruptibleHighlightEnabled = function(value) castEnabled = value end,
+    ResetAllColors = function() allColorResets = allColorResets + 1 end,
     GetTRP3Enabled = function() return trp3Enabled end,
     SetTRP3Enabled = function(value) trp3Enabled = value end,
     GetTRP3Setting = function(key) return trp3Settings[key] ~= false end,
@@ -136,8 +149,7 @@ local ns = {
 }
 for _, name in ipairs({
     "SetEffectColor", "ResetEffectColor",
-    "ResetAllColors", "SetInterruptibleHighlightEnabled",
-    "SetThreatEnabled", "SetHideCritterCompanionNames",
+    "SetHideCritterCompanionNames",
 }) do ns[name] = function() end end
 
 local function loadSettings()
@@ -150,13 +162,13 @@ end
 loadSettings()
 assert(ns.RegisterSettingsPanel, "settings registration API")
 ns.RegisterSettingsPanel()
-equal(#categories, 4, "About and three subcategories")
-equal(table.concat({categories[1].name,categories[2].name,categories[3].name,categories[4].name}, ","),
-    "Simple Nameplates,Behavior,Appearance,TRP3", "tab order")
+equal(#categories, 6, "About and five subcategories")
+equal(table.concat({categories[1].name,categories[2].name,categories[3].name,categories[4].name,categories[5].name,categories[6].name}, ","),
+    "Simple Nameplates,Behavior,Profiles,Appearance,Colors,TRP3", "tab order")
 ns.RegisterSettingsPanel()
-equal(#categories, 4, "one-time registration")
+equal(#categories, 6, "one-time registration")
 equal(SLASH_SNP1, "/snp", "slash registration")
-for _, route in ipairs({{"",2},{"about",1},{"appearance",3},{"colors",3},{"trp3",4}}) do
+for _, route in ipairs({{"",2},{"about",1},{"profiles",3},{"appearance",4},{"colors",5},{"trp3",6}}) do
     SlashCmdList.SNP(route[1])
     equal(opened[#opened], route[2], "route " .. route[1])
 end
@@ -184,23 +196,23 @@ sanctuaryFont:Click()
 equal(profile.matchSanctuaryFont, false, "switch changes profile font choice")
 equal(refreshes, beforeFontRefresh + 1, "font switch refreshes nameplates")
 profile.matchSanctuaryFont = true
-categories[3].panel.scripts.OnShow(categories[3].panel)
+categories[4].panel.scripts.OnShow(categories[4].panel)
 equal(sanctuaryFont:GetChecked(), true, "profile refresh synchronizes font switch")
 
--- Moving the title control retains its global value, callback, and master gate.
+-- Keeping title controls together retains the global value and master gate.
 local fullTitle = assert(switchFor("Show TRP3 long title beneath the name"))
 equal(fullTitle:GetChecked(), true, "existing full-title value retained")
 equal(fullTitle:IsEnabled(), false, "title disabled with TRP3 integration off")
 local trp3Master = assert(switchFor("Display TRP3 profile information"))
 trp3Master:Click()
-categories[3].panel.scripts.OnShow(categories[3].panel)
+categories[6].panel.scripts.OnShow(categories[6].panel)
 equal(fullTitle:IsEnabled(), true, "title enabled when integration enabled")
 local beforeTitleRefresh = trp3Refreshes
 fullTitle:Click()
 equal(trp3Settings.showFullTitle, false, "moved control updates original global key")
 equal(trp3Refreshes, beforeTitleRefresh + 1, "title change refreshes TRP3 presentation")
 trp3Master:Click()
-categories[3].panel.scripts.OnShow(categories[3].panel)
+categories[6].panel.scripts.OnShow(categories[6].panel)
 equal(fullTitle:IsEnabled(), false, "title gate refreshed after integration disabled")
 equal(fullTitle:GetChecked(), false, "disabled integration preserves title choice")
 assert(button("Create") and button("Copy") and button("Rename") and button("Delete"),
@@ -214,7 +226,7 @@ dialog.editBox:SetText("New profile")
 StaticPopupDialogs.SNP_PROFILE_NAME.OnAccept(dialog, data)
 equal(active, "New profile", "create callback")
 assert(refreshes > 0, "Profile change refreshes nameplates")
-button("Restore Bundled Profiles"):Click()
+button("Restore bundled profiles"):Click()
 equal(popups[#popups].key, "SNP_RESTORE_BUNDLED_PROFILES", "restore confirmation")
 StaticPopupDialogs.SNP_RESTORE_BUNDLED_PROFILES.OnAccept(nil, popups[#popups].data)
 equal(active, "Default", "restore callback")
@@ -294,6 +306,77 @@ for _, case in ipairs({
     equal(secondFill.color[1], 0.7, "sanctuary reset repaints own copy")
     firstReset:Click()
     equal(secondFill.color[1], 0.7, "priority reset repaints sanctuary copy")
+end
+
+-- Cross-page selectors reread one selected profile, with management on Profiles only.
+local function belongsTo(item, panel)
+    while item do
+        if item == panel then return true end
+        item = item.parent
+    end
+    return false
+end
+local function selectorFor(panel)
+    for _, label in ipairs(frames) do
+        if label.kind == "FontString" and label.text == "Selected profile" and belongsTo(label, panel) then
+            for _, item in ipairs(frames) do
+                if item.parent == label.parent and item.template == "UIDropDownMenuTemplate" then return item end
+            end
+        end
+    end
+end
+local profilesSelector = assert(selectorFor(categories[3].panel))
+local appearanceSelector = assert(selectorFor(categories[4].panel))
+local colorsSelector = assert(selectorFor(categories[5].panel))
+menuOptions = {}
+colorsSelector.initialize(nil, 1)
+for _, option in ipairs(menuOptions) do
+    if option.value == "High Contrast" then option.func() end
+end
+equal(active, "High Contrast", "Colors selector changes shared active profile")
+equal(colorsSelector.selected, "High Contrast", "Colors selector updates immediately")
+categories[3].panel.scripts.OnShow(categories[3].panel)
+categories[4].panel.scripts.OnShow(categories[4].panel)
+equal(profilesSelector.selected, "High Contrast", "Profiles selector refreshes on show")
+equal(appearanceSelector.selected, "High Contrast", "Appearance selector refreshes on show")
+assert(belongsTo(button("Create"), categories[3].panel), "management belongs to Profiles")
+assert(belongsTo(fullTitle, categories[6].panel), "long-title switch belongs to TRP3")
+local _, _, effectFill = colorRow("Interruptible cast highlight")
+assert(belongsTo(effectFill, categories[5].panel), "cast color belongs to Colors")
+local castSwitch = assert(switchFor("Highlight interruptible casts and channels"))
+assert(belongsTo(castSwitch, categories[4].panel), "cast toggle belongs to Appearance")
+resetStates = {}
+button("Reset priority colors"):Click()
+equal(table.concat(resetStates, ","), "attacking,hostile,neutral,friendly,useful,useless", "priority reset scope")
+equal(allColorResets, 0, "priority reset does not call complete color reset")
+button("Reset all profile colors"):Click()
+equal(allColorResets, 1, "complete color reset remains available")
+castEnabled, threatEnabled = true, false
+profile.nameSize, profile.matchSanctuaryFont = 31, false
+button("Reset text and layout"):Click()
+equal(profile.nameSize, 21, "text reset restores size")
+equal(profile.matchSanctuaryFont, true, "text reset restores sanctuary switch")
+equal(threatEnabled, true, "text reset preserves prior threat-enable behavior")
+equal(castEnabled, true, "text reset preserves cast toggle")
+equal(allColorResets, 1, "text reset does not reset colors")
+-- Shared layout remeasures wrapped descriptions and keeps actions on their own rows.
+local sample, content, layout = ns.SettingsUI.CreateScrollablePanel("Sample")
+local description = ns.SettingsUI.AddDescription(content, layout, "Wrapped description")
+description.naturalHeight = 80
+ns.SettingsUI.AddSection(content, layout, "Sample section")
+local action = ns.SettingsUI.AddActionButton(content, layout, "Sample action", function() end)
+layout:Finish()
+equal(description.height, 82, "description uses measured height")
+local firstActionY = action.points.TOPLEFT[4]
+description.naturalHeight = 120
+sample.scripts.OnShow(sample)
+equal(description.height, 122, "page show remeasures description")
+equal(action.points.TOPLEFT[4], firstActionY - 40, "following action follows text reflow")
+equal(action.parent, content, "section action has its own content row")
+for _, item in ipairs(frames) do
+    if item.kind == "FontString" and item.template == "GameFontNormal" then
+        assert(item.text ~= "PRIORITY COLORS" and item.text ~= "IN COMBAT" and item.text ~= "PROFILES", "old caps heading removed")
+    end
 end
 
 print("Settings smoke: passed")

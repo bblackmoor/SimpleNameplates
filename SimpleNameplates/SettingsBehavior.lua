@@ -1,8 +1,8 @@
 -- Simple Nameplates: Behavior settings page.
 local _, ns = ...
 local U = ns.SettingsUI
-local CreateScrollablePanel, AddTitle, AddDescription, CreateSwitch =
-    U.CreateScrollablePanel, U.AddTitle, U.AddDescription, U.CreateSwitch
+local CreateScrollablePanel, AddTitle, AddDescription =
+    U.CreateScrollablePanel, U.AddTitle, U.AddDescription
 local AddSection, RunRefreshers, RefreshNameplates =
     U.AddSection, U.RunRefreshers, U.RefreshNameplates
 local GetCategoryMode, SetCategoryMode = ns.GetCategoryMode, ns.SetCategoryMode
@@ -20,33 +20,15 @@ local CATEGORY_ROWS = {
 }
 
 local function CreateBehaviorToggle(context, labelText, noteText, getter, setter, onChanged)
-    local content, layout = context.content, context.layout
-    local row = CreateFrame("Frame", nil, content)
-    row:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-    layout:Add(row, 24, 30, 0)
-    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    label:SetPoint("LEFT")
-    label:SetText(labelText)
-    local toggle
-    toggle = CreateSwitch(row, function(checked)
-        setter(checked)
-        if onChanged then onChanged(checked) end
-        toggle:SetChecked(getter())
+    local toggle = U.AddToggle(context.content, context.layout, context.refreshers,
+        labelText, getter, setter, onChanged)
+    -- Compatibility checks can pause styling, so reread the effective value.
+    local click = toggle:GetScript("OnClick")
+    toggle:SetScript("OnClick", function(self)
+        click(self)
+        self:SetChecked(getter())
     end)
-    toggle:SetPoint("LEFT", label, "RIGHT", 12, 0)
-    if noteText then
-        local note = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        note:SetPoint("RIGHT", content, "RIGHT", -20, 0)
-        note:SetJustifyH("LEFT")
-        note:SetText(noteText)
-        layout:Add(note, 24, 34, 8)
-    else
-        layout:Space(6)
-    end
-
-    local function Refresh() toggle:SetChecked(getter()) end
-    context.refreshers[#context.refreshers + 1] = Refresh
-    Refresh()
+    if noteText then U.AddDescription(context.content, context.layout, noteText) end
 end
 
 local function HandleStylingChanged(enabled)
@@ -70,22 +52,11 @@ local CATEGORY_MODES = {
 local function CreateCategoryModeRow(context, rowData)
     local content, layout = context.content, context.layout
     local labelText, state, noteText = rowData[1], rowData[2], rowData[3]
-    local row = CreateFrame("Frame", nil, content)
-    row:SetPoint("RIGHT", content, "RIGHT", -24, 0)
-    layout:Add(row, 24, 44, 2)
-    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    label:SetPoint("TOPLEFT", 4, -3)
-    label:SetWidth(375)
-    label:SetJustifyH("LEFT")
-    label:SetText(labelText)
+    local row = U.CreateSettingRow(content, layout, labelText)
     local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("LEFT", label, "RIGHT", -4, -9)
-    UIDropDownMenu_SetWidth(dropdown, 82)
-    local note = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    note:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -4)
-    note:SetPoint("RIGHT", row, "RIGHT", -4, 0)
-    note:SetJustifyH("LEFT")
-    note:SetText(noteText)
+    dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X - 16, 0)
+    UIDropDownMenu_SetWidth(dropdown, 100)
+    AddDescription(content, layout, noteText)
 
     local function Refresh()
         local mode = GetCategoryMode(state)
@@ -114,7 +85,7 @@ local function CreateCategoryModeRow(context, rowData)
 end
 
 local function AddBehaviorCategoryControls(context)
-    AddSection(context.content, context.layout, "CATEGORY HANDLING")
+    AddSection(context.content, context.layout, "Category handling")
     AddDescription(context.content, context.layout,
         "Active lets Simple Nameplates style the category. Inactive leaves Blizzard's display unchanged.")
     for _, rowData in ipairs(CATEGORY_ROWS) do CreateCategoryModeRow(context, rowData) end
@@ -122,7 +93,7 @@ end
 
 local function AddBehaviorOverheadNameControls(context)
     context.layout:Space(6)
-    AddSection(context.content, context.layout, "BLIZZARD OVERHEAD NAMES")
+    AddSection(context.content, context.layout, "Native world names")
     CreateBehaviorToggle(context, "Hide critter and companion names",
         "Hides Blizzard overhead names for noncombat critters and companions.",
         GetHideCritterCompanionNames, SetHideCritterCompanionNames)
@@ -130,12 +101,12 @@ end
 
 local function CreateBehaviorPanel()
     local panel, content, layout = CreateScrollablePanel("Behavior")
-    AddTitle(content, layout, "Simple Nameplates — Behavior")
+    AddTitle(content, layout, "Behavior")
     AddDescription(content, layout,
         "Global addon behavior and user preferences. These settings do not change with the appearance profile.")
 
     local context = { content = content, layout = layout, refreshers = {} }
-    AddSection(content, layout, "ADDON")
+    AddSection(content, layout, "Addon styling")
     CreateBehaviorToggle(context, "Enable Simple Nameplates styling", nil,
         GetStylingEnabled, SetStylingEnabled, HandleStylingChanged)
     AddBehaviorCategoryControls(context)

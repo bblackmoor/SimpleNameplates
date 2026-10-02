@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.125
+
+* Reorganizes settings into About, Behavior, Profiles, Appearance, Colors, and TRP3. Appearance/Colors keep compact profile selectors; management actions move to Profiles.
+* Uses sentence-case headings, white labels, muted wrapping descriptions, a shared control column, and section actions below controls.
+* Keeps all global TRP3 options together, moves informational native-label swatches into About, and preserves the combat sections on Appearance.
+* Names reset scopes explicitly, adds a six-category priority reset, and preserves the existing complete color and text/layout resets. Saved fields and runtime presentation rules are unchanged.
+
 ## 1.0.124
 
 * Corrects regression checks to identify color controls separately from matching Behavior labels and to test inside-bar font restoration when the bar is visible.
