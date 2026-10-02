@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.113
+
+* When an NPC nameplate exposes a readable name but no GUID, it can reuse an unambiguous subtitle previously learned from a verified full NPC tooltip with the same name.
+* GUID matching remains preferred; conflicting verified subtitles for the same NPC name disable the name fallback for that name.
+
+
 ## 1.0.112
 
 * Accepts NPC subtitles followed by a plain level line when its text matches WoW's localized level template and the unit's readable level, including Orin Straylight's observed tooltip layout.
