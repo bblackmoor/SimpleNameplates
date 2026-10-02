@@ -17,7 +17,7 @@ local function UpdateNameText(frame)
     -- value directly; do not replace it with an empty string.
     local unitName = UnitName(unit)
     local displayName = unitName
-    local fullTitle
+    local fullTitle = ns.NPCTitles and ns.NPCTitles.GetTitle(unit, frame.SNPEntityFacts)
     local info = ns.TRP3 and ns.TRP3.GetDisplayInfo(unit)
 
     if info then
@@ -37,7 +37,7 @@ local function UpdateNameText(frame)
             displayName = prefix .. " " .. displayName
         end
 
-        if GetTRP3Setting("showFullTitle") then fullTitle = info.fullTitle end
+        if not fullTitle and GetTRP3Setting("showFullTitle") then fullTitle = info.fullTitle end
     end
 
     name:SetText(displayName)

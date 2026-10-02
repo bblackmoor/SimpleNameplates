@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.110
+
+* Reads NPC subtitles such as "Voidforge Steward" from readable structured unit-tooltip data and displays them in angle brackets below addon-controlled name-only NPC labels at 80% of the name size.
+* NPC subtitles are independent of TRP3 settings, share the name's configured color, and hide when a health bar is displayed. Missing, restricted, or ambiguous tooltip layouts omit the title.
+* Added subtitle diagnostics and extraction/presentation regressions. Blizzard overhead-name duplication remains a separate issue.
+
 ## 1.0.109
 
 * `/snp debug` now reports every enumerated nameplate, including frames that do not match the target: current unit token/name, displayed name text, visibility, addon markers, original unit, and cached name/presentation.

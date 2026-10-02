@@ -83,7 +83,7 @@ local ns = {
     BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
     FRIENDLY_COLOR_CVARS = {},
 }
-for _, file in ipairs({ "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "NameplateFrames.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
+for _, file in ipairs({ "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
     assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", ns)
 end
 equal(#frames, 1, "one event frame")
@@ -544,6 +544,32 @@ for _, case in ipairs({
     hooks[1].callback(plateFrame)
     equal(plateFrame.healthBar.barG, case.green, "sanctuary health repair")
 end
+
+-- NPC service titles appear without TRP3 and follow name-only/bar visibility.
+Enum = {TooltipDataLineType = {None = 0, UnitName = 2, UnitLevel = 47}}
+C_TooltipInfo = {GetUnit = function()
+    return {lines = {{type = 2, leftText = "Orin Straylight"},
+        {type = 0, leftText = "Voidforge Steward"}, {type = 47, leftText = "Level 90"}}}
+end}
+unit = {reaction = 5, interactable = true}
+trp3Options = {}
+ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "NPC service title independent of TRP3")
+equal(plateFrame.SNPFullTitleText.shown, true, "NPC service title shown below floating name")
+equal(plateFrame.SNPFullTitleText.size, 10, "NPC title uses rounded eighty-percent size")
+equal(plateFrame.SNPFullTitleText.g, 211 / 255, "NPC title uses sanctuary useful color")
+ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.shown, false, "NPC title hidden with health bar")
+ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.shown, true, "NPC title restored after combat")
+C_TooltipInfo.GetUnit = function() return {lines = {{type = 2}, {type = 47}}} end
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.shown, false, "missing subtitle clears previous title")
+equal(plateFrame.SNPFullTitleText.text, "", "old NPC service text cleared")
+C_TooltipInfo = nil
 
 local visited, largest = {}, 0
 local function CheckUpvalues(fn)

@@ -35,6 +35,8 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 
 ## What's Displayed
 
+NPC subtitles such as `<Voidforge Steward>` are read from structured unit-tooltip data and displayed beneath addon-controlled name-only NPC labels at 80% of the name size, in the same color. They do not require TRP3 and are hidden with visible health bars. The reader accepts only a single plain subtitle between the typed unit-name and level lines; missing, restricted, or ambiguous layouts omit the title. This does not suppress Blizzard's separate overhead label or establish that every titled NPC is useful. `/snp debug` reports the detected NPC subtitle.
+
 * Normal Blizzard unit name and health bar
 * Normal health depletion as the unit takes damage
 * Normal Blizzard cast/channel bar and spell information

@@ -204,6 +204,12 @@ local function DebugScannedPlates(candidates, context)
         print("  Scanned nameplate " .. index .. ": token " .. DebugValue(token)
             .. "; unit name: " .. DebugValue(unitName)
             .. "; matches target: " .. DebugBoolean(candidate.targetMatch))
+        local subtitle
+        if type(token) == "string" then
+            local _, _, facts = StateForUnit(token, context)
+            subtitle = ns.NPCTitles.GetTitle(token, facts)
+        end
+        print("  NPC nameplate tooltip subtitle: " .. DebugValue(subtitle))
         print("  Base plate access: " .. candidate.plateStatus
             .. "; shown: " .. DebugBoolean(candidate.plateShown)
             .. "; visible: " .. DebugBoolean(candidate.plateVisible)
@@ -234,6 +240,7 @@ local function DebugUnit(unit, context)
         .. "; matching frames: " .. #matches .. "; identity unavailable: " .. unknown)
     DebugClassification(state, rule, assessment, context, facts)
     DebugUnitRelationships(facts)
+    print("  NPC tooltip subtitle: " .. DebugValue(ns.NPCTitles.GetTitle(unit, facts)))
     if #matches == 0 then
         DebugNameRegion(assessment, context)
         DebugPresentation(assessment, context)
