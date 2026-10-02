@@ -121,5 +121,14 @@ equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), nil, "reused token ca
 plateGUID = secret
 equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), nil, "restricted identity cannot inherit title")
 plateGUID = nil
-equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), nil, "same name alone cannot inherit title")
+UnitName = function(token)
+    if token == "nameplate1" or token == "target" then return "Orin Straylight" end
+end
+-- Relearn the verified target title so the no-GUID plate can use the bounded
+-- name fallback observed in the live client.
+UnitGUID = function(token) if token == "target" then return "Creature-Orin" end end
+ns.NPCTitles.GetTitle("target", {isNPC = true, interactable = true})
+local fallbackTitle, fallbackSource = ns.NPCTitles.GetTitle("nameplate1", {isNPC = true})
+equal(fallbackTitle, "<Voidforge Steward>", "no-GUID plate uses cached verified NPC name")
+equal(fallbackSource, "cached NPC name (GUID unavailable)", "name fallback source reported")
 print("NPC titles smoke: passed")
