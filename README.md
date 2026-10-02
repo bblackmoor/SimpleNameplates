@@ -103,6 +103,8 @@ The main **Simple Nameplates** AddOns page is an About screen showing the addon 
 
 The diagnostic also enumerates existing nameplates and matches their unit tokens to the selected target, with readable GUIDs as a fallback when unit identity is unavailable. It reports the lookup source, matching-frame count, unknown identities, addon styling markers, cached name text and presentation revision, and the inside-name and long-title regions. These are read-only observations; a missing match does not prove that a world label belongs to Blizzard or another addon.
 
+Every enumerated nameplate is also listed, even if it does not match the target, with its current unit token/name, displayed name, base/frame/text visibility, original unit token, and cached addon text. This helps identify stale labels on frames assigned to another unit. Inaccessible regions remain marked unavailable rather than read.
+
 All settings pages scroll when their contents do not fit the available window height.
 
 ## Download and Installation

@@ -42,7 +42,7 @@ function UnitReaction() return unit.reaction end
 function UnitIsPVP() return unit.pvp or false end
 local unitExists = true
 function UnitExists() return unitExists end
-function UnitName() return "Diagnostic Target" end
+function UnitName(token) return unit.names and unit.names[token] or "Diagnostic Target" end
 function UnitAffectingCombat() return false end
 function UnitIsInteractable() return unit.interactable or false end
 
@@ -460,6 +460,30 @@ equal(plateFrame.SNPNameStyle, diagnosticStyle, "diagnostic does not rewrite cac
 equal(#frames, beforeFrames, "enumerated diagnostic creates no frames")
 equal(#hooks, beforeHooks, "enumerated diagnostic creates no hooks")
 
+-- Nonmatching frames must still expose readable displayed and cached text.
+output = {}
+local previousNameText = plateFrame.name.text
+plateFrame.unit = "nameplate2"
+plateFrame.name:SetText("Orin Straylight")
+diagnosticStyle.text = "Orin Straylight"
+unit.names = {nameplate2 = "Different NPC"}
+ns.DebugUnit("target")
+report = table.concat(output, "\n")
+assert(report:find("matching frames: 0", 1, true), "nonmatching frame remains unmatched")
+assert(report:find("Scanned nameplate 1: token nameplate2; unit name: Different NPC; matches target: no", 1, true),
+    "nonmatching current identity printed")
+assert(report:find("Name region: found; text: Orin Straylight", 1, true), "nonmatching displayed text printed")
+assert(report:find("Cached name style: found; text: Orin Straylight", 1, true), "nonmatching cache printed")
+assert(report:find("Scanned nameplate 2:", 1, true), "every enumerated entry printed")
+equal(plateFrame.name.text, "Orin Straylight", "diagnostic does not repair stale text")
+equal(plateFrame.unit, "nameplate2", "diagnostic does not change unit")
+equal(plateFrame.SNPNameStyle, diagnosticStyle, "nonmatching cache untouched")
+equal(#frames, beforeFrames, "nonmatching diagnostic creates no frames")
+equal(#hooks, beforeHooks, "nonmatching diagnostic creates no hooks")
+plateFrame.unit = "nameplate1"
+plateFrame.name:SetText(previousNameText)
+unit.names = nil
+
 output = {}
 UnitIsUnit = function() error("identity unavailable") end
 UnitGUID = function(token)
@@ -479,6 +503,7 @@ output = {}
 C_NamePlate.GetNamePlates = function() return { {IsForbidden = function() return true end} } end
 ns.DebugUnit("target")
 assert(table.concat(output, "\n"):find("matching frames: 0", 1, true), "forbidden candidate skipped")
+assert(table.concat(output, "\n"):find("Base plate access: forbidden", 1, true), "forbidden scanned entry reported")
 output = {}
 C_NamePlate.GetNamePlates = function() error("enumeration unavailable") end
 ns.DebugUnit("target")

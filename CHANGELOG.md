@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.109
+
+* `/snp debug` now reports every enumerated nameplate, including frames that do not match the target: current unit token/name, displayed name text, visibility, addon markers, original unit, and cached name/presentation.
+* Keeps unknown identities and inaccessible frames explicit; these read-only diagnostics do not change nameplate presentation.
+
 ## 1.0.108
 
 * Expanded `/snp debug` to search existing nameplates for the selected unit when direct lookup misses it, using readable unit identity rather than displayed names.

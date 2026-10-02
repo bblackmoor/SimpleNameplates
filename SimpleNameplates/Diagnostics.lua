@@ -46,7 +46,7 @@ local function SameUnit(candidate, unit)
 end
 
 local function FindDiagnosticPlates(unit, context)
-    local matches, seen = {}, {}
+    local matches, seen, candidates = {}, {}, {}
     local direct = Capabilities.InspectUnit(unit, context)
     if direct.frame then
         matches[#matches + 1] = {assessment = direct, source = "direct lookup"}
@@ -60,14 +60,19 @@ local function FindDiagnosticPlates(unit, context)
             local frame = Capabilities.SafeField(plate, "UnitFrame", context)
             local token = Capabilities.SafeField(frame, "unit", context)
             local same = SameUnit(token, unit)
+            local assessment = Capabilities.InspectFrame(frame, context)
+            candidates[#candidates + 1] = {assessment = assessment, token = token,
+                targetMatch = same, plateStatus = Capabilities.ObjectStatus(plate, context),
+                plateShown = Capabilities.ReadRegion(plate, "IsShown", context),
+                plateVisible = Capabilities.ReadRegion(plate, "IsVisible", context)}
             if same == true and not seen[frame] then
-                matches[#matches + 1] = {assessment = Capabilities.InspectFrame(frame, context),
+                matches[#matches + 1] = {assessment = assessment,
                     source = "enumerated unit match", token = token}
                 seen[frame] = true
             elseif same == nil then unknown = unknown + 1 end
         end
     end
-    return matches, direct, scanned, unknown, type(plates) == "table"
+    return matches, direct, scanned, unknown, type(plates) == "table", candidates
 end
 
 local function DebugAddonText(assessment, context)
@@ -191,6 +196,26 @@ local function DebugPresentation(assessment, context)
         .. "; highlight shown " .. DebugRegionValue(overlay, "IsShown", "boolean", context))
 end
 
+local function DebugScannedPlates(candidates, context)
+    for index, candidate in ipairs(candidates) do
+        local assessment, token = candidate.assessment, candidate.token
+        local unitName
+        if type(token) == "string" then unitName = ReadUnitAPI(UnitName, token) end
+        print("  Scanned nameplate " .. index .. ": token " .. DebugValue(token)
+            .. "; unit name: " .. DebugValue(unitName)
+            .. "; matches target: " .. DebugBoolean(candidate.targetMatch))
+        print("  Base plate access: " .. candidate.plateStatus
+            .. "; shown: " .. DebugBoolean(candidate.plateShown)
+            .. "; visible: " .. DebugBoolean(candidate.plateVisible)
+            .. "; unit frame access: " .. assessment.status
+            .. "; blocked region: " .. DebugValue(assessment.reason))
+        print("  Unit frame shown: " .. DebugRegionValue(assessment.frame, "IsShown", "boolean", context)
+            .. "; visible: " .. DebugRegionValue(assessment.frame, "IsVisible", "boolean", context))
+        DebugNameRegion(assessment, context)
+        DebugAddonText(assessment, context)
+    end
+end
+
 local function DebugUnit(unit, context)
     context = context or GetContext()
     DebugContext(context)
@@ -201,7 +226,7 @@ local function DebugUnit(unit, context)
 
     local name = DebugValue(UnitName(unit))
     local state, rule, facts = StateForUnit(unit, context)
-    local matches, direct, scanned, unknown, enumerationAvailable = FindDiagnosticPlates(unit, context)
+    local matches, direct, scanned, unknown, enumerationAvailable, candidates = FindDiagnosticPlates(unit, context)
     local assessment = matches[1] and matches[1].assessment or direct
     print("|cff0cd29fSimple Nameplates debug:|r " .. name)
     print("  Nameplate lookup: direct " .. direct.status .. "; enumeration available: "
@@ -223,6 +248,7 @@ local function DebugUnit(unit, context)
             DebugAddonText(match.assessment, context)
         end
     end
+    DebugScannedPlates(candidates, context)
 end
 
 
