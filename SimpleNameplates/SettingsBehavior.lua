@@ -51,6 +51,7 @@ end
 
 local function HandleStylingChanged(enabled)
     if enabled then
+        if ns.CheckNameplateSetup and not ns.CheckNameplateSetup() then return end
         ns.DisableFriendlyClassColors()
         ns.ApplyManagedNameSettings()
         RefreshNameplates()

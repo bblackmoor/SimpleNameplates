@@ -223,6 +223,16 @@ local function ValidatedDB(saved)
     ValidateTRP3Settings(db, savedGlobal)
     db.global.managedNameCVarOriginals = CopySavedCVarOriginals(
         savedGlobal.managedNameCVarOriginals, MANAGED_NAME_CVARS) or {}
+    db.global.nameplateSetupOriginals = {}
+    local setupOriginals = savedGlobal.nameplateSetupOriginals
+    if type(setupOriginals) == "table" and ns.NAMEPLATE_SETUP_CVARS then
+        for character, originals in pairs(setupOriginals) do
+            if type(character) == "string" then
+                db.global.nameplateSetupOriginals[character] =
+                    CopySavedCVarOriginals(originals, ns.NAMEPLATE_SETUP_CVARS)
+            end
+        end
+    end
     return db
 end
 
@@ -455,11 +465,12 @@ local function SetInterruptibleHighlightEnabled(enabled)
 end
 
 local function GetStylingEnabled()
-    return EnsureDB().global.stylingEnabled
+    return EnsureDB().global.stylingEnabled and not ns.nameplateSetupPending
 end
 
 local function SetStylingEnabled(enabled)
     EnsureDB().global.stylingEnabled = enabled == true
+    if not enabled and ns.RestoreNameplateSetup then ns.RestoreNameplateSetup() end
 end
 
 local function GetThreatEnabled()

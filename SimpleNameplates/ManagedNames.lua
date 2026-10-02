@@ -87,7 +87,7 @@ end
 local function DesiredManagedNameSettings(db)
     local desired = {}
     local global = db.global
-    if not global.stylingEnabled then return desired end
+    if not GetStylingEnabled() then return desired end
     AddExplicitHiddenNameCVarSettings(desired, global)
     return desired
 end
@@ -198,7 +198,7 @@ local friendlyColorCVarOriginals = {}
 local friendlyColorCVarsCaptured = false
 
 DisableFriendlyClassColors = function()
-    if GetCategoryMode("friendly") ~= "active" or GetCategoryMode("hostile") ~= "active"
+    if not GetStylingEnabled() or GetCategoryMode("friendly") ~= "active" or GetCategoryMode("hostile") ~= "active"
         or GetCategoryMode("attacking") ~= "active" then
         RestoreFriendlyClassColors()
         return

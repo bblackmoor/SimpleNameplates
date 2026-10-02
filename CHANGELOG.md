@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.118
+
+* Checks Blizzard plate visibility settings on login and when enabling styling. Conflicts pause styling and offer a reviewable Apply-and-enable or Disable-styling choice; compatible settings require no dialog.
+* Keeps Only Show Names off so the addon can control friendly bars in combat. Setup changes only listed conflicts, saves originals per character across reloads, and restores them when styling is disabled.
+* Defers setup/restoration during combat and verifies writes before resuming styling. Failed writes keep styling paused; failed restoration retains backups for retry.
+* Added regression coverage for consent, reloads, character isolation, rejected writes, unsupported CVars, and combat deferral. Documented current Blizzard/Plater findings and the unresolved sanctuary opposite-faction plate case.
+
 ## 1.0.117
 
 * Suppresses name/title text on confirmed widget-only plates in Active categories while preserving their frames, widgets, and Blizzard bar visibility. Ordinary plates continue displaying NPC names and service titles.

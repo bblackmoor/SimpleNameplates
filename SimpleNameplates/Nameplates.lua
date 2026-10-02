@@ -93,6 +93,7 @@ end
 
 local function HandlePlayerLogin()
     ns.EnsureDB()
+    if ns.CheckNameplateSetup then ns.CheckNameplateSetup() end
     ns.ApplyCritterCompanionNameVisibility()
     C_Timer.After(1, function()
         if ns.GetHideCritterCompanionNames() then ns.ApplyCritterCompanionNameVisibility() end
@@ -178,6 +179,7 @@ local function HandleEvent(_, event, unit)
     if event == "PLAYER_LOGIN" then HandlePlayerLogin(); return end
     if event == "PLAYER_REGEN_ENABLED" then
         if ns.ApplyPendingManagedNameSettings then ns.ApplyPendingManagedNameSettings() end
+        if ns.RetryNameplateSetup then ns.RetryNameplateSetup() end
         QueueRefreshAll()
         return
     end
@@ -241,4 +243,3 @@ end)
 ns.RefreshAll = RefreshAll
 ns.RestoreAll = RestoreAll
 ns.StateForUnit = StateForUnit
-
