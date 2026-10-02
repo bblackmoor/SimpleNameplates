@@ -610,7 +610,10 @@ C_PvP = {GetZonePVPInfo = function() return "friendly", false end}
 ns.WorldContext.Refresh("ZONE_CHANGED_NEW_AREA")
 ns.RefreshAll()
 equal(plateFrame.name.font, "Fonts\\ARIALN.TTF", "leaving sanctuary restores selected font")
-equal(plateFrame.SNPInsideName.font, "Fonts\\ARIALN.TTF", "leaving sanctuary restores inside font")
+equal(plateFrame.SNPInsideName.shown, false, "leaving sanctuary out of combat hides inside name")
+ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
+ns.RefreshAll()
+equal(plateFrame.SNPInsideName.font, "Fonts\\ARIALN.TTF", "outside sanctuary combat restores inside font")
 appearance.namePlacement = "ABOVE"
 C_PvP = {GetZonePVPInfo = function() return "sanctuary", false end}
 ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")

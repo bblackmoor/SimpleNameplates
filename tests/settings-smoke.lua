@@ -251,7 +251,13 @@ equal(attacking[1], 1, "color picker cancel restores")
 local function colorRow(labelText)
     local row
     for _, item in ipairs(frames) do
-        if item.kind == "FontString" and item.text == labelText then row = item.parent; break end
+        if item.kind == "FontString" and item.text == labelText then
+            for _, control in ipairs(frames) do
+                if control.parent == item.parent and control.kind == "Button"
+                    and control.template == "BackdropTemplate" then row = item.parent; break end
+            end
+            if row then break end
+        end
     end
     assert(row, "color row " .. labelText)
     local swatch, reset, fill

@@ -55,9 +55,9 @@ local FONT_BY_VALUE = {}
 for _, option in ipairs(FONT_OPTIONS) do FONT_BY_VALUE[option.value] = option end
 
 local DEFAULT_APPEARANCE = {
-    nameFont = "ARIALN",
+    nameFont = "FRIZQT",
     matchSanctuaryFont = true,
-    nameSize = 12,
+    nameSize = 21,
     threatFont = "ARIALN",
     namePlacement = "ABOVE",
 }

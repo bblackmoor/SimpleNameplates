@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.124
+
+* Corrects regression checks to identify color controls separately from matching Behavior labels and to test inside-bar font restoration when the bar is visible.
+* Changes the default Name font to Friz Quadrata and the default name size to 21 points. New profiles, missing/invalid values, and Reset Appearance use these defaults; existing valid profile choices are retained.
+
 ## 1.0.123
 
 * Adds the profile setting "Match Blizzard font in sanctuaries," enabled by default and included in Reset Appearance.
