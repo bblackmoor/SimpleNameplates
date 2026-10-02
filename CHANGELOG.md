@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.115
+
+* Tries a structured `unit:<GUID>` hyperlink tooltip first for confirmed NPC subtitles, then retains the working unit-token and GUID/name cache fallbacks. Missing, failed, restricted, or rejected hyperlink data does not prevent fallback.
+* Preserves affirmative interaction evidence learned with a subtitle so direct hyperlink extraction does not revert a useful nameplate to the useless-NPC color.
+* `/snp debug` reports hyperlink title/extraction results, each unit's soft-interaction match and widget-only flag, and the `nameplateShowFriendlyNpcs` CVar. These reads do not alter name visibility or suppress duplicate world labels.
+* Added regressions for hyperlink precedence, failed/restricted reads, rejected layouts, secret GUIDs, player exclusion, useful title/color presentation, and interaction-plate diagnostics.
+
 ## 1.0.114
 
 * Allows unambiguous NPC-name subtitle fallback when a readable nameplate GUID cannot be associated with a fuller world-unit tooltip, as well as when GUIDs are unavailable.

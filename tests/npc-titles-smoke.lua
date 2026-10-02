@@ -151,4 +151,47 @@ equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), nil, "conflicting nam
 -- Exact identity remains authoritative despite ambiguity in the name cache.
 UnitGUID = function() return "Creature-Cold-Target" end
 equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), "<Different Service>", "GUID preferred over ambiguous name")
+
+-- Prefer the GUID hyperlink and retain token reading when it cannot help.
+UnitGUID = function() return "Creature-Hyperlink" end
+UnitName = function() return "Hyperlink Test NPC" end
+local linkCalls, unitCalls = 0, 0
+C_TooltipInfo = {
+    GetHyperlink = function(link)
+        linkCalls = linkCalls + 1
+        equal(link, "unit:Creature-Hyperlink", "readable unit GUID hyperlink")
+        return tooltip("Hyperlink Service")
+    end,
+    GetUnit = function()
+        unitCalls = unitCalls + 1
+        return tooltip("Token Service")
+    end,
+}
+title, source = ns.NPCTitles.GetTitle("nameplate1", {isNPC = true, interactable = true})
+equal(title, "<Hyperlink Service>", "hyperlink title takes precedence")
+equal(source, "GUID hyperlink tooltip", "hyperlink source explicit")
+equal(unitCalls, 0, "successful hyperlink avoids token title read")
+info = ns.NPCTitles.Inspect("nameplate1", {isNPC = true})
+equal(info.hyperlink.title, "<Hyperlink Service>", "hyperlink diagnostic title")
+equal(info.hyperlink.reason, "title extracted", "hyperlink diagnostic reason")
+equal(info.title, "<Token Service>", "diagnostics retain independent token result")
+C_TooltipInfo.GetHyperlink = function() error("blocked") end
+equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), "<Token Service>", "failed hyperlink falls back")
+equal(ns.NPCTitles.Inspect("nameplate1", {isNPC = true}).hyperlink.reason,
+    "hyperlink tooltip API call failed", "failed hyperlink diagnosed")
+C_TooltipInfo.GetHyperlink = function() return {lines = {{type = 2}, {type = 47}}} end
+equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), "<Token Service>", "rejected hyperlink layout falls back")
+issecretvalue = function(value) return value == secret end
+C_TooltipInfo.GetHyperlink = function() return secret end
+equal(ns.NPCTitles.GetTitle("nameplate1", {isNPC = true}), "<Token Service>", "restricted hyperlink data falls back")
+equal(ns.NPCTitles.Inspect("nameplate1", {isNPC = true}).hyperlink.reason,
+    "hyperlink tooltip data restricted", "restricted hyperlink diagnosed")
+C_TooltipInfo.GetHyperlink = function() linkCalls = linkCalls + 1 end
+local before = linkCalls
+UnitGUID = function() return secret end
+ns.NPCTitles.GetTitle("nameplate1", {isNPC = true})
+equal(linkCalls, before, "restricted GUID never concatenated or queried")
+ns.NPCTitles.GetTitle("player", {isNPC = false})
+equal(linkCalls, before, "players excluded from hyperlink queries")
+issecretvalue = nil
 print("NPC titles smoke: passed")

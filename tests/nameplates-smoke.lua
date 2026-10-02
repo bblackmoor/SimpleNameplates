@@ -606,6 +606,38 @@ unit.names = {nameplate1 = "Different NPC"}
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.shown, false, "token reuse clears service title")
 equal(plateFrame.name.g, 153 / 255, "token reuse clears useful evidence")
+
+-- Hyperlink titles preserve the useful coloring from the fuller target.
+unit.names = {nameplate1 = "Orin Straylight", target = "Orin Straylight"}
+C_TooltipInfo.GetHyperlink = function() return {lines = {
+    {type = 2, leftText = "Orin Straylight"},
+    {type = 0, leftText = "Voidforge Steward"}, {type = 47, leftText = "Level 90"},
+}} end
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "hyperlink title displayed")
+equal(plateFrame.SNPEntityFacts.npcTitleSource, "GUID hyperlink tooltip", "hyperlink presentation source")
+equal(plateFrame.name.g, 211 / 255, "hyperlink retains useful name color")
+equal(plateFrame.SNPFullTitleText.g, 211 / 255, "hyperlink retains useful title color")
+local oldIsUnit, oldWidgetsOnly, oldCVar = UnitIsUnit, UnitNameplateShowsWidgetsOnly, C_CVar
+UnitIsUnit = function(token, other) return token == "nameplate1" and other == "softinteract" end
+UnitNameplateShowsWidgetsOnly = function(token) return token == "nameplate1" end
+C_CVar = {GetCVar = function(key)
+    equal(key, "nameplateShowFriendlyNpcs", "diagnostic reads friendly NPC CVar")
+    return "1"
+end}
+output = {}
+print = function(text) output[#output + 1] = text end
+ns.DebugUnit("target")
+local report = table.concat(output, "\n")
+assert(report:find("nameplateShowFriendlyNpcs=1", 1, true), "friendly NPC visibility reported")
+assert(report:find("Plate kind [nameplate1]: softinteract match: yes; widgets only: yes", 1, true), "special plate flags reported")
+assert(report:find("NPC hyperlink [nameplate1]: title <Voidforge Steward>; result: title extracted", 1, true), "hyperlink result reported")
+UnitNameplateShowsWidgetsOnly = function() error("restricted") end
+output = {}
+ns.DebugUnit("target")
+assert(table.concat(output, "\n"):find("widgets only: restricted/unavailable", 1, true), "failed widget read explicit")
+print = originalPrint
+UnitIsUnit, UnitNameplateShowsWidgetsOnly, C_CVar = oldIsUnit, oldWidgetsOnly, oldCVar
 C_TooltipInfo = nil
 
 local visited, largest = {}, 0

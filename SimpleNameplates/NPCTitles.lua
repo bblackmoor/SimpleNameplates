@@ -140,15 +140,58 @@ local function ReadTooltip(unit, facts)
     return data
 end
 
+local function ReadHyperlink(unit, facts)
+    if not facts or facts.isNPC ~= true then return nil, "unit not confirmed NPC" end
+    local guid = GUID(unit)
+    if not guid then return nil, "readable NPC GUID unavailable" end
+    local getter = C_TooltipInfo and C_TooltipInfo.GetHyperlink
+    if type(getter) ~= "function" then return nil, "hyperlink tooltip API unavailable" end
+    local ok, data = pcall(getter, "unit:" .. guid)
+    if not ok then return nil, "hyperlink tooltip API call failed" end
+    if Restricted(data) then return nil, "hyperlink tooltip data restricted" end
+    data = Value(data)
+    if data == nil then return nil, "no hyperlink tooltip data returned" end
+    if type(data) ~= "table" then return nil, "hyperlink tooltip data unavailable or not a table" end
+    return data
+end
+
+local function TitleUsefulness(unit, facts, guid, title)
+    if facts.interactable == true then return true end
+    local exact = guid and known[guid]
+    if exact and exact.title == title and exact.useful then return true end
+    local key = UnitNameKey(unit)
+    -- Preserve the working interaction evidence when the new reader supplies
+    -- a subtitle directly to a sparse/non-interactable nameplate token.
+    for _, source in ipairs({"target", "mouseover", "softinteract"}) do
+        if source ~= unit and ((guid and GUID(source) == guid)
+            or (key and UnitNameKey(source) == key))
+            and Read(UnitIsPlayer, source) == false
+            and Read(UnitPlayerControlled, source) == false
+            and Read(UnitIsInteractable, source) == true then
+            local data = ReadTooltip(source, {isNPC = true})
+            if data and Extract(data, source) == title then return true end
+        end
+    end
+    local named = key and knownNames[key]
+    return named and not named.ambiguous and named.title == title and named.useful or false
+end
+
 local function GetTitle(unit, facts)
     if not facts or facts.isNPC ~= true then return nil, "unit not confirmed NPC" end
-    local data, reason = ReadTooltip(unit, facts)
+    local data, reason = ReadHyperlink(unit, facts)
     local title
     if data then title, reason = Extract(data, unit) end
+    local titleSource = "GUID hyperlink tooltip"
+    if not title then
+        data, reason = ReadTooltip(unit, facts)
+        if data then title, reason = Extract(data, unit) end
+        titleSource = "unit tooltip"
+    end
     local guid = GUID(unit)
     if title then
-        Remember(guid, unit, title, facts.interactable)
-        return title, "unit tooltip", facts.interactable == true
+        local useful = TitleUsefulness(unit, facts, guid, title)
+        Remember(guid, unit, title, useful)
+        return title, titleSource, useful
     end
     -- Full world-unit tooltips can include subtitles omitted by nameplate
     -- tokens. Verify readable GUID equality even when UnitIsUnit says false.
@@ -198,6 +241,10 @@ end
 local function Inspect(unit, facts)
     local data, reason = ReadTooltip(unit, facts)
     local result = {reason = reason, lines = {}}
+    local hyperlink, linkReason = ReadHyperlink(unit, facts)
+    local linkTitle
+    if hyperlink then linkTitle, linkReason = Extract(hyperlink, unit) end
+    result.hyperlink = {title = linkTitle, reason = linkReason}
     if not data then return result end
     result.title, result.reason = Extract(data, unit)
     local lines = Field(data, "lines")

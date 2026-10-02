@@ -117,6 +117,9 @@ local function DebugContext(context)
         .. "; free-for-all: " .. DebugBoolean(context.freeForAll)
         .. "; player combat: " .. DebugBoolean(context.inCombat)
         .. "; combat lockdown: " .. DebugBoolean(context.combatLockdown))
+    local getter = C_CVar and C_CVar.GetCVar or GetCVar
+    print("  Friendly NPC nameplates: nameplateShowFriendlyNpcs="
+        .. DebugValue(ReadUnitAPI(getter, "nameplateShowFriendlyNpcs")))
 end
 
 local function DebugClassification(state, rule, assessment, context, facts)
@@ -206,11 +209,18 @@ local function TooltipField(value, status)
 end
 
 local function DebugNPCTooltip(unit, facts)
+    print("  Plate kind [" .. unit .. "]: softinteract match: "
+        .. DebugBoolean(ReadUnitAPI(UnitIsUnit, unit, "softinteract"))
+        .. "; widgets only: " .. DebugBoolean(ReadUnitAPI(UnitNameplateShowsWidgetsOnly, unit)))
     if facts.isNPC == true then
         print("  Resolved NPC title: " .. (facts.npcTitle or "(none)")
             .. "; source: " .. (facts.npcTitleSource or "unavailable"))
     end
     local info = ns.NPCTitles.Inspect(unit, facts)
+    if facts.isNPC == true then
+        print("  NPC hyperlink [" .. unit .. "]: title " .. (info.hyperlink.title or "(none)")
+            .. "; result: " .. info.hyperlink.reason)
+    end
     print("  NPC tooltip [" .. unit .. "]: title " .. (info.title or "(none)")
         .. "; result: " .. info.reason)
     for _, row in ipairs(info.lines) do
