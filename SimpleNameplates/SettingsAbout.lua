@@ -5,6 +5,14 @@ local CreateScrollablePanel, AddTitle, AddDescription =
     U.CreateScrollablePanel, U.AddTitle, U.AddDescription
 local VERSION, SOURCE_URL = ns.VERSION, ns.SOURCE_URL
 
+-- Keep observed names and contexts here, not a blanket claim about every
+-- opposite-faction player or all NPCs. Mirror the register in the README.
+local PRESENTATION_LIMITS = {
+    { "Tawfee", "Silvermoon City / The Bazaar; sanctuary; opposite-faction PC" },
+    { "Talonhorn", "Silvermoon City / The Bazaar; sanctuary; opposite-faction PC" },
+    { "Éibhear", "Silvermoon City / The Bazaar; sanctuary; opposite-faction PC" },
+}
+
 local function CreateAboutPanel()
     local panel, content, layout = CreateScrollablePanel("About")
     StaticPopupDialogs["SNP_COPY_SOURCE"] = {
@@ -62,6 +70,19 @@ local function CreateAboutPanel()
         "    /snp debug - Explain the current target and cast-highlight state.\n" ..
         "    /snp about - Open this About page.")
     layout:Add(information, 20, 145)
+    layout:Space(12)
+    U.AddSection(content, layout, "KNOWN PRESENTATION LIMITS")
+    AddDescription(content, layout,
+        "These observed characters have native overhead names but no matching addon-accessible " ..
+        "plate. Simple Nameplates currently cannot change their name color, font, size, titles, or layout. " ..
+        "Visibility settings were enabled; no supported workaround was found.", 76)
+    for _, case in ipairs(PRESENTATION_LIMITS) do
+        AddDescription(content, layout, case[1] .. " — " .. case[2], 42)
+    end
+    AddDescription(content, layout,
+        "Recorded 2026-10-02. This is an observed limitation, not proof that every opposite-faction " ..
+        "PC is inaccessible in every context. Orin Straylight's duplicate widget-plate label was " ..
+        "resolved in v1.0.117; his ordinary NPC name and service title can be styled.", 70)
     layout:Finish()
     return panel
 end

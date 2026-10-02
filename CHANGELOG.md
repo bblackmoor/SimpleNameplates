@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.119
+
+* Records unresolved presentation limits by actual character name and context in the README and in-game About notes: Tawfee, Talonhorn, and Éibhear, opposite-faction PCs in Silvermoon sanctuary without accessible matching plates.
+* Distinguishes those unresolved cases from Orin's resolved duplicate widget-plate text and ordinary NPC visibility fixed by enabling friendly NPC plates.
+* Documents the actual implemented evaluation order and decision trees in the developer notes. No runtime classification change.
+
 ## 1.0.118
 
 * Checks Blizzard plate visibility settings on login and when enabling styling. Conflicts pause styling and offer a reviewable Apply-and-enable or Disable-styling choice; compatible settings require no dialog.
