@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.131
+
+* Removes the redundant Sanctuary colors section and its duplicate controls and descriptions. Priority colors remains the single place to edit all six categories; color and activation behavior is unchanged.
+
 ## 1.0.130
 
 * Makes Player - Friendly share its profile color and global activation switch between Priority colors and Sanctuary colors, matching the NPC controls. Keeps green as the default and retains existing Friendly color choices.

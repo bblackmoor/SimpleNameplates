@@ -292,28 +292,19 @@ local function colorRow(labelText)
     return assert(swatch), assert(reset), assert(fill)
 end
 for _, case in ipairs({
-    {"friendly", "4. Player - Friendly", "Player - Friendly", 0.2},
-    {"useful", "5. NPC - Interactive", "NPC - Interactive", 0.8},
-    {"useless", "6. NPC - Background", "NPC - Background", 0.6},
+    {"friendly", "4. Player - Friendly", 0.2},
+    {"useful", "5. NPC - Interactive", 0.8},
+    {"useless", "6. NPC - Background", 0.6},
 }) do
-    local first, firstReset, firstFill = colorRow(case[2])
-    local second, secondReset, secondFill = colorRow(case[3])
-    first:Click()
+    local swatch, reset, fill = colorRow(case[2])
+    swatch:Click()
     ColorPickerFrame.options.swatchFunc()
-    equal(npcColors[case[1]][1], 0.4, "priority copy updates shared category color")
-    equal(firstFill.color[1], 0.4, "priority swatch updates")
-    equal(secondFill.color[1], 0.4, "sanctuary swatch updates immediately")
+    equal(npcColors[case[1]][1], 0.4, "picker updates category color")
+    equal(fill.color[1], 0.4, "swatch updates")
     ColorPickerFrame.options.cancelFunc()
-    equal(firstFill.color[1], case[4], "cancel restores priority swatch")
-    equal(secondFill.color[1], case[4], "cancel restores sanctuary swatch")
-    second:Click()
-    ColorPickerFrame.options.swatchFunc()
-    equal(firstFill.color[1], 0.4, "sanctuary edit repaints priority copy")
-    secondReset:Click()
-    equal(firstFill.color[1], 0.7, "sanctuary reset repaints priority copy")
-    equal(secondFill.color[1], 0.7, "sanctuary reset repaints own copy")
-    firstReset:Click()
-    equal(secondFill.color[1], 0.7, "priority reset repaints sanctuary copy")
+    equal(fill.color[1], case[3], "cancel restores category swatch")
+    reset:Click()
+    equal(fill.color[1], 0.7, "reset repaints category swatch")
 end
 
 -- Cross-page selectors reread one selected profile, with management on Profiles only.
@@ -367,25 +358,22 @@ equal(profile.matchSanctuaryFont, true, "text reset restores sanctuary switch")
 equal(threatEnabled, true, "text reset preserves prior threat-enable behavior")
 equal(castEnabled, true, "text reset preserves cast toggle")
 equal(allColorResets, 1, "text reset does not reset colors")
--- Category switches are global, with duplicate sanctuary rows synchronized.
+-- Each category has one global activation control.
 local function modeSwitch(labelText)
     return assert(switchFor(labelText), "category switch " .. labelText)
 end
 local usefulSwitch = modeSwitch("5. NPC - Interactive")
-local sanctuaryUseful = modeSwitch("NPC - Interactive")
 local uselessSwitch = modeSwitch("6. NPC - Background")
-local sanctuaryUseless = modeSwitch("NPC - Background")
 for _, case in ipairs({
-    {usefulSwitch, sanctuaryUseful, "useful"},
-    {uselessSwitch, sanctuaryUseless, "useless"},
-    {modeSwitch("4. Player - Friendly"), modeSwitch("Player - Friendly"), "friendly"},
+    {usefulSwitch, "useful"},
+    {uselessSwitch, "useless"},
+    {modeSwitch("4. Player - Friendly"), "friendly"},
 }) do
     case[1]:Click()
-    equal(modes[case[3]], "inactive", "switch stores global inactive mode")
-    equal(case[2]:GetChecked(), false, "sanctuary copy synchronizes immediately")
-    case[2]:Click()
-    equal(modes[case[3]], "active", "sanctuary switch restores global active mode")
-    equal(case[1]:GetChecked(), true, "priority copy synchronizes immediately")
+    equal(modes[case[2]], "inactive", "switch stores global inactive mode")
+    equal(case[1]:GetChecked(), false, "switch reflects inactive mode")
+    case[1]:Click()
+    equal(modes[case[2]], "active", "switch restores global active mode")
 end
 for _, labelText in ipairs({"1. Attacking me", "2. Will attack me — Hostile", "3. Can attack me — Neutral"}) do
     local toggle = modeSwitch(labelText)

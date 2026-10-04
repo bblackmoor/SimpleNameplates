@@ -121,16 +121,7 @@ local function AddPriorityColorControls(context)
         RefreshNameplates()
     end)
 
-    AddSection(context.content, context.layout, "Sanctuary colors")
-    AddDescription(context.content, context.layout,
-        "These switches share the global Player, NPC - Interactive, and NPC - Background category settings above. " ..
-        "The player switch affects the whole Player category, not just sanctuary players.")
-    CreatePriorityColorRow(context, "Player - Friendly", "friendly",
-        "Shared with Priority colors; higher combat priorities keep their normal colors")
-    CreatePriorityColorRow(context, "NPC - Interactive", "useful",
-        "Shared with Priority colors; higher danger priorities keep their own colors")
-    CreatePriorityColorRow(context, "NPC - Background", "useless",
-        "Shared with Priority colors; applies to NPCs in the NPC - Background category")
+
 end
 
 local function CreateColorsPanel()
