@@ -94,7 +94,7 @@ local resetStates, allColorResets = {}, 0
 local threatEnabled, castEnabled, hideCritters = true, false, false
 local setupAllowed, setupChecks = true, 0
 local attacking = { 1, 0, 0 }
-local npcColors = { useful = {0.8, 0.8, 0.8}, useless = {0.6, 0.6, 0.6} }
+local npcColors = { friendly = {0.2, 0.8, 0.2}, useful = {0.8, 0.8, 0.8}, useless = {0.6, 0.6, 0.6} }
 local modes = { friendly = "active" }
 local profile = { matchSanctuaryFont = true, nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE" }
 local ns = {
@@ -292,6 +292,7 @@ local function colorRow(labelText)
     return assert(swatch), assert(reset), assert(fill)
 end
 for _, case in ipairs({
+    {"friendly", "4. Player - Friendly", "Player - Friendly", 0.2},
     {"useful", "5. NPC - Interactive", "NPC - Interactive", 0.8},
     {"useless", "6. NPC - Background", "NPC - Background", 0.6},
 }) do
@@ -299,7 +300,7 @@ for _, case in ipairs({
     local second, secondReset, secondFill = colorRow(case[3])
     first:Click()
     ColorPickerFrame.options.swatchFunc()
-    equal(npcColors[case[1]][1], 0.4, "priority copy updates shared NPC color")
+    equal(npcColors[case[1]][1], 0.4, "priority copy updates shared category color")
     equal(firstFill.color[1], 0.4, "priority swatch updates")
     equal(secondFill.color[1], 0.4, "sanctuary swatch updates immediately")
     ColorPickerFrame.options.cancelFunc()
@@ -377,7 +378,7 @@ local sanctuaryUseless = modeSwitch("NPC - Background")
 for _, case in ipairs({
     {usefulSwitch, sanctuaryUseful, "useful"},
     {uselessSwitch, sanctuaryUseless, "useless"},
-    {modeSwitch("4. Player — Friendly"), modeSwitch("Same-faction player"), "friendly"},
+    {modeSwitch("4. Player - Friendly"), modeSwitch("Player - Friendly"), "friendly"},
 }) do
     case[1]:Click()
     equal(modes[case[3]], "inactive", "switch stores global inactive mode")
@@ -441,3 +442,4 @@ print("Settings smoke: passed")
 for _, item in ipairs(frames) do
     assert(item.text ~= "Replace Blizzard overhead names (experimental)", "replacement UI removed")
 end
+

@@ -34,7 +34,7 @@ SimpleNameplatesDB = {
 
 A valid version-2 saved database separates behavior from look and feel. The structural refactor kept this shape and version. Validation reconstructs settings from defaults, discards invalid and unknown fields, and retains recognized valid settings regardless of the saved schema marker. No one-off migration or import/export facility is needed.
 
-Useful and Useless each have one `priorityColors` entry per profile, used in all world and combat contexts. The Priority and Sanctuary sections edit the same entries. `sanctuaryFriendly` remains a separate player color. The former `sanctuaryUseful` and `sanctuaryUseless` fields are unknown settings and are discarded during validation; valid `useful` and `useless` values are retained without conversion.
+Useful and Useless each have one `priorityColors` entry per profile, used in all world and combat contexts. The Priority and Sanctuary sections edit the same entries. Player - Friendly also shares its `friendly` entry between the two sections, with green (`#33CC33`) as the default. The former `sanctuaryFriendly`, `sanctuaryUseful`, and `sanctuaryUseless` fields are unknown settings and are discarded during validation; valid `useful` and `useless` values are retained without conversion.
 
 `appearance.matchSanctuaryFont` is a per-profile boolean, enabled by default. It selects Blizzard's localized world-name font face in sanctuaries without replacing the saved `nameFont`. Profile copies retain it and Reset Appearance restores the default; invalid or missing values use the default.
 
@@ -69,3 +69,4 @@ Both Global category modes and Profile priority colors recognize only `attacking
 ## Removal of experimental replacement (1.0.105)
 
 `replaceBlizzardOverheadNames` is no longer a recognized field and is silently discarded. No preference is converted. Valid `managedNameCVarOriginals` entries for its former Blizzard settings remain restoration records: normal managed-settings processing restores them without capturing or applying new replacement values, retains them after failed writes, and defers restricted restoration until combat ends. Only the independent critter/companion control makes ordinary-name CVar claims now; friendly class-color handling remains separate.
+

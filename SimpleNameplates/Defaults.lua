@@ -12,7 +12,6 @@ local DEFAULT_PRIORITY_COLORS = {
     friendly = RGB8(51, 204, 51),
     useful = RGB8(211, 211, 211),
     useless = RGB8(153, 153, 153),
-    sanctuaryFriendly = RGB8(135, 206, 235),
 }
 local DEFAULT_CATEGORY_MODES = {
     attacking = "active",
@@ -92,3 +91,4 @@ ns.Defaults = {
     showThreat = DEFAULT_SHOW_THREAT,
     hideCritterCompanionNames = DEFAULT_HIDE_CRITTER_COMPANION_NAMES,
 }
+

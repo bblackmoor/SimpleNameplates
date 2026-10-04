@@ -69,7 +69,6 @@ local ns = {
     GetThreatEnabled = function() return false end,
     GetHideCritterCompanionNames = function() return false end,
     PriorityColorForState = function(state)
-        if state == "sanctuaryFriendly" then return 135 / 255, 206 / 255, 235 / 255 end
         if state == "useful" then return 211 / 255, 211 / 255, 211 / 255 end
         if state == "useless" then return 153 / 255, 153 / 255, 153 / 255 end
         return 1, 0, 0
@@ -594,7 +593,7 @@ C_NamePlate.GetNamePlateForUnit = function() return plate end
 C_NamePlate.GetNamePlates = function() return {plate} end
 C_PvP = {GetZonePVPInfo = function() return "sanctuary", false end}
 for _, case in ipairs({
-    {data = {player = true, faction = "Alliance", reaction = 5}, green = 206 / 255},
+    {data = {player = true, faction = "Alliance", reaction = 5}, green = 0},
     {data = {reaction = 5, interactable = true}, green = 211 / 255},
     {data = {reaction = 5}, green = 153 / 255},
     {data = {player = true, faction = "Horde", reaction = 5}, green = 0},

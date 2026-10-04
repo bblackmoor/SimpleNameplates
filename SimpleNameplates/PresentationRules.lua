@@ -23,21 +23,10 @@ local function SelectRule(context, facts)
     return "default"
 end
 
-local function ColorState(context, facts, state)
-    -- Keep combat priorities, opposite-faction players, and unknown identity
-    -- on their normal category colors, even inside a sanctuary.
-    if context.sanctuary == true then
-        if state == "friendly" and facts.isPlayer == true and facts.oppositeFaction == false then
-            return "sanctuaryFriendly"
-        end
-    end
-    return state
-end
-
 local function Resolve(context, facts, state, capabilities, enabled, mode)
     local ruleID = SelectRule(context, facts)
     local result = {ruleID = ruleID, contextRevision = context.revision, state = state}
-    result.colorState = ColorState(context, facts, state)
+    result.colorState = state
     if not capabilities.canAccess then
         result.action, result.reason = "skip", capabilities.status
     elseif not enabled or mode == "inactive" then
@@ -61,3 +50,4 @@ local function Resolve(context, facts, state, capabilities, enabled, mode)
     return result
 end
 ns.PresentationRules = { Resolve = Resolve }
+

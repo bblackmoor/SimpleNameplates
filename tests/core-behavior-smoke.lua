@@ -68,7 +68,7 @@ equal(ns.GetAppearanceSetting("nameSize"), 21, "name size default")
 equal(ns.GetAppearanceSetting("namePlacement"), "ABOVE", "placement default")
 equal(ns.PriorityColorForState("attacking"), 1, "default red component")
 for _, case in ipairs({
-    {"sanctuaryFriendly", 135, 206, 235},
+    {"friendly", 51, 204, 51},
     {"useful", 211, 211, 211},
     {"useless", 153, 153, 153},
 }) do
@@ -345,6 +345,7 @@ SimpleNameplatesDB = {
     }},
     profiles = {Default = {priorityColors = {
         attacking = {r = 0.1, g = 0.2, b = 0.3}, neutral = {r = 0.4, g = 0.5, b = 0.6},
+        sanctuaryFriendly = {r = 0.1, g = 0.2, b = 0.3},
         sanctuaryUseful = {r = 0.2, g = 0.2, b = 0.2},
         sanctuaryUseless = {r = 0.3, g = 0.3, b = 0.3},
         useful = {r = 0.7, g = 0.8, b = 0.9}, friendlyPC = {r = 1, g = 0, b = 1},
@@ -359,12 +360,12 @@ equal(ns.PriorityColorForState("neutral"), 0.4, "valid new color retained")
 equal(ns.PriorityColorForState("useful"), 0.7, "useful color retained")
 equal(ns.GetAppearanceSetting("nameSize"), 19, "unrelated appearance retained")
 equal(ns.GetAppearanceSetting("matchSanctuaryFont"), false, "saved false matching choice retained")
-for _, key in ipairs({"friendlyPC", "unfriendlyPC", "unfriendlyNPC", "other", "sanctuaryUseful", "sanctuaryUseless"}) do
+for _, key in ipairs({"friendlyPC", "unfriendlyPC", "unfriendlyNPC", "other", "sanctuaryFriendly", "sanctuaryUseful", "sanctuaryUseless"}) do
     equal(db.global.categoryModes[key], nil, "obsolete mode discarded: " .. key)
     equal(db.profiles.Default.priorityColors[key], nil, "obsolete color discarded: " .. key)
 end
 equal(ns.PriorityColorForState("friendly"), 51 / 255, "old player color not converted")
-equal(ns.PriorityColorForState("sanctuaryFriendly"), 135 / 255, "existing profile receives sanctuary default")
+equal(db.profiles.Default.priorityColors.sanctuaryFriendly, nil, "no separate sanctuary player color")
 local categoryCount = 0
 for _ in pairs(db.global.categoryModes) do categoryCount = categoryCount + 1 end
 equal(categoryCount, 6, "exactly six current categories")
@@ -393,3 +394,4 @@ equal(table.concat(modules, ","),
     "TOC module order")
 
 print("Core behavior smoke: passed")
+

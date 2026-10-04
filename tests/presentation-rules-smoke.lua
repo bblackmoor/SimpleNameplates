@@ -28,7 +28,7 @@ equal(sanctuary.ruleID, "oppositePlayerSanctuary", "sanctuary rule")
 equal(sanctuary.showHealthBar, false, "sanctuary out-of-combat name")
 equal(sanctuary.colorState, "friendly", "opposite-faction color unchanged")
 for _, case in ipairs({
-    {facts = {isPlayer = true, oppositeFaction = false}, state = "friendly", color = "sanctuaryFriendly"},
+    {facts = {isPlayer = true, oppositeFaction = false}, state = "friendly", color = "friendly"},
     {facts = {isNPC = true}, state = "useful", color = "useful"},
     {facts = {isNPC = true}, state = "useless", color = "useless"},
     {facts = {isPlayer = true}, state = "friendly", color = "friendly"},
@@ -60,3 +60,4 @@ equal(Resolve({inCombat = true}, {}, "hostile", cap, false, "active").action, "r
 equal(Resolve({inCombat = true}, {}, "hostile", {canAccess = false, status = "forbidden"}, true, "active").action,
     "skip", "forbidden")
 print("Presentation rules smoke: passed")
+

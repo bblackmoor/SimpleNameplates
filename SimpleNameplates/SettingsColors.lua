@@ -92,7 +92,7 @@ local function CreatePriorityColorRow(context, text, state, displayText)
     CreateColorRow(context, text, displayText,
         function() return PriorityColorForState(state) end,
         function(r, g, b) SetPriorityColor(state, r, g, b) end,
-        function() ResetPriorityColor(state) end, state == "sanctuaryFriendly" and "friendly" or state)
+        function() ResetPriorityColor(state) end, state)
 end
 
 local function AddPriorityColorControls(context)
@@ -106,7 +106,7 @@ local function AddPriorityColorControls(context)
         "Health bar for aggressive NPCs and eligible PvP opponents")
     CreatePriorityColorRow(context, "3. Can attack me — Neutral", "neutral",
         "Health bar for entities that can attack you without a higher priority")
-    CreatePriorityColorRow(context, "4. Player — Friendly", "friendly",
+    CreatePriorityColorRow(context, "4. Player - Friendly", "friendly",
         "Colored name out of combat; colored health bar in combat when supported")
     CreatePriorityColorRow(context, "5. NPC - Interactive", "useful",
         "Interactive NPC: colored name out of combat; health bar in combat when supported")
@@ -125,8 +125,8 @@ local function AddPriorityColorControls(context)
     AddDescription(context.content, context.layout,
         "These switches share the global Player, NPC - Interactive, and NPC - Background category settings above. " ..
         "The player switch affects the whole Player category, not just sanctuary players.")
-    CreatePriorityColorRow(context, "Same-faction player", "sanctuaryFriendly",
-        "Sanctuary only; higher combat priorities keep their normal colors")
+    CreatePriorityColorRow(context, "Player - Friendly", "friendly",
+        "Shared with Priority colors; higher combat priorities keep their normal colors")
     CreatePriorityColorRow(context, "NPC - Interactive", "useful",
         "Shared with Priority colors; higher danger priorities keep their own colors")
     CreatePriorityColorRow(context, "NPC - Background", "useless",
@@ -151,7 +151,7 @@ local function CreateColorsPanel()
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
         function() ResetEffectColor("interruptible") end)
     AddSection(content, layout, "Reset colors")
-    AddDescription(content, layout, "Resets every color in this profile: Priority colors, the sanctuary player color, and the cast highlight color.")
+    AddDescription(content, layout, "Resets every color in this profile: Priority colors and the cast highlight color.")
     U.AddActionButton(content, layout, "Reset all profile colors", function()
         ns.ResetAllColors()
         Refresh()
@@ -163,3 +163,4 @@ local function CreateColorsPanel()
     return panel
 end
 ns.SettingsPanels.Colors = CreateColorsPanel
+

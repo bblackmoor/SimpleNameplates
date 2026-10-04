@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.130
+
+* Makes Player - Friendly share its profile color and global activation switch between Priority colors and Sanctuary colors, matching the NPC controls. Keeps green as the default and retains existing Friendly color choices.
+* Removes the separate sanctuary player color; obsolete saved values are discarded without migration.
+
 ## 1.0.129
 
 * Ensures a restoration error cannot leave an accessible plate permanently marked as restoring. Failed work stays queued, and successful retries resume styling for the frame's current unit.
