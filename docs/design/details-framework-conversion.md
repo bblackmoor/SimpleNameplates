@@ -1,6 +1,6 @@
 # Details Framework settings conversion
 
-Current status (1.0.159): phases 1–6 repository work is complete; all 17 smoke
+Current status (1.0.160): phases 1–6 repository work is complete; all 17 smoke
 suites pass. Final in-game verification remains pending. The baseline and earlier
 phase notes below describe their recorded releases, not the current widget inventory.
 

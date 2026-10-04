@@ -1,7 +1,7 @@
 # Live WoW integration verification
 
 Status: pending. Details Framework phases 1–6 repository work and follow-up fixes
-are complete through 1.0.159, with all 17 local smoke suites passing. These checks
+are complete through 1.0.160, with all 17 local smoke suites passing. These checks
 require a World of Warcraft client; local Lua stubs do not establish actual frame
 behavior, secure CVar behavior, or Midnight secret-value safety. Record the client
 build, addon version, date, and observed result when running them. Leave a check
@@ -64,6 +64,7 @@ open until it is observed in game.
 
 ## Nameplate presentation and integration
 
+- [ ] After 1.0.160, repeat cast-effect checks through plate/bar/icon reuse and temporary access loss. Confirm old icons do not restart or stop the current effect, and floating, above-bar and inside-bar name placement survives cached repair.
 - [ ] Switch Profiles while plates are visible; confirm fonts, sizes, colors, threat percentage, and visual effects refresh immediately. Verify name-only plates and Blizzard-controlled overhead names reflect the documented limits.
 - [ ] Move names inside and above health bars. Inside-bar font sizing and bar-height padding are correct; switching back and disabling styling restore Blizzard's original bar height.
 - [ ] Observe interruptible and non-interruptible casts and channels. Test None, Moving dashes, Autocast Shine, Action Button Glow, and Proc Glow; effects appear only when Blizzard reports interruptibility. The existing shield and cast information remain intact.

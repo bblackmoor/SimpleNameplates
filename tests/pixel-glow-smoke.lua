@@ -80,6 +80,7 @@ function CreateFrame(_, _, parent) return Region(parent) end
 function CreateTexturePool(parent, _, _, _, reset) return Pool(parent, reset) end
 function CreateFramePool(_, parent, _, reset) return Pool(parent, reset) end
 function hooksecurefunc(object, method, callback)
+    object.hookCount = (object.hookCount or 0) + 1
     local original = object[method]
     object[method] = function(self, ...) original(self,...); callback(self,...) end
 end
@@ -149,6 +150,24 @@ frame.castBar.Icon:SetShown(false)
 assert(not h.glowHost[key] and not h.glowStyle, "uninterruptible/end hides and stops animation")
 frame.castBar.Icon:SetShown(true)
 assert(h.glowHost[key], "interruptible icon restarts glow")
+local oldIcon = frame.castBar.Icon
+local newIcon = Region(); newIcon:Hide()
+frame.castBar.Icon = newIcon; Update()
+assert(not h.frame:IsShown(), "replacement icon determines interruptibility")
+oldIcon:SetShown(false); oldIcon:SetShown(true)
+assert(not h.frame:IsShown(), "retired icon cannot restart the current bar's glow")
+newIcon:SetShown(true)
+assert(h.glowHost[key], "replacement icon starts the current glow")
+frame.castBar.Icon = oldIcon; Update()
+assert(oldIcon.hookCount == 1, "returning icons reuse their existing hook")
+newIcon:SetShown(false)
+assert(h.glowHost[key], "retired icon cannot stop the current bar's glow")
+local originalIsShown = oldIcon.IsShown
+oldIcon.IsShown = function() error("icon temporarily unavailable") end
+Update()
+assert(not h.frame:IsShown() and not h.glowHost[key], "unreadable visibility cannot retain a stale glow")
+oldIcon.IsShown = originalIsShown; Update()
+assert(h.glowHost[key], "readable visibility resumes the glow")
 local oldBar = frame.castBar
 frame.castBar = Region(); frame.castBar.Icon = Region(); Update()
 assert(not h.glowHost[key], "bar replacement stops old animation")

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.160
+
+* Fixes retired cast icons starting or stopping the current bar's interruptible effect after icon replacement. Reuses one secure hook per icon when icons return, and clears the effect when visibility cannot be read instead of retaining stale glow state.
+* Uses the same name-positioning helper for initial styling and cached repair, removing duplicate placement branches and the redundant owning-frame cache field.
+* Extends the real LibCustomGlow regression with icon replacement, returning-icon hook reuse, stale callback isolation and failed visibility reads; adds missing-bar cached-placement coverage. All seventeen smoke suites and whitespace checks pass. Native client checks remain pending.
+
 ## 1.0.159
 
 * Fixes the Profiles styling switch/status remaining Inactive after setup approval while the page is visible. Centralizes pending-state changes and silently refreshes the control on suspension, approval, refusal, restoration and combat-deferred completion.

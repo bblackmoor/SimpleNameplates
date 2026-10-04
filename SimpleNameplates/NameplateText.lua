@@ -233,7 +233,6 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.barHeight = frame.SNPOriginalBarHeight and InsideBarHeight(frame, size) or nil
     expected.barWidth = frame.SNPBarWidth
     expected.containerWidth = frame.SNPContainerWidth
-    expected.frame = frame
 end
 
 local function SuppressText(frame, context)
@@ -395,24 +394,8 @@ local function RepairCachedName(frame, context)
     end
     if expected.barWidth then expected.bar:SetWidth(expected.barWidth) end
     if expected.containerWidth and frame.HealthBarsContainer then frame.HealthBarsContainer:SetWidth(expected.containerWidth) end
-    if expected.nameOnly then
-        name:ClearAllPoints()
-        if expected.bar then
-            name:SetPoint("BOTTOM", expected.bar, "TOP", 0, 2)
-        else
-            name:SetPoint("BOTTOM", expected.frame, "TOP", 0, 2)
-        end
-    elseif expected.bar then
-        name:ClearAllPoints()
-        if expected.inside then
-            name:SetPoint("LEFT", expected.bar, "LEFT", 3, 0)
-            name:SetPoint("RIGHT", expected.rightRegion or expected.bar,
-                expected.rightRegion and "LEFT" or "RIGHT", expected.rightInset or -3, 0)
-        else
-            name:SetPoint("BOTTOMLEFT", expected.bar, "TOPLEFT", 0, 2)
-        end
-    end
-    name:SetJustifyH(expected.nameOnly and "CENTER" or "LEFT")
+    PositionName(frame, name, expected.bar, expected.nameOnly, expected.inside,
+        expected.rightInset or -3, expected.rightRegion)
     name:Show()
     if expected.inside and expected.bar then
         ShowInsideName(frame, expected.bar, expected.text, expected.font,
@@ -432,4 +415,3 @@ ns.NameplateText = {
     CachedNameHasDrifted = CachedNameHasDrifted,
     RepairCachedName = RepairCachedName,
 }
-

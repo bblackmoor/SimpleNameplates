@@ -409,6 +409,10 @@ equal(plateFrame.SNPPresentation.showHealthBar, false, "no fabricated health bar
 equal(plateFrame.SNPPresentation.nameOnly, true, "missing bar uses name color")
 equal(plateFrame.name.g, 0, "missing-bar priority color")
 equal(plateFrame.SNPFullTitleText.shown, true, "missing bar allows long title")
+plateFrame.name:ClearAllPoints()
+equal(ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get()), true, "missing-bar cached repair succeeds")
+equal(plateFrame.name.points[1][2], plateFrame, "missing-bar repair uses the owning frame")
+equal(plateFrame.name.points[1][1], "BOTTOM", "missing-bar repair restores floating placement")
 plateFrame.healthBar = savedBar
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
 ns.RestoreAll()

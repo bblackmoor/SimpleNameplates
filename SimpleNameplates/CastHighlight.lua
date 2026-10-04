@@ -69,12 +69,16 @@ end
 local function InstallInterruptibleHighlightHook(highlight)
     local icon = highlight and highlight.castBar and highlight.castBar.Icon
     if not icon then return false end
-    if highlight.hookedIcon == icon then return true end
+    highlight.hookedIcons = highlight.hookedIcons or setmetatable({}, {__mode = "k"})
+    if highlight.hookedIcons[icon] then return true end
 
     local overlay = highlight.frame
     local ok = pcall(hooksecurefunc, icon, "SetShown", function(_, shown)
         if not CanAccessFrame(highlight.owner, GetContext()) then return end
         if highlight.owner.SNPInterruptibleHighlight ~= highlight then overlay:Hide(); return end
+        -- Secure hooks cannot be removed. A replaced icon must no longer drive
+        -- the current bar, even before the next addon refresh notices it.
+        if highlight.castBar.Icon ~= icon then return end
         local decision = highlight.owner.SNPPresentation
         if GetStylingEnabled() and GetInterruptibleHighlightEnabled()
             and decision and decision.showCastBar then
@@ -83,7 +87,7 @@ local function InstallInterruptibleHighlightHook(highlight)
             overlay:Hide()
         end
     end)
-    if ok then highlight.hookedIcon = icon end
+    if ok then highlight.hookedIcons[icon] = true end
     return ok
 end
 
@@ -140,7 +144,8 @@ local function UpdateInterruptibleHighlight(frame, context, decision)
     local icon = highlight.castBar and highlight.castBar.Icon
     if not icon then highlight.frame:Hide(); return end
     local ok, shown = pcall(icon.IsShown, icon)
-    if ok then SetInterruptibleHighlightShown(highlight.frame, shown) end
+    if ok then SetInterruptibleHighlightShown(highlight.frame, shown)
+    else highlight.frame:Hide() end
     if ns.AccessibleBoolean(highlight.frame:IsShown()) == true then ApplyRenderer(highlight) end
 end
 
