@@ -208,7 +208,7 @@ events:SetScript("OnUpdate", function(_, elapsed)
     local context = WorldContext.Get()
     if reconcile then
         reconcileElapsed = 0
-        Restoration.Retry(context)
+        if Restoration.Retry(context) and GetStylingEnabled() then QueueRefreshAll() end
         for plate in pairs(pendingPlates) do
             if not GetStylingEnabled() then
                 if Restoration.RequestPlate(plate, context) then pendingPlates[plate] = nil end

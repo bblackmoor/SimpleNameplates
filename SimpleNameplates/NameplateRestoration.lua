@@ -21,19 +21,7 @@ local function Capture(frame, assessment, context)
     frame.SNPOriginalUnit = ns.AccessibleValue(frame.unit)
 end
 
-local function Request(frame, context, removedUnit)
-    context = context or GetContext()
-    frame = ns.AccessibleValue(frame)
-    if not frame then return true end
-    local assessment = Cap.InspectFrame(frame, context)
-    if not assessment.canAccess then
-        pendingFrames[frame] = removedUnit or true
-        return false
-    end
-    if frame.SNPRestoring then return false end
-    pendingFrames[frame] = nil
-    if not frame.SNPState and not frame.SNPNameStyle and not frame.SNPOriginalVisibility then return true end
-    frame.SNPRestoring = true
+local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
     Text.RestoreNameDisplay(frame, context)
@@ -55,7 +43,36 @@ local function Request(frame, context, removedUnit)
         if CompactUnitFrame_UpdateName then CompactUnitFrame_UpdateName(frame) end
         if CompactUnitFrame_UpdateHealthColor then CompactUnitFrame_UpdateHealthColor(frame) end
     end
+end
+
+local function Request(frame, context, removedUnit)
+    context = context or GetContext()
+    frame = ns.AccessibleValue(frame)
+    if not frame then return true end
+    local assessment = Cap.InspectFrame(frame, context)
+    if not assessment.canAccess then
+        pendingFrames[frame] = removedUnit or pendingFrames[frame] or true
+        return false
+    end
+    if frame.SNPRestoring then return false end
+    local pending = pendingFrames[frame]
+    if not removedUnit and type(pending) == "string" then removedUnit = pending end
+    if not pending and not frame.SNPState and not frame.SNPNameStyle
+        and not frame.SNPOriginalVisibility then return true end
+    frame.SNPRestoring = true
+    -- Blizzard updates can invoke our repair hooks or throw. Always release
+    -- the reentry guard, including when caches were already cleared.
+    local ok, err = pcall(RestoreAccessibleFrame, frame, assessment, context, removedUnit)
     frame.SNPRestoring = nil
+    if not ok then
+        pendingFrames[frame] = removedUnit or true
+        local message = tostring(ns.AccessibleValue(err) or "Unavailable restoration error")
+        local previous = frame.SNPRestoreError
+        frame.SNPRestoreError = message
+        if message ~= previous and geterrorhandler then geterrorhandler()(message) end
+        return false
+    end
+    pendingFrames[frame], frame.SNPRestoreError = nil, nil
     return true
 end
 
@@ -75,12 +92,19 @@ end
 
 local function Retry(context)
     context = context or GetContext()
-    for plate in pairs(pendingPlates) do RequestPlate(plate, context) end
-    for frame, removedUnit in pairs(pendingFrames) do
-        Request(frame, context, type(removedUnit) == "string" and removedUnit or nil)
+    local restored = false
+    for plate in pairs(pendingPlates) do
+        if RequestPlate(plate, context) then restored = true end
     end
+    for frame, removedUnit in pairs(pendingFrames) do
+        if Request(frame, context, type(removedUnit) == "string" and removedUnit or nil) then
+            restored = true
+        end
+    end
+    return restored
 end
 ns.NameplateRestoration = {
     Capture = Capture, Request = Request, RequestPlate = RequestPlate, Retry = Retry,
     Cancel = function(frame) pendingFrames[frame] = nil end,
+    IsPending = function(frame) return pendingFrames[frame] ~= nil end,
 }

@@ -237,6 +237,37 @@ appearance.namePlacement = "ABOVE"
 ns.RefreshAll()
 ns.RestoreAll()
 equal(plateFrame.SNPState, nil, "master restoration reachable")
+
+-- A failed Blizzard update must not leave an accessible plate permanently
+-- excluded from styling. Hooks during restoration must still avoid reentry.
+ns.RefreshAll()
+local failRestore = true
+function CompactUnitFrame_UpdateAll(frame)
+    equal(frame.SNPRestoring, true, "restoration guard covers Blizzard callbacks")
+    hooks[1].callback(frame)
+    hooks[2].callback(frame)
+    if failRestore then error("simulated Blizzard restoration failure") end
+end
+ns.RestoreAll()
+equal(plateFrame.SNPRestoring, nil, "failed restoration releases guard")
+assert(ns.NameplateRestoration.IsPending(plateFrame), "failed restoration retained for retry")
+assert(plateFrame.SNPRestoreError:find("simulated Blizzard restoration failure", 1, true),
+    "restoration failure retained for diagnostics")
+ns.RefreshAll()
+equal(plateFrame.SNPRestoring, nil, "repeated failure still releases guard")
+assert(ns.NameplateRestoration.IsPending(plateFrame), "repeated failure remains queued")
+plateFrame.unit = "nameplate2"
+failRestore = false
+events.scripts.OnUpdate(events, 0.5)
+equal(plateFrame.SNPRestoring, nil, "successful retry releases guard")
+equal(plateFrame.SNPRestoreError, nil, "successful retry clears failure")
+equal(ns.NameplateRestoration.IsPending(plateFrame), false, "successful retry removes pending work")
+equal(plateFrame.SNPState, "hostile", "successful retry reapplies hostile presentation")
+assert(plateFrame.SNPNameStyle, "successful retry restores addon text")
+equal(plateFrame.SNPOriginalUnit, "nameplate2", "retry styles current recycled-frame owner")
+CompactUnitFrame_UpdateAll = nil
+ns.RestoreAll()
+plateFrame.unit = "nameplate1"
 C_NamePlate.GetNamePlateForUnit = function() return nil end
 C_NamePlate.GetNamePlates = function() return {} end
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.129
+
+* Ensures a restoration error cannot leave an accessible plate permanently marked as restoring. Failed work stays queued, and successful retries resume styling for the frame's current unit.
+* Reports the last restoration error in diagnostics, and shows no blocked region or active restoration when those fields are absent.
+
 ## 1.0.128
 
 * Renames the NPC color labels to NPC - Interactive and NPC - Background in both color sections; saved category keys and behavior are unchanged.

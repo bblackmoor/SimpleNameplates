@@ -24,6 +24,11 @@ local function ApplySimpleStyle(frame, context)
     local assessment = Cap.InspectFrame(frame, context)
     if not assessment.canAccess then return end
     if frame.SNPRestoring then return end
+    if Restore.IsPending(frame) then
+        if not Restore.Request(frame, context) then return end
+        assessment = Cap.InspectFrame(frame, context)
+        if not assessment.canAccess then return end
+    end
     local unit = ns.AccessibleValue(frame.unit)
     if type(unit) ~= "string" or not unit:match("^nameplate%d+$") then return end
     if frame.SNPOriginalUnit and frame.SNPOriginalUnit ~= unit then
