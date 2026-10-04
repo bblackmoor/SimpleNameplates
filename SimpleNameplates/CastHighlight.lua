@@ -1,4 +1,4 @@
--- Simple Nameplates: Blizzard-driven interruptible-cast pulse or moving dashes.
+-- Simple Nameplates: Blizzard-driven interruptible-cast effects from LibCustomGlow.
 local _, ns = ...
 local CanAccessFrame = ns.PresentationCapabilities.CanAccessFrame
 local GetContext = ns.WorldContext.Get
@@ -11,41 +11,53 @@ local Glow = LibStub and LibStub("LibCustomGlow-1.0", true)
 local GLOW_KEY = "SNPInterruptible"
 
 local function StopRenderer(highlight)
-    if highlight.pulse then highlight.pulse:Stop() end
-    if highlight.glowRunning and Glow then Glow.PixelGlow_Stop(highlight.glowHost, GLOW_KEY) end
-    highlight.glowRunning, highlight.glowColor = nil, nil
-    for _, edge in ipairs(highlight.border) do edge:Hide() end
-    highlight.frame:SetAlpha(1)
+    local host, style = highlight.glowHost, highlight.glowStyle
+    if host then host:Hide() end
+    -- Hide first so Action Button Glow stops immediately rather than fading
+    -- over a newly selected effect or a finished cast.
+    if Glow and host then
+        if style == "PIXEL" then Glow.PixelGlow_Stop(host, GLOW_KEY)
+        elseif style == "AUTOCAST" then Glow.AutoCastGlow_Stop(host, GLOW_KEY)
+        elseif style == "BUTTON" then Glow.ButtonGlow_Stop(host)
+        elseif style == "PROC" then Glow.ProcGlow_Stop(host, GLOW_KEY) end
+    end
+    highlight.glowStyle, highlight.glowColor = nil, nil
+    highlight.glowWidth, highlight.glowHeight = nil, nil
 end
 
 local function ApplyRenderer(highlight)
-    if not highlight.pulse then return end
-    local r, g, b = EffectColor("interruptible")
+    if not highlight.glowHost then return end
     local style = ns.GetInterruptibleCastStyle()
+    if not Glow or style == "NONE" then StopRenderer(highlight); return end
+    local ok, w, h = pcall(highlight.castBar.GetSize, highlight.castBar)
     local width, height
-    if style == "PIXEL" and Glow then
-        local ok, w, h = pcall(highlight.castBar.GetSize, highlight.castBar)
-        if ok then width, height = ns.AccessibleNumber(w), ns.AccessibleNumber(h) end
-    end
-    if width and height and width > 0 and height > 0 then
-        highlight.pulse:Stop()
-        highlight.frame:SetAlpha(1)
-        for _, edge in ipairs(highlight.border) do edge:Hide() end
-        -- The library performs geometry arithmetic. Give it an addon-owned
-        -- host with explicit readable dimensions, never secret native sizes.
-        highlight.glowHost:SetSize(width + 6, height + 6)
-        local color = highlight.glowColor
-        if not highlight.glowRunning or not color or color[1] ~= r or color[2] ~= g or color[3] ~= b then
-            Glow.PixelGlow_Start(highlight.glowHost, {r, g, b, 1}, 12, 0.125, 8, 2, 0, 0, false, GLOW_KEY)
-            highlight.glowRunning, highlight.glowColor = true, {r, g, b}
-        end
+    if ok then width, height = ns.AccessibleNumber(w), ns.AccessibleNumber(h) end
+    if not width or not height or width <= 0 or height <= 0 then StopRenderer(highlight); return end
+    local r, g, b = EffectColor("interruptible")
+    local color = highlight.glowColor
+    if highlight.glowStyle == style and color and color[1] == r and color[2] == g and color[3] == b
+        and highlight.glowWidth == width and highlight.glowHeight == height then return end
+    StopRenderer(highlight)
+    local host = highlight.glowHost
+    -- All library effects perform geometry arithmetic. Use explicit readable
+    -- dimensions on our own host; never pass secret native sizes to the library.
+    host:SetSize(width + 6, height + 6)
+    host:Show()
+    local rgba = {r, g, b, 1}
+    if style == "PIXEL" then
+        Glow.PixelGlow_Start(host, rgba, 12, 0.125, 8, 2, 0, 0, false, GLOW_KEY)
+    elseif style == "AUTOCAST" then
+        Glow.AutoCastGlow_Start(host, rgba, 4, 0.125, 1, 0, 0, GLOW_KEY)
+    elseif style == "BUTTON" then
+        Glow.ButtonGlow_Start(host, rgba)
+    elseif style == "PROC" then
+        Glow.ProcGlow_Start(host, {color = rgba, key = GLOW_KEY})
     else
-        -- Keep the existing pulse if the library or safe geometry is unavailable.
-        if highlight.glowRunning and Glow then Glow.PixelGlow_Stop(highlight.glowHost, GLOW_KEY) end
-        highlight.glowRunning, highlight.glowColor = nil, nil
-        for _, edge in ipairs(highlight.border) do edge:SetColorTexture(r, g, b, 1); edge:Show() end
-        if not highlight.pulse:IsPlaying() then highlight.pulse:Play() end
+        host:Hide()
+        return
     end
+    highlight.glowStyle, highlight.glowColor = style, {r, g, b}
+    highlight.glowWidth, highlight.glowHeight = width, height
 end
 
 local function SetInterruptibleHighlightShown(overlay, shown)
@@ -96,45 +108,7 @@ local function EnsureInterruptibleHighlight(frame, context)
     overlay:SetFrameLevel(highestFrameLevel + 20)
     overlay:Hide()
 
-    local function CreateBorder(inset, thickness, layer)
-        local function Edge()
-            return overlay:CreateTexture(nil, "OVERLAY", nil, layer)
-        end
-        local top, bottom, left, right = Edge(), Edge(), Edge(), Edge()
-        top:SetPoint("TOPLEFT", inset, -inset)
-        top:SetPoint("TOPRIGHT", -inset, -inset)
-        top:SetHeight(thickness)
-        bottom:SetPoint("BOTTOMLEFT", inset, inset)
-        bottom:SetPoint("BOTTOMRIGHT", -inset, inset)
-        bottom:SetHeight(thickness)
-        left:SetPoint("TOPLEFT", inset, -inset)
-        left:SetPoint("BOTTOMLEFT", inset, inset)
-        left:SetWidth(thickness)
-        right:SetPoint("TOPRIGHT", -inset, -inset)
-        right:SetPoint("BOTTOMRIGHT", -inset, inset)
-        right:SetWidth(thickness)
-        return { top, bottom, left, right }
-    end
-
-    local highlight = {
-        castBar = castBar,
-        owner = frame,
-        frame = overlay,
-        border = CreateBorder(2, 4, 7),
-    }
-    local pulse = overlay:CreateAnimationGroup()
-    local fadeOut = pulse:CreateAnimation("Alpha")
-    fadeOut:SetFromAlpha(1)
-    fadeOut:SetToAlpha(0.35)
-    fadeOut:SetDuration(0.55)
-    fadeOut:SetOrder(1)
-    local fadeIn = pulse:CreateAnimation("Alpha")
-    fadeIn:SetFromAlpha(0.35)
-    fadeIn:SetToAlpha(1)
-    fadeIn:SetDuration(0.55)
-    fadeIn:SetOrder(2)
-    pulse:SetLooping("REPEAT")
-    highlight.pulse = pulse
+    local highlight = {castBar = castBar, owner = frame, frame = overlay}
     local glowHost = CreateFrame("Frame", nil, overlay)
     glowHost:SetPoint("TOPLEFT", castBar, "TOPLEFT", -3, 3)
     glowHost:SetFrameLevel(overlay:GetFrameLevel())
@@ -162,14 +136,6 @@ local function UpdateInterruptibleHighlight(frame, context, decision)
     end
     local highlight = EnsureInterruptibleHighlight(frame, context)
     if not highlight then return end
-
-    local r, g, b = EffectColor("interruptible")
-    for _, edge in ipairs(highlight.border) do edge:SetColorTexture(r, g, b, 1) end
-
-    if not GetInterruptibleHighlightEnabled() then
-        highlight.frame:Hide()
-        return
-    end
 
     local icon = highlight.castBar and highlight.castBar.Icon
     if not icon then highlight.frame:Hide(); return end

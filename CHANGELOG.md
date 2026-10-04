@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.147
+
+* Replaces the interruptible-cast Active switch and Pulse option with one profile Effect selector: None, Moving dashes, Autocast Shine, Action Button Glow, or Proc Glow. None disables the highlight and is the default/reset value.
+* Uses the bundled LibCustomGlow renderers with the selected color. Stops the previous effect on changes, hide, disable, or bar replacement; skips rendering when geometry is restricted. Previously enabled Pulse profiles become Moving dashes; disabled profiles stay off.
+
 ## 1.0.146
 
 * Adds a profile Effect selector below the interruptible-cast color on Colors: Moving dashes (default) or Pulse. Reset all colors also restores the default effect.

@@ -61,17 +61,33 @@ equal(widthNS.GetAppearanceSetting("healthBarWidth"), 100, "Appearance reset res
 
 -- Cast renderer is profile-specific, survives reload, and resets with Colors.
 local effectNS = fresh()
-equal(effectNS.GetInterruptibleCastStyle(), "PIXEL", "moving dashes default")
-effectNS.SetInterruptibleCastStyle("PULSE")
-effectNS.CopyActiveProfile("Pulse cast bars")
+equal(effectNS.GetInterruptibleCastStyle(), "NONE", "highlight defaults off")
+for _, style in ipairs({"PIXEL", "AUTOCAST", "BUTTON", "PROC"}) do
+    effectNS.SetInterruptibleCastStyle(style)
+    equal(effectNS.GetInterruptibleHighlightEnabled(), true, "selected effect enables highlighting")
+    equal(effectNS.GetInterruptibleCastStyle(), style, "library style accepted")
+end
+effectNS.CopyActiveProfile("Proc cast bars")
 effectNS = loadCore()
-equal(effectNS.GetInterruptibleCastStyle(), "PULSE", "copied cast effect survives reload")
+equal(effectNS.GetInterruptibleCastStyle(), "PROC", "copied cast effect survives reload")
+effectNS.SetInterruptibleCastStyle("PULSE")
+equal(effectNS.GetInterruptibleCastStyle(), "PROC", "removed Pulse ignored")
 effectNS.SetInterruptibleCastStyle("invalid")
-equal(effectNS.GetInterruptibleCastStyle(), "PULSE", "invalid effect ignored")
+equal(effectNS.GetInterruptibleCastStyle(), "PROC", "invalid effect ignored")
 effectNS.ResetAppearance()
-equal(effectNS.GetInterruptibleCastStyle(), "PULSE", "Appearance reset preserves cast effect")
+equal(effectNS.GetInterruptibleCastStyle(), "PROC", "Appearance reset preserves cast effect")
 effectNS.ResetAllColors()
-equal(effectNS.GetInterruptibleCastStyle(), "PIXEL", "Colors reset restores moving dashes")
+equal(effectNS.GetInterruptibleCastStyle(), "NONE", "Colors reset disables highlight")
+equal(effectNS.GetInterruptibleHighlightEnabled(), false, "None disables highlighting")
+-- Preserve activation when migrating the former switch and Pulse style.
+for _, legacy in ipairs({{true, "PULSE", "PIXEL"}, {true, "PIXEL", "PIXEL"}, {false, "PIXEL", "NONE"}}) do
+    effectNS = fresh()
+    local profile = effectNS.EnsureDB().profiles.Default
+    profile.interruptibleHighlight, profile.interruptibleCastStyle = legacy[1], legacy[2]
+    effectNS = loadCore()
+    equal(effectNS.GetInterruptibleCastStyle(), legacy[3], "legacy activation preserved")
+    equal(effectNS.EnsureDB().profiles.Default.interruptibleHighlight, nil, "legacy switch removed")
+end
 
 -- Fresh defaults and independent character selection.
 local ns = fresh()

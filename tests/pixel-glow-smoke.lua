@@ -19,6 +19,8 @@ local function Region(parent)
     function r:GetFrameLevel() return self.level end
     function r:SetScript(key, callback) self.scripts[key] = callback end
     function r:IsShown() return self.shown end
+    function r:IsVisible() return self.shown and (not self.parent or self.parent:IsVisible()) end
+    function r:GetAlpha() return self.alpha or 1 end
     function r:SetShown(value)
         if self.shown == value then return end
         self.shown = value
@@ -37,25 +39,30 @@ local function Region(parent)
     function r:CreateTexture() return Region(self) end
     function r:CreateMaskTexture() return Region(self) end
     function r:CreateAnimationGroup()
-        local group = {playing = false}
-        function group:Play() self.playing = true end
-        function group:Stop() self.playing = false end
+        local group = {playing = false, parent = self, scripts = {}}
+        function group:Play() self.playing = true; if self.scripts.OnPlay then self.scripts.OnPlay(self) end end
+        function group:Stop() self.playing = false; if self.scripts.OnStop then self.scripts.OnStop(self) end end
         function group:IsPlaying() return self.playing end
         function group:SetLooping() end
+        function group:SetToFinalAlpha() end
+        function group:SetScript(k, callback) self.scripts[k] = callback end
+        function group:GetParent() return self.parent end
         function group:CreateAnimation()
             return setmetatable({}, {__index = function() return function() end end})
         end
         return group
     end
-    for _, method in ipairs({"SetTexture","SetTexCoord","SetDrawLayer","SetDesaturated","SetAllPoints"}) do r[method] = function() end end
+    for _, method in ipairs({"SetTexture","SetTexCoord","SetDrawLayer","SetDesaturated","SetAllPoints","SetBlendMode","SetAtlas"}) do r[method] = function() end end
     return r
 end
 local function Pool(parent, resetter)
     local p = {active = {}, inactive = {}}
     function p:Acquire()
-        local obj = table.remove(self.inactive) or Region(parent)
+        local obj = table.remove(self.inactive)
+        local new = not obj
+        obj = obj or Region(parent)
         self.active[obj] = true
-        return obj
+        return obj, new
     end
     function p:Release(obj)
         if not self.active[obj] then return end
@@ -68,6 +75,7 @@ end
 UIParent = Region()
 WOW_PROJECT_ID, WOW_PROJECT_MAINLINE = 1,1
 min, tinsert, tremove, strmatch = math.min, table.insert, table.remove, string.match
+function AnimateTexCoords() end
 function CreateFrame(_, _, parent) return Region(parent) end
 function CreateTexturePool(parent, _, _, _, reset) return Pool(parent, reset) end
 function CreateFramePool(_, parent, _, reset) return Pool(parent, reset) end
@@ -83,7 +91,7 @@ local style, enabled, color = "PIXEL", true, {0,1,1}
 ns.WorldContext = {Get = function() return {} end}
 ns.PresentationCapabilities = {CanAccessFrame = function() return true end}
 ns.GetStylingEnabled = function() return enabled end
-ns.GetInterruptibleHighlightEnabled = function() return enabled end
+ns.GetInterruptibleHighlightEnabled = function() return enabled and style ~= "NONE" end
 ns.GetInterruptibleCastStyle = function() return style end
 ns.EffectColor = function() return table.unpack(color) end
 ns.NameplateFrames = {GetCastBar = function(f) return f.castBar end, GetHealthBar = function(f) return f.healthBar end}
@@ -98,7 +106,7 @@ local glow = assert(h.glowHost[key], "bundled PixelGlow starts")
 local w, height = h.glowHost:GetSize()
 assert(w == 146 and height == 26, "library receives explicit readable host geometry")
 assert(#glow.textures == 12 and not glow.bg, "dashed outline without dark backing")
-assert(not h.pulse:IsPlaying() and h.glowRunning)
+assert(h.glowStyle == "PIXEL" and not h.pulse, "custom pulse removed")
 local oldTimer = glow.timer
 glow.scripts.OnUpdate(glow, 0.1)
 assert(glow.timer > oldTimer, "library animates dashes")
@@ -106,12 +114,39 @@ Update()
 assert(h.glowHost[key] == glow, "refresh reuses animation")
 color = {1,0,0}; Update()
 assert(glow.textures[1].color[1] == 1 and glow.textures[1].color[2] == 0, "live color update")
-style = "PULSE"; Update()
-assert(not h.glowHost[key] and not glow.scripts.OnUpdate and h.pulse:IsPlaying(), "switching to pulse releases glow")
+local effects = {
+    {"AUTOCAST", "_AutoCastGlowSNPInterruptible"},
+    {"BUTTON", "_ButtonGlow"},
+    {"PROC", "_ProcGlowSNPInterruptible"},
+    {"PIXEL", key},
+}
+local previousKey = key
+for _, effect in ipairs(effects) do
+    style = effect[1]; Update()
+    assert(not h.glowHost[previousKey], "previous library effect released")
+    local active = assert(h.glowHost[effect[2]], "selected library effect starts")
+    assert(h.glowStyle == style)
+    Update()
+    assert(h.glowHost[effect[2]] == active, "refresh reuses selected effect")
+    frame.castBar.Icon:SetShown(false)
+    assert(not h.glowHost[effect[2]], "cast end releases selected effect")
+    frame.castBar.Icon:SetShown(true)
+    assert(h.glowHost[effect[2]], "interruptible cast restarts selected effect")
+    color = {0.2, 0.4, 0.8}; Update()
+    active = assert(h.glowHost[effect[2]], "color change preserves selected effect")
+    local tint = active.textures and active.textures[1].color or active.ants and active.ants.color or active.ProcLoop.color
+    assert(tint[1] == 0.2 and tint[2] == 0.4 and tint[3] == 0.8, "selected effect uses profile color")
+    frame.castBar:SetSize(160, 22); Update()
+    local hostWidth, hostHeight = h.glowHost:GetSize()
+    assert(hostWidth == 166 and hostHeight == 28, "selected effect follows bar resize")
+    previousKey = effect[2]
+end
+style = "NONE"; Update()
+assert(not h.glowHost[key] and not h.frame:IsShown(), "None hides and stops effect")
 style = "PIXEL"; Update()
-assert(h.glowHost[key] and not h.pulse:IsPlaying())
+assert(h.glowHost[key])
 frame.castBar.Icon:SetShown(false)
-assert(not h.glowHost[key] and not h.pulse:IsPlaying(), "uninterruptible/end hides and stops animation")
+assert(not h.glowHost[key] and not h.glowStyle, "uninterruptible/end hides and stops animation")
 frame.castBar.Icon:SetShown(true)
 assert(h.glowHost[key], "interruptible icon restarts glow")
 local oldBar = frame.castBar
@@ -123,8 +158,10 @@ h = frame.SNPInterruptibleHighlight
 local secret = {}
 function issecretvalue(value) return value == secret end
 frame.castBar.GetSize = function() return secret, secret end
-Update()
-assert(not h.glowHost[key] and h.pulse:IsPlaying(), "secret geometry uses pulse without arithmetic")
+for _, effect in ipairs(effects) do
+    style = effect[1]; Update()
+    assert(not h.glowHost[effect[2]] and not h.glowStyle, "secret geometry skips every effect without arithmetic")
+end
 enabled = false; Update()
-assert(not h.pulse:IsPlaying() and not h.glowHost[key], "disable stops both effects")
-print("Pixel glow integration smoke: passed")
+assert(not h.glowStyle and not h.glowHost[key], "disable stops effect")
+print("Cast glow integration smoke: passed")

@@ -117,11 +117,19 @@ local function AddCastEffectSelector(context)
     local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
     dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X - 16, 0)
     UIDropDownMenu_SetWidth(dropdown, 190)
-    local options = {{value = "PIXEL", label = "Moving dashes"}, {value = "PULSE", label = "Pulse"}}
+    local options = {
+        {value = "NONE", label = "None"},
+        {value = "PIXEL", label = "Moving dashes"},
+        {value = "AUTOCAST", label = "Autocast Shine"},
+        {value = "BUTTON", label = "Action Button Glow"},
+        {value = "PROC", label = "Proc Glow"},
+    }
     local function Refresh()
         local value = ns.GetInterruptibleCastStyle()
         UIDropDownMenu_SetSelectedValue(dropdown, value)
-        UIDropDownMenu_SetText(dropdown, value == "PULSE" and "Pulse" or "Moving dashes")
+        for _, option in ipairs(options) do
+            if option.value == value then UIDropDownMenu_SetText(dropdown, option.label); break end
+        end
     end
     UIDropDownMenu_Initialize(dropdown, function(_, level)
         for _, option in ipairs(options) do
@@ -157,17 +165,14 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Resets global priority switches to Active and this profile's cast highlight to Inactive with Moving dashes.")
+        "Resets global priority switches to Active and this profile's cast highlight to None.")
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
     CreateColorRow(context, "Interruptible cast highlight",
-        "Highlights interruptible casts and channels. This switch applies only to the selected profile.",
+        "Highlights interruptible casts and channels. Applies to the selected profile.",
         function() return EffectColor("interruptible") end,
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
-        function() ResetEffectColor("interruptible") end, {
-            get = ns.GetInterruptibleHighlightEnabled,
-            set = ns.SetInterruptibleHighlightEnabled,
-        })
+        function() ResetEffectColor("interruptible") end)
     AddCastEffectSelector(context)
     panel:SetScript("OnShow", Refresh)
     Refresh()

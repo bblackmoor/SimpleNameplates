@@ -180,7 +180,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Bundled libraries
 
-Cast highlighting uses [LibCustomGlow](https://github.com/Stanzilla/LibCustomGlow) (MIT) and [LibStub](https://github.com/lua-wow/LibStub) (public domain). Both are included; no separate installation is required. Choose **Moving dashes** or **Pulse** below the cast-highlight color on Colors.
+Cast highlighting uses [LibCustomGlow](https://github.com/Stanzilla/LibCustomGlow) (MIT) and [LibStub](https://github.com/lua-wow/LibStub) (public domain). Both are included; no separate installation is required. Choose **None**, **Moving dashes**, **Autocast Shine**, **Action Button Glow**, or **Proc Glow** below the cast-highlight color on Colors. This selector replaces the separate Active switch; None turns highlighting off.
 
 ## Development
 

@@ -65,7 +65,6 @@ local function NewProfile(presetName)
         effectColors = {},
         appearance = {},
         showThreat = DEFAULT_SHOW_THREAT,
-        interruptibleHighlight = defaults.interruptibleHighlight,
         interruptibleCastStyle = defaults.interruptibleCastStyle,
     }
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
@@ -117,12 +116,17 @@ local function ValidateProfileAppearance(profile, saved)
     end
 end
 
+local CAST_STYLES = {NONE = true, PIXEL = true, AUTOCAST = true, BUTTON = true, PROC = true}
+
 local function ValidateProfileToggles(profile, saved)
     profile.showThreat = SavedBoolean(saved.showThreat, profile.showThreat)
-    profile.interruptibleHighlight = SavedBoolean(saved.interruptibleHighlight,
-        profile.interruptibleHighlight)
-    if saved.interruptibleCastStyle == "PIXEL" or saved.interruptibleCastStyle == "PULSE" then
+    -- Older profiles used a separate activation switch and custom Pulse.
+    if saved.interruptibleHighlight == false then
+        profile.interruptibleCastStyle = "NONE"
+    elseif CAST_STYLES[saved.interruptibleCastStyle] then
         profile.interruptibleCastStyle = saved.interruptibleCastStyle
+    elseif saved.interruptibleHighlight == true then
+        profile.interruptibleCastStyle = "PIXEL"
     end
 end
 
@@ -469,7 +473,6 @@ local function ResetAllColors()
     for key, default in pairs(defaults.effectColors) do
         profile.effectColors[key] = CopyColor(default)
     end
-    profile.interruptibleHighlight = defaults.interruptibleHighlight
     profile.interruptibleCastStyle = defaults.interruptibleCastStyle
     local modes = EnsureDB().global.categoryModes
     for key, default in pairs(DEFAULT_CATEGORY_MODES) do modes[key] = default end
@@ -477,11 +480,16 @@ local function ResetAllColors()
 end
 
 local function GetInterruptibleHighlightEnabled()
-    return ActiveProfile().interruptibleHighlight
+    return ActiveProfile().interruptibleCastStyle ~= "NONE"
 end
 
 local function SetInterruptibleHighlightEnabled(enabled)
-    ActiveProfile().interruptibleHighlight = enabled == true
+    local profile = ActiveProfile()
+    if enabled == true then
+        if profile.interruptibleCastStyle == "NONE" then profile.interruptibleCastStyle = "PIXEL" end
+    else
+        profile.interruptibleCastStyle = "NONE"
+    end
 end
 
 local function GetInterruptibleCastStyle()
@@ -489,7 +497,7 @@ local function GetInterruptibleCastStyle()
 end
 
 local function SetInterruptibleCastStyle(style)
-    if style == "PIXEL" or style == "PULSE" then ActiveProfile().interruptibleCastStyle = style end
+    if CAST_STYLES[style] then ActiveProfile().interruptibleCastStyle = style end
 end
 
 local function GetStylingEnabled()
