@@ -43,7 +43,8 @@ Test Silvermoon Shared and Silvermoon Horde separately, including transitions be
 ## Runtime phase 4 (1.0.106)
 
 - [ ] Verify every Active category gains a supported bar during player combat, including same/opposite-faction players, interactive NPCs, unmatched NPCs, and minions. On combat exit, only Attacking/Hostile/Neutral retain supported bars. Inactive categories retain Blizzard presentation and missing-bar entities keep colored names.
-- [ ] Verify above/inside layout, 80% font size and padding, white bar names, category colors, threat text, and cast effects through repeated combat entry/exit and Blizzard name/health repair hooks. Old cached text must not undo a transition.
+- [ ] Verify above/inside layout, full selected name size and three-unit top/bottom bar padding, white bar names, category colors, threat text, and cast effects through repeated combat entry/exit and Blizzard name/health repair hooks. Old cached text must not undo a transition.
 - [ ] Verify long titles disappear for requested or observed bars and return for name-only presentation, including friendly combat bars and missing-bar cases. Diagnose unavailable shown state explicitly.
 - [ ] Disable styling during lockdown on a previously styled frame; after combat, confirm original visibility and bar/container heights return while styling stays disabled. Repeat with temporarily forbidden base plates and Inactive categories becoming accessible without a context event.
 - [ ] Remove/recycle plates while restricted and verify deferred cleanup does not clear another entity's name or leave stale overlays. Confirm scoped sanctuary/PvP rule identifiers in diagnostics, with no nameplate-visibility CVar writes.
+

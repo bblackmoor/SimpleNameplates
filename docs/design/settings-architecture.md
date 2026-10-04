@@ -25,7 +25,7 @@ The settings UI uses scroll layout, thumb switches, circled-i links, aligned set
 | `NameplateRestoration.lua` | Original visibility and deferred restoration/cleanup retries |
 | `NameplateFrames.lua` | Shared nameplate and region access through capability assessment |
 | `NameplateText.lua` | Names, TRP3 titles, placement, inside-bar sizing, and cached text repair |
-| `NameplateThreat.lua` | Readable threat-percentage text |
+| `NameplateThreat.lua` | Threat-percentage text rendered through WoW's formatter, including opaque secret values |
 | `CastHighlight.lua` | Interruptible-cast border and pulse |
 | `NameplatePresentation.lua` | Apply one shared presentation decision for styling and both Blizzard repair hooks |
 | `Nameplates.lua` | Events, hooks, refresh queues, and nameplate lifecycle |
@@ -103,3 +103,4 @@ The former permanent friendly-player name-only claim is gone. Phase 4 subsequent
 PresentationRules selects named rules by context and entity facts and returns one capability-dependent decision. Classification no longer owns name-only presentation. NameplatePresentation applies the same full decision from both repair hooks so name color/layout, bars, titles, threat, and cast effects stay consistent through transitions. NameplateText associates its cache with the decision and context revision and refuses stale or changed-bar repair; the runtime then recomputes current presentation.
 
 NameplateRestoration captures original shown states before styling and retries skipped restoration with styling disabled. The runtime retains known removed-unit frames and pending refreshes for temporarily inaccessible plates. These retries assess access first and do not poll world APIs. Nameplate visibility CVars remain restoration-only; combat presentation does not modify them. All six smoke scripts pass locally; actual Midnight permissions and presentation require client verification.
+

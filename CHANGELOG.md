@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.133
+
+* Keeps inside-bar names at the full selected font size and expands health bars and containers as needed, with three UI units of padding above and below. Original heights are restored when inside-bar styling ends.
+* Renders threat percentages through WoW's supported formatter, including secret values without inspecting them. Ensures labels have a valid font, are shown above bar artwork, and follow replacement health bars.
+* Adds threat-display status to diagnostics; absent or undisplayable threat percentages remain blank.
+
 ## 1.0.132
 
 * Adds `/snp debug mouseover` to inspect hovered creatures without changing the target or their nameplate presentation. Existing `/snp debug` continues to inspect the target.

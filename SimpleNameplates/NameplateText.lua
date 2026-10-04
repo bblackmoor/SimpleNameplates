@@ -111,6 +111,11 @@ local function RestoreOriginalBarHeight(frame, bar, context)
     frame.SNPOriginalHealthBarsContainerHeight = nil
 end
 
+local function InsideBarHeight(frame, nameSize)
+    return math.max(nameSize + 6, frame.SNPOriginalBarHeight or 0,
+        frame.SNPOriginalHealthBarsContainerHeight or 0)
+end
+
 local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context, decision)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return false, baseNameSize end
@@ -135,8 +140,8 @@ local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context
         end
     end
 
-    local insideNameSize = math.floor(baseNameSize * 0.8 + 0.5)
-    local barHeight = insideNameSize + 4
+    local insideNameSize = baseNameSize
+    local barHeight = InsideBarHeight(frame, insideNameSize)
     bar:SetHeight(barHeight)
     if container then container:SetHeight(barHeight) end
     return true, insideNameSize
@@ -213,6 +218,7 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.inside = inside == true
     expected.rightInset = rightInset
     expected.bar = bar
+    expected.barHeight = inside and InsideBarHeight(frame, size) or nil
     expected.frame = frame
 end
 
@@ -312,11 +318,11 @@ local function CachedNameHasDrifted(frame, context)
         return true
     end
     if expected.inside and expected.bar
-        and not NearlyEqual(expected.bar:GetHeight(), expected.size + 4) then
+        and not NearlyEqual(expected.bar:GetHeight(), expected.barHeight) then
         return true
     end
     if expected.inside and frame.HealthBarsContainer
-        and not NearlyEqual(frame.HealthBarsContainer:GetHeight(), expected.size + 4) then
+        and not NearlyEqual(frame.HealthBarsContainer:GetHeight(), expected.barHeight) then
         return true
     end
     if expected.inside then
@@ -359,8 +365,8 @@ local function RepairCachedName(frame, context)
     name:SetVertexColor(1, 1, 1, 1)
     name:SetTextColor(expected.r, expected.g, expected.b, 1)
     if expected.inside and expected.bar then
-        expected.bar:SetHeight(expected.size + 4)
-        if frame.HealthBarsContainer then frame.HealthBarsContainer:SetHeight(expected.size + 4) end
+        expected.bar:SetHeight(expected.barHeight)
+        if frame.HealthBarsContainer then frame.HealthBarsContainer:SetHeight(expected.barHeight) end
     end
     if expected.nameOnly then
         name:ClearAllPoints()
@@ -398,3 +404,4 @@ ns.NameplateText = {
     CachedNameHasDrifted = CachedNameHasDrifted,
     RepairCachedName = RepairCachedName,
 }
+

@@ -202,7 +202,7 @@ equal(plateFrame.SNPState, "friendly", "combat does not change category")
 equal(plateFrame.healthBar.shown, true, "friendly combat bar")
 equal(plateFrame.SNPFullTitleText.shown, false, "friendly combat hides long title")
 equal(plateFrame.SNPInsideName.shown, true, "friendly combat inside name")
-equal(plateFrame.healthBar.height, 14, "friendly combat padding")
+equal(plateFrame.healthBar.height, 20, "friendly combat padding")
 equal(plateFrame.name.g, 1, "bar name is white")
 plateFrame.SNPNameStyle = oldNameStyle
 equal(ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get()), false, "stale cache rejected")
@@ -223,7 +223,19 @@ ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.shown, false, "bar suppresses long title")
 equal(plateFrame.SNPInsideName.text, "Roleplay Name", "inside name retained")
 equal(plateFrame.name.alpha, 0, "original inside name concealed")
-equal(plateFrame.healthBar.height, 14, "inside padding retained")
+equal(plateFrame.healthBar.height, 20, "inside padding retained")
+equal(plateFrame.SNPInsideName.size, 12, "inside name retains selected size")
+appearance.nameSize = 36
+ns.RefreshAll()
+equal(plateFrame.SNPInsideName.size, 36, "large inside name retains full size")
+equal(plateFrame.healthBar.height, 42, "bar expands for full font plus padding")
+equal(plateFrame.HealthBarsContainer.height, 42, "container expands with bar")
+plateFrame.healthBar:SetHeight(20)
+events.scripts.OnUpdate(events, 0.5)
+equal(plateFrame.healthBar.height, 42, "drift repair retains expanded height")
+appearance.nameSize = 12
+ns.RefreshAll()
+
 
 categoryMode = "inactive"
 ns.RefreshAll()
@@ -373,7 +385,7 @@ appearance.namePlacement = "INSIDE"
 locked = false
 ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
 ns.RefreshAll()
-equal(plateFrame.healthBar.height, 14, "styled height before lockdown")
+equal(plateFrame.healthBar.height, 20, "styled height before lockdown")
 plateFrame.IsProtected = function() return true end
 locked = true
 ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")

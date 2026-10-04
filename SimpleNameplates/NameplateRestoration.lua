@@ -22,6 +22,7 @@ local function Capture(frame, assessment, context)
 end
 
 local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
+    frame.SNPThreatStatus = nil
     if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
     Text.RestoreNameDisplay(frame, context)

@@ -59,7 +59,7 @@ NPC subtitles such as `<Voidforge Steward>` are read first from structured GUID 
 * Normal health depletion as the unit takes damage
 * Normal Blizzard cast/channel bar and spell information
 * Normal Blizzard target treatment
-* Optional threat percentage at the right side of the health bar when Midnight exposes a non-secret threat percentage
+* Optional threat percentage at the right side of the health bar when WoW supplies a percentage its text API can display
 * Optional pulsing cyan border around interruptible cast bars
 
 ## Global behavior
@@ -68,7 +68,7 @@ Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp`
 
 The six categories are evaluated from top to bottom. The first matching category wins. Every category has an Active / Inactive thumb switch; category hiding is not available:
 
-* **Active** applies its Priority Color and Simple Nameplates styling, including threat percentage when Midnight exposes a readable value.
+* **Active** applies its Priority Color and Simple Nameplates styling, including threat percentage when WoW supplies a displayable value.
 * **Inactive** leaves Blizzard's display unchanged for that category. Restoration of previously styled restricted frames is retried when access returns, including while styling is disabled.
 
 ## Appearance Profiles and Settings
@@ -111,7 +111,7 @@ Headings use sentence case, labels use normal white text, and muted descriptions
 
 **Match Blizzard font in sanctuaries** is enabled by default in each appearance profile. It uses Blizzard's localized native world-name font face for addon-controlled names and NPC/TRP3 titles throughout sanctuary areas, including names inside health bars. Turn it off to use the selected Name font everywhere. Outside sanctuaries, the selected font applies normally. Sizes, outlines, colors, positioning, and the separate threat font retain their existing behavior. This improves consistency with inaccessible opposite-faction PC labels; it does not make those labels editable or guarantee identical sizing and outlines.
 
-The selected Name font defaults to WoW's built-in **Friz Quadrata**, the threat-percentage font defaults to **Arial Narrow**, both use a normal outline, and names default to 21 points. Other standard Blizzard fonts are available without an external font library. Inside-bar names use 80% of the selected size, rounded to the nearest point. Their health bars resize to leave two UI units above and below the text, then return to Blizzard's original height when names move above the bar or Simple Nameplates styling is disabled. Name-only plates are unaffected by the placement setting; Friendly, NPC - Interactive, and NPC - Background use the same above/inside layout when their supported bars appear during combat. Blizzard-controlled overhead names have no nameplate frame, so their size and font remain controlled by the game.
+The selected Name font defaults to WoW's built-in **Friz Quadrata**, the threat-percentage font defaults to **Arial Narrow**, both use a normal outline, and names default to 21 points. Other standard Blizzard fonts are available without an external font library. Inside-bar names retain the full selected size. Their health bars expand as needed to leave three UI units above and below the text, then return to Blizzard's original height when names move above the bar or Simple Nameplates styling is disabled. Name-only plates are unaffected by the placement setting; Friendly, NPC - Interactive, and NPC - Background use the same above/inside layout when their supported bars appear during combat. Blizzard-controlled overhead names have no nameplate frame, so their size and font remain controlled by the game.
 
 About contains three informational swatches for native opposite-faction PC sanctuary labels, interactive-NPC labels, and vendor-NPC labels. These describe native labels, not blanket unalterable entity categories; separate accessible NPC plates can be styled. The optional interruptible highlight is a pulsing, solid-color border with a dark outer edge around Blizzard's existing cast bar. It uses Blizzard's own interruptibility result, applies to casts and channels, and preserves Blizzard's normal non-interruptible shield treatment.
 
@@ -171,7 +171,7 @@ Running multiple nameplate addons can cause competing colors or duplicate namepl
 
 World of Warcraft: Midnight may mark some threat information as secret.
 
-Simple Nameplates does not attempt to inspect secret values. Threat percentage is displayed only when WoW allows the value to be read.
+Simple Nameplates does not inspect or calculate with secret threat values. It passes percentages directly to WoW's supported text formatter, which can display secret values. Missing values or rejected formatting leave the percentage blank. Diagnostics reports whether threat display is disabled, unavailable, or displayed.
 
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so applying the shared red attacking color to PCs is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
@@ -179,7 +179,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Development
 
-The [original staged refactor plan](docs/design/implementation-plan.md), [world-context runtime plan](docs/design/runtime-refactor-plan.md), and [source ownership guide](docs/design/settings-architecture.md) describe the Global behavior and appearance Profile boundaries. Run `lua tests/core-behavior-smoke.lua`, `lua tests/settings-smoke.lua`, `lua tests/nameplates-smoke.lua`, `lua tests/world-context-smoke.lua`, `lua tests/entity-facts-smoke.lua`, and `lua tests/presentation-rules-smoke.lua` from the repository root for the local behavioral checks. Runtime phases 1–4 are implemented; phase 5 is client verification. The [live WoW checklist](docs/design/live-wow-verification.md) records integration checks that require the game client.
+The [original staged refactor plan](docs/design/implementation-plan.md), [world-context runtime plan](docs/design/runtime-refactor-plan.md), and [source ownership guide](docs/design/settings-architecture.md) describe the Global behavior and appearance Profile boundaries. Run `lua tests/core-behavior-smoke.lua`, `lua tests/settings-smoke.lua`, `lua tests/nameplates-smoke.lua`, `lua tests/nameplate-threat-smoke.lua`, `lua tests/world-context-smoke.lua`, `lua tests/entity-facts-smoke.lua`, and `lua tests/presentation-rules-smoke.lua` from the repository root for the local behavioral checks. Runtime phases 1–4 are implemented; phase 5 is client verification. The [live WoW checklist](docs/design/live-wow-verification.md) records integration checks that require the game client.
 
 ## AI Disclaimer
 

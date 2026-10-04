@@ -1,4 +1,4 @@
--- Simple Nameplates: optional readable threat percentage on health bars.
+-- Simple Nameplates: optional threat percentage rendered by WoW's text API.
 local _, ns = ...
 local CanAccessFrame = ns.PresentationCapabilities.CanAccessFrame
 local GetContext = ns.WorldContext.Get
@@ -7,40 +7,54 @@ local AccessibleNumber, FontPath = ns.AccessibleNumber, ns.FontPath
 local GetAppearanceSetting, GetThreatEnabled = ns.GetAppearanceSetting, ns.GetThreatEnabled
 local GetHealthBar = ns.NameplateFrames.GetHealthBar
 
-local function EnsureThreatText(frame, context)
-    if frame.SNPThreatText then return frame.SNPThreatText end
-    local bar = GetHealthBar(frame, context)
-    if not bar then return nil end
-    local threatText = bar:CreateFontString(nil, "OVERLAY")
-    threatText:SetPoint("RIGHT", bar, "RIGHT", -3, 0)
-    threatText:SetJustifyH("RIGHT")
-    threatText:SetTextColor(1, 1, 1, 1)
-    frame.SNPThreatText = threatText
-    return threatText
+local function ClearThreatText(frame, reason)
+    frame.SNPThreatStatus = reason
+    if frame.SNPThreatText then
+        frame.SNPThreatText:SetText("")
+        frame.SNPThreatText:Hide()
+    end
+end
+
+local function EnsureThreatText(frame, bar)
+    if frame.SNPThreatText and frame.SNPThreatTextBar == bar then return frame.SNPThreatText end
+    if frame.SNPThreatText then frame.SNPThreatText:Hide() end
+    local text = bar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    text:SetDrawLayer("OVERLAY", 7)
+    text:SetPoint("RIGHT", bar, "RIGHT", -3, 0)
+    text:SetJustifyH("RIGHT")
+    text:SetWordWrap(false)
+    text:SetMaxLines(1)
+    text:SetTextColor(1, 1, 1, 1)
+    frame.SNPThreatText, frame.SNPThreatTextBar = text, bar
+    return text
+end
+
+local function RenderPercent(text, value)
+    -- SetFormattedText accepts secret arguments. Pass them straight through:
+    -- never compare, concatenate, or calculate with a secret percentage.
+    if not (issecretvalue and issecretvalue(value)) then
+        value = AccessibleNumber(value)
+        if value == nil then return false end
+    end
+    return pcall(text.SetFormattedText, text, "%.0f%%", value)
 end
 
 local function UpdateThreatText(frame, state, context, decision)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return end
-    if not decision or not decision.showHealthBar then
-        if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
-        return
+    if not GetThreatEnabled() then ClearThreatText(frame, "disabled"); return end
+    local bar = GetHealthBar(frame, context)
+    if not decision or not decision.showHealthBar or not bar then
+        ClearThreatText(frame, "no displayed health bar"); return
     end
-    local threatText = EnsureThreatText(frame, context)
-    if not threatText then return end
-    local threatSize = 9
-    if GetAppearanceSetting("namePlacement") == "INSIDE" then
-        local baseNameSize = GetAppearanceSetting("nameSize") or 12
-        threatSize = math.min(threatSize, math.floor(baseNameSize * 0.8 + 0.5))
-    end
-    threatText:SetFont(FontPath(GetAppearanceSetting("threatFont")), threatSize, "OUTLINE")
-    if not GetThreatEnabled() then threatText:SetText(""); return end
-    local _, _, scaled, raw = UnitDetailedThreatSituation("player", frame.unit)
-    local percent = AccessibleNumber(raw) or AccessibleNumber(scaled)
-    if percent then threatText:SetFormattedText("%.0f%%", percent) else threatText:SetText("") end
+    local text = EnsureThreatText(frame, bar)
+    text:SetFont(FontPath(GetAppearanceSetting("threatFont")), 9, "OUTLINE")
+    local ok, _, _, scaled, raw = pcall(UnitDetailedThreatSituation, "player", frame.unit)
+    if not ok then ClearThreatText(frame, "threat API unavailable"); return end
+    if RenderPercent(text, raw) then frame.SNPThreatStatus = "displayed raw percentage"
+    elseif RenderPercent(text, scaled) then frame.SNPThreatStatus = "displayed scaled percentage"
+    else ClearThreatText(frame, "no displayable threat percentage"); return end
+    text:Show()
 end
 
-
-ns.NameplateThreat = {
-    UpdateThreatText = UpdateThreatText,
-}
+ns.NameplateThreat = { UpdateThreatText = UpdateThreatText }

@@ -91,8 +91,8 @@ end
 
 local function AddNameSizeNote(content, layout)
     AddDescription(content, layout,
-        "Floating names and names above bars use this size. Inside-bar names and titles use 80%, rounded. " ..
-        "Inside-bar names have two UI units of vertical padding. Native world labels cannot be resized.")
+        "All names use this size. Titles use 80%, rounded. " ..
+        "Health bars expand to fit inside-bar names with three UI units of padding above and below. Native world labels cannot be resized.")
 end
 
 local function AddSanctuaryFontControl(content, layout, refreshers)
@@ -174,3 +174,4 @@ local function CreateAppearancePanel()
     return panel
 end
 ns.SettingsPanels.Appearance = CreateAppearancePanel
+
