@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.154
+
+* Completes phase 4 of the Details Framework conversion: Appearance's font/placement menus, size/width sliders, switches and Reset settings button now use the adapter. Retains the shared native profile selector, existing ranges/steps, adjacent unit labels, layout and profile/global reset scope.
+* Keeps FontMedia's missing/late-provider policy and targeted font refreshes. Font labels update without evaluating menu providers; choices invalidate on media/selection changes and rebuild only when opened. Cancels typed slider previews before profile changes, resets and page hide so rollback cannot overwrite another profile or undo a reset.
+* Adds real-DF/SharedMedia/database integration checks for both sliders, cancellation lifecycle, a sixty-font scrollable menu, missing/returning fonts, profile switching, resets and silent refreshes. All sixteen smoke suites pass; native client rendering, combat/taint and actual external-library coexistence remain pending.
+
 ## 1.0.153
 
 * Fixes typed slider cancellation in the DF adapter: each slider owns its editor and Escape restores its own opening value, including saved-setting changes from previews. Enter commits a valid rounded/clamped value; closing, focus loss or disabling cancels the preview. Does not patch the bundled library or convert Appearance yet.

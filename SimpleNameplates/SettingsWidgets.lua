@@ -206,16 +206,22 @@ function Widgets.CreateDropdown(parent, optionsFunction, onChanged)
         return cached
     end
     local widget = Framework():CreateDropDown(Widgets.GetFrame(parent), Options,
-        nil, 190, 20, nil, nil, dropdownTemplate)
+        false, 190, 20, nil, nil, dropdownTemplate)
     -- DF reskins this nested scroll thumb with Details' icons2 texture.
     local thumb = widget.scroll.thumb
     thumb:SetTexture(WHITE)
     thumb:SetTexCoord(0, 1, 0, 1)
     handle = NewHandle(widget, onChanged)
     function handle:InvalidateOptions() cached = nil end
-    function handle:SetValue(value)
+    function handle:SetValue(value, label)
         self.value = value
-        self:Refresh(self.widget.Select, value, false, false, false)
+        if label then
+            -- Font labels can refresh while choices are dirty. Selected updates
+            -- the DF selection/label directly, without evaluating the provider.
+            self:Refresh(self.widget.Selected, {value = value, label = label})
+        else
+            self:Refresh(self.widget.Select, value, false, false, false)
+        end
     end
     function handle:GetValue() return self.value end
     function handle:SetLabel(text) self.widget.label:SetText(text) end

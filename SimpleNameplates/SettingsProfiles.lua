@@ -110,7 +110,11 @@ local function AddProfileSelector(content, layout, refreshers, onChanged, contro
             local info = UIDropDownMenu_CreateInfo()
             info.text, info.value = name, name
             info.checked = ns.GetActiveProfileName() == name
-            info.func = function() ns.SetActiveProfileName(name); Changed() end
+            info.func = function()
+                if ns.CancelAppearanceEdits then ns.CancelAppearanceEdits(true) end
+                ns.SetActiveProfileName(name)
+                Changed()
+            end
             UIDropDownMenu_AddButton(info, level)
         end
     end)

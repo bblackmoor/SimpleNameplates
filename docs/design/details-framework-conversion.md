@@ -203,7 +203,7 @@ behavior and actual external-copy compatibility remain unobserved.
    boundaries, callback suppression and standalone/coexisting library loading.
 3. Colors conversion — implemented in 1.0.152; preserve six global modes, RGB apply/cancel/reset, profile
    colors, the five effect choices and top reset placement. Check in-game.
-4. Convert Appearance; preserve fonts and late registrations, slider ranges,
+4. Appearance conversion — implemented in 1.0.154; preserve fonts and late registrations, slider ranges,
    sanctuary matching, placement, threat and global critter reset scope. Test
    long shared-font lists, keyboard interaction and scrolling. Check in-game.
 5. Convert Profiles, TRP3 and About in separately reviewable changes; preserve
@@ -260,5 +260,38 @@ override. Opening captures that slider's current value; valid previews use the
 existing range/step normalization, Enter commits, and Escape/close/focus loss/
 disable restores its opening value and notifies the page if a preview changed
 it. The bundled DF source and its shared editor are untouched. The real-DF
-adapter smoke test covers both sliders and cleanup; Appearance conversion and
-native client verification remain pending.
+adapter smoke test covers both sliders and cleanup. Appearance was not yet
+converted in that release; native client verification remains pending.
+
+## Phase 4 implementation (1.0.154)
+
+Appearance now uses DF font/placement dropdowns, size/width sliders, sanctuary,
+threat and global critter switches, and its top reset button. The shared profile
+selector remains native for phase 5. The critter row moved out of the otherwise
+Profiles-specific SettingsBehavior helper; its existing getter/setter still
+owns global CVar capture/restoration. Database definitions and nameplate runtime
+code are unchanged. Size controls retain 180×18 dimensions, endpoint captions
+and adjacent pt/% labels; font/placement controls use the 340-unit column.
+
+The dropdown adapter accepts an explicit label with SetValue, using DF's
+Selected method without evaluating the options provider. Constructor selection
+is deferred. Font refreshes resolve labels through FontMedia and invalidate
+cached choices, but rebuild/sort only on the next menu opening. A changed
+selection also invalidates choices to retain selected duplicate/missing keys.
+Media callbacks still refresh only the two font controls, without touching
+sliders or saved settings. FontMedia remains the sole font policy layer.
+
+Appearance exports cancellation for shared profile selectors to run before
+changing the active profile. Reset cancels previews before restoring defaults;
+page hide cancels them in the current profile. Silent slider redraws and user
+no-op guards preserve existing setter/refresh behavior. Scope remains the active
+profile's appearance/threat plus global critter visibility, leaving styling,
+colors, effects, other profiles and TRP3 intact.
+
+The existing settings suite retains its behavior checks using actual DF widgets.
+settings-appearance-smoke.lua additionally uses real SharedMedia and database
+code to exercise ranges/rounding, unit labels, slider Escape/Enter, rollback
+before profile changes/resets/hide, missing/returning providers, cheap targeted
+label refreshes, sixty-font menu construction/scrolling, and reset preservation.
+All 16 suites pass. Native rendering, input/security behavior and external-copy
+compatibility remain pending client observations in the live checklist.

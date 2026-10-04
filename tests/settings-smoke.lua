@@ -38,7 +38,7 @@ local function region(kind, parent, template, name)
         SetEnabled = function(self, yes) self.enabled = yes end,
         IsEnabled = function(self) return self.enabled end,
         SetMinMaxValues = function(self, low, high) self.low, self.high = low, high end, SetValueStep = function(self, step) self.step = step end,
-        SetObeyStepOnDrag = function() end, SetValue = function(self, value) self.value = value end,
+        SetObeyStepOnDrag = function() end, SetValue = nativeMethods.SetValue,
         EnableMouse = function() end, SetOwner = function() end,
         AddLine = function() end, Show = function() end, Hide = function() end,
         SetFocus = function() end, HighlightText = function() end,
@@ -247,16 +247,16 @@ end
 -- Font dropdowns obtain fresh shared choices when opened, including late registration.
 local fontDropdowns = {}
 for _, item in ipairs(frames) do
-    if item.initialize and item.selected == "ARIALN" then fontDropdowns[#fontDropdowns + 1] = item end
+    if item.MyObject and item.MyObject.type == "dropdown" and item.MyObject.myvalue == "ARIALN" then fontDropdowns[#fontDropdowns + 1] = item end
 end
 equal(#fontDropdowns, 2, "name and threat font dropdowns")
 fontOptions[#fontOptions + 1] = {value = "LSM:Late font", label = "Late font"}
 for _, dropdown in ipairs(fontDropdowns) do
     menuOptions = {}
-    dropdown.initialize(nil, 1)
+    menuOptions = dropdown.MyObject.func()
     equal(#menuOptions, 2, "late shared font appears on open")
-    menuOptions[2].func()
-    equal(dropdown.selected, "LSM:Late font", "shared selection refreshes dropdown")
+    menuOptions[2].onclick(dropdown.MyObject, nil, menuOptions[2].value)
+    equal(dropdown.MyObject.myvalue, "LSM:Late font", "shared selection refreshes dropdown")
 end
 equal(profile.nameFont, "LSM:Late font", "name font uses shared choice")
 equal(profile.threatFont, "LSM:Late font", "threat font uses shared choice")
@@ -425,7 +425,7 @@ assert(not button("Reset priority colors"), "priority reset button removed")
 assert(not button("Reset all profile colors"), "old bottom reset removed")
 local effectSelector
 for _, item in ipairs(frames) do
-    if item.MyObject and item.MyObject.type == "dropdown" then effectSelector = item end
+    if item.MyObject and item.MyObject.type == "dropdown" and belongsTo(item, categories[4].panel) then effectSelector = item end
 end
 assert(effectSelector and belongsTo(effectSelector, categories[4].panel), "cast effect selector on Colors")
 menuOptions = effectSelector.MyObject.func()
@@ -450,7 +450,7 @@ for _, item in ipairs(frames) do
 end
 assert(widthSlider and belongsTo(widthSlider, categories[3].panel), "width slider belongs to Appearance")
 equal(widthSlider.step, 5, "width slider uses modest five-percent steps")
-widthSlider.scripts.OnValueChanged(widthSlider, 125)
+widthSlider:SetValue(125)
 equal(profile.healthBarWidth, 125, "width slider changes profile setting")
 profile.nameSize, profile.matchSanctuaryFont = 31, false
 profile.nameFont, profile.threatFont, profile.namePlacement = "SKURRI", "MORPHEUS", "INSIDE"

@@ -15,6 +15,13 @@ Status: pending. These checks require a World of Warcraft client; local Lua stub
 - [ ] Switch profiles and reopen Colors; check refreshed colors/effects without changing global activation modes. Exercise all five effects, including None, and compare actual cast highlighting.
 - [ ] Repeat startup/settings and combat checks without Details/Plater and with an external DF embedder; record client build and library minor, and leave unobserved rendering/taint checks pending.
 
+## Details Framework Appearance conversion (1.0.154)
+
+- [ ] Check Appearance alignment, scrolling, endpoint captions and pt/% labels at different UI scales. Exercise name size 8–36/step 1 and bar width 80–150%/step 5.
+- [ ] Type values into both sliders; test Enter/Escape, focus loss, page hide, profile switching and Reset settings during previews. Verify rollback belongs to the original profile and a later Escape cannot undo reset values.
+- [ ] Open both font menus with a large SharedMedia pack; test scrolling/selection, absent saved fonts, late registrations and global font overrides. Labels refresh without resetting unrelated controls or saved font choices.
+- [ ] Verify sanctuary matching, name placement, threat and critter toggles; reset Appearance and confirm its documented profile/global scope. Repeat with Details/Plater absent and an external DF embedder present, recording any combat/taint errors.
+
 ## Setup and saved data
 
 - [ ] Fresh install with no `SimpleNameplatesDB`: Default and High Contrast appear, the active Profile is Default, and Global behavior uses factory values.

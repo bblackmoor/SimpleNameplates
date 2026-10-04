@@ -38,11 +38,4 @@ local function AddStylingSwitch(row, anchor, refreshers)
     return toggle
 end
 
-local function AddGlobalAppearanceControls(content, layout, refreshers)
-    U.AddSection(content, layout, "Global visibility")
-    U.AddToggle(content, layout, refreshers, "Hide critter and companion names",
-        ns.GetHideCritterCompanionNames, ns.SetHideCritterCompanionNames)
-    U.AddDescription(content, layout, "Noncombat units only.")
-end
 ns.AddStylingSwitch = AddStylingSwitch
-ns.AddGlobalAppearanceControls = AddGlobalAppearanceControls

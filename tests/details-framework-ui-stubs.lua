@@ -49,6 +49,7 @@ SOUNDKIT = {}
 BackdropTemplateMixin = {}
 local objects = {}
 local methods = {}
+local focused
 local objectMT = {__index=methods}
 local function object(name,parent,kind)
  if name and parent then name=name:gsub("%$[pP]arent",parent.name or "") end
@@ -75,7 +76,11 @@ function methods:SetText(v)
     self.text = v
     if self.scripts.OnTextChanged then self.scripts.OnTextChanged(self, false) end
 end
-function methods:SetFocus() end
+function methods:SetFocus()
+    local old = focused
+    focused = self
+    if old and old ~= self and old.scripts.OnEditFocusLost then old.scripts.OnEditFocusLost(old) end
+end
 function methods:HighlightText() end
 function methods:SetSize(w,h) self.width,self.height=w,h end
 function methods:SetWidth(w) self.width=w end
@@ -111,7 +116,12 @@ function methods:SetScrollChild(child) self.scrollChild=child end
 function methods:GetScrollChild() return self.scrollChild end
 function methods:SetPushedTextOffset() end
 function methods:GetDrawLayer() return "ARTWORK",1 end
-function methods:ClearFocus() end
+function methods:ClearFocus()
+    if focused == self then
+        focused = nil
+        if self.scripts.OnEditFocusLost then self.scripts.OnEditFocusLost(self) end
+    end
+end
 function methods:GetFrameStrata() return "MEDIUM" end
 function methods:GetVertexColor() return unpack(self.color or {1,1,1,1}) end
 function methods:GetNumPoints() return 0 end
@@ -134,6 +144,20 @@ function methods:Enable() self.enabled=true end
 function methods:Disable() self.enabled=false end
 function methods:SetMinMaxValues(minimum,maximum) self.minimum,self.maximum=minimum,maximum end
 function methods:GetMinMaxValues() return self.minimum,self.maximum end
+function methods:SetValueStep(step) self.step = step end
+function methods:SetParent(parent) self.parent = parent end
+function methods:EnableMouseWheel(enabled) self.mouseWheel = enabled end
+function methods:SetVerticalScroll(value) self.verticalScroll = value end
+function methods:GetVerticalScroll() return self.verticalScroll or 0 end
+function methods:GetRegions()
+    local regions = {}
+    for _, region in ipairs(objects) do
+        if region.parent == self and (region.kind == "FontString" or region.kind == "Texture") then
+            regions[#regions + 1] = region
+        end
+    end
+    return unpack(regions)
+end
 UIParent=object('UIParent'); GameTooltip=object('GameTooltip'); ColorPickerFrame=object('ColorPickerFrame')
 for _,k in ipairs({'GameFontNormal','GameFontHighlight','GameFontNormalSmall','GameFontHighlightSmall','GameFontNormalLarge','GameFontHighlightLarge','NumberFontNormal','NumberFontNormalSmall'}) do _G[k]=object(k,nil,'Font') end
 function ColorPickerFrame:SetupColorPickerAndShow(info) self.info=info end

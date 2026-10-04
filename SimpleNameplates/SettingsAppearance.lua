@@ -1,163 +1,145 @@
--- Simple Nameplates: Appearance settings page.
+-- Simple Nameplates: profile appearance and global critter visibility.
 local _, ns = ...
-local U = ns.SettingsUI
-local CreateScrollablePanel, AddTitle, AddDescription =
-    U.CreateScrollablePanel, U.AddTitle, U.AddDescription
-local AddSection, RunRefreshers, RefreshNameplates = U.AddSection, U.RunRefreshers, U.RefreshNameplates
-local GetAppearanceSetting, SetAppearanceSetting, ResetAppearance =
-    ns.GetAppearanceSetting, ns.SetAppearanceSetting, ns.ResetAppearance
-local GetThreatEnabled, SetThreatEnabled = ns.GetThreatEnabled, ns.SetThreatEnabled
+local U, W = ns.SettingsUI, ns.SettingsWidgets
+local function Refresh(context) U.RunRefreshers(context.refreshers) end
 
-local function OptionLabel(options, value)
-    for _, option in ipairs(options) do
-        if option.value == value then return option.label end
-    end
-    return ""
-end
-
-local function CreateAppearanceDropdown(content, layout, refreshers, labelText, options, getter, setter, labelGetter)
-    local block = U.CreateSettingRow(content, layout, labelText)
-    local dropdown = CreateFrame("Frame", nil, block, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("LEFT", block, "LEFT", U.CONTROL_X - 16, 0)
-    UIDropDownMenu_SetWidth(dropdown, 190)
-
-    local function Options()
-        return type(options) == "function" and options() or options
-    end
-    local function Refresh()
-        local value = getter()
-        UIDropDownMenu_SetSelectedValue(dropdown, value)
-        UIDropDownMenu_SetText(dropdown, labelGetter and labelGetter(value) or OptionLabel(Options(), value))
-    end
-    UIDropDownMenu_Initialize(dropdown, function(_, level)
-        for _, option in ipairs(Options()) do
-            local value, optionLabel = option.value, option.label
-            local info = UIDropDownMenu_CreateInfo()
-            info.text, info.value = optionLabel, value
-            info.checked = getter() == value
-            info.func = function()
-                setter(value)
-                Refresh()
-                RefreshNameplates()
-            end
-            UIDropDownMenu_AddButton(info, level)
-        end
+local function AddToggle(context, label, getter, setter, onChanged)
+    local row = U.CreateSettingRow(context.content, context.layout, label)
+    local toggle = W.CreateSwitch(row, function(value)
+        setter(value)
+        if onChanged then onChanged() end
     end)
-    refreshers[#refreshers + 1] = Refresh
-    Refresh()
-    return Refresh
+    toggle:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
+    context.refreshers[#context.refreshers + 1] = function() toggle:SetChecked(getter()) end
 end
 
-local function CreateFontDropdown(content, layout, refreshers, fontRefreshers, label, key)
-    local function GetFont() return GetAppearanceSetting(key) end
-    local refresh = CreateAppearanceDropdown(content, layout, refreshers, label,
-        function() return ns.GetFontOptions(GetFont()) end, GetFont,
-        function(value) SetAppearanceSetting(key, value) end, ns.FontLabel)
-    fontRefreshers[#fontRefreshers + 1] = refresh
-end
-
-local function AddSizeControl(content, layout, refreshers, key, label, minimum, maximum, step, suffix)
-    local sizeBlock = CreateFrame("Frame", nil, content)
-    sizeBlock.SNPLayoutFullWidth = true
-    layout:Add(sizeBlock, 24, 48, 6)
-    local sizeLabel = sizeBlock:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    sizeLabel:SetPoint("TOPLEFT", 0, -12)
-    local sizeValue = sizeBlock:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    sizeValue:SetPoint("TOPLEFT", U.CONTROL_X + 188, -12)
-    local sizeSlider = CreateFrame("Slider", key == "nameSize" and "SimpleNameplatesNameSizeSlider" or "SimpleNameplatesHealthBarWidthSlider", sizeBlock, "OptionsSliderTemplate")
-    sizeSlider:SetPoint("TOPLEFT", U.CONTROL_X, -10)
-    sizeSlider:SetSize(180, 18)
-    sizeSlider:SetMinMaxValues(minimum, maximum)
-    sizeSlider:SetValueStep(step)
-    sizeSlider:SetObeyStepOnDrag(true)
-    sizeSlider.Low:SetText(tostring(minimum))
-    sizeSlider.High:SetText(tostring(maximum))
-    sizeSlider.Text:SetText("")
-
-    local refreshingSize = false
-    local function RefreshNameSize()
-        local value = GetAppearanceSetting(key)
-        refreshingSize = true
-        sizeSlider:SetValue(value)
-        refreshingSize = false
-        sizeLabel:SetText(label)
-        sizeValue:SetText(tostring(value) .. suffix)
-    end
-    sizeSlider:SetScript("OnValueChanged", function(_, rawValue)
-        local value = math.floor(rawValue / step + 0.5) * step
-        sizeValue:SetText(tostring(value) .. suffix)
-        if refreshingSize or value == GetAppearanceSetting(key) then return end
-        SetAppearanceSetting(key, value)
-        RefreshNameplates()
+local function AddFont(context, label, key)
+    local row = U.CreateSettingRow(context.content, context.layout, label)
+    local selected
+    local dropdown = W.CreateDropdown(row, function()
+        return ns.GetFontOptions(ns.GetAppearanceSetting(key))
+    end, function(value)
+        ns.SetAppearanceSetting(key, value)
+        Refresh(context)
+        U.RefreshNameplates()
     end)
-    refreshers[#refreshers + 1] = RefreshNameSize
-    RefreshNameSize()
+    dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
+    local function RefreshFont()
+        local value = ns.GetAppearanceSetting(key)
+        if value ~= selected then dropdown:InvalidateOptions(); selected = value end
+        dropdown:SetValue(value, ns.FontLabel(value))
+    end
+    context.refreshers[#context.refreshers + 1] = RefreshFont
+    context.fontRefreshers[#context.fontRefreshers + 1] = function()
+        dropdown:InvalidateOptions() -- Rebuild only on the next menu opening.
+        RefreshFont()
+    end
 end
 
-local function AddThreatControl(content, layout, refreshers)
-    U.AddToggle(content, layout, refreshers, "Show threat percentage when available",
-        GetThreatEnabled, SetThreatEnabled, RefreshNameplates)
+local function AddSize(context, key, label, minimum, maximum, step, suffix)
+    local block = CreateFrame("Frame", nil, context.content)
+    block.SNPLayoutFullWidth = true
+    context.layout:Add(block, 24, 48, 6)
+    local text = block:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    text:SetPoint("TOPLEFT", 0, -12)
+    text:SetText(label)
+    local amount = block:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    amount:SetPoint("TOPLEFT", U.CONTROL_X + 188, -12)
+    local slider = W.CreateSlider(block, minimum, maximum, step, function(value)
+        amount:SetText(tostring(value) .. suffix)
+        if value == ns.GetAppearanceSetting(key) then return end
+        ns.SetAppearanceSetting(key, value)
+        if not context.canceling then U.RefreshNameplates() end
+    end)
+    slider:SetPoint("TOPLEFT", block, "TOPLEFT", U.CONTROL_X, -10)
+    slider:GetFrame():SetHeight(18)
+    slider.widget.amt:Hide() -- The existing adjacent value label carries units.
+    for _, endpoint in ipairs({{minimum, "LEFT"}, {maximum, "RIGHT"}}) do
+        local caption = block:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        caption:SetText(tostring(endpoint[1]))
+        caption:SetPoint("TOP" .. endpoint[2], slider:GetFrame(), "BOTTOM" .. endpoint[2], 0, -2)
+    end
+    context.sliders[#context.sliders + 1] = slider
+    context.refreshers[#context.refreshers + 1] = function()
+        local value = ns.GetAppearanceSetting(key)
+        slider:SetValue(value)
+        amount:SetText(tostring(value) .. suffix)
+    end
 end
 
-local function AddNameSizeNote(content, layout)
-    AddDescription(content, layout,
+local function AddPlacement(context)
+    local row = U.CreateSettingRow(context.content, context.layout, "Health-bar name placement")
+    local options = {{value = "ABOVE", label = "Above bar"}, {value = "INSIDE", label = "Inside bar"}}
+    local dropdown = W.CreateDropdown(row, function() return options end, function(value)
+        ns.SetAppearanceSetting("namePlacement", value)
+        Refresh(context)
+        U.RefreshNameplates()
+    end)
+    dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
+    context.refreshers[#context.refreshers + 1] = function()
+        dropdown:SetValue(ns.GetAppearanceSetting("namePlacement"))
+    end
+end
+
+local function AddControls(context)
+    local content, layout = context.content, context.layout
+    U.AddSection(content, layout, "Fonts and sizing")
+    AddFont(context, "Name font", "nameFont")
+    U.AddDescription(content, layout, "Includes fonts registered by other addons and SharedMedia packs.")
+    AddToggle(context, "Match Blizzard font in sanctuaries",
+        function() return ns.GetAppearanceSetting("matchSanctuaryFont") end,
+        function(value) ns.SetAppearanceSetting("matchSanctuaryFont", value) end, U.RefreshNameplates)
+    U.AddDescription(content, layout, "When off, the selected Name font applies everywhere.")
+    AddSize(context, "nameSize", "Name size", ns.MIN_NAME_SIZE, ns.MAX_NAME_SIZE, 1, " pt")
+    U.AddDescription(content, layout,
         "Also sets threat-text size. Titles use 80%; inside-bar text has four units above and three below.")
-end
-
-local function AddSanctuaryFontControl(content, layout, refreshers)
-    U.AddToggle(content, layout, refreshers, "Match Blizzard font in sanctuaries",
-        function() return GetAppearanceSetting("matchSanctuaryFont") end,
-        function(checked) SetAppearanceSetting("matchSanctuaryFont", checked) end, RefreshNameplates)
-    AddDescription(content, layout,
-        "When off, the selected Name font applies everywhere.")
-end
-
-local function AddSharedAppearanceControls(content, layout, refreshers, fontRefreshers)
-    AddSection(content, layout, "Fonts and sizing")
-
-    CreateFontDropdown(content, layout, refreshers, fontRefreshers, "Name font", "nameFont")
-    AddDescription(content, layout, "Includes fonts registered by other addons and SharedMedia packs.")
-    AddSanctuaryFontControl(content, layout, refreshers)
-    AddSizeControl(content, layout, refreshers, "nameSize", "Name size", ns.MIN_NAME_SIZE, ns.MAX_NAME_SIZE, 1, " pt")
-    AddNameSizeNote(content, layout)
-end
-
-local function AddInCombatTextControls(content, layout, refreshers, fontRefreshers)
-    AddSection(content, layout, "Health bars")
-    AddDescription(content, layout,
+    U.AddSection(content, layout, "Health bars")
+    U.AddDescription(content, layout,
         "Out of combat, only Attacking, Hostile and Neutral use bars. In combat, all Active categories use available bars.")
-    AddSizeControl(content, layout, refreshers, "healthBarWidth", "Health bar width", ns.MIN_HEALTH_BAR_WIDTH, ns.MAX_HEALTH_BAR_WIDTH, 5, "%")
-    CreateAppearanceDropdown(content, layout, refreshers, "Health-bar name placement", {
-        { value = "ABOVE", label = "Above bar" }, { value = "INSIDE", label = "Inside bar" },
-    }, function() return GetAppearanceSetting("namePlacement") end,
-        function(value) SetAppearanceSetting("namePlacement", value) end)
-    CreateFontDropdown(content, layout, refreshers, fontRefreshers, "Threat-percentage font", "threatFont")
-    AddThreatControl(content, layout, refreshers)
+    AddSize(context, "healthBarWidth", "Health bar width", ns.MIN_HEALTH_BAR_WIDTH, ns.MAX_HEALTH_BAR_WIDTH, 5, "%")
+    AddPlacement(context)
+    AddFont(context, "Threat-percentage font", "threatFont")
+    AddToggle(context, "Show threat percentage when available", ns.GetThreatEnabled, ns.SetThreatEnabled, U.RefreshNameplates)
+    U.AddSection(content, layout, "Global visibility")
+    -- This setter owns its CVar capture/restoration.
+    AddToggle(context, "Hide critter and companion names", ns.GetHideCritterCompanionNames, ns.SetHideCritterCompanionNames)
+    U.AddDescription(content, layout, "Noncombat units only.")
 end
 
 local function CreateAppearancePanel()
-    local panel, content, layout = CreateScrollablePanel("Appearance")
-    AddTitle(content, layout, "Appearance")
-    local refreshers, fontRefreshers = {}, {}
-    local function Refresh() RunRefreshers(refreshers) end
-    ns.RefreshFontControls = function() RunRefreshers(fontRefreshers) end
-    ns.AddProfileSelector(content, layout, refreshers, Refresh)
-    U.AddActionButton(content, layout, "Reset settings", function()
-        ResetAppearance()
-        SetThreatEnabled(ns.Defaults.showThreat)
+    local panel, content, layout = U.CreateScrollablePanel("Appearance")
+    U.AddTitle(content, layout, "Appearance")
+    local context = {content = content, layout = layout, refreshers = {}, fontRefreshers = {}, sliders = {}}
+    local function CancelEdits(quiet)
+        local changed = false
+        context.canceling = true
+        for _, slider in ipairs(context.sliders) do
+            local previous = slider:GetValue()
+            slider:CancelEdit()
+            if previous ~= slider:GetValue() then changed = true end
+        end
+        context.canceling = false
+        if changed and not quiet then U.RefreshNameplates() end
+    end
+    ns.CancelAppearanceEdits = CancelEdits
+    ns.RefreshFontControls = function() U.RunRefreshers(context.fontRefreshers) end
+    local function RefreshPage() Refresh(context) end
+    ns.AddProfileSelector(content, layout, context.refreshers, RefreshPage)
+    local reset = W.CreateButton(content, "Reset settings", function()
+        CancelEdits(true)
+        ns.ResetAppearance()
+        ns.SetThreatEnabled(ns.Defaults.showThreat)
         ns.SetHideCritterCompanionNames(ns.Defaults.hideCritterCompanionNames)
-        Refresh()
-        RefreshNameplates()
+        RefreshPage()
+        U.RefreshNameplates()
     end)
-    AddDescription(content, layout,
-        "Resets the settings below, including global critter/companion visibility.")
-    AddSharedAppearanceControls(content, layout, refreshers, fontRefreshers)
-    AddInCombatTextControls(content, layout, refreshers, fontRefreshers)
-    ns.AddGlobalAppearanceControls(content, layout, refreshers)
-    panel:SetScript("OnShow", Refresh)
-    Refresh()
+    layout:Add(reset:GetFrame(), 24, 24, 8)
+    U.AddDescription(content, layout, "Resets the settings below, including global critter/companion visibility.")
+    AddControls(context)
+    panel:SetScript("OnShow", RefreshPage)
+    panel:SetScript("OnHide", function() CancelEdits() end)
+    RefreshPage()
     layout:Finish()
     return panel
 end
 ns.SettingsPanels.Appearance = CreateAppearancePanel
-
