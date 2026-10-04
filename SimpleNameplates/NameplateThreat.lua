@@ -49,7 +49,7 @@ local function UpdateThreatText(frame, state, context, decision)
     end
     local text = EnsureThreatText(frame, bar)
     text:SetTextColor(1, 1, 1, 1)
-    text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, "")
+    text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, ns.FontFlags(false))
     text:SetShadowColor(0, 0, 0, 0)
     text:SetShadowOffset(0, 0)
     local ok, _, _, scaled, raw = pcall(UnitDetailedThreatSituation, "player", frame.unit)

@@ -1,7 +1,7 @@
 # Live WoW integration verification
 
 Status: pending. Details Framework phases 1–6 repository work and follow-up fixes
-are complete through 1.0.160, with all 17 local smoke suites passing. These checks
+are complete through 1.0.161, with all 17 local smoke suites passing. These checks
 require a World of Warcraft client; local Lua stubs do not establish actual frame
 behavior, secure CVar behavior, or Midnight secret-value safety. Record the client
 build, addon version, date, and observed result when running them. Leave a check
@@ -61,6 +61,11 @@ open until it is observed in game.
 - [ ] Exercise Active and Inactive for all six priority categories on representative addon-accessible units. Confirm first-match priority and threat/effect behavior; no category Hide option is available.
 - [ ] Confirm experimental replacement is absent. Load valid stored originals from previous replacement use and verify player/NPC/minion names and nameplate-visibility CVars restore, including with styling disabled or restoration deferred by combat. Failed writes retain originals until successful. Verify critter/companion hiding still captures/restores its own CVar independently; no taint or secret-value errors.
 - [ ] Disable and re-enable styling; addon visuals and inside-bar sizing restore and reapply correctly without losing Global modes or the selected Profile.
+
+## Slug font rendering (1.0.161)
+
+- [ ] Compare Slug off/on with built-in and SharedMedia fonts at several UI scales. Check floating, above-bar and inside-bar names, titles, threat, native health text and cast labels; confirm smoothness, thin outlines, both black underlayers and unchanged padding.
+- [ ] Switch/copy profiles, reload, reset Appearance and disable styling. Verify the toggle follows profiles, old caches do not undo the chosen rendering, and native font flags restore without taint or secret-value errors.
 
 ## Nameplate presentation and integration
 

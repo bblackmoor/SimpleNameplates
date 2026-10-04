@@ -56,6 +56,7 @@ for _, option in ipairs(FONT_OPTIONS) do FONT_BY_VALUE[option.value] = option en
 local DEFAULT_APPEARANCE = {
     nameFont = "FRIZQT",
     matchSanctuaryFont = true,
+    useSlugRendering = false,
     nameSize = 21,
     threatFont = "ARIALN",
     namePlacement = "ABOVE",
@@ -95,4 +96,3 @@ ns.Defaults = {
     interruptibleCastStyle = "NONE",
     hideCritterCompanionNames = DEFAULT_HIDE_CRITTER_COMPANION_NAMES,
 }
-

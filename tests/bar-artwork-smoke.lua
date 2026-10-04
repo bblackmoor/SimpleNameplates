@@ -1,5 +1,8 @@
 -- Verify native edge removal and reversible bar/text artwork.
 local ns = {}
+local slug = false
+ns.GetAppearanceSetting = function(key) return key == "useSlugRendering" and slug end
+assert(loadfile("SimpleNameplates/FontRendering.lua"))("SimpleNameplates", ns)
 local barRGB = {1, 1, 0}
 ns.PriorityColorForState = function() return barRGB[1], barRGB[2], barRGB[3] end
 local unpackValues = unpack or table.unpack
@@ -83,6 +86,16 @@ assert(health.deselectedOverlay.alpha == 0 and cast.Border.alpha == 0)
 assert(cast.DropShadow.alpha == 0 and cast.BorderShield.alpha == 1, "shield stays intact")
 assert(cast.Text.flags == "THICKOUTLINE" and cast.Text.shadow[4] == 0 and cast.Text.offset[1] == 0)
 assert(cast.Text.font == "font" and cast.Text.size == 10, "cast face/size preserved")
+slug = true
+ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
+assert(cast.Text.flags == "SLUG,OUTLINE", "cast text uses outlined Slug")
+for _, key in ipairs({"Text", "RightText", "LeftText"}) do
+    assert(health[key].flags == "SLUG", "native health text uses unoutlined Slug")
+    for _, layer in ipairs(health[key].SNPUnderlayers) do assert(layer.flags == "SLUG", "native underlayers use Slug") end
+end
+slug = false
+ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
+assert(cast.Text.flags == "THICKOUTLINE" and health.Text.flags == "", "toggle off restores ordinary rendering")
 assert(health.barTexture.texture == "Interface\\Buttons\\WHITE8X8")
 assert(health.SNPPlainBackground.bar == health and health.SNPPlainBackground.shown)
 cast.barTexture:SetAtlas("changed-for-new-cast")

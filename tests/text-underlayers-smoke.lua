@@ -1,5 +1,8 @@
 -- Verify native synchronization, exact offsets, reuse, and secret text safety.
 local ns = {}
+local slug = false
+ns.GetAppearanceSetting = function(key) return key == "useSlugRendering" and slug end
+assert(loadfile("SimpleNameplates/FontRendering.lua"))("SimpleNameplates", ns)
 local secret = setmetatable({}, {__tostring = function() error("secret inspected") end})
 function issecretvalue(value) return rawequal(value, secret) end
 assert(loadfile("SimpleNameplates/Core.lua"))("SimpleNameplates", ns)
@@ -68,6 +71,12 @@ source:Show()
 for _, layer in ipairs(source.SNPUnderlayers) do assert(layer.shown) end
 ns.TextUnderlayers.Update(source, parent)
 assert(created == 2, "repeated refresh reuses exactly two layers")
+slug = true
+ns.TextUnderlayers.Update(source, parent)
+for _, layer in ipairs(source.SNPUnderlayers) do assert(layer.flags == "SLUG", "underlayers share Slug rendering") end
+slug = false
+ns.TextUnderlayers.Update(source, parent)
+for _, layer in ipairs(source.SNPUnderlayers) do assert(layer.flags == "", "ordinary rendering returns without new layers") end
 ns.TextUnderlayers.Hide(source)
 source:SetText("Native label")
 source:Show()

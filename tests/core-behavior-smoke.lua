@@ -99,6 +99,21 @@ equal(ns.GetCategoryMode("friendly"), "active", "category default")
 equal(ns.GetTRP3Enabled(), false, "TRP3 default")
 equal(ns.GetThreatEnabled(), true, "threat default")
 equal(ns.GetInterruptibleHighlightEnabled(), false, "cast default")
+equal(ns.GetAppearanceSetting("useSlugRendering"), false, "Slug defaults off")
+ns.SetAppearanceSetting("useSlugRendering", true)
+equal(ns.CopyActiveProfile("Slug copy"), true, "copy Slug choice")
+ns = loadCore()
+equal(ns.GetAppearanceSetting("useSlugRendering"), true, "copied Slug survives reload")
+ns.ResetAppearance()
+equal(ns.GetAppearanceSetting("useSlugRendering"), false, "reset disables Slug")
+ns.DeleteActiveProfile()
+equal(ns.GetAppearanceSetting("useSlugRendering"), true, "Slug profile choices are independent")
+ns.SetAppearanceSetting("useSlugRendering", "true")
+equal(ns.GetAppearanceSetting("useSlugRendering"), true, "invalid Slug setter ignored")
+ns.EnsureDB().profiles.Default.appearance.useSlugRendering = "invalid"
+ns = loadCore()
+equal(ns.GetAppearanceSetting("useSlugRendering"), false, "invalid saved Slug value uses default")
+db = ns.EnsureDB()
 equal(ns.GetAppearanceSetting("matchSanctuaryFont"), true, "sanctuary matching default")
 ns.SetAppearanceSetting("matchSanctuaryFont", false)
 equal(ns.CopyActiveProfile("Font copy"), true, "copy sanctuary font choice")
@@ -483,7 +498,7 @@ for line in toc:lines() do
 end
 toc:close()
 equal(table.concat(modules, ","),
-    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
+    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
     "TOC module order")
 
 print("Core behavior smoke: passed")

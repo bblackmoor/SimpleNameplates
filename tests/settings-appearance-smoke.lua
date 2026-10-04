@@ -62,6 +62,13 @@ local function Editor(slider)
     end
 end
 local nameFont, threatFont = Control("Name font"), Control("Threat-percentage font")
+local slug = Control("Use smoother font rendering (Slug)")
+assert(not slug.MyObject:GetValue(), "Slug switch defaults off")
+local slugRefreshes = refreshes
+slug:GetScript("OnClick")(slug, "LeftButton")
+assert(ns.GetAppearanceSetting("useSlugRendering") and refreshes == slugRefreshes + 1, "Slug toggle saves and refreshes plates")
+panel:GetScript("OnShow")(panel)
+assert(slug.MyObject:GetValue() and refreshes == slugRefreshes + 1, "Slug refresh is silent")
 local size, width = Control("Name size"), Control("Health bar width")
 assert(size.minimum == 8 and size.maximum == 36 and size.step == 1)
 assert(width.minimum == 80 and width.maximum == 150 and width.step == 5)
@@ -131,6 +138,8 @@ end
 Editor(size):SetText("32")
 Choose(selector, "High Contrast")
 assert(ns.GetActiveProfileName() == "High Contrast" and size:GetValue() == 21)
+assert(not ns.GetAppearanceSetting("useSlugRendering") and not slug.MyObject:GetValue(), "Slug follows selected profile")
+slug:GetScript("OnClick")(slug, "LeftButton")
 assert(ns.EnsureDB().profiles.Default.appearance.nameSize == 28, "rollback remains in previous profile")
 assert(ns.GetAppearanceSetting("nameSize") == 21, "new profile is not overwritten by cancellation")
 ns.SetPriorityColor("attacking", 0.2, 0.3, 0.4)
@@ -145,6 +154,7 @@ for _, object in ipairs(ui.objects) do
 end
 Click(reset)
 assert(size:GetValue() == 21 and width:GetValue() == 100 and ns.GetThreatEnabled())
+assert(not ns.GetAppearanceSetting("useSlugRendering") and not slug.MyObject:GetValue(), "Appearance reset disables Slug")
 assert(ns.GetAppearanceSetting("nameFont") == "FRIZQT" and ns.GetAppearanceSetting("threatFont") == "ARIALN")
 assert(ns.GetAppearanceSetting("namePlacement") == "ABOVE" and ns.GetAppearanceSetting("matchSanctuaryFont"))
 assert(not ns.GetHideCritterCompanionNames() and ns.GetTRP3Enabled() and ns.GetStylingEnabled())

@@ -38,6 +38,8 @@ A valid version-2 saved database separates behavior from look and feel. The stru
 
 Useful and Useless each have one `priorityColors` entry per profile, used in all world and combat contexts. Player - Friendly uses one `friendly` entry in all world and combat contexts, with green (`#33CC33`) as the default. The former `sanctuaryFriendly`, `sanctuaryUseful`, and `sanctuaryUseless` fields are unknown settings and are discarded during validation; valid `useful` and `useless` values are retained without conversion.
 
+`appearance.useSlugRendering` is a per-profile boolean, off by default. It selects Slug rendering for styled plate text, with thin outlines outside health bars and unoutlined glyphs/underlayers inside. Copies and reloads retain it; Reset Appearance disables it. Missing or invalid values use the default. Schema remains 2.
+
 `appearance.matchSanctuaryFont` is a per-profile boolean, enabled by default. It selects Blizzard's localized world-name font face in sanctuaries without replacing the saved `nameFont`. Profile copies retain it and Reset Appearance restores the default; invalid or missing values use the default.
 
 ## Ownership inventory
@@ -49,7 +51,7 @@ Useful and Useless each have one `priorityColors` entry per profile, used in all
 | `hideCritterCompanionNames` | Global | Blizzard name management |
 | `trp3.enabled`, `useRoleplayingName`, `showShortTitle`, `showFullTitle`, `showOOC` | Global | TRP3 integration and display policy |
 | Six `priorityColors`, `effectColors.interruptible` | Profile | Appearance colors |
-| `appearance.nameFont`, `nameSize`, `threatFont`, `namePlacement`, `matchSanctuaryFont`, `healthBarWidth` | Profile | Text and layout |
+| `appearance.nameFont`, `nameSize`, `threatFont`, `namePlacement`, `matchSanctuaryFont`, `useSlugRendering`, `healthBarWidth` | Profile | Text and layout |
 | `showThreat`, `interruptibleCastStyle` | Profile | Threat visibility and cast effect choice (NONE/PIXEL/AUTOCAST/BUTTON/PROC) |
 | `profileKeys` | Account-wide character selection map | Independent Profile choice per character |
 | `global.managedNameCVarOriginals` | Internal restoration ledger | Original critter and legacy managed values, retained until restored |

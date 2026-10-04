@@ -79,6 +79,11 @@ local function AddControls(context)
     U.AddSection(content, layout, "Fonts and sizing")
     AddFont(context, "Name font", "nameFont")
     U.AddDescription(content, layout, "Includes fonts registered by other addons and SharedMedia packs.")
+    AddToggle(context, "Use smoother font rendering (Slug)",
+        function() return ns.GetAppearanceSetting("useSlugRendering") end,
+        function(value) ns.SetAppearanceSetting("useSlugRendering", value) end, U.RefreshNameplates)
+    U.AddDescription(content, layout,
+        "Applies to names, titles, health, threat and cast text. Uses thin outlines outside health bars; keeps the two black underlayers inside.")
     AddToggle(context, "Match Blizzard font in sanctuaries",
         function() return ns.GetAppearanceSetting("matchSanctuaryFont") end,
         function(value) ns.SetAppearanceSetting("matchSanctuaryFont", value) end, U.RefreshNameplates)

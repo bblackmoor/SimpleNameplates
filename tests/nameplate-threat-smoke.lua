@@ -13,6 +13,7 @@ function UnitDetailedThreatSituation(who, unit)
 end
 local enabled, accessible = true, true
 local nameSize = 21
+local slug = false
 local function Bar()
     local bar = {}
     function bar:CreateFontString(_, layer, template)
@@ -60,6 +61,12 @@ local ns = {
     GetThreatEnabled = function() return enabled end,
     NameplateFrames = {GetHealthBar = function(value) return value.healthBar end},
 }
+assert(loadfile("SimpleNameplates/FontRendering.lua"))("SimpleNameplates", ns)
+local getAppearance = ns.GetAppearanceSetting
+ns.GetAppearanceSetting = function(key)
+    if key == "useSlugRendering" then return slug end
+    return getAppearance(key)
+end
 assert(loadfile("SimpleNameplates/TextUnderlayers.lua"))("SimpleNameplates", ns)
 assert(loadfile("SimpleNameplates/NameplateThreat.lua"))("SimpleNameplates", ns)
 local function Update(showBar)
@@ -76,6 +83,11 @@ equal(frame.SNPThreatText.shadowAlpha, 0, "native threat shadow disabled")
 equal(frame.SNPThreatText.shadowX, 0, "native shadow x cleared")
 equal(frame.SNPThreatText.shadowY, 0, "native shadow y cleared")
 equal(frame.SNPThreatText.font, "Fonts\\ARIALN.TTF", "separate threat font retained")
+slug = true; Update(true)
+equal(frame.SNPThreatText.flags, "SLUG", "threat uses unoutlined Slug")
+for _, layer in ipairs(frame.SNPThreatText.SNPUnderlayers) do equal(layer.flags, "SLUG", "threat underlayer matches") end
+slug = false; Update(true)
+equal(frame.SNPThreatText.flags, "", "threat returns to ordinary rendering")
 nameSize = 36
 Update(true)
 equal(frame.SNPThreatText.r, 1, "threat remains white after size change")

@@ -99,6 +99,8 @@ local function ValidateProfileAppearance(profile, saved)
     local savedAppearance = type(saved.appearance) == "table" and saved.appearance or {}
     profile.appearance.matchSanctuaryFont = SavedBoolean(savedAppearance.matchSanctuaryFont,
         profile.appearance.matchSanctuaryFont)
+    profile.appearance.useSlugRendering = SavedBoolean(savedAppearance.useSlugRendering,
+        profile.appearance.useSlugRendering)
     profile.appearance.nameFont = IsSavedFontSelection(savedAppearance.nameFont)
         and savedAppearance.nameFont or profile.appearance.nameFont
     if IsFiniteNumber(savedAppearance.nameSize)
@@ -392,7 +394,7 @@ end
 
 local function SetAppearanceSetting(key, value)
     local appearance = ActiveProfile().appearance
-    if key == "matchSanctuaryFont" and type(value) == "boolean" then
+    if (key == "matchSanctuaryFont" or key == "useSlugRendering") and type(value) == "boolean" then
         appearance[key] = value
     elseif (key == "nameFont" or key == "threatFont") and IsAvailableFontSelection(value) then
         appearance[key] = value

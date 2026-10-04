@@ -28,7 +28,7 @@ local function Sync(text)
     local justifyV = ns.AccessibleValue(Read(text, "GetJustifyV")) or "MIDDLE"
     local value = Read(text, "GetText")
     for _, layer in ipairs(text.SNPUnderlayers) do
-        layer:SetFont(font, size, "")
+        layer:SetFont(font, size, ns.FontFlags(false))
         layer:SetJustifyH(justify)
         layer:SetJustifyV(justifyV)
         layer:SetText(value)

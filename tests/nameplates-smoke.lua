@@ -92,7 +92,7 @@ local ns = {
     BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
     FRIENDLY_COLOR_CVARS = {},
 }
-for _, file in ipairs({ "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "TextUnderlayers.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
+for _, file in ipairs({ "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "FontRendering.lua", "TextUnderlayers.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
     assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", ns)
 end
 equal(#frames, 1, "one event frame")
@@ -983,6 +983,24 @@ equal(plateFrame.SNPApplyingStyle, nil, "style failure releases reentry guard")
 plateFrame.name.SetFont = originalSetFont
 ns.RefreshAll()
 equal(plateFrame.SNPInsideName.shown, true, "styling recovers after failed write")
+local nativeFlags = plateFrame.SNPOriginalPresentation.name.SetFont[3] or ""
+appearance.useSlugRendering = true
+equal(ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get()), false, "ordinary font cache cannot undo Slug selection")
+ns.RefreshAll()
+equal(plateFrame.SNPInsideName.flags, "SLUG", "inside name uses Slug without outline")
+for _, layer in ipairs(plateFrame.SNPInsideName.SNPUnderlayers) do equal(layer.flags, "SLUG", "inside name underlayers use Slug") end
+plateFrame.name:SetFont("drifted", 10, "")
+ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
+equal(plateFrame.name.flags, "SLUG", "cached repair preserves Slug")
+appearance.namePlacement = "ABOVE"; ns.RefreshAll()
+equal(plateFrame.name.flags, "SLUG,OUTLINE", "above-bar name uses thin Slug outline")
+unit = {reaction = 5, interactable = true}; ns.RefreshAll()
+equal(plateFrame.name.flags, "SLUG,OUTLINE", "floating name uses outlined Slug")
+equal(plateFrame.SNPFullTitleText.flags, "SLUG,OUTLINE", "title uses outlined Slug")
+appearance.useSlugRendering = false; ns.RefreshAll()
+equal(plateFrame.name.flags, "THICKOUTLINE", "toggle off restores ordinary name outline")
+ns.RestoreAll()
+equal(plateFrame.name.flags, nativeFlags, "native name font flags restored after Slug")
 
 local visited, largest = {}, 0
 local function CheckUpvalues(fn)

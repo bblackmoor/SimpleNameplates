@@ -116,7 +116,7 @@ local function StyleNativeTextOutline(frame, region, context, inside)
         original.shadowOffset = ReadValues(region, "GetShadowOffset", context)
         if inside then original.drawLayer = ReadValues(region, "GetDrawLayer", context) end
     end
-    region:SetFont(original.font[1], original.font[2], inside and "" or "THICKOUTLINE")
+    region:SetFont(original.font[1], original.font[2], ns.FontFlags(not inside))
     region:SetShadowColor(0, 0, 0, 0)
     region:SetShadowOffset(0, 0)
 end

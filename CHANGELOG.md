@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.161
+
+* Adds a per-profile Use smoother font rendering (Slug) switch near Appearance's font choices, off by default. Applies Slug to accessible names, titles, native health labels, threat text and cast labels; uses thin outlines outside health bars and preserves both black underlayers and padding inside.
+* Centralizes rendering flags across plate text and prevents cached repair from restoring a previous rendering mode. Copies/reloads retain the switch, invalid values use the default, and Reset settings disables it. Native presentation restores when styling ends; schema stays 2.
+* Extends profile, settings, artwork, threat, underlayer and nameplate regressions. All seventeen smoke suites and whitespace checks pass; visual smoothness, UI-scale and native-client security checks remain pending in game.
+
 ## 1.0.160
 
 * Fixes retired cast icons starting or stopping the current bar's interruptible effect after icon replacement. Reuses one secure hook per icon when icons return, and clears the effect when visibility cannot be read instead of retaining stale glow state.

@@ -85,7 +85,7 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
 
     fullTitle = EnsureFullTitleText(frame)
     local titleSize = math.max(6, math.floor(baseNameSize * 0.8 + 0.5))
-    fullTitle:SetFont(NameFontPath(context), titleSize, "THICKOUTLINE")
+    fullTitle:SetFont(NameFontPath(context), titleSize, ns.FontFlags(true))
     fullTitle:SetText(text)
     fullTitle:SetShadowColor(0, 0, 0, 0)
     fullTitle:SetShadowOffset(0, 0)
@@ -194,7 +194,7 @@ end
 local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, rightRegion, textColor)
     local insideName = GetInsideName(frame, bar)
     insideName:SetText(text)
-    insideName:SetFont(fontPath, size, "")
+    insideName:SetFont(fontPath, size, ns.FontFlags(false))
     insideName:SetShadowColor(0, 0, 0, 0)
     insideName:SetShadowOffset(0, 0)
     insideName:SetTextColor(textColor, textColor, textColor, 1)
@@ -223,7 +223,7 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.text = displayName
     expected.font = fontPath
     expected.size = size
-    expected.flags = inside and "" or "THICKOUTLINE"
+    expected.flags = ns.FontFlags(not inside)
     expected.r, expected.g, expected.b = nameR, nameG, nameB
     expected.nameOnly = nameOnly
     expected.inside = inside == true
@@ -270,7 +270,7 @@ local function StyleName(frame, state, context, decision)
     PositionName(frame, name, bar, nameOnly, inside, rightInset, rightRegion)
 
     local fontPath = NameFontPath(context)
-    name:SetFont(fontPath, size, inside and "" or "THICKOUTLINE")
+    name:SetFont(fontPath, size, ns.FontFlags(not inside))
     name:SetShadowColor(0, 0, 0, 0)
     name:SetShadowOffset(0, 0)
     local nameR, nameG, nameB = 1, 1, 1
@@ -308,6 +308,7 @@ local function CacheIsCurrent(frame, expected, context)
         if type(widgetsOnly) == "boolean" and widgetsOnly ~= (decision.suppressText == true) then return false end
     end
     if expected.suppressed then return true end
+    if expected.flags ~= ns.FontFlags(expected.inside ~= true) then return false end
     if expected.font ~= NameFontPath(context) then return false end
     local bar = GetHealthBar(frame, context)
     if expected.bar ~= bar then return false end
