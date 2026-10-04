@@ -292,8 +292,8 @@ local function colorRow(labelText)
     return assert(swatch), assert(reset), assert(fill)
 end
 for _, case in ipairs({
-    {"useful", "5. Interactive NPC — Useful", "Interactive NPC — Useful", 0.8},
-    {"useless", "6. Otherwise — Useless", "Other NPC — Useless", 0.6},
+    {"useful", "5. NPC - Interactive", "NPC - Interactive", 0.8},
+    {"useless", "6. NPC - Background", "NPC - Background", 0.6},
 }) do
     local first, firstReset, firstFill = colorRow(case[2])
     local second, secondReset, secondFill = colorRow(case[3])
@@ -370,10 +370,10 @@ equal(allColorResets, 1, "text reset does not reset colors")
 local function modeSwitch(labelText)
     return assert(switchFor(labelText), "category switch " .. labelText)
 end
-local usefulSwitch = modeSwitch("5. Interactive NPC — Useful")
-local sanctuaryUseful = modeSwitch("Interactive NPC — Useful")
-local uselessSwitch = modeSwitch("6. Otherwise — Useless")
-local sanctuaryUseless = modeSwitch("Other NPC — Useless")
+local usefulSwitch = modeSwitch("5. NPC - Interactive")
+local sanctuaryUseful = modeSwitch("NPC - Interactive")
+local uselessSwitch = modeSwitch("6. NPC - Background")
+local sanctuaryUseless = modeSwitch("NPC - Background")
 for _, case in ipairs({
     {usefulSwitch, sanctuaryUseful, "useful"},
     {uselessSwitch, sanctuaryUseless, "useless"},

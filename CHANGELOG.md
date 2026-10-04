@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.128
+
+* Renames the NPC color labels to NPC - Interactive and NPC - Background in both color sections; saved category keys and behavior are unchanged.
+
 ## 1.0.127
 
 * Removes the obsolete behavior command alias and its help references. Startup setup guidance points to Appearance.

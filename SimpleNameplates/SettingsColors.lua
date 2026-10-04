@@ -108,9 +108,9 @@ local function AddPriorityColorControls(context)
         "Health bar for entities that can attack you without a higher priority")
     CreatePriorityColorRow(context, "4. Player — Friendly", "friendly",
         "Colored name out of combat; colored health bar in combat when supported")
-    CreatePriorityColorRow(context, "5. Interactive NPC — Useful", "useful",
+    CreatePriorityColorRow(context, "5. NPC - Interactive", "useful",
         "Interactive NPC: colored name out of combat; health bar in combat when supported")
-    CreatePriorityColorRow(context, "6. Otherwise — Useless", "useless",
+    CreatePriorityColorRow(context, "6. NPC - Background", "useless",
         "Remaining entity: colored name out of combat; health bar in combat when supported")
 
     U.AddActionButton(context.content, context.layout, "Reset priority colors", function()
@@ -123,14 +123,14 @@ local function AddPriorityColorControls(context)
 
     AddSection(context.content, context.layout, "Sanctuary colors")
     AddDescription(context.content, context.layout,
-        "These switches share the global Player, Useful, and Useless category settings above. " ..
+        "These switches share the global Player, NPC - Interactive, and NPC - Background category settings above. " ..
         "The player switch affects the whole Player category, not just sanctuary players.")
     CreatePriorityColorRow(context, "Same-faction player", "sanctuaryFriendly",
         "Sanctuary only; higher combat priorities keep their normal colors")
-    CreatePriorityColorRow(context, "Interactive NPC — Useful", "useful",
+    CreatePriorityColorRow(context, "NPC - Interactive", "useful",
         "Shared with Priority colors; higher danger priorities keep their own colors")
-    CreatePriorityColorRow(context, "Other NPC — Useless", "useless",
-        "Shared with Priority colors; applies to NPCs in the Otherwise category")
+    CreatePriorityColorRow(context, "NPC - Background", "useless",
+        "Shared with Priority colors; applies to NPCs in the NPC - Background category")
 end
 
 local function CreateColorsPanel()
