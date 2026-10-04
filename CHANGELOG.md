@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.140
+
+* Uses WoW's native THICKOUTLINE for names, NPC/TRP3 titles, threat percentages, and native health/cast labels. Leaves outline rendering to the game, without selecting outline colors or layering text copies.
+* Keeps names, threat percentages, and native labels inside health bars white regardless of bar color. Preserves outside-bar text colors, selected fonts, sizing, placement, and flat bar artwork.
+
 ## 1.0.139
 
 * Trims repeated settings explanations and information dialogs, retaining reset scope, global/profile distinctions, exceptions, and verified presentation limits.

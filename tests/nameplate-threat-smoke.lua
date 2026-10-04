@@ -13,7 +13,6 @@ function UnitDetailedThreatSituation(who, unit)
 end
 local enabled, accessible = true, true
 local nameSize = 21
-local textColor = 0
 local function Bar()
     local bar = {}
     function bar:CreateFontString(_, layer, template)
@@ -52,7 +51,7 @@ local ns = {
     FontPath = function() return "Fonts\\ARIALN.TTF" end,
     GetAppearanceSetting = function(key) return key == "nameSize" and nameSize or "ARIALN" end,
     GetThreatEnabled = function() return enabled end,
-    NameplateFrames = {HealthBarTextColor = function() return textColor, textColor, textColor end, GetHealthBar = function(value) return value.healthBar end},
+    NameplateFrames = {GetHealthBar = function(value) return value.healthBar end},
 }
 assert(loadfile("SimpleNameplates/NameplateThreat.lua"))("SimpleNameplates", ns)
 local function Update(showBar)
@@ -62,14 +61,14 @@ Update(true)
 equal(frame.SNPThreatText.text, "73%", "raw percentage preferred")
 equal(frame.SNPThreatText.shown, true, "percentage explicitly shown")
 equal(frame.SNPThreatText.drawLevel, 7, "percentage drawn above bar artwork")
-equal(frame.SNPThreatText.r, 0, "bright bar threat uses black")
+equal(frame.SNPThreatText.r, 1, "threat stays white")
 equal(frame.SNPThreatText.size, 21, "threat matches default name size")
-equal(frame.SNPThreatText.flags, "", "threat has no outline")
+equal(frame.SNPThreatText.flags, "THICKOUTLINE", "threat uses native thick outline")
 equal(frame.SNPThreatText.shadowAlpha, 0, "threat has no shadow")
 equal(frame.SNPThreatText.font, "Fonts\\ARIALN.TTF", "separate threat font retained")
-nameSize, textColor = 36, 1
+nameSize = 36
 Update(true)
-equal(frame.SNPThreatText.r, 1, "dark bar threat switches to white")
+equal(frame.SNPThreatText.r, 1, "threat remains white after size change")
 equal(frame.SNPThreatText.size, 36, "threat follows changed name size")
 raw = 0
 Update(true)

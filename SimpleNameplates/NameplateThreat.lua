@@ -47,8 +47,8 @@ local function UpdateThreatText(frame, state, context, decision)
         ClearThreatText(frame, "no displayed health bar"); return
     end
     local text = EnsureThreatText(frame, bar)
-    text:SetTextColor(ns.NameplateFrames.HealthBarTextColor(decision.colorState or state))
-    text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, "")
+    text:SetTextColor(1, 1, 1, 1)
+    text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, "THICKOUTLINE")
     text:SetShadowColor(0, 0, 0, 0)
     text:SetShadowOffset(0, 0)
     local ok, _, _, scaled, raw = pcall(UnitDetailedThreatSituation, "player", frame.unit)

@@ -9,7 +9,6 @@ local PriorityColorForState, FontPath = ns.PriorityColorForState, ns.FontPath
 local GetAppearanceSetting, GetTRP3Setting = ns.GetAppearanceSetting, ns.GetTRP3Setting
 local GetThreatEnabled = ns.GetThreatEnabled
 local GetHealthBar = ns.NameplateFrames.GetHealthBar
-local HealthBarTextColor = ns.NameplateFrames.HealthBarTextColor
 
 local function NameFontPath(context)
     if context.sanctuary == true and GetAppearanceSetting("matchSanctuaryFont") == true then
@@ -86,7 +85,7 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
 
     fullTitle = EnsureFullTitleText(frame)
     local titleSize = math.max(6, math.floor(baseNameSize * 0.8 + 0.5))
-    fullTitle:SetFont(NameFontPath(context), titleSize, "")
+    fullTitle:SetFont(NameFontPath(context), titleSize, "THICKOUTLINE")
     fullTitle:SetText(text)
     fullTitle:SetShadowColor(0, 0, 0, 0)
     fullTitle:SetShadowOffset(0, 0)
@@ -185,7 +184,7 @@ end
 local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, rightRegion, textColor)
     local insideName = GetInsideName(frame, bar)
     insideName:SetText(text)
-    insideName:SetFont(fontPath, size, "")
+    insideName:SetFont(fontPath, size, "THICKOUTLINE")
     insideName:SetShadowColor(0, 0, 0, 0)
     insideName:SetShadowOffset(0, 0)
     insideName:SetTextColor(textColor, textColor, textColor, 1)
@@ -213,7 +212,7 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.text = displayName
     expected.font = fontPath
     expected.size = size
-    expected.flags = ""
+    expected.flags = "THICKOUTLINE"
     expected.r, expected.g, expected.b = nameR, nameG, nameB
     expected.nameOnly = nameOnly
     expected.inside = inside == true
@@ -258,12 +257,12 @@ local function StyleName(frame, state, context, decision)
     PositionName(frame, name, bar, nameOnly, inside, rightInset, rightRegion)
 
     local fontPath = NameFontPath(context)
-    name:SetFont(fontPath, size, "")
+    name:SetFont(fontPath, size, "THICKOUTLINE")
     name:SetShadowColor(0, 0, 0, 0)
     name:SetShadowOffset(0, 0)
     local nameR, nameG, nameB = 1, 1, 1
     if nameOnly then nameR, nameG, nameB = PriorityColorForState(decision.colorState or state)
-    elseif inside then nameR, nameG, nameB = HealthBarTextColor(decision.colorState or state) end
+    end
     -- Blizzard also tints nameplate text with UnitSelectionColor through the
     -- FontString's vertex color. Keep that tint neutral so the configured
     -- Simple Nameplates color is displayed exactly.

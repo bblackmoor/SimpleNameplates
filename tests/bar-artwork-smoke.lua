@@ -52,24 +52,17 @@ local context = ns.WorldContext.Get()
 local assessment = ns.PresentationCapabilities.InspectFrame(frame, context)
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
 for _, key in ipairs({"Text", "RightText", "LeftText"}) do
-    assert(health[key].r == 0 and health[key].g == 0 and health[key].b == 0, "bright bar native text black")
+    assert(health[key].r == 1 and health[key].g == 1 and health[key].b == 1, "bright bar native text white")
+    assert(health[key].flags == "THICKOUTLINE", "native health text uses game outline")
     assert(health[key].vr == 1, "native text tint neutral")
-end
-for _, case in ipairs({
-    {0, 0, 0, 1}, {1, 1, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 0},
-    {0, 0, 1, 1}, {1, 1, 0, 0}, {0.1, 0.1, 0.1, 1}, {0.7, 0.7, 0.7, 0},
-}) do
-    barRGB = case
-    local r, g, b = ns.NameplateFrames.HealthBarTextColor("hostile")
-    assert(r == case[4] and g == r and b == r, "luminance contrast color")
 end
 barRGB = {0, 0, 1}
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
-assert(health.Text.r == 1, "native health text follows dark bar color")
+assert(health.Text.r == 1, "native health text stays white on dark bars")
 assert(health.bgTexture.alpha == 0 and health.selectedBorder.alpha == 0)
 assert(health.deselectedOverlay.alpha == 0 and cast.Border.alpha == 0)
 assert(cast.DropShadow.alpha == 0 and cast.BorderShield.alpha == 1, "shield stays intact")
-assert(cast.Text.flags == "" and cast.Text.shadow[4] == 0 and cast.Text.offset[1] == 0)
+assert(cast.Text.flags == "THICKOUTLINE" and cast.Text.shadow[4] == 0 and cast.Text.offset[1] == 0)
 assert(cast.Text.font == "font" and cast.Text.size == 10, "cast face/size preserved")
 assert(health.barTexture.texture == "Interface\\Buttons\\WHITE8X8")
 assert(health.SNPPlainBackground.bar == health and health.SNPPlainBackground.shown)
