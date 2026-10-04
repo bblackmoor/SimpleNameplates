@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.148
+
+* Adds LibSharedMedia font choices to both Name font and Threat-percentage font menus while preserving all existing built-in selections and defaults. Bundles LibSharedMedia and CallbackHandler with source attribution and licenses.
+* Keeps shared font selections through profile copying, reloads, and absent providers. Uses Arial Narrow while a selected shared font is unavailable, resolves late registrations automatically, updates settings choices, and queues presentation refreshes.
+
 ## 1.0.147
 
 * Replaces the interruptible-cast Active switch and Pulse option with one profile Effect selector: None, Moving dashes, Autocast Shine, Action Button Glow, or Proc Glow. None disables the highlight and is the default/reset value.

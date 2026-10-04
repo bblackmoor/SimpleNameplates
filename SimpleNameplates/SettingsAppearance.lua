@@ -21,13 +21,16 @@ local function CreateAppearanceDropdown(content, layout, refreshers, labelText, 
     dropdown:SetPoint("LEFT", block, "LEFT", U.CONTROL_X - 16, 0)
     UIDropDownMenu_SetWidth(dropdown, 190)
 
+    local function Options()
+        return type(options) == "function" and options() or options
+    end
     local function Refresh()
         local value = getter()
         UIDropDownMenu_SetSelectedValue(dropdown, value)
-        UIDropDownMenu_SetText(dropdown, OptionLabel(options, value))
+        UIDropDownMenu_SetText(dropdown, OptionLabel(Options(), value))
     end
     UIDropDownMenu_Initialize(dropdown, function(_, level)
-        for _, option in ipairs(options) do
+        for _, option in ipairs(Options()) do
             local value, optionLabel = option.value, option.label
             local info = UIDropDownMenu_CreateInfo()
             info.text, info.value = optionLabel, value
@@ -103,9 +106,11 @@ end
 local function AddSharedAppearanceControls(content, layout, refreshers)
     AddSection(content, layout, "Fonts and sizing")
 
-    CreateAppearanceDropdown(content, layout, refreshers, "Name font", ns.FONT_OPTIONS,
+    CreateAppearanceDropdown(content, layout, refreshers, "Name font",
+        function() return ns.GetFontOptions(GetAppearanceSetting("nameFont")) end,
         function() return GetAppearanceSetting("nameFont") end,
         function(value) SetAppearanceSetting("nameFont", value) end)
+    AddDescription(content, layout, "Includes fonts registered by other addons and SharedMedia packs.")
     AddSanctuaryFontControl(content, layout, refreshers)
     AddSizeControl(content, layout, refreshers, "nameSize", "Name size", ns.MIN_NAME_SIZE, ns.MAX_NAME_SIZE, 1, " pt")
     AddNameSizeNote(content, layout)
@@ -120,7 +125,8 @@ local function AddInCombatTextControls(content, layout, refreshers)
         { value = "ABOVE", label = "Above bar" }, { value = "INSIDE", label = "Inside bar" },
     }, function() return GetAppearanceSetting("namePlacement") end,
         function(value) SetAppearanceSetting("namePlacement", value) end)
-    CreateAppearanceDropdown(content, layout, refreshers, "Threat-percentage font", ns.FONT_OPTIONS,
+    CreateAppearanceDropdown(content, layout, refreshers, "Threat-percentage font",
+        function() return ns.GetFontOptions(GetAppearanceSetting("threatFont")) end,
         function() return GetAppearanceSetting("threatFont") end,
         function(value) SetAppearanceSetting("threatFont", value) end)
     AddThreatControl(content, layout, refreshers)
@@ -131,6 +137,7 @@ local function CreateAppearancePanel()
     AddTitle(content, layout, "Appearance")
     local refreshers = {}
     local function Refresh() RunRefreshers(refreshers) end
+    ns.RefreshFontControls = Refresh
     ns.AddProfileSelector(content, layout, refreshers, Refresh)
     U.AddActionButton(content, layout, "Reset settings", function()
         ResetAppearance()

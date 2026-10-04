@@ -5,7 +5,8 @@ local DEFAULT_PRIORITY_COLORS = defaults.priorityColors
 local DEFAULT_CATEGORY_MODES = defaults.categoryModes
 local DEFAULT_EFFECT_COLORS = defaults.effectColors
 local COLOR_PRESETS = defaults.colorPresets
-local FONT_BY_VALUE = defaults.fontByValue
+local IsSavedFontSelection = ns.IsSavedFontSelection
+local IsAvailableFontSelection = ns.IsAvailableFontSelection
 local DEFAULT_APPEARANCE = defaults.appearance
 local DEFAULT_TRP3 = defaults.trp3
 local DEFAULT_STYLING_ENABLED = defaults.stylingEnabled
@@ -98,7 +99,7 @@ local function ValidateProfileAppearance(profile, saved)
     local savedAppearance = type(saved.appearance) == "table" and saved.appearance or {}
     profile.appearance.matchSanctuaryFont = SavedBoolean(savedAppearance.matchSanctuaryFont,
         profile.appearance.matchSanctuaryFont)
-    profile.appearance.nameFont = FONT_BY_VALUE[savedAppearance.nameFont]
+    profile.appearance.nameFont = IsSavedFontSelection(savedAppearance.nameFont)
         and savedAppearance.nameFont or profile.appearance.nameFont
     if IsFiniteNumber(savedAppearance.nameSize)
         and savedAppearance.nameSize >= MIN_NAME_SIZE
@@ -109,7 +110,7 @@ local function ValidateProfileAppearance(profile, saved)
         and savedAppearance.healthBarWidth >= MIN_BAR_WIDTH and savedAppearance.healthBarWidth <= MAX_BAR_WIDTH then
         profile.appearance.healthBarWidth = math.floor(savedAppearance.healthBarWidth / 5 + 0.5) * 5
     end
-    profile.appearance.threatFont = FONT_BY_VALUE[savedAppearance.threatFont]
+    profile.appearance.threatFont = IsSavedFontSelection(savedAppearance.threatFont)
         and savedAppearance.threatFont or profile.appearance.threatFont
     if savedAppearance.namePlacement == "ABOVE" or savedAppearance.namePlacement == "INSIDE" then
         profile.appearance.namePlacement = savedAppearance.namePlacement
@@ -393,7 +394,7 @@ local function SetAppearanceSetting(key, value)
     local appearance = ActiveProfile().appearance
     if key == "matchSanctuaryFont" and type(value) == "boolean" then
         appearance[key] = value
-    elseif (key == "nameFont" or key == "threatFont") and FONT_BY_VALUE[value] then
+    elseif (key == "nameFont" or key == "threatFont") and IsAvailableFontSelection(value) then
         appearance[key] = value
     elseif key == "nameSize" and type(value) == "number" then
         appearance[key] = math.max(MIN_NAME_SIZE,
@@ -403,11 +404,6 @@ local function SetAppearanceSetting(key, value)
     elseif key == "namePlacement" and (value == "ABOVE" or value == "INSIDE") then
         appearance[key] = value
     end
-end
-
-local function FontPath(value)
-    local option = FONT_BY_VALUE[value] or FONT_BY_VALUE.ARIALN
-    return option.path
 end
 
 local function ResetAppearance()
@@ -548,7 +544,6 @@ ns.GetThreatEnabled = GetThreatEnabled
 ns.SetThreatEnabled = SetThreatEnabled
 ns.GetAppearanceSetting = GetAppearanceSetting
 ns.SetAppearanceSetting = SetAppearanceSetting
-ns.FontPath = FontPath
 ns.ResetAppearance = ResetAppearance
 ns.GetTRP3Enabled = GetTRP3Enabled
 ns.SetTRP3Enabled = SetTRP3Enabled

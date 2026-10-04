@@ -30,7 +30,7 @@ local function Flush()
 end
 local function Load()
     local ns = {}
-    for _, file in ipairs({"Defaults", "Core", "ManagedNames", "NameplateSetup", "Database"}) do
+    for _, file in ipairs({"Defaults", "FontMedia", "Core", "ManagedNames", "NameplateSetup", "Database"}) do
         assert(loadfile("SimpleNameplates/" .. file .. ".lua"))("SimpleNameplates", ns)
     end
     ns.RefreshAll = function() refreshes = refreshes + 1 end

@@ -98,10 +98,11 @@ local npcColors = { friendly = {0.2, 0.8, 0.2}, useful = {0.8, 0.8, 0.8}, useles
 local modes = { friendly = "active" }
 local castStyle = "NONE"
 local profile = { matchSanctuaryFont = true, nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE", healthBarWidth = 100 }
+local fontOptions = { {value = "ARIALN", label = "Arial Narrow"} }
 local ns = {
     Defaults = {showThreat = true, interruptibleHighlight = false, hideCritterCompanionNames = false},
     VERSION = "1.0.test", SOURCE_URL = "https://github.com/bblackmoor/SimpleNameplates",
-    FONT_OPTIONS = { { value = "ARIALN", label = "Arial Narrow" } },
+    GetFontOptions = function() return fontOptions end,
     MIN_NAME_SIZE = 8, MIN_HEALTH_BAR_WIDTH = 80, MAX_HEALTH_BAR_WIDTH = 150, MAX_NAME_SIZE = 36,
     DEFAULT_PROFILE_NAME = "Default",
     PriorityColorForState = function(state) return unpack(npcColors[state] or attacking) end,
@@ -220,6 +221,24 @@ local function switchFor(labelText)
         end
     end
 end
+-- Font dropdowns obtain fresh shared choices when opened, including late registration.
+local fontDropdowns = {}
+for _, item in ipairs(frames) do
+    if item.initialize and item.selected == "ARIALN" then fontDropdowns[#fontDropdowns + 1] = item end
+end
+equal(#fontDropdowns, 2, "name and threat font dropdowns")
+fontOptions[#fontOptions + 1] = {value = "LSM:Late font", label = "Late font"}
+for _, dropdown in ipairs(fontDropdowns) do
+    menuOptions = {}
+    dropdown.initialize(nil, 1)
+    equal(#menuOptions, 2, "late shared font appears on open")
+    menuOptions[2].func()
+    equal(dropdown.selected, "LSM:Late font", "shared selection refreshes dropdown")
+end
+equal(profile.nameFont, "LSM:Late font", "name font uses shared choice")
+equal(profile.threatFont, "LSM:Late font", "threat font uses shared choice")
+profile.nameFont, profile.threatFont = "ARIALN", "ARIALN"
+ns.RefreshFontControls()
 local sanctuaryFont = assert(switchFor("Match Blizzard font in sanctuaries"))
 equal(sanctuaryFont:GetChecked(), true, "sanctuary matching switch reflects profile")
 local beforeFontRefresh = refreshes

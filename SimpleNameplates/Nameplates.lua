@@ -237,6 +237,7 @@ events:SetScript("OnUpdate", function(_, elapsed)
 end)
 
 
+ns.QueueNameplateRefresh = QueueRefreshAll
 ns.RefreshAll = RefreshAll
 ns.RestoreAll = RestoreAll
 ns.StateForUnit = StateForUnit
