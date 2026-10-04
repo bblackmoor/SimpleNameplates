@@ -20,11 +20,15 @@ Load("Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua")
 Load("Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua")
 local media = LibStub("LibSharedMedia-3.0")
 local refreshes, controls = 0, 0
+local activeNamespace
 local function Core()
+    -- A real UI reload does not retain callbacks from the old addon instance.
+    if activeNamespace then media.UnregisterAllCallbacks(activeNamespace) end
     local ns = {}
     for _, file in ipairs({"Defaults.lua", "FontMedia.lua", "Core.lua", "ManagedNames.lua", "Database.lua"}) do Load(file, ns) end
     ns.QueueNameplateRefresh = function() refreshes = refreshes + 1 end
     ns.RefreshFontControls = function() controls = controls + 1 end
+    activeNamespace = ns
     return ns
 end
 local ns = Core()
@@ -35,7 +39,7 @@ assert(ns.FontPath("FRIZQT") == "Fonts\\FRIZQT__.TTF", "legacy font path preserv
 assert(Has("ARIALN") and Has("2002B"), "all built-in choices remain")
 assert(not Has("LSM:Arial Narrow"), "duplicate built-in path omitted")
 assert(media:Register("font", "Media Font", "Interface\\AddOns\\MediaPack\\font.ttf"))
-assert(refreshes == 1 and controls == 1, "late font registration queues presentation and refreshes controls")
+assert(refreshes == 0 and controls == 1, "unselected font registration updates controls without restyling plates")
 assert(Has("LSM:Media Font"), "registered font available")
 ns.SetAppearanceSetting("nameFont", "LSM:Media Font")
 ns.SetAppearanceSetting("threatFont", "LSM:Media Font")
@@ -50,16 +54,34 @@ ns = Core()
 assert(ns.GetAppearanceSetting("nameFont") == "LSM:Media Font", "missing saved choice survives reload")
 assert(ns.GetAppearanceSetting("threatFont") == "LSM:Media Font", "threat choice survives reload")
 assert(ns.FontPath("LSM:Media Font") == "Fonts\\ARIALN.TTF", "missing provider uses safe fallback")
+assert(ns.FontLabel("LSM:Media Font") == "Media Font (unavailable)", "missing font label resolves without menu construction")
+local beforeLateFont = refreshes
 assert(Has("LSM:Media Font", "LSM:Media Font").label == "Media Font (unavailable)", "missing choice shown clearly")
 assert(media:Register("font", "Media Font", "Interface\\AddOns\\MediaPack\\returned.ttf"))
 assert(ns.FontPath("LSM:Media Font") == "Interface\\AddOns\\MediaPack\\returned.ttf", "late provider resolves without reselecting")
+assert(refreshes == beforeLateFont + 1, "selected late font queues a presentation refresh")
+assert(ns.FontLabel("LSM:Media Font") == "Media Font", "returned font label resolves directly")
+local beforeUnselected = refreshes
+media:Register("font", "Unused Font", "Interface\\AddOns\\MediaPack\\unused.ttf")
+assert(refreshes == beforeUnselected, "unselected font does not restyle active shared selection")
 assert(Has("LSM:Media Font", "LSM:Media Font").label == "Media Font", "late font label updates")
 local before = refreshes
 media:Register("statusbar", "Media Bar", "Interface\\AddOns\\MediaPack\\bar.tga")
 assert(refreshes == before, "unrelated registrations do not refresh plates")
+ns.SetAppearanceSetting("nameFont", "FRIZQT") -- Only threat now uses shared media.
+local beforeOverride = refreshes
 media:SetGlobal("font", "Friz Quadrata TT")
+assert(refreshes == beforeOverride + 1, "global override queues a refresh for selected shared fonts")
 assert(ns.FontPath("LSM:Media Font") == media:Fetch("font", "Friz Quadrata TT"), "global shared-font override respected")
 assert(ns.FontPath("FRIZQT") == "Fonts\\FRIZQT__.TTF", "legacy selection unaffected by shared override")
+media:Register("font", "Empty Font", "")
+media:Register("font", "Numeric Font", 123)
+for _, key in ipairs({"Empty Font", "Numeric Font"}) do
+    assert(ns.IsAvailableFontSelection("LSM:" .. key) == false, "global override must not mask invalid registered font data")
+    assert(ns.FontPath("LSM:" .. key) == "Fonts\\ARIALN.TTF", "invalid font data uses built-in fallback")
+    assert(ns.FontLabel("LSM:" .. key) == key .. " (unavailable)", "invalid font data has an unavailable label")
+    assert(not Has("LSM:" .. key), "invalid font data omitted from choices")
+end
 media:SetGlobal("font", nil)
 ns.ResetAppearance()
 assert(ns.GetAppearanceSetting("nameFont") == "FRIZQT" and ns.GetAppearanceSetting("threatFont") == "ARIALN", "reset preserves built-in defaults")
@@ -70,5 +92,9 @@ local oldStub = LibStub
 LibStub = nil
 local bare = Core()
 assert(bare.FontPath("LSM:Media Font") == "Fonts\\ARIALN.TTF" and #bare.GetFontOptions() == 6, "adapter safely handles absent library")
+assert(bare.IsAvailableFontSelection("LSM:Missing") == false, "availability predicate returns false without a library")
+assert(bare.IsAvailableFontSelection(nil) == false and bare.IsAvailableFontSelection({}) == false, "invalid values return false")
+assert(bare.FontLabel("FRIZQT") == "Friz Quadrata", "legacy label preserved")
+assert(bare.FontLabel("LSM:Media Font") == "Media Font (unavailable)", "absent library label matches fallback")
 LibStub = oldStub
 print("Shared media smoke: passed")

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.149
+
+* Fixes shared-font availability validation: a global override can no longer disguise empty or non-string data in the selected font's own registration. Availability checks always return a boolean; invalid registrations use the existing fallback.
+* Refreshes only the two font controls when shared media changes, resolves their labels without rebuilding/sorting full menus, and queues nameplate work only for the active profile's affected shared selections. Consolidates shared label/path handling and font-dropdown construction.
+
 ## 1.0.148
 
 * Adds LibSharedMedia font choices to both Name font and Threat-percentage font menus while preserving all existing built-in selections and defaults. Bundles LibSharedMedia and CallbackHandler with source attribution and licenses.

@@ -15,7 +15,7 @@ local function OptionLabel(options, value)
     return ""
 end
 
-local function CreateAppearanceDropdown(content, layout, refreshers, labelText, options, getter, setter)
+local function CreateAppearanceDropdown(content, layout, refreshers, labelText, options, getter, setter, labelGetter)
     local block = U.CreateSettingRow(content, layout, labelText)
     local dropdown = CreateFrame("Frame", nil, block, "UIDropDownMenuTemplate")
     dropdown:SetPoint("LEFT", block, "LEFT", U.CONTROL_X - 16, 0)
@@ -27,7 +27,7 @@ local function CreateAppearanceDropdown(content, layout, refreshers, labelText, 
     local function Refresh()
         local value = getter()
         UIDropDownMenu_SetSelectedValue(dropdown, value)
-        UIDropDownMenu_SetText(dropdown, OptionLabel(Options(), value))
+        UIDropDownMenu_SetText(dropdown, labelGetter and labelGetter(value) or OptionLabel(Options(), value))
     end
     UIDropDownMenu_Initialize(dropdown, function(_, level)
         for _, option in ipairs(Options()) do
@@ -45,6 +45,15 @@ local function CreateAppearanceDropdown(content, layout, refreshers, labelText, 
     end)
     refreshers[#refreshers + 1] = Refresh
     Refresh()
+    return Refresh
+end
+
+local function CreateFontDropdown(content, layout, refreshers, fontRefreshers, label, key)
+    local function GetFont() return GetAppearanceSetting(key) end
+    local refresh = CreateAppearanceDropdown(content, layout, refreshers, label,
+        function() return ns.GetFontOptions(GetFont()) end, GetFont,
+        function(value) SetAppearanceSetting(key, value) end, ns.FontLabel)
+    fontRefreshers[#fontRefreshers + 1] = refresh
 end
 
 local function AddSizeControl(content, layout, refreshers, key, label, minimum, maximum, step, suffix)
@@ -103,20 +112,17 @@ local function AddSanctuaryFontControl(content, layout, refreshers)
         "When off, the selected Name font applies everywhere.")
 end
 
-local function AddSharedAppearanceControls(content, layout, refreshers)
+local function AddSharedAppearanceControls(content, layout, refreshers, fontRefreshers)
     AddSection(content, layout, "Fonts and sizing")
 
-    CreateAppearanceDropdown(content, layout, refreshers, "Name font",
-        function() return ns.GetFontOptions(GetAppearanceSetting("nameFont")) end,
-        function() return GetAppearanceSetting("nameFont") end,
-        function(value) SetAppearanceSetting("nameFont", value) end)
+    CreateFontDropdown(content, layout, refreshers, fontRefreshers, "Name font", "nameFont")
     AddDescription(content, layout, "Includes fonts registered by other addons and SharedMedia packs.")
     AddSanctuaryFontControl(content, layout, refreshers)
     AddSizeControl(content, layout, refreshers, "nameSize", "Name size", ns.MIN_NAME_SIZE, ns.MAX_NAME_SIZE, 1, " pt")
     AddNameSizeNote(content, layout)
 end
 
-local function AddInCombatTextControls(content, layout, refreshers)
+local function AddInCombatTextControls(content, layout, refreshers, fontRefreshers)
     AddSection(content, layout, "Health bars")
     AddDescription(content, layout,
         "Out of combat, only Attacking, Hostile and Neutral use bars. In combat, all Active categories use available bars.")
@@ -125,19 +131,16 @@ local function AddInCombatTextControls(content, layout, refreshers)
         { value = "ABOVE", label = "Above bar" }, { value = "INSIDE", label = "Inside bar" },
     }, function() return GetAppearanceSetting("namePlacement") end,
         function(value) SetAppearanceSetting("namePlacement", value) end)
-    CreateAppearanceDropdown(content, layout, refreshers, "Threat-percentage font",
-        function() return ns.GetFontOptions(GetAppearanceSetting("threatFont")) end,
-        function() return GetAppearanceSetting("threatFont") end,
-        function(value) SetAppearanceSetting("threatFont", value) end)
+    CreateFontDropdown(content, layout, refreshers, fontRefreshers, "Threat-percentage font", "threatFont")
     AddThreatControl(content, layout, refreshers)
 end
 
 local function CreateAppearancePanel()
     local panel, content, layout = CreateScrollablePanel("Appearance")
     AddTitle(content, layout, "Appearance")
-    local refreshers = {}
+    local refreshers, fontRefreshers = {}, {}
     local function Refresh() RunRefreshers(refreshers) end
-    ns.RefreshFontControls = Refresh
+    ns.RefreshFontControls = function() RunRefreshers(fontRefreshers) end
     ns.AddProfileSelector(content, layout, refreshers, Refresh)
     U.AddActionButton(content, layout, "Reset settings", function()
         ResetAppearance()
@@ -148,8 +151,8 @@ local function CreateAppearancePanel()
     end)
     AddDescription(content, layout,
         "Resets the settings below, including global critter/companion visibility.")
-    AddSharedAppearanceControls(content, layout, refreshers)
-    AddInCombatTextControls(content, layout, refreshers)
+    AddSharedAppearanceControls(content, layout, refreshers, fontRefreshers)
+    AddInCombatTextControls(content, layout, refreshers, fontRefreshers)
     ns.AddGlobalAppearanceControls(content, layout, refreshers)
     panel:SetScript("OnShow", Refresh)
     Refresh()

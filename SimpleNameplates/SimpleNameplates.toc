@@ -3,7 +3,7 @@
 ## Category: Unit Frames
 ## Notes: Colors accessible Blizzard plates. Known limit: opposite-faction PC world names in sanctuary; entity types and contexts are listed in About.
 ## Author: Brandon Blackmoor <bblackmoor@blackgate.net>
-## Version: 1.0.148
+## Version: 1.0.149
 ## OptionalDeps: LibSharedMedia-3.0, SharedMedia, totalRP3, LibCustomGlow-1.0, Masque
 ## SavedVariables: SimpleNameplatesDB
 ## IconTexture: Interface\Icons\INV_Misc_Eye_01

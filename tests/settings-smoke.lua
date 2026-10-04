@@ -103,6 +103,10 @@ local ns = {
     Defaults = {showThreat = true, interruptibleHighlight = false, hideCritterCompanionNames = false},
     VERSION = "1.0.test", SOURCE_URL = "https://github.com/bblackmoor/SimpleNameplates",
     GetFontOptions = function() return fontOptions end,
+    FontLabel = function(value)
+        for _, option in ipairs(fontOptions) do if option.value == value then return option.label end end
+        return ""
+    end,
     MIN_NAME_SIZE = 8, MIN_HEALTH_BAR_WIDTH = 80, MAX_HEALTH_BAR_WIDTH = 150, MAX_NAME_SIZE = 36,
     DEFAULT_PROFILE_NAME = "Default",
     PriorityColorForState = function(state) return unpack(npcColors[state] or attacking) end,
@@ -238,7 +242,19 @@ end
 equal(profile.nameFont, "LSM:Late font", "name font uses shared choice")
 equal(profile.threatFont, "LSM:Late font", "threat font uses shared choice")
 profile.nameFont, profile.threatFont = "ARIALN", "ARIALN"
+-- A media callback must refresh only font labels and must not rebuild menus.
+local getFontOptions = ns.GetFontOptions
+ns.GetFontOptions = function() error("font-label refresh rebuilt the full font menu") end
+local fontSizeBefore = profile.nameSize
+profile.nameSize = 28
 ns.RefreshFontControls()
+local displayedSize
+for _, item in ipairs(frames) do
+    if item.kind == "Slider" and item.low == 8 then displayedSize = item.value end
+end
+equal(displayedSize, fontSizeBefore, "font refresh leaves size controls alone")
+profile.nameSize = fontSizeBefore
+ns.GetFontOptions = getFontOptions
 local sanctuaryFont = assert(switchFor("Match Blizzard font in sanctuaries"))
 equal(sanctuaryFont:GetChecked(), true, "sanctuary matching switch reflects profile")
 local beforeFontRefresh = refreshes

@@ -3,6 +3,16 @@ local _, ns = ...
 local builtins = ns.Defaults.fontByValue
 local media = LibStub and LibStub("LibSharedMedia-3.0", true)
 local PREFIX = "LSM:"
+local builtinLabels = {}
+for _, option in ipairs(ns.FONT_OPTIONS) do builtinLabels[option.label] = true end
+
+local function IsFontPath(path)
+    return type(path) == "string" and path ~= ""
+end
+
+local function SharedLabel(key)
+    return builtinLabels[key] and key .. " (shared)" or key
+end
 
 local function SharedKey(value)
     if type(value) == "string" and #value > #PREFIX and #value <= 256
@@ -12,9 +22,13 @@ local function SharedKey(value)
 end
 
 local function SharedPath(key)
-    if not media or not key or not media:IsValid("font", key) then return end
+    if not media or not key then return end
+    local fonts = media:HashTable("font")
+    -- Validate the selected registration itself: Fetch may return a global
+    -- override even when this key's data is empty or isn't a font path.
+    if not fonts or not IsFontPath(fonts[key]) then return end
     local path = media:Fetch("font", key, true)
-    if type(path) == "string" and path ~= "" then return path end
+    if IsFontPath(path) then return path end
 end
 
 -- Preserve a saved shared key even before its supplying addon has loaded.
@@ -23,9 +37,17 @@ local function IsSavedFontSelection(value)
 end
 
 local function IsAvailableFontSelection(value)
-    return type(value) == "string" and (builtins[value] ~= nil
-        or (SharedKey(value) ~= nil and media and media:IsValid("font", SharedKey(value))
-            and SharedPath(SharedKey(value)) ~= nil))
+    if type(value) ~= "string" then return false end
+    return builtins[value] ~= nil or SharedPath(SharedKey(value)) ~= nil
+end
+
+local function FontLabel(value)
+    local builtin = builtins[value]
+    if builtin then return builtin.label end
+    local key = SharedKey(value)
+    if not key then return "" end
+    if not SharedPath(key) then return key .. " (unavailable)" end
+    return SharedLabel(key)
 end
 
 local function FontPath(value)
@@ -35,11 +57,10 @@ local function FontPath(value)
 end
 
 local function GetFontOptions(selected)
-    local options, paths, labels = {}, {}, {}
+    local options, paths = {}, {}
     for _, option in ipairs(ns.FONT_OPTIONS) do
         options[#options + 1] = option
         paths[option.path:lower()] = true
-        labels[option.label] = true
     end
     local found = builtins[selected] ~= nil
     if media then
@@ -47,10 +68,9 @@ local function GetFontOptions(selected)
         for _, key in ipairs(media:List("font") or {}) do
             local path = fonts[key]
             local value = PREFIX .. key
-            if SharedKey(value) and type(path) == "string" and path ~= ""
+            if SharedKey(value) and IsFontPath(path)
                 and (not paths[path:lower()] or value == selected) then
-                local label = labels[key] and key .. " (shared)" or key
-                options[#options + 1] = {value = value, label = label, path = path}
+                options[#options + 1] = {value = value, label = SharedLabel(key), path = path}
                 paths[path:lower()] = true
                 if value == selected then found = true end
             end
@@ -66,11 +86,22 @@ local function GetFontOptions(selected)
     return options
 end
 
+local function SelectedSharedFontChanged(event, key)
+    if not ns.GetAppearanceSetting then return false end
+    local name = SharedKey(ns.GetAppearanceSetting("nameFont"))
+    local threat = SharedKey(ns.GetAppearanceSetting("threatFont"))
+    if not name and not threat then return false end
+    if event == "LibSharedMedia_Registered" then return key == name or key == threat end
+    return true -- A global override affects every selected shared font.
+end
+
 if media then
-    local function MediaChanged(_, mediatype)
+    local function MediaChanged(event, mediatype, key)
         if mediatype ~= "font" then return end
         if ns.RefreshFontControls then ns.RefreshFontControls() end
-        if ns.QueueNameplateRefresh then ns.QueueNameplateRefresh() end
+        if ns.QueueNameplateRefresh and SelectedSharedFontChanged(event, key) then
+            ns.QueueNameplateRefresh()
+        end
     end
     media.RegisterCallback(ns, "LibSharedMedia_Registered", MediaChanged)
     media.RegisterCallback(ns, "LibSharedMedia_SetGlobal", MediaChanged)
@@ -78,5 +109,6 @@ end
 
 ns.IsSavedFontSelection = IsSavedFontSelection
 ns.IsAvailableFontSelection = IsAvailableFontSelection
+ns.FontLabel = FontLabel
 ns.FontPath = FontPath
 ns.GetFontOptions = GetFontOptions
