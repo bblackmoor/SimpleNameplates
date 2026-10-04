@@ -1,9 +1,11 @@
 # Live WoW integration verification
 
-Status: pending. Details Framework phases 1–6 repository work is complete in
-1.0.156, with all 17 local smoke suites passing; no native client observation is
-implied by that result. Version 1.0.157 adds picker/dialog race fixes; all 17 suites
-still pass. These checks require a World of Warcraft client; local Lua stubs do not establish actual frame behavior, secure CVar behavior, or Midnight secret-value safety. Record the client build, addon version, date, and observed result when running them. Leave a check open until it is observed in game.
+Status: pending. Details Framework phases 1–6 repository work and follow-up fixes
+are complete through 1.0.159, with all 17 local smoke suites passing. These checks
+require a World of Warcraft client; local Lua stubs do not establish actual frame
+behavior, secure CVar behavior, or Midnight secret-value safety. Record the client
+build, addon version, date, and observed result when running them. Leave a check
+open until it is observed in game.
 
 ## Details Framework foundation (1.0.151)
 
@@ -39,6 +41,11 @@ still pass. These checks require a World of Warcraft client; local Lua stubs do 
 - [ ] Preview a color, then reset that row or the entire page, switch profiles, hide Colors, or open another swatch. Verify rollback stays with the original profile and later Cancel cannot undo a reset or affect the next edit. Accept with Okay and verify the accepted color remains after subsequent page/profile actions.
 - [ ] Open another addon's picker while a Simple Nameplates edit is active; verify this addon does not close or edit the other picker's session.
 - [ ] Open Copy, Rename or Delete, change the selected profile before accepting, then accept. Verify no profile changes and the message asks to reopen the dialog. Confirm normal unchanged-selection operations still work.
+
+## Styling consent display (1.0.159)
+
+- [ ] Keep Profiles visible while enabling styling with incompatible Blizzard visibility settings. Confirm Inactive while consent is pending, Active immediately after successful Apply and enable, and Inactive after refusal or rejected writes, without reopening the page.
+- [ ] Approve during combat, then leave combat; confirm the switch and status update after deferred completion while saved intent and captured originals retain their documented behavior.
 
 ## Setup and saved data
 

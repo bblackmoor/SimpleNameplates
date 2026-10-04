@@ -65,13 +65,20 @@ local function Issues()
     return issues
 end
 
+local function SetPending(pending)
+    ns.nameplateSetupPending = pending
+    -- Consent may finish after the switch callback or after combat ends.
+    if ns.RefreshStylingControl then ns.RefreshStylingControl() end
+end
+
 local function Suspend()
-    ns.nameplateSetupPending = true
+    SetPending(true)
     if ns.RestoreAll then ns.RestoreAll() end
 end
 
 local function Resume()
-    deferredAction, ns.nameplateSetupPending = nil, false
+    deferredAction = nil
+    SetPending(false)
     ns.ApplyManagedNameSettings()
     if ns.RefreshAll then ns.RefreshAll() end
 end
@@ -103,7 +110,7 @@ local function ShowReview(issues, failure)
 end
 
 Restore = function()
-    ns.nameplateSetupPending = false
+    SetPending(false)
     if StaticPopup_Hide then StaticPopup_Hide("SNP_NAMEPLATE_SETUP") end
     if InCombat() then deferredAction = "restore"; return end
     deferredAction = nil
@@ -153,12 +160,12 @@ Check = function()
     deferredAction = nil -- Enabling cancels a deferred disable/restoration.
     -- Release older managed settings before reading compatibility. Otherwise
     -- legacy CVar restoration later at login can invalidate this review.
-    ns.nameplateSetupPending = true
+    SetPending(true)
     if InCombat() then deferredAction = "check"; return false end
     ns.RestoreManagedNameSettings()
     local issues = Issues()
     if #issues == 0 then
-        ns.nameplateSetupPending = false
+        SetPending(false)
         return true
     end
     Suspend()

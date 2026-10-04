@@ -11,7 +11,7 @@ function StaticPopup_Show(key, text, _, data) popup = {key=key, text=text, data=
 function GameTooltip:SetOwner(frame) self.owner=frame end
 function GameTooltip:AddLine() end
 local ns, refreshes, integrations, setup, restored = {}, 0, 0, 0, 0
-for _, file in ipairs({"Defaults", "FontMedia", "Core", "ManagedNames", "Database",
+for _, file in ipairs({"Defaults", "FontMedia", "Core", "ManagedNames", "NameplateSetup", "Database",
     "SettingsControls", "SettingsWidgets", "SettingsBehavior", "SettingsProfiles", "SettingsTRP3", "SettingsAbout"}) do
     assert(loadfile("SimpleNameplates/" .. file .. ".lua"))("SimpleNameplates", ns)
 end
@@ -19,6 +19,7 @@ ns.RefreshAll = function() refreshes=refreshes+1 end
 ns.ApplyManagedNameSettings = function() end
 ns.RestoreManagedNameSettings = function() restored=restored+1 end
 ns.RestoreAll = function() restored=restored+1 end
+local realSetupCheck = ns.CheckNameplateSetup
 local allowSetup, available = true, false
 ns.CheckNameplateSetup = function()
     setup=setup+1
@@ -213,4 +214,37 @@ assert(not ns.EnsureDB().profiles["Blocked keyboard profile"], "Enter respects a
 accept:Enable(); keyboardDialog.GetButton1 = nil; keyboardDialog.button1 = accept
 StaticPopupDialogs.SNP_PROFILE_NAME.EditBoxOnEnterPressed(keyboardEdit)
 assert(ns.GetActiveProfileName() == "Blocked keyboard profile", "legacy accept field remains supported")
+-- Setup approval resumes effective styling while Profiles is already visible.
+ns.CheckNameplateSetup = realSetupCheck
+local cvars = {nameplateShowAll="1", nameplateShowEnemies="1",
+    nameplateShowFriendlyPlayers="1", nameplateShowFriendlyNpcs="0",
+    nameplateShowOnlyNameForFriendlyPlayerUnits="0"}
+C_CVar.GetCVar = function(name) return cvars[name] end
+C_CVar.SetCVar = function(name, value) cvars[name] = value end
+ns.SetStylingEnabled(false); Show(panels[1])
+Click(styling)
+assert(ns.nameplateSetupPending and not styling.MyObject:GetValue())
+assert(popup.key == "SNP_NAMEPLATE_SETUP")
+StaticPopupDialogs.SNP_NAMEPLATE_SETUP.OnAccept()
+assert(ns.GetStylingEnabled() and styling.MyObject:GetValue(), "visible styling control refreshes after setup approval")
+local activationStatus
+for _, object in ipairs(ui.objects) do
+    if object:GetParent() == Row("Selected profile") and object.kind == "FontString" and object:GetText() == "Active" then activationStatus = object end
+end
+assert(activationStatus)
+cvars.nameplateShowFriendlyNpcs = "0"
+ns.CheckNameplateSetup()
+assert(not styling.MyObject:GetValue() and activationStatus:GetText() == "Inactive", "external setup suspension refreshes the visible switch/status")
+StaticPopupDialogs.SNP_NAMEPLATE_SETUP.OnCancel()
+assert(not ns.GetStylingEnabled() and not styling.MyObject:GetValue())
+local blocked, combat = true, false
+C_CVar.SetCVar = function(name, value) if not blocked then cvars[name] = value end end
+InCombatLockdown = function() return combat end
+Click(styling); StaticPopupDialogs.SNP_NAMEPLATE_SETUP.OnAccept()
+assert(ns.nameplateSetupPending and not styling.MyObject:GetValue(), "rejected writes remain inactive")
+blocked, combat = false, true
+StaticPopupDialogs.SNP_NAMEPLATE_SETUP.OnAccept()
+assert(ns.nameplateSetupPending and not styling.MyObject:GetValue(), "combat-deferred approval remains inactive")
+combat = false; ns.RetryNameplateSetup()
+assert(ns.GetStylingEnabled() and styling.MyObject:GetValue() and activationStatus:GetText() == "Active", "deferred completion refreshes switch/status")
 print("Profiles, TRP3 and About integration smoke: passed")

@@ -1,6 +1,6 @@
 # Details Framework settings conversion
 
-Current status (1.0.158): phases 1–6 repository work is complete; all 17 smoke
+Current status (1.0.159): phases 1–6 repository work is complete; all 17 smoke
 suites pass. Final in-game verification remains pending. The baseline and earlier
 phase notes below describe their recorded releases, not the current widget inventory.
 
@@ -400,3 +400,23 @@ three-unit top padding and luminance-based text colors. Those descriptions now
 match the current white inside-bar glyphs, two black underlayers, and four/three
 padding; the rendering code itself is unchanged. All 17 suites pass. Actual
 keyboard/rendering/security observations remain pending in the live checklist.
+
+## Setup-state review (1.0.159)
+
+Approval can complete after the styling-switch callback returns, including after
+combat deferral. The Profiles switch refreshed only on its click or page show;
+approval resumed styling but left the visible control Inactive. The real-library,
+database and setup test reproduced that stale display before the fix.
+
+NameplateSetup now routes pending-state changes through SetPending and invokes
+an optional silent RefreshStylingControl callback registered by the Profiles
+styling control. Suspend/resume/check/restore use the same path. Getter policy,
+saved intent, consent, CVar writes and restoration remain unchanged. Tests cover
+approval, suspension outside the switch callback, refusal, rejected writes and
+combat-deferred completion without reopening the page. All 17 suites pass.
+
+The saved-data guide now names interruptibleCastStyle rather than the removed
+boolean, includes sanctuary matching and bar-width ownership, documents the
+character-specific setup ledger, and removes the obsolete class-color backup
+claim. These are documentation corrections, not a schema or data migration.
+Native client timing/security verification remains pending.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.159
+
+* Fixes the Profiles styling switch/status remaining Inactive after setup approval while the page is visible. Centralizes pending-state changes and silently refreshes the control on suspension, approval, refusal, restoration and combat-deferred completion.
+* Adds real-DF/database/setup integration coverage reproducing the stale approval display before the fix, plus rejected writes, refusal, status text and deferred approval. Keeps existing native input and picker regressions.
+* Updates the saved-data guide to current cast-effect fields, font/width ownership, character-specific setup backups and read-only friendly class-color CVars. Schema and stored values are unchanged. All seventeen smoke suites and whitespace checks pass; native client checks remain pending.
+
 ## 1.0.158
 
 * Fixes Enter acceptance in profile-name dialogs on current Blizzard UI by using GetButton1(), retaining the legacy button1 fallback and respecting disabled accept buttons. Adds a regression that failed before the fix and coverage for both button contracts.

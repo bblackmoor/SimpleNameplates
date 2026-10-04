@@ -23,6 +23,7 @@ local function AddStylingSwitch(row, anchor, refreshers)
         -- Compatibility checks may pause styling while their dialog is open.
         refresh()
     end)
+    ns.RefreshStylingControl = refresh
     refresh()
     return toggle
 end
