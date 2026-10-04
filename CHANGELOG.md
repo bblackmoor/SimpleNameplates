@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.155
+
+* Completes phase 5 of the Details Framework conversion: Profiles uses adapted selectors, management buttons and the global styling switch; TRP3 uses adapted switches; About uses a borderless source link and dedicated read-only color displays. Native dialogs, yellow info links, layout helpers and database semantics remain unchanged.
+* Refreshes shared profile-menu choices after management changes, retains Appearance preview cancellation before profile selection, and preserves setup consent/restoration and TRP3 disabled preferences. About no longer describes the removed Pulse effect.
+* Adds real-DF/database integration coverage for profile confirmations, independent copies, cross-character assignments, protected Default, bundled restoration, setup suspension, TRP3 gating and informational widgets. All seventeen smoke suites pass; native client rendering, combat/taint and external-library coexistence remain pending.
+
 ## 1.0.154
 
 * Completes phase 4 of the Details Framework conversion: Appearance's font/placement menus, size/width sliders, switches and Reset settings button now use the adapter. Retains the shared native profile selector, existing ranges/steps, adjacent unit labels, layout and profile/global reset scope.

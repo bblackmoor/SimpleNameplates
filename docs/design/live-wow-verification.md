@@ -22,6 +22,15 @@ Status: pending. These checks require a World of Warcraft client; local Lua stub
 - [ ] Open both font menus with a large SharedMedia pack; test scrolling/selection, absent saved fonts, late registrations and global font overrides. Labels refresh without resetting unrelated controls or saved font choices.
 - [ ] Verify sanctuary matching, name placement, threat and critter toggles; reset Appearance and confirm its documented profile/global scope. Repeat with Details/Plater absent and an external DF embedder present, recording any combat/taint errors.
 
+## Details Framework Profiles/TRP3/About conversion (1.0.155)
+
+- [ ] Check Profiles selector/switch/status alignment, management-button spacing and 64-character names at different UI scales; verify scrolling with many profiles and updated menus after create/copy/rename/delete/restore on every visual page.
+- [ ] Exercise native dialogs with accept/cancel/Enter/Escape; check Default protection, cross-character assignments, independent copies and bundled restore scope. Verify Appearance previews cancel before switching profiles.
+- [ ] Disable/re-enable styling; check setup consent/suspension and native presentation restoration. Test with Details/Plater absent and an external DF embedder present.
+- [ ] Test TRP3 detected/absent, master and dependent switches, saved choices, disabled/dimmed labels and actual name/title fallback/refreshes.
+- [ ] Verify About's source link is borderless, changes color on hover and opens a usable Ctrl+C dialog. The three color examples remain undimmed and never open a picker; their info links and tooltips work.
+- [ ] Record client build, DF minor, addon version and combat/taint observations. Leave unobserved checks pending.
+
 ## Setup and saved data
 
 - [ ] Fresh install with no `SimpleNameplatesDB`: Default and High Contrast appear, the active Profile is Default, and Global behavior uses factory values.

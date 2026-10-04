@@ -70,13 +70,7 @@ GameTooltip = region("Tooltip")
 ColorPickerFrame = region("Picker")
 function ColorPickerFrame:GetColorRGB() return 0.4, 0.5, 0.6 end
 function ColorPickerFrame:SetupColorPickerAndShow(options) self.options = options end
-function UIDropDownMenu_SetWidth(item, w) item.width = w end
-function UIDropDownMenu_SetSelectedValue(item, value) item.selected = value end
-function UIDropDownMenu_SetText(item, value) item.text = value end
-function UIDropDownMenu_Initialize(item, fn) item.initialize = fn end
-function UIDropDownMenu_CreateInfo() return {} end
 local menuOptions = {}
-function UIDropDownMenu_AddButton(info) menuOptions[#menuOptions + 1] = info end
 StaticPopupDialogs = {}
 function StaticPopup_Show(key, text, _, data)
     popups[#popups + 1] = { key = key, text = text, data = data }
@@ -397,7 +391,7 @@ local function selectorFor(panel)
     for _, label in ipairs(frames) do
         if label.kind == "FontString" and label.text == "Selected profile" and belongsTo(label, panel) then
             for _, item in ipairs(frames) do
-                if item.parent == label.parent and item.template == "UIDropDownMenuTemplate" then return item end
+                if item.parent == label.parent and item.MyObject and item.MyObject.type == "dropdown" then return item end
             end
         end
     end
@@ -406,16 +400,16 @@ local profilesSelector = assert(selectorFor(categories[2].panel))
 local appearanceSelector = assert(selectorFor(categories[3].panel))
 local colorsSelector = assert(selectorFor(categories[4].panel))
 menuOptions = {}
-colorsSelector.initialize(nil, 1)
+menuOptions = colorsSelector.MyObject.func()
 for _, option in ipairs(menuOptions) do
-    if option.value == "High Contrast" then option.func() end
+    if option.value == "High Contrast" then option.onclick(nil, nil, option.value) end
 end
 equal(active, "High Contrast", "Colors selector changes shared active profile")
-equal(colorsSelector.selected, "High Contrast", "Colors selector updates immediately")
+equal(colorsSelector.MyObject.myvalue, "High Contrast", "Colors selector updates immediately")
 categories[2].panel.scripts.OnShow(categories[2].panel)
 categories[3].panel.scripts.OnShow(categories[3].panel)
-equal(profilesSelector.selected, "High Contrast", "Profiles selector refreshes on show")
-equal(appearanceSelector.selected, "High Contrast", "Appearance selector refreshes on show")
+equal(profilesSelector.MyObject.myvalue, "High Contrast", "Profiles selector refreshes on show")
+equal(appearanceSelector.MyObject.myvalue, "High Contrast", "Appearance selector refreshes on show")
 assert(belongsTo(button("Create"), categories[2].panel), "management belongs to Profiles")
 assert(belongsTo(fullTitle, categories[5].panel), "long-title switch belongs to TRP3")
 local _, _, effectFill = colorRow("Interruptible cast highlight")
@@ -509,10 +503,10 @@ equal(hideCritters, false, "page reset restores global critter default")
 equal(modes.useful, "active", "Colors reset restores global category mode")
 local profileDropdown
 for _, item in ipairs(frames) do
-    if item.parent == stylingSwitch.parent and item.template == "UIDropDownMenuTemplate" then profileDropdown = item end
+    if item.parent == stylingSwitch.parent and item.MyObject and item.MyObject.type == "dropdown" then profileDropdown = item end
 end
 assert(profileDropdown, "activation shares selector row")
-equal(profileDropdown.points.LEFT[3], 168, "Profiles selector moved left")
+equal(profileDropdown.points.LEFT[3], 184, "Profiles selector moved left")
 equal(stylingSwitch.points.LEFT[1], profileDropdown, "activation immediately follows selector")
 equal(stylingSwitch.points.LEFT[3], 8, "activation has consistent gap")
 local activationStatus

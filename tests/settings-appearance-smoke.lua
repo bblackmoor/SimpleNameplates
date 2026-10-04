@@ -5,13 +5,6 @@ max, min = math.max, math.min
 function UnitGUID() return "Player-Appearance" end
 function UnitFullName() return "Appearance", "Realm" end
 function strtrim(text) return text:match("^%s*(.-)%s*$") end
-function UIDropDownMenu_SetWidth(frame, width) frame:SetWidth(width) end
-function UIDropDownMenu_SetSelectedValue(frame, value) frame.selected = value end
-function UIDropDownMenu_SetText(frame, value) frame:SetText(value) end
-function UIDropDownMenu_Initialize(frame, callback) frame.initialize = callback end
-function UIDropDownMenu_CreateInfo() return {} end
-local profiles = {}
-function UIDropDownMenu_AddButton(option) profiles[#profiles + 1] = option end
 local cvars = {}
 C_CVar.GetCVar = function(name) return cvars[name] or "1" end
 C_CVar.SetCVar = function(name, value) cvars[name] = tostring(value) end
@@ -133,11 +126,10 @@ nameFont.MyObject:Close()
 -- Cancel previews before a selector changes the database's active profile.
 local selector
 for _, object in ipairs(ui.objects) do
-    if object:GetParent() == Row("Selected profile") and object.initialize then selector = object end
+    if object:GetParent() == Row("Selected profile") and object.MyObject and object.MyObject.type == "dropdown" then selector = object end
 end
 Editor(size):SetText("32")
-profiles = {}; selector.initialize(nil, 1)
-for _, option in ipairs(profiles) do if option.value == "High Contrast" then option.func() end end
+Choose(selector, "High Contrast")
 assert(ns.GetActiveProfileName() == "High Contrast" and size:GetValue() == 21)
 assert(ns.EnsureDB().profiles.Default.appearance.nameSize == 28, "rollback remains in previous profile")
 assert(ns.GetAppearanceSetting("nameSize") == 21, "new profile is not overwritten by cancellation")

@@ -134,10 +134,14 @@ function methods:SetPoint(...)
     self.points[self.point[1]] = self.point
 end
 function methods:SetBackdrop(value) self.backdrop=value end
+function methods:SetBackdropColor(...) self.backdropColor={...} end
+function methods:SetBackdropBorderColor(...) self.backdropBorderColor={...} end
 function methods:SetTexture(value) self.texture=value end
 function methods:SetColorTexture(...) self.color={...} end
 function methods:SetVertexColor(...) self.color={...} end
 function methods:SetAlpha(value) self.alpha=value end
+function methods:SetTextColor(...) self.textColor={...} end
+function methods:EnableMouse(enabled) self.mouseEnabled=enabled end
 function methods:Show() self.shown=true end
 function methods:Hide() self.shown=false end
 function methods:Enable() self.enabled=true end

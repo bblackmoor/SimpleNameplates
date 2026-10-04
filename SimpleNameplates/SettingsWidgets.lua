@@ -242,6 +242,39 @@ function Widgets.CreateButton(parent, text, onClick, width, height)
     return handle
 end
 
+-- About's informational widgets deliberately have no editable picker path.
+function Widgets.CreateColorDisplay(parent, r, g, b)
+    local widget = Framework():CreateButton(Widgets.GetFrame(parent),
+        function() end, 26, 26, "",
+        nil, nil, nil, nil, nil, nil, swatchTemplate)
+    local frame = Widgets.GetFrame(widget)
+    frame:EnableMouse(false) -- The containing row owns explanatory hover behavior.
+    local fill = frame:CreateTexture(nil, "ARTWORK")
+    fill:SetPoint("TOPLEFT", frame, "TOPLEFT", 3, -3)
+    fill:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, 3)
+    fill:SetColorTexture(r, g, b, 1)
+    return NewHandle(widget)
+end
+
+function Widgets.CreateLink(parent, text, onClick)
+    local handle
+    local transparent = {0, 0, 0, 0}
+    local template = {backdrop = backdrop, backdropcolor = transparent,
+        backdropbordercolor = transparent, onentercolor = transparent,
+        onleavecolor = transparent, onenterbordercolor = transparent,
+        onleavebordercolor = transparent, textsize = 11, textcolor = {0.35, 0.7, 1, 1}}
+    local widget = Framework():CreateButton(Widgets.GetFrame(parent),
+        function() Notify(handle) end, 190, 16, text,
+        nil, nil, nil, nil, nil, nil, template)
+    handle = NewHandle(widget, onClick)
+    widget.widget.text:SetFontObject("GameFontHighlightSmall")
+    widget.widget.text:SetTextColor(0.35, 0.7, 1, 1)
+    widget.widget:SetWidth(widget.widget.text:GetStringWidth())
+    widget.widget:HookScript("OnEnter", function() widget.widget.text:SetTextColor(0.65, 0.85, 1, 1) end)
+    widget.widget:HookScript("OnLeave", function() widget.widget.text:SetTextColor(0.35, 0.7, 1, 1) end)
+    return handle
+end
+
 function Widgets.CreateColorPicker(parent, onChanged)
     local widget = Framework():CreateColorPickButton(Widgets.GetFrame(parent),
         nil, nil, function() end, nil, swatchTemplate)

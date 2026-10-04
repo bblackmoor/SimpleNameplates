@@ -1,6 +1,6 @@
--- Simple Nameplates: shared global styling switch and Appearance visibility controls.
+-- Simple Nameplates: global styling switch and its setup/restoration lifecycle.
 local _, ns = ...
-local U = ns.SettingsUI
+local U, W = ns.SettingsUI, ns.SettingsWidgets
 local GetStylingEnabled, SetStylingEnabled = ns.GetStylingEnabled, ns.SetStylingEnabled
 
 local function HandleStylingChanged(enabled)
@@ -22,7 +22,7 @@ local function AddStylingSwitch(row, anchor, refreshers)
         toggle:SetChecked(active)
         status:SetText(active and "Active" or "Inactive")
     end
-    toggle = U.CreateSwitch(row, function(checked)
+    toggle = W.CreateSwitch(row, function(checked)
         SetStylingEnabled(checked)
         HandleStylingChanged(checked)
         -- Compatibility checks may pause styling while their dialog is open.
@@ -30,7 +30,7 @@ local function AddStylingSwitch(row, anchor, refreshers)
     end)
     toggle:SetPoint("LEFT", anchor, "RIGHT", 8, 0)
     status = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    status:SetPoint("LEFT", toggle, "RIGHT", 8, 0)
+    status:SetPoint("LEFT", toggle:GetFrame(), "RIGHT", 8, 0)
     status:SetWidth(56)
     status:SetJustifyH("LEFT")
     refreshers[#refreshers + 1] = Refresh

@@ -4,13 +4,6 @@ dofile("tests/details-framework-loader.lua")("Libs/DetailsFramework/load.xml")
 function UnitGUID() return "Player-Colors" end
 function UnitFullName() return "Colors", "Realm" end
 function strtrim(text) return text:match("^%s*(.-)%s*$") end
-function UIDropDownMenu_SetWidth(frame, width) frame:SetWidth(width) end
-function UIDropDownMenu_SetSelectedValue(frame, value) frame.selected = value end
-function UIDropDownMenu_SetText(frame, value) frame:SetText(value) end
-function UIDropDownMenu_Initialize(frame, callback) frame.initialize = callback end
-function UIDropDownMenu_CreateInfo() return {} end
-local profileOptions = {}
-function UIDropDownMenu_AddButton(option) profileOptions[#profileOptions + 1] = option end
 function GameTooltip:SetOwner(frame) self.owner = frame end
 function GameTooltip:AddLine() end
 local ns, refreshes = {}, 0
@@ -117,17 +110,17 @@ RGBEqual({ns.EffectColor("interruptible")}, 0, 1, 1)
 Click(castReset)
 assert(ns.GetInterruptibleCastStyle() == "PROC", "cast-color reset preserves chosen effect")
 
--- Native profile selector stays shared; switching refreshes DF controls silently.
+-- Adapted profile selector stays shared; switching refreshes DF controls silently.
 local selector
 for _, object in ipairs(ui.objects) do
-    if object:GetParent() == Row("Selected profile") and object.initialize then selector = object end
+    if object:GetParent() == Row("Selected profile") and object.MyObject and object.MyObject.type == "dropdown" then selector = object end
 end
 ns.SetAppearanceSetting("nameSize", 31)
 local preservedDefault = Snapshot(ns.EnsureDB().profiles.Default)
-profileOptions = {}
-selector.initialize(nil, 1)
-for _, option in ipairs(profileOptions) do if option.value == "High Contrast" then option.func() end end
-assert(ns.GetActiveProfileName() == "High Contrast" and selector.selected == "High Contrast")
+for _, option in ipairs(selector.MyObject.func()) do
+    if option.value == "High Contrast" then option.onclick(nil, nil, option.value) end
+end
+assert(ns.GetActiveProfileName() == "High Contrast" and selector.MyObject.myvalue == "High Contrast")
 local highContrast = ns.Defaults.colorPresets.highContrast
 RGBEqual(SwatchRGB(Control(Row(cases[1][2]), "color")), 1, 0, 1)
 ns.SetPriorityColor("attacking", 0.1, 0.2, 0.3)

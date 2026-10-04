@@ -1,6 +1,6 @@
 -- Simple Nameplates: About settings page.
 local _, ns = ...
-local U = ns.SettingsUI
+local U, W = ns.SettingsUI, ns.SettingsWidgets
 local CreateScrollablePanel, AddTitle, AddDescription =
     U.CreateScrollablePanel, U.AddTitle, U.AddDescription
 local VERSION, SOURCE_URL = ns.VERSION, ns.SOURCE_URL
@@ -33,18 +33,9 @@ end
 local function CreateLockedColorRow(context, text, r, g, b, popupKey)
     local content, layout = context.content, context.layout
     local row = U.CreateSettingRow(content, layout, text)
-    local swatch = CreateFrame("Frame", nil, row, "BackdropTemplate")
-    swatch:SetSize(26, 26)
+    local swatch = W.CreateColorDisplay(row, r, g, b)
     swatch:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
-    swatch:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    swatch:SetBackdropColor(0.04, 0.04, 0.04, 1)
-    swatch:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
-    local fill = swatch:CreateTexture(nil, "ARTWORK")
-    fill:SetPoint("TOPLEFT", 3, -3)
-    fill:SetPoint("BOTTOMRIGHT", -3, 3)
-    fill:SetColorTexture(r, g, b, 1)
-    U.AddInfoLink(row, swatch, popupKey)
+    U.AddInfoLink(row, swatch:GetFrame(), popupKey)
     row:EnableMouse(true)
     row:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -74,7 +65,7 @@ local function CreateAboutPanel()
     AddTitle(content, layout, "About")
     RegisterWorldLabelPopups()
     AddDescription(content, layout,
-        "Customizes accessible Blizzard nameplates with priority colors, text styling and a pulsing cast highlight.")
+        "Customizes accessible Blizzard nameplates with priority colors, text styling and selectable interruptible-cast highlights.")
 
     AddDescription(content, layout, "Version " .. VERSION .. "\nAuthor: Brandon Blackmoor\nCategory: Unit Frames\nLicense: GPL-3.0")
 
@@ -84,16 +75,10 @@ local function CreateAboutPanel()
     local sourceLabel = sourceRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     sourceLabel:SetPoint("LEFT")
     sourceLabel:SetText("Source    ")
-    local sourceLink = CreateFrame("Button", nil, sourceRow)
-    sourceLink:SetPoint("LEFT", sourceLabel, "RIGHT")
-    local sourceText = sourceLink:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    sourceText:SetPoint("LEFT")
-    sourceText:SetText(SOURCE_URL)
-    sourceText:SetTextColor(0.35, 0.7, 1, 1)
-    sourceLink:SetSize(sourceText:GetStringWidth(), 16)
-    sourceLink:SetScript("OnEnter", function() sourceText:SetTextColor(0.65, 0.85, 1, 1) end)
-    sourceLink:SetScript("OnLeave", function() sourceText:SetTextColor(0.35, 0.7, 1, 1) end)
-    sourceLink:SetScript("OnClick", function() StaticPopup_Show("SNP_COPY_SOURCE", nil, nil, SOURCE_URL) end)
+    local sourceLink = W.CreateLink(sourceRow, SOURCE_URL, function()
+        StaticPopup_Show("SNP_COPY_SOURCE", nil, nil, SOURCE_URL)
+    end)
+    sourceLink:SetPoint("LEFT", sourceLabel, "RIGHT", 0, 0)
 
     U.AddSection(content, layout, "Commands")
     AddDescription(content, layout,

@@ -1,7 +1,11 @@
 -- Simple Nameplates: appearance Profile management.
 local _, ns = ...
-local U = ns.SettingsUI
+local U, W = ns.SettingsUI, ns.SettingsWidgets
 local AddDescription, RefreshNameplates = U.AddDescription, U.RefreshNameplates
+
+local function CancelAppearanceEdits()
+    if ns.CancelAppearanceEdits then ns.CancelAppearanceEdits(true) end
+end
 
 local function RegisterProfileDialogs()
     StaticPopupDialogs["SNP_PROFILE_NAME"] = {
@@ -48,76 +52,57 @@ local function RegisterProfileDialogs()
     }
 end
 
-local function CreateProfileButtons(content, layout)
-    local buttonRow = CreateFrame("Frame", nil, content)
-    buttonRow.SNPLayoutFullWidth = true
-    layout:Add(buttonRow, 24, 24, 8)
+local function CreateProfileButtons(content, layout, changed)
+    local function OpenNameDialog(action, initial)
+        StaticPopup_Show("SNP_PROFILE_NAME", nil, nil,
+            {action = action, initial = initial, onChanged = changed})
+    end
+    local definitions = {
+        {"Create", function() OpenNameDialog(ns.CreateProfile, "") end},
+        {"Copy", function() OpenNameDialog(ns.CopyActiveProfile, ns.GetActiveProfileName() .. " Copy") end},
+        {"Rename", function() OpenNameDialog(ns.RenameActiveProfile, ns.GetActiveProfileName()) end},
+        {"Delete", function()
+            StaticPopup_Show("SNP_DELETE_PROFILE", ns.GetActiveProfileName(), nil, {onChanged = changed})
+        end},
+    }
+    local row = CreateFrame("Frame", nil, content)
+    row.SNPLayoutFullWidth = true
+    layout:Add(row, 24, 24, 8)
     local buttons = {}
-    for index, definition in ipairs({
-        { "Create", 88 }, { "Copy", 88 }, { "Rename", 88 }, { "Delete", 88 },
-    }) do
-        local button = CreateFrame("Button", nil, buttonRow, "UIPanelButtonTemplate")
-        button:SetSize(definition[2], 24)
-        if index == 1 then button:SetPoint("LEFT")
+    for index, definition in ipairs(definitions) do
+        local button = W.CreateButton(row, definition[1], definition[2], 88, 24)
+        if index == 1 then button:SetPoint("LEFT", row, "LEFT", 0, 0)
         else button:SetPoint("LEFT", buttons[index - 1], "RIGHT", 8, 0) end
-        button:SetText(definition[1])
         buttons[index] = button
     end
     return buttons
 end
 
-local function InstallProfileButtonScripts(buttons, changed)
-    local create, copy, rename, delete =
-        buttons[1], buttons[2], buttons[3], buttons[4]
-    local function OpenNameDialog(action, initial)
-        StaticPopup_Show("SNP_PROFILE_NAME", nil, nil,
-            { action = action, initial = initial, onChanged = changed })
-    end
-    create:SetScript("OnClick", function() OpenNameDialog(ns.CreateProfile, "") end)
-    copy:SetScript("OnClick", function()
-        OpenNameDialog(ns.CopyActiveProfile, ns.GetActiveProfileName() .. " Copy")
-    end)
-    rename:SetScript("OnClick", function()
-        OpenNameDialog(ns.RenameActiveProfile, ns.GetActiveProfileName())
-    end)
-    delete:SetScript("OnClick", function()
-        StaticPopup_Show("SNP_DELETE_PROFILE", ns.GetActiveProfileName(), nil,
-            { onChanged = changed })
-    end)
-end
-
 -- Compact selector shared by the visual pages; management remains here.
 local function AddProfileSelector(content, layout, refreshers, onChanged, controlX)
     local row, label = U.CreateSettingRow(content, layout, "Selected profile")
-    local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
     controlX = controlX or U.CONTROL_X
     label:SetWidth(controlX - 16)
-    dropdown:SetPoint("LEFT", row, "LEFT", controlX - 16, 0)
-    UIDropDownMenu_SetWidth(dropdown, 190)
+    local dropdown
     local function Refresh()
+        dropdown:InvalidateOptions() -- Profile names may be created/renamed/deleted elsewhere.
         local active = ns.GetActiveProfileName()
-        UIDropDownMenu_SetSelectedValue(dropdown, active)
-        UIDropDownMenu_SetText(dropdown, active)
+        dropdown:SetValue(active, active)
     end
-    local function Changed()
+    dropdown = W.CreateDropdown(row, function()
+        local options = {}
+        for _, name in ipairs(ns.GetProfileNames()) do
+            options[#options + 1] = {value = name, label = name}
+        end
+        return options
+    end, function(name)
+        CancelAppearanceEdits()
+        ns.SetActiveProfileName(name)
         Refresh()
         if onChanged then onChanged() end
         RefreshNameplates()
-    end
-    UIDropDownMenu_Initialize(dropdown, function(_, level)
-        for _, profileName in ipairs(ns.GetProfileNames()) do
-            local name = profileName
-            local info = UIDropDownMenu_CreateInfo()
-            info.text, info.value = name, name
-            info.checked = ns.GetActiveProfileName() == name
-            info.func = function()
-                if ns.CancelAppearanceEdits then ns.CancelAppearanceEdits(true) end
-                ns.SetActiveProfileName(name)
-                Changed()
-            end
-            UIDropDownMenu_AddButton(info, level)
-        end
     end)
+    dropdown:SetPoint("LEFT", row, "LEFT", controlX, 0)
     refreshers[#refreshers + 1] = Refresh
     Refresh()
     return row, dropdown
@@ -138,9 +123,8 @@ local function CreateProfilesPanel()
     U.AddSection(content, layout, "Manage profiles")
     AddDescription(content, layout,
         "Create uses factory defaults. Default cannot be renamed or deleted.")
-    local buttons = CreateProfileButtons(content, layout)
     local function Changed() Refresh(); RefreshNameplates() end
-    InstallProfileButtonScripts(buttons, Changed)
+    local buttons = CreateProfileButtons(content, layout, Changed)
     refreshers[#refreshers + 1] = function()
         local protected = ns.GetActiveProfileName() == ns.DEFAULT_PROFILE_NAME
         buttons[3]:SetEnabled(not protected)
@@ -149,9 +133,10 @@ local function CreateProfilesPanel()
     U.AddSection(content, layout, "Restore bundled profiles")
     AddDescription(content, layout,
         "Resets Default and High Contrast, recreating High Contrast if missing. Custom profiles are unchanged.")
-    U.AddActionButton(content, layout, "Restore bundled profiles", function()
+    local restore = W.CreateButton(content, "Restore bundled profiles", function()
         StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil, {onChanged = Changed})
     end, 210)
+    layout:Add(restore:GetFrame(), 24, 24, 8)
     panel:SetScript("OnShow", Refresh)
     Refresh()
     layout:Finish()

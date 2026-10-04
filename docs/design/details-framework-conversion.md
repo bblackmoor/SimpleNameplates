@@ -206,8 +206,8 @@ behavior and actual external-copy compatibility remain unobserved.
 4. Appearance conversion — implemented in 1.0.154; preserve fonts and late registrations, slider ranges,
    sanctuary matching, placement, threat and global critter reset scope. Test
    long shared-font lists, keyboard interaction and scrolling. Check in-game.
-5. Convert Profiles, TRP3 and About in separately reviewable changes; preserve
-   all existing database/dialog semantics and disabled/read-only controls.
+5. Profiles, TRP3 and About conversion — implemented in 1.0.155 in separate page
+   modules; preserves database/dialog semantics and disabled/read-only controls.
 6. Remove unreferenced legacy widget code, consolidate page duplication,
    update docs, run full regression checks and final in-game verification.
 
@@ -216,8 +216,8 @@ observations: alignment/reflow, scrolling, switches, picker cancel, resets,
 profile changes, missing/shared fonts, startup with/without other DF embedders,
 and absence of combat/taint errors. Leave unobserved checks pending.
 
-Documentation debt noted for later phases: About still mentions a pulsing
-highlight although Pulse was removed; older design prose still mentions
+Documentation debt: phase 5 fixes About's stale pulsing-highlight description;
+older design prose still mentions
 sanctuary duplicates, class-color writes and controls that were removed. None
 of these historical descriptions authorizes restoring the old behavior.
 
@@ -295,3 +295,35 @@ before profile changes/resets/hide, missing/returning providers, cheap targeted
 label refreshes, sixty-font menu construction/scrolling, and reset preservation.
 All 16 suites pass. Native rendering, input/security behavior and external-copy
 compatibility remain pending client observations in the live checklist.
+
+## Phase 5 implementation (1.0.155)
+
+Profiles now uses adapted shared selectors, 88×24 management buttons, the
+210×24 bundled-restore button, and the global styling switch/status. Its selector
+uses the 184-unit column; Appearance and Colors retain the 340-unit column.
+The adapter unwraps relative anchors. Refresh invalidates profile choices and
+updates the label without building the menu; menus rebuild on opening after
+create/copy/rename/delete/restore. Appearance previews still cancel before
+selection changes. Native profile dialogs and Database.lua remain unchanged.
+Management callbacks are bound when their buttons are created; disabled Default
+Rename/Delete buttons suppress actions through the adapter.
+
+TRP3 now uses adapted switches and retains its integration refresh, availability
+message, saved preferences, disabled dependent controls and dimmed labels.
+Programmatic refreshes do not notify the integration or write saved settings.
+
+About uses a DF button styled as a transparent source link, retaining its native
+Ctrl+C dialog and hover colors. A separate CreateColorDisplay adapter uses a
+DF-backed decorative frame with a 26×26 border and inset RGB texture, with mouse
+handling disabled and no color-picker path. Containing rows retain tooltips and
+yellow info links remain native. The introductory description now names selectable
+interruptible-cast highlights instead of the removed Pulse effect.
+
+settings-secondary-smoke.lua uses the real library and database to cover
+construction/show suppression, native dialog cancellation/acceptance, validated
+creation, independent copies, duplicate rejection, cross-character rename/delete,
+Default protection, bundled reset scope, setup consent/restoration, TRP3 disabled
+choices and absent integration, read-only RGB displays, info dialogs and the
+transparent source link/copy dialog. Appearance and Colors regressions exercise
+the converted shared selector. All 17 suites pass. Client observations remain
+pending; phase 6 owns unused legacy helper removal and final consolidation.
