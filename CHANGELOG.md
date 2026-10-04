@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.142
+
+* Stops changing friendly class-color CVars, whose synchronous Blizzard callbacks can compare secret health values while executing from addon code. Category and cast-highlight switches now refresh only addon presentation.
+* Restores captured native name font, colors, anchors, text, and health-bar color without calling CompactUnitFrame update functions. Blizzard retains responsibility for health and heal-prediction updates.
+* Adds repeated category-toggle, native-presentation restoration, and failed-write retry regressions; preserves native thick outlines and white inside-bar text.
+
 ## 1.0.141
 
 * Guards styling and artwork updates against synchronous native callback reentry. Releases both guards after failed writes so a subsequent update can recover.

@@ -70,13 +70,10 @@ end
 
 -- Database.lua loads after this module; callbacks resolve its API when invoked.
 local function EnsureDB() return ns.EnsureDB() end
-local function GetCategoryMode(state) return ns.GetCategoryMode(state) end
 local function GetStylingEnabled() return ns.GetStylingEnabled() end
 
 local applyingManagedNameSettings = false
 local pendingManagedAction -- "apply" or "restore"; last requested action wins
-local pendingFriendlyAction
-local DisableFriendlyClassColors, RestoreFriendlyClassColors
 
 local function AddExplicitHiddenNameCVarSettings(desired, global)
     if global.hideCritterCompanionNames then
@@ -181,11 +178,6 @@ local function ApplyPendingManagedNameSettings()
     elseif pendingManagedAction == "apply" then
         ApplyManagedNameSettings()
     end
-    if pendingFriendlyAction == "restore" then
-        RestoreFriendlyClassColors()
-    elseif pendingFriendlyAction == "disable" then
-        DisableFriendlyClassColors()
-    end
 end
 
 local FRIENDLY_COLOR_CVARS = {
@@ -194,56 +186,8 @@ local FRIENDLY_COLOR_CVARS = {
     "ShowClassColorInFriendlyNameplate",
 }
 ns.FRIENDLY_COLOR_CVARS = FRIENDLY_COLOR_CVARS
-local friendlyColorCVarOriginals = {}
-local friendlyColorCVarsCaptured = false
-
-DisableFriendlyClassColors = function()
-    if not GetStylingEnabled() or GetCategoryMode("friendly") ~= "active" or GetCategoryMode("hostile") ~= "active"
-        or GetCategoryMode("attacking") ~= "active" then
-        RestoreFriendlyClassColors()
-        return
-    end
-    -- Midnight has separate CVars for friendly player name text and health-bar
-    -- class coloring. Disable all known variants: Blizzard or another addon can update
-    -- these independently, and leaving the name-text CVar enabled produces the
-    -- familiar rainbow of class-colored friendly names.
-    if InCombatLockdown and InCombatLockdown() then
-        pendingFriendlyAction = "disable"
-        return
-    end
-    pendingFriendlyAction = nil
-    for _, cvar in ipairs(FRIENDLY_COLOR_CVARS) do
-        local current = GetCVarValue(cvar)
-        if current ~= nil then
-            if friendlyColorCVarOriginals[cvar] == nil then
-                friendlyColorCVarOriginals[cvar] = current
-            end
-            if not SetCVarValue(cvar, "0") then pendingFriendlyAction = "disable" end
-        end
-    end
-    friendlyColorCVarsCaptured = next(friendlyColorCVarOriginals) ~= nil
-end
-
-RestoreFriendlyClassColors = function()
-    if not friendlyColorCVarsCaptured then
-        pendingFriendlyAction = nil
-        return
-    end
-    if InCombatLockdown and InCombatLockdown() then
-        pendingFriendlyAction = "restore"
-        return
-    end
-    pendingFriendlyAction = nil
-    for cvar, value in pairs(friendlyColorCVarOriginals) do
-        if SetCVarValue(cvar, value) then
-            friendlyColorCVarOriginals[cvar] = nil
-        else
-            pendingFriendlyAction = "restore"
-        end
-    end
-    friendlyColorCVarsCaptured = next(friendlyColorCVarOriginals) ~= nil
-end
-
+-- Observe these settings without writing them. Their CVAR_UPDATE callback
+-- rebuilds native plates synchronously and must not run from addon execution.
 
 ns.GetHideCritterCompanionNames = GetHideCritterCompanionNames
 ns.SetHideCritterCompanionNames = SetHideCritterCompanionNames
@@ -251,5 +195,3 @@ ns.ApplyCritterCompanionNameVisibility = ApplyCritterCompanionNameVisibility
 ns.ApplyManagedNameSettings = ApplyManagedNameSettings
 ns.ApplyPendingManagedNameSettings = ApplyPendingManagedNameSettings
 ns.RestoreManagedNameSettings = RestoreManagedNameSettings
-ns.DisableFriendlyClassColors = DisableFriendlyClassColors
-ns.RestoreFriendlyClassColors = RestoreFriendlyClassColors

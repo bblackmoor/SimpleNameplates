@@ -6,12 +6,10 @@ local GetStylingEnabled, SetStylingEnabled = ns.GetStylingEnabled, ns.SetStyling
 local function HandleStylingChanged(enabled)
     if enabled then
         if ns.CheckNameplateSetup and not ns.CheckNameplateSetup() then return end
-        ns.DisableFriendlyClassColors()
         ns.ApplyManagedNameSettings()
         U.RefreshNameplates()
     else
         ns.RestoreManagedNameSettings()
-        ns.RestoreFriendlyClassColors()
         if ns.RestoreAll then ns.RestoreAll() end
     end
 end

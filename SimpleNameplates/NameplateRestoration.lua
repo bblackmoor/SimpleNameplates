@@ -9,8 +9,80 @@ local pendingPlates = setmetatable({}, {__mode = "k"})
 local visibilityKeys = {"name", "HealthBarsContainer", "castBar", "CastBar", "castBarAnchor",
     "classificationIndicator", "ClassificationFrame", "selectionHighlight"}
 
+local unpackValues = unpack or table.unpack
+local nameProperties = {
+    {"GetFont", "SetFont"}, {"GetTextColor", "SetTextColor"},
+    {"GetVertexColor", "SetVertexColor"}, {"GetShadowColor", "SetShadowColor"},
+    {"GetShadowOffset", "SetShadowOffset"}, {"GetJustifyH", "SetJustifyH"},
+}
+
+-- Only read presentation data. Native health/heal-prediction updates must run
+-- from Blizzard's own events, never from this addon's restoration stack.
+local function ReadValues(region, method, context, ...)
+    local getter = Cap.SafeField(region, method, context)
+    if type(getter) ~= "function" then return nil end
+    local values = {pcall(getter, region, ...)}
+    if not values[1] then return nil end
+    table.remove(values, 1)
+    for index = 1, #values do
+        values[index] = ns.AccessibleValue(values[index])
+        if values[index] == nil then return nil end
+    end
+    return #values > 0 and values or nil
+end
+
+local function CaptureNativePresentation(frame, assessment, context)
+    local original = {name = {}}
+    local name = assessment.name
+    for _, property in ipairs(nameProperties) do
+        original.name[property[2]] = ReadValues(name, property[1], context)
+    end
+    original.text = ns.AccessibleValue(Cap.ReadRegion(name, "GetText", context))
+    local count = ns.AccessibleNumber(Cap.ReadRegion(name, "GetNumPoints", context))
+    if count then
+        local points = {}
+        for index = 1, count do
+            local point = ReadValues(name, "GetPoint", context, index)
+            if not point then points = nil; break end
+            points[#points + 1] = point
+        end
+        original.points = points
+    end
+    original.barColor = ReadValues(assessment.healthBar, "GetStatusBarColor", context)
+    frame.SNPOriginalPresentation = original
+end
+
+local function RestoreNativePresentation(frame, assessment, context, removedUnit)
+    local original = frame.SNPOriginalPresentation
+    if not original then return end
+    local name = assessment.name
+    if name then
+        for _, property in ipairs(nameProperties) do
+            local values = original.name[property[2]]
+            if values then name[property[2]](name, unpackValues(values)) end
+        end
+        if original.points then
+            name:ClearAllPoints()
+            for _, point in ipairs(original.points) do name:SetPoint(unpackValues(point)) end
+        end
+        local unit = ns.AccessibleValue(frame.unit)
+        if removedUnit and unit == removedUnit then
+            name:SetText("")
+        elseif unit == frame.SNPOriginalUnit and original.text ~= nil then
+            name:SetText(original.text)
+        elseif type(unit) == "string" and UnitName then
+            -- SetText accepts a secret name directly; do not inspect it.
+            name:SetText(UnitName(unit))
+        end
+    end
+    if assessment.healthBar and original.barColor then
+        assessment.healthBar:SetStatusBarColor(unpackValues(original.barColor))
+    end
+end
+
 local function Capture(frame, assessment, context)
     if frame.SNPOriginalVisibility then return end
+    CaptureNativePresentation(frame, assessment, context)
     local values = {}
     for _, key in ipairs(visibilityKeys) do
         values[key] = ns.AccessibleBoolean(Cap.ReadRegion(frame[key], "IsShown", context))
@@ -35,16 +107,9 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     end
     if original.healthBar ~= nil then SetShownSafe(assessment.healthBar, original.healthBar, context) end
     if original.nameAlpha ~= nil and assessment.name then assessment.name:SetAlpha(original.nameAlpha) end
+    RestoreNativePresentation(frame, assessment, context, removedUnit)
     frame.SNPNameStyle, frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = nil, nil, nil, nil
-    frame.SNPOriginalVisibility, frame.SNPOriginalUnit = nil, nil
-    if removedUnit and ns.AccessibleValue(frame.unit) == removedUnit then
-        if frame.name then frame.name:SetText("") end
-    elseif CompactUnitFrame_UpdateAll then
-        CompactUnitFrame_UpdateAll(frame)
-    else
-        if CompactUnitFrame_UpdateName then CompactUnitFrame_UpdateName(frame) end
-        if CompactUnitFrame_UpdateHealthColor then CompactUnitFrame_UpdateHealthColor(frame) end
-    end
+    frame.SNPOriginalVisibility, frame.SNPOriginalUnit, frame.SNPOriginalPresentation = nil, nil, nil
 end
 
 local function Request(frame, context, removedUnit)

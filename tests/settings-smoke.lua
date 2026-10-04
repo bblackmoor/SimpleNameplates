@@ -148,10 +148,10 @@ local ns = {
     SetHideCritterCompanionNames = function(value) hideCritters = value end,
     CheckNameplateSetup = function() setupChecks = setupChecks + 1; return setupAllowed end,
     RefreshAll = function() refreshes = refreshes + 1 end,
-    DisableFriendlyClassColors = function() end,
+    DisableFriendlyClassColors = function() error("unsafe class-color mutation") end,
     ApplyManagedNameSettings = function() end,
     RestoreManagedNameSettings = function() end,
-    RestoreFriendlyClassColors = function() end,
+    RestoreFriendlyClassColors = function() error("unsafe class-color restoration") end,
     RestoreAll = function() end,
     TRP3 = { IsAvailable = function() return false end, Refresh = function() trp3Refreshes = trp3Refreshes + 1 end },
 }

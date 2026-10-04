@@ -317,26 +317,6 @@ ns.ApplyPendingManagedNameSettings()
 equal(cvars.nameplateShowOnlyNameForFriendlyPlayerUnits, "bar-original", "disabled styling restoration retries")
 equal(next(db.global.managedNameCVarOriginals), nil, "deferred restore clears ledger")
 
--- Friendly class-color settings have their own original-value capture and retry.
-ns = fresh()
-local friendly = ns.FRIENDLY_COLOR_CVARS[1]
-cvars[friendly] = "class-original"
-ns.DisableFriendlyClassColors()
-equal(cvars[friendly], "0", "friendly class color disabled")
-rejectedWrites[friendly] = true
-ns.RestoreFriendlyClassColors()
-equal(cvars[friendly], "0", "failed friendly restore retains changed CVar")
-rejectedWrites[friendly] = nil
-ns.ApplyPendingManagedNameSettings()
-equal(cvars[friendly], "class-original", "friendly restore retries")
-ns.DisableFriendlyClassColors()
-inCombat = true
-ns.RestoreFriendlyClassColors()
-equal(cvars[friendly], "0", "friendly combat restore deferred")
-inCombat = false
-ns.ApplyPendingManagedNameSettings()
-equal(cvars[friendly], "class-original", "friendly combat restore applied")
-
 -- Critter hiding remains independent and does not request minion replacements.
 ns = fresh()
 cvars.UnitNameFriendlyPetName = "pet-original"
@@ -411,14 +391,22 @@ local categoryCount = 0
 for _ in pairs(db.global.categoryModes) do categoryCount = categoryCount + 1 end
 equal(categoryCount, 6, "exactly six current categories")
 
--- Friendly class-color control respects possible player combat priorities.
+-- Class-color CVars must remain unchanged across category toggles and retries.
 ns = fresh()
-local friendlyCVar = ns.FRIENDLY_COLOR_CVARS[1]
-cvars[friendlyCVar] = "class-before"
-ns.DisableFriendlyClassColors()
-ns.SetCategoryMode("hostile", "inactive")
-ns.DisableFriendlyClassColors()
-equal(cvars[friendlyCVar], "class-before", "friendly class CVar respects possible hostile duel")
+for _, cvar in ipairs(ns.FRIENDLY_COLOR_CVARS) do cvars[cvar] = "class-before" end
+for _, state in ipairs({"hostile", "attacking", "friendly"}) do
+    for _, mode in ipairs({"inactive", "active", "inactive", "active"}) do
+        ns.SetCategoryMode(state, mode)
+        ns.ApplyManagedNameSettings()
+        ns.ApplyPendingManagedNameSettings()
+    end
+end
+for _, cvar in ipairs(ns.FRIENDLY_COLOR_CVARS) do
+    equal(cvars[cvar], "class-before", "category toggle preserves native class-color CVar")
+end
+equal(#writes, 0, "category toggles never rebuild plates through CVar writes")
+equal(ns.DisableFriendlyClassColors, nil, "unsafe CVar writer removed")
+equal(ns.RestoreFriendlyClassColors, nil, "unsafe CVar restorer removed")
 
 -- All declared addon modules must exist, compile, and load in dependency order.
 local toc = assert(io.open("SimpleNameplates/SimpleNameplates.toc", "r"))

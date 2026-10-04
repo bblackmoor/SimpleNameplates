@@ -104,3 +104,10 @@ PresentationRules selects named rules by context and entity facts and returns on
 
 NameplateRestoration captures original shown states before styling and retries skipped restoration with styling disabled. The runtime retains known removed-unit frames and pending refreshes for temporarily inaccessible plates. These retries assess access first and do not poll world APIs. Nameplate visibility CVars remain restoration-only; combat presentation does not modify them. All six smoke scripts pass locally; actual Midnight permissions and presentation require client verification.
 
+
+
+### Secret-health safety correction (1.0.142)
+
+Friendly class-color CVars are now observed only. Simple Nameplates no longer captures, disables, or restores them: writing them can synchronously call Blizzard's nameplate option rebuild and heal-prediction code from tainted addon execution. Category, reset, and master switches apply presentation directly to accessible frames without class-color CVar writes.
+
+Frame restoration captures native name font, colors, shadows, alignment, anchors, text, and health-bar color before styling, and restores those values without calling `CompactUnitFrame_UpdateAll`, `CompactUnitFrame_UpdateName`, or `CompactUnitFrame_UpdateHealthColor`. Native health values and heal prediction remain Blizzard's responsibility. Failed presentation writes keep originals for retry. Older sections describing friendly class-color CVar ownership record previous behavior and are superseded by this correction.

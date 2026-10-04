@@ -113,7 +113,7 @@ events.scripts.OnEvent(events, "PLAYER_LOGIN")
 equal(calls.settings, 1, "settings registration on login")
 equal(calls.critters, 1, "managed critter settings on login")
 equal(calls.overhead, nil, "removed replacement has no login action")
-equal(calls.classColors, 1, "friendly class colors on login")
+equal(calls.classColors, nil, "login does not change native class colors")
 events.scripts.OnEvent(events, "CVAR_UPDATE", "UnitNameFriendlyPlayerName")
 equal(calls.managed, 1, "managed CVar update reapplied")
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
@@ -159,6 +159,9 @@ local function Region()
     function region:SetVertexColor(r, g, b, a) self.vr, self.vg, self.vb, self.va = r, g, b, a end
     function region:GetVertexColor() return self.vr, self.vg, self.vb, self.va end
     function region:SetStatusBarColor(r, g, b) self.barR, self.barG, self.barB = r, g, b end
+    function region:GetStatusBarColor() return self.barR, self.barG, self.barB end
+    function region:GetNumPoints() return #(self.points or {}) end
+    function region:GetPoint(index) return table.unpack(self.points[index]) end
     function region:ClearAllPoints() self.points = {} end
     function region:SetPoint(...) self.points = self.points or {}; self.points[#self.points + 1] = {...} end
     function region:CreateFontString() return Region() end
@@ -169,6 +172,11 @@ end
 local plateFrame = Region()
 plateFrame.unit, plateFrame.name = "nameplate1", Region()
 plateFrame.healthBar, plateFrame.HealthBarsContainer = Region(), Region()
+plateFrame.name:SetFont("NativeFont", 10, "")
+plateFrame.name:SetText("Native name")
+plateFrame.name:SetTextColor(0.2, 0.4, 0.6)
+plateFrame.name:SetPoint("BOTTOM", plateFrame, "TOP", 0, 4)
+plateFrame.healthBar:SetStatusBarColor(0.3, 0.5, 0.7)
 local plate = { UnitFrame = plateFrame }
 C_NamePlate.GetNamePlateForUnit = function() return plate end
 C_NamePlate.GetNamePlates = function() return { plate } end
@@ -272,40 +280,53 @@ equal(plateFrame.SNPState, nil, "inactive restores category presentation")
 equal(plateFrame.SNPInsideName.shown, false, "inside overlay restored")
 equal(plateFrame.name.alpha, 1, "original name alpha restored")
 equal(plateFrame.healthBar.height, 20, "original bar height restored")
+equal(plateFrame.name.font, "NativeFont", "original native font restored")
+equal(plateFrame.name.text, "Native name", "original native name restored")
+equal(plateFrame.name.g, 0.4, "original native name color restored")
+equal(plateFrame.name.points[1][5], 4, "original native name anchor restored")
+equal(plateFrame.healthBar.barG, 0.5, "original native bar color restored")
 categoryMode = "active"
 appearance.namePlacement = "ABOVE"
 ns.RefreshAll()
 ns.RestoreAll()
 equal(plateFrame.SNPState, nil, "master restoration reachable")
 
--- A failed Blizzard update must not leave an accessible plate permanently
--- excluded from styling. Hooks during restoration must still avoid reentry.
-ns.RefreshAll()
-local failRestore = true
-function CompactUnitFrame_UpdateAll(frame)
-    equal(frame.SNPRestoring, true, "restoration guard covers Blizzard callbacks")
-    hooks[1].callback(frame)
-    hooks[2].callback(frame)
-    if failRestore then error("simulated Blizzard restoration failure") end
+-- Restoration must not invoke native updates that compare secret health.
+local nativeUpdates = 0
+local updateName, updateColor = CompactUnitFrame_UpdateName, CompactUnitFrame_UpdateHealthColor
+local function UnsafeNativeUpdate()
+    nativeUpdates = nativeUpdates + 1
+    error("attempt to compare maxHealth (a secret number value)")
 end
+CompactUnitFrame_UpdateAll = UnsafeNativeUpdate
+CompactUnitFrame_UpdateName, CompactUnitFrame_UpdateHealthColor = UnsafeNativeUpdate, UnsafeNativeUpdate
+for index = 1, 3 do
+    categoryMode = "active"
+    ns.RefreshAll()
+    categoryMode = "inactive"
+    ns.RefreshAll()
+    equal(plateFrame.SNPState, nil, "hostile disable succeeds without native updates")
+    equal(ns.NameplateRestoration.IsPending(plateFrame), false, "secret health cannot queue retries")
+    equal(plateFrame.name.font, "NativeFont", "hostile disable restores native font")
+    equal(plateFrame.healthBar.barG, 0.5, "hostile disable restores native bar color")
+end
+equal(nativeUpdates, 0, "restoration never enters native health update stack")
+CompactUnitFrame_UpdateAll = nil
+CompactUnitFrame_UpdateName, CompactUnitFrame_UpdateHealthColor = updateName, updateColor
+categoryMode = "active"
+
+-- A failed presentation write retains originals and releases the guard.
+ns.RefreshAll()
+local setBarColor = plateFrame.healthBar.SetStatusBarColor
+plateFrame.healthBar.SetStatusBarColor = function() error("simulated presentation restoration failure") end
 ns.RestoreAll()
 equal(plateFrame.SNPRestoring, nil, "failed restoration releases guard")
 assert(ns.NameplateRestoration.IsPending(plateFrame), "failed restoration retained for retry")
-assert(plateFrame.SNPRestoreError:find("simulated Blizzard restoration failure", 1, true),
-    "restoration failure retained for diagnostics")
-ns.RefreshAll()
-equal(plateFrame.SNPRestoring, nil, "repeated failure still releases guard")
-assert(ns.NameplateRestoration.IsPending(plateFrame), "repeated failure remains queued")
-plateFrame.unit = "nameplate2"
-failRestore = false
+assert(plateFrame.SNPOriginalPresentation, "failed restoration retains native presentation")
+plateFrame.healthBar.SetStatusBarColor = setBarColor
 events.scripts.OnUpdate(events, 0.5)
-equal(plateFrame.SNPRestoring, nil, "successful retry releases guard")
-equal(plateFrame.SNPRestoreError, nil, "successful retry clears failure")
 equal(ns.NameplateRestoration.IsPending(plateFrame), false, "successful retry removes pending work")
 equal(plateFrame.SNPState, "hostile", "successful retry reapplies hostile presentation")
-assert(plateFrame.SNPNameStyle, "successful retry restores addon text")
-equal(plateFrame.SNPOriginalUnit, "nameplate2", "retry styles current recycled-frame owner")
-CompactUnitFrame_UpdateAll = nil
 ns.RestoreAll()
 plateFrame.unit = "nameplate1"
 C_NamePlate.GetNamePlateForUnit = function() return nil end

@@ -102,11 +102,9 @@ local function HandlePlayerLogin()
     if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
     if ns.TRP3 and ns.TRP3.RegisterCallbacks then ns.TRP3.RegisterCallbacks() end
     if GetStylingEnabled() then
-        ns.DisableFriendlyClassColors()
-        -- Blizzard or another addon can restore CVars shortly after login.
+        -- Refresh once more after Blizzard finishes login setup.
         C_Timer.After(1, function()
             if GetStylingEnabled() then
-                ns.DisableFriendlyClassColors()
                 RefreshAll()
             end
         end)
@@ -133,7 +131,6 @@ local function HandleCVarUpdate(cvarName)
     if not GetStylingEnabled() then return end
     for _, cvar in ipairs(ns.FRIENDLY_COLOR_CVARS) do
         if cvarName == cvar then
-            ns.DisableFriendlyClassColors()
             QueueRefreshAll()
             return
         end

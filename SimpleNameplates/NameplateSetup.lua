@@ -73,14 +73,12 @@ end
 local function Resume()
     deferredAction, ns.nameplateSetupPending = nil, false
     ns.ApplyManagedNameSettings()
-    ns.DisableFriendlyClassColors()
     if ns.RefreshAll then ns.RefreshAll() end
 end
 
 local function Disable()
     ns.SetStylingEnabled(false)
     ns.RestoreManagedNameSettings()
-    ns.RestoreFriendlyClassColors()
     if ns.RestoreAll then ns.RestoreAll() end
     print("Simple Nameplates styling is disabled. Enable it again using Active in /snp profiles.")
 end
@@ -158,7 +156,6 @@ Check = function()
     ns.nameplateSetupPending = true
     if InCombat() then deferredAction = "check"; return false end
     ns.RestoreManagedNameSettings()
-    ns.RestoreFriendlyClassColors()
     local issues = Issues()
     if #issues == 0 then
         ns.nameplateSetupPending = false
