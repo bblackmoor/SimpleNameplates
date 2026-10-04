@@ -12,8 +12,8 @@ local function ApplyVisibility(frame, decision, assessment, context)
     SetShownSafe(assessment.healthBar, decision.showHealthBar, context)
     -- Keep the ancestor visible so name-only text is not concealed with the bar.
     SetShownSafe(frame.HealthBarsContainer, true, context)
-    SetShownSafe(assessment.castBar, decision.showCastBar, context)
-    SetShownSafe(frame.CastBar, decision.showCastBar, context)
+    -- Blizzard shows casts/channels and hides idle cast bars. Do not force an
+    -- idle bar visible: the space below health belongs to the long title.
     for _, key in ipairs({"castBarAnchor", "classificationIndicator", "ClassificationFrame", "selectionHighlight"}) do
         SetShownSafe(frame[key], decision.showCombatIndicators, context)
     end

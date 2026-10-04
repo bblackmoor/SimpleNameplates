@@ -280,7 +280,7 @@ categories[3].panel.scripts.OnShow(categories[3].panel)
 equal(sanctuaryFont:GetChecked(), true, "profile refresh synchronizes font switch")
 
 -- Keeping title controls together retains the global value and master gate.
-local fullTitle = assert(switchFor("Show TRP3 long title beneath the name"))
+local fullTitle = assert(switchFor("Show TRP3 long title beneath the health bar"))
 equal(fullTitle:GetChecked(), true, "existing full-title value retained")
 equal(fullTitle:IsEnabled(), false, "title disabled with TRP3 integration off")
 local trp3Master = assert(switchFor("Display TRP3 profile information"))

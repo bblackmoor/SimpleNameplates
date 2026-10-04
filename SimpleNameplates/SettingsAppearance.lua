@@ -93,7 +93,7 @@ local function AddControls(context)
         "Also sets threat-text size. Titles use 80%; inside-bar text has four units above and three below.")
     U.AddSection(content, layout, "Health bars")
     U.AddDescription(content, layout,
-        "Out of combat, only Attacking, Hostile and Neutral use bars. In combat, all Active categories use available bars.")
+        "All Active categories use available health bars. Priority controls color; combat does not change the layout.")
     AddSize(context, "healthBarWidth", "Health bar width", ns.MIN_HEALTH_BAR_WIDTH, ns.MAX_HEALTH_BAR_WIDTH, 5, "%")
     AddPlacement(context)
     AddFont(context, "Threat-percentage font", "threatFont")

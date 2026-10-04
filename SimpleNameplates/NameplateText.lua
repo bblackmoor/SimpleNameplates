@@ -9,6 +9,7 @@ local PriorityColorForState, FontPath = ns.PriorityColorForState, ns.FontPath
 local GetAppearanceSetting, GetTRP3Setting = ns.GetAppearanceSetting, ns.GetTRP3Setting
 local GetThreatEnabled = ns.GetThreatEnabled
 local GetHealthBar = ns.NameplateFrames.GetHealthBar
+local GetCastBar = ns.NameplateFrames.GetCastBar
 
 local function NameFontPath(context)
     if context.sanctuary == true and GetAppearanceSetting("matchSanctuaryFont") == true then
@@ -72,13 +73,40 @@ local function EnsureFullTitleText(frame)
     return fullTitle
 end
 
+local function SyncFullTitleVisibility(frame, context)
+    context = context or GetContext()
+    if not CanAccessFrame(frame, context) or frame.SNPRestoring then return end
+    frame.SNPTitleVisibilityPending = nil
+    local title, decision = frame.SNPFullTitleText, frame.SNPPresentation
+    if not title then return end
+    if not ns.GetStylingEnabled() or not frame.SNPFullTitleAvailable
+        or not decision or not decision.showFullTitle or decision.suppressText then
+        title:Hide(); return
+    end
+    local cast = GetCastBar(frame, context)
+    local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(cast, "IsShown", context))
+    if cast and shown == nil then frame.SNPTitleVisibilityPending = true end
+    -- Unknown cast visibility must not put title text over a possible cast.
+    if cast and shown ~= false then title:Hide() else title:Show() end
+end
+
+local function InstallTitleCastHooks(frame, cast)
+    if not cast or type(cast.HookScript) ~= "function" or cast.SNPTitleHookOwner == frame then return end
+    local function Refresh()
+        frame.SNPTitleVisibilityPending = true
+        local context = GetContext()
+        if GetCastBar(frame, context) == cast then SyncFullTitleVisibility(frame, context) end
+    end
+    cast:HookScript("OnShow", Refresh)
+    cast:HookScript("OnHide", Refresh)
+    cast.SNPTitleHookOwner = frame
+end
+
 local function StyleFullTitle(frame, state, text, baseNameSize, decision, context)
     local fullTitle = frame.SNPFullTitleText
-    -- Long titles are useful on name-only plates, but add too much visual
-    -- noise to units whose health bars are visible.
     local bar = GetHealthBar(frame, context)
-    local barShown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(bar, "IsShown", context))
-    if not text or not decision.showFullTitle or (bar and barShown ~= false) then
+    frame.SNPFullTitleAvailable = text ~= nil and decision.showFullTitle == true
+    if not frame.SNPFullTitleAvailable then
         if fullTitle then fullTitle:SetText(""); fullTitle:Hide() end
         return
     end
@@ -90,10 +118,11 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
     fullTitle:SetShadowColor(0, 0, 0, 0)
     fullTitle:SetShadowOffset(0, 0)
     fullTitle:ClearAllPoints()
-    fullTitle:SetPoint("TOP", frame.name, "BOTTOM", 0, -1)
+    fullTitle:SetPoint("TOP", bar or frame.name, "BOTTOM", 0, -1)
     fullTitle:SetJustifyH("CENTER")
     fullTitle:SetTextColor(PriorityColorForState(decision.colorState or state))
-    fullTitle:Show()
+    InstallTitleCastHooks(frame, GetCastBar(frame, context))
+    SyncFullTitleVisibility(frame, context)
 end
 
 local function RestoreOriginalBarHeight(frame, bar, context)
@@ -409,6 +438,7 @@ end
 
 
 ns.NameplateText = {
+    SyncFullTitleVisibility = SyncFullTitleVisibility,
     StyleName = StyleName,
     RestoreOriginalBarHeight = RestoreOriginalBarHeight,
     ApplyConfiguredBarHeight = ApplyConfiguredBarHeight,

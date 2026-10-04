@@ -6,7 +6,7 @@ local requirements = {
     { "nameplateShowEnemies", "1", "Enemy Unit Nameplate", "Makes enemy plates available." },
     { "nameplateShowFriendlyPlayers", "1", "Friendly Player Nameplates", "Makes friendly player plates available." },
     { "nameplateShowFriendlyNpcs", "1", "Friendly NPC Nameplates", "Makes ordinary NPC names and service titles available." },
-    { "nameplateShowOnlyNameForFriendlyPlayerUnits", "0", "Only Show Names", "Lets Simple Nameplates show friendly health bars in combat." },
+    { "nameplateShowOnlyNameForFriendlyPlayerUnits", "0", "Only Show Names", "Lets Simple Nameplates show friendly health bars." },
 }
 ns.NAMEPLATE_SETUP_CVARS = {}
 for _, requirement in ipairs(requirements) do

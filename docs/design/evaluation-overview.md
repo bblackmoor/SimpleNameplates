@@ -1,6 +1,6 @@
 # Onscreen entity evaluation
 
-Updated 2026-10-02. This document describes the actual runtime order. It does not propose a different tree or change classification behavior.
+Updated 2026-10-04 for 1.0.162. This document describes the actual runtime order. It does not propose a different tree or change classification behavior.
 
 ## Runtime entry and frame checks
 
@@ -54,9 +54,9 @@ Faction, sanctuary, PvP flags, and desired War Mode are separate observations. A
 
 ## Context and presentation
 
-Classification answers what the entity is doing. Context chooses colors and bar policy. Frame access determines whether anything can actually be changed.
+Classification answers what the entity is doing. Priority determines color; all ordinary Active plates use a uniform bar policy. Frame access determines whether anything can actually be changed.
 
-`PresentationRules.Resolve` selects the context rule and requested color, then uses this order:
+`PresentationRules.Resolve` retains the priority color and uses this order:
 
 ```mermaid
 flowchart TD
@@ -66,15 +66,13 @@ flowchart TD
     B -->|No| R["Restore Blizzard presentation"]
     B -->|Yes| W{"Widget-only plate?"}
     W -->|Yes| S["Suppress actor text; preserve widgets"]
-    W -->|No| C{"Player combat state readable?"}
-    C -->|No| R
-    C -->|Yes| P["Choose supported bars or name/title presentation"]
+    W -->|No| P["Show available health bar; keep native cast lifecycle"]
 ```
 
 | Context | Color after classification |
 | --- | --- |
 | Any danger category | Its danger color, including in sanctuary |
-| Sanctuary, same-faction Friendly PC | Sky blue by default |
+| Sanctuary, same-faction Friendly PC | Shared Friendly color; green by default |
 | Useful category, any context | Shared Useful color; light grey by default |
 | Useless category, any context | Shared Useless color; medium grey by default |
 | Sanctuary, opposite-faction PC | Existing category color if an accessible plate exists; native overhead label otherwise |
@@ -82,6 +80,6 @@ flowchart TD
 
 After the presentation decision, `NameplateText` chooses the effective name/title font. In sanctuary with the profile's `matchSanctuaryFont` enabled, it reads the localized `SystemFont_World` face (Friz Quadrata fallback); otherwise it uses the selected profile Name font. The same face reaches floating names, inside-bar names, and NPC/TRP3 titles. Only the face changes. Cached style repair checks that the effective face still matches before reusing a cached decision.
 
-For ordinary Active plates, when the viewer is in combat, show supported health and cast bars for every category. Out of combat, show them for danger categories; Friendly/Useful/Useless use a name and available title. Visible health bars hide full titles and make names white; unsupported bars cannot be invented. Category color applies to the bar or floating name as appropriate. NPC service subtitles and optional TRP3 titles use their own verified data sources.
+For ordinary Active plates, show available health bars in every category and combat state. Color the bar by priority and keep its name white; a missing health bar uses a colored floating name. NPC service subtitles and optional TRP3 long titles sit below the health bar, or below the name when no bar exists. An active native cast/channel hides that title; native cast OnShow/OnHide hooks update visibility immediately, and unreadable transitions retry during reconciliation. Inactive/disabled styling restores native presentation. No health values are fabricated.
 
 Startup setting compatibility is checked before enabling styling; it is a prerequisite, not another entity category. The [known presentation limits in the README](../../README.md#known-presentation-limits) and in-game About notes record entity types and world contexts where classification succeeds but no matching accessible frame is supplied. Individual character names are irrelevant to these limits. Missing frames must never be reported as a solved settings problem.

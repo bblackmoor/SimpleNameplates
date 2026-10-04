@@ -135,8 +135,8 @@ assert(not ns.GetStylingEnabled() and not styling.MyObject:GetValue(), "consent 
 -- TRP3 keeps preferences while disabled and ignores disabled callbacks.
 ns.SetTRP3Enabled(false); Show(panels[2])
 local master=Control("Display TRP3 profile information", "switch")
-local dependent=Control("Show TRP3 long title beneath the name", "switch")
-local _, label=Row("Show TRP3 long title beneath the name")
+local dependent=Control("Show TRP3 long title beneath the health bar", "switch")
+local _, label=Row("Show TRP3 long title beneath the health bar")
 local saved=ns.GetTRP3Setting("showFullTitle")
 Click(dependent)
 assert(ns.GetTRP3Setting("showFullTitle")==saved and not dependent:IsEnabled() and label.textColor[1]==0.5)

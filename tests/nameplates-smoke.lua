@@ -141,8 +141,18 @@ end
 -- Exercise presentation across modules, not just event registration.
 local function Region()
     local region = { shown = true, alpha = 1, height = 20, width = 140 }
-    function region:Show() self.shown = true end
-    function region:Hide() self.shown = false end
+    function region:HookScript(event, callback)
+        self.scriptHooks = self.scriptHooks or {}
+        self.scriptHooks[event] = self.scriptHooks[event] or {}
+        table.insert(self.scriptHooks[event], callback)
+    end
+    function region:SetShown(shown)
+        if self.shown == shown then return end
+        self.shown = shown
+        for _, callback in ipairs(self.scriptHooks and self.scriptHooks[shown and "OnShow" or "OnHide"] or {}) do callback(self) end
+    end
+    function region:Show() self:SetShown(true) end
+    function region:Hide() self:SetShown(false) end
     function region:IsShown() return self.shown end
     function region:IsVisible() return self.shown end
     function region:SetAlpha(value) self.alpha = value end
@@ -213,11 +223,11 @@ ns.RefreshAll()
 
 unit = { player = true, faction = "Alliance", reaction = 5 }
 ns.RefreshAll()
-equal(plateFrame.healthBar.shown, false, "friendly name-only presentation")
-equal(plateFrame.name.g, 0, "priority applied to floating name")
+equal(plateFrame.healthBar.shown, true, "friendly uniform bar presentation")
+equal(plateFrame.name.g, 1, "uniform bar name stays white")
 plateFrame.name:SetTextColor(0, 1, 1)
 events.scripts.OnUpdate(events, 0.25)
-equal(plateFrame.name.g, 0, "cached drift repaired across module boundary")
+equal(plateFrame.name.g, 1, "cached drift repaired across module boundary")
 
 ns.TRP3 = { GetDisplayInfo = function()
     return { roleplayingName = "Roleplay Name", fullTitle = "Long Title" }
@@ -234,7 +244,7 @@ events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
 events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.SNPState, "friendly", "combat does not change category")
 equal(plateFrame.healthBar.shown, true, "friendly combat bar")
-equal(plateFrame.SNPFullTitleText.shown, false, "friendly combat hides long title")
+equal(plateFrame.SNPFullTitleText.shown, true, "idle friendly combat retains long title")
 equal(plateFrame.SNPInsideName.shown, true, "friendly combat inside name")
 equal(plateFrame.healthBar.height, 20, "friendly combat padding")
 equal(plateFrame.name.g, 1, "bright bar inside name stays white")
@@ -255,16 +265,16 @@ equal(plateFrame.healthBar.shown, true, "stale drift cannot undo combat bar")
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
 -- A Blizzard name hook must apply the whole new decision before the queued refresh.
 hooks[2].callback(plateFrame)
-equal(plateFrame.healthBar.shown, false, "name hook applies combat exit")
+equal(plateFrame.healthBar.shown, true, "name hook preserves bar on combat exit")
 equal(plateFrame.SNPFullTitleText.shown, true, "combat exit restores title")
-equal(plateFrame.SNPInsideName.shown, false, "combat exit removes inside name")
-equal(plateFrame.name.alpha, 1, "combat exit restores floating name")
+equal(plateFrame.SNPInsideName.shown, true, "combat exit retains inside name")
+equal(plateFrame.name.alpha, 0, "combat exit retains concealed native name")
 equal(plateFrame.healthBar.height, 20, "combat exit restores height")
 
 unit = { reaction = 3 }
 appearance.namePlacement = "INSIDE"
 ns.RefreshAll()
-equal(plateFrame.SNPFullTitleText.shown, false, "bar suppresses long title")
+equal(plateFrame.SNPFullTitleText.shown, true, "idle health bar permits long title")
 equal(plateFrame.SNPInsideName.text, "Roleplay Name", "inside name retained")
 equal(plateFrame.name.alpha, 0, "original inside name concealed")
 equal(plateFrame.healthBar.height, 20, "inside padding retained")
@@ -370,6 +380,7 @@ C_NamePlate.GetNamePlateForUnit = function() return plate end
 C_NamePlate.GetNamePlates = function() return {plate} end
 unit = { player = true, faction = "Alliance", reaction = 5 }
 plateFrame.castBar = Region()
+plateFrame.castBar:Hide()
 plateFrame.castBar.Icon = Region()
 local castOverlay = Region()
 function castOverlay:SetShown(shown) self.shown = shown end
@@ -377,8 +388,26 @@ plateFrame.SNPInterruptibleHighlight = {
     owner = plateFrame, castBar = plateFrame.castBar, frame = castOverlay, border = {},
 }
 highlightEnabled = true
+plateFrame.castBar:Hide()
+ns.RefreshAll() -- Capture the native idle cast bar before simulating a cast.
+plateFrame.castBar:Show()
 ns.RefreshAll()
-equal(castOverlay.shown, false, "name-only cast effect hidden")
+equal(castOverlay.shown, true, "uniform friendly cast effect permitted")
+equal(plateFrame.SNPFullTitleText.shown, false, "active cast replaces title")
+plateFrame.castBar:Hide()
+equal(plateFrame.SNPFullTitleText.shown, true, "cast end restores title without a styling pass")
+equal(plateFrame.SNPFullTitleText.points[1][2], plateFrame.healthBar, "title anchors below health bar")
+ns.RefreshAll()
+equal(plateFrame.castBar.shown, false, "styling does not show idle cast bar")
+plateFrame.castBar:Show()
+equal(plateFrame.SNPFullTitleText.shown, false, "channel/cast start immediately hides title")
+plateFrame.IsForbidden = function() return true end
+plateFrame.castBar:Hide()
+equal(plateFrame.SNPTitleVisibilityPending, true, "blocked transition queues title visibility")
+plateFrame.IsForbidden = nil
+events.scripts.OnUpdate(events, 0.25)
+equal(plateFrame.SNPFullTitleText.shown, true, "blocked cast end retries when accessible")
+plateFrame.castBar:Show()
 events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
 events.scripts.OnUpdate(events, 0.25)
 equal(castOverlay.shown, true, "combat cast effect follows Blizzard icon")
@@ -386,14 +415,41 @@ local iconHook = hooks[#hooks].callback
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
 events.scripts.OnUpdate(events, 0.25)
 iconHook(plateFrame.castBar.Icon, true)
-equal(castOverlay.shown, false, "icon hook cannot revive name-only effect")
+equal(castOverlay.shown, true, "uniform icon hook remains available after combat")
 highlightEnabled = false
--- If a bar remains shown despite a requested hide, titles must remain hidden.
+-- An idle cast bar permits a title even when the health bar is visible.
+plateFrame.castBar:Hide()
 local hideBar = plateFrame.healthBar.Hide
 plateFrame.healthBar.Hide = function() end
 plateFrame.healthBar.shown = true
 ns.RefreshAll()
-equal(plateFrame.SNPFullTitleText.shown, false, "observed bar suppresses title")
+equal(plateFrame.SNPFullTitleText.shown, true, "observed health bar permits idle title")
+local currentCast = plateFrame.castBar
+local titleHooks = #currentCast.scriptHooks.OnShow
+local readShown = currentCast.IsShown
+currentCast.IsShown = function() error("cast visibility unavailable") end
+ns.RefreshAll()
+equal(plateFrame.SNPFullTitleText.shown, false, "unreadable cast visibility hides title")
+equal(plateFrame.SNPTitleVisibilityPending, true, "unreadable cast visibility queues retry")
+currentCast.IsShown = readShown
+events.scripts.OnUpdate(events, 0.25)
+equal(plateFrame.SNPFullTitleText.shown, true, "readable idle state restores title")
+plateFrame.castBar = Region(); plateFrame.castBar:Hide(); ns.RefreshAll()
+plateFrame.castBar:Show()
+currentCast:Show(); currentCast:Hide()
+equal(plateFrame.SNPFullTitleText.shown, false, "retired cast cannot show title over replacement cast")
+plateFrame.castBar:Hide()
+equal(plateFrame.SNPFullTitleText.shown, true, "replacement cast end restores title")
+plateFrame.castBar = currentCast; ns.RefreshAll()
+equal(#currentCast.scriptHooks.OnShow, titleHooks, "returning cast bar reuses title hook")
+trp3Options.showFullTitle = false; ns.RefreshAll()
+currentCast:Show(); currentCast:Hide()
+equal(plateFrame.SNPFullTitleText.shown, false, "cast end cannot revive disabled TRP3 title")
+trp3Options.showFullTitle = true; ns.RefreshAll()
+stylingEnabled = false; ns.RestoreAll()
+currentCast:Show(); currentCast:Hide()
+equal(plateFrame.SNPFullTitleText.shown, false, "cast end cannot revive restored title")
+stylingEnabled = true; ns.RefreshAll()
 plateFrame.healthBar.Hide = hideBar
 ns.RefreshAll()
 
@@ -550,6 +606,7 @@ assert(table.concat(output, "\n"):find("targeting your controlled unit: yes", 1,
 -- Diagnostics may read an accessible cast bar but must not create an overlay or hook.
 local frameCount, hookCount = #frames, #hooks
 plateFrame.castBar = Region()
+plateFrame.castBar:Hide()
 C_NamePlate.GetNamePlateForUnit = function() return plate end
 plateFrame.SNPInterruptibleHighlight = nil
 ns.DebugUnit("nameplate1")
@@ -720,11 +777,11 @@ for _, case in ipairs({
     unit = case.data
     ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
     ns.RefreshAll()
-    equal(plateFrame.name.g, case.green, "sanctuary floating name")
+    equal(plateFrame.name.g, 1, "sanctuary uniform bar name")
     equal(plateFrame.SNPFullTitleText.g, case.green, "sanctuary title")
     plateFrame.name:SetTextColor(0, 0, 0)
     hooks[2].callback(plateFrame)
-    equal(plateFrame.name.g, case.green, "sanctuary name repair")
+    equal(plateFrame.name.g, 1, "sanctuary uniform name repair")
     ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
     ns.RefreshAll()
     equal(plateFrame.healthBar.barG, case.green, "sanctuary combat bar")
@@ -760,7 +817,7 @@ C_PvP = {GetZonePVPInfo = function() return "friendly", false end}
 ns.WorldContext.Refresh("ZONE_CHANGED_NEW_AREA")
 ns.RefreshAll()
 equal(plateFrame.name.font, "Fonts\\ARIALN.TTF", "leaving sanctuary restores selected font")
-equal(plateFrame.SNPInsideName.shown, false, "leaving sanctuary out of combat hides inside name")
+equal(plateFrame.SNPInsideName.shown, true, "leaving sanctuary retains uniform inside name")
 ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
 ns.RefreshAll()
 equal(plateFrame.SNPInsideName.font, "Fonts\\ARIALN.TTF", "outside sanctuary combat restores inside font")
@@ -775,7 +832,8 @@ equal(plateFrame.name.font, "Fonts\\FRIZQT__.TTF", "unavailable world font falls
 SystemFont_World = nil
 appearance.matchSanctuaryFont = false
 
--- NPC service titles appear without TRP3 and follow name-only/bar visibility.
+-- NPC service titles appear below health without TRP3 while no cast is active.
+plateFrame.castBar:Hide()
 Enum = {TooltipDataLineType = {None = 0, UnitName = 2, UnitLevel = 47}}
 C_TooltipInfo = {GetUnit = function()
     return {lines = {{type = 2, leftText = "Orin Straylight"},
@@ -797,7 +855,7 @@ appearance.matchSanctuaryFont = false
 SystemFont_World = nil
 ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
 ns.RefreshAll()
-equal(plateFrame.SNPFullTitleText.shown, false, "NPC title hidden with health bar")
+equal(plateFrame.SNPFullTitleText.shown, true, "NPC title remains below health bar in combat")
 ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.shown, true, "NPC title restored after combat")
@@ -828,7 +886,7 @@ end}
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "sparse plate resolves target subtitle")
 equal(plateFrame.SNPFullTitleText.shown, true, "resolved service title visible")
-equal(plateFrame.name.g, 211 / 255, "verified useful NPC name light grey")
+equal(plateFrame.name.g, 1, "verified useful NPC bar name white")
 equal(plateFrame.SNPFullTitleText.g, 211 / 255, "verified useful NPC title light grey")
 currentGUID = "Creature-Orin-Plate"
 ns.RefreshAll()
@@ -841,7 +899,7 @@ currentGUID = "Creature-Other"
 unit.names = {nameplate1 = "Different NPC"}
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.shown, false, "token reuse clears service title")
-equal(plateFrame.name.g, 153 / 255, "token reuse clears useful evidence")
+equal(plateFrame.name.g, 1, "token reuse retains white bar name")
 
 -- Hyperlink titles preserve the useful coloring from the fuller target.
 unit.names = {nameplate1 = "Orin Straylight", target = "Orin Straylight"}
@@ -852,7 +910,7 @@ C_TooltipInfo.GetHyperlink = function() return {lines = {
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "hyperlink title displayed")
 equal(plateFrame.SNPEntityFacts.npcTitleSource, "GUID hyperlink tooltip", "hyperlink presentation source")
-equal(plateFrame.name.g, 211 / 255, "hyperlink retains useful name color")
+equal(plateFrame.name.g, 1, "hyperlink retains white bar name")
 equal(plateFrame.SNPFullTitleText.g, 211 / 255, "hyperlink retains useful title color")
 local oldIsUnit, oldWidgetsOnly, oldCVar = UnitIsUnit, UnitNameplateShowsWidgetsOnly, C_CVar
 UnitIsUnit = function(token, other) return token == "nameplate1" and other == "softinteract" end
@@ -906,7 +964,7 @@ equal(widgetFrame.HealthBarsContainer.shown, true, "widget bar ancestor untouche
 equal(plateFrame.name.alpha, 1, "ordinary actor name remains visible")
 equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "ordinary plate retains service title")
 equal(plateFrame.SNPFullTitleText.shown, true, "ordinary service title visible")
-equal(plateFrame.name.g, 211 / 255, "ordinary useful sanctuary color retained")
+equal(plateFrame.name.g, 1, "ordinary uniform bar name remains white")
 widgetFrame.name:SetAlpha(1)
 widgetFrame.SNPFullTitleText:Show()
 events.scripts.OnUpdate(events, 0.25)

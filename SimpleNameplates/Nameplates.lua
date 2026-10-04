@@ -230,6 +230,9 @@ events:SetScript("OnUpdate", function(_, elapsed)
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
         local frame = GetFrameFromPlate(plate, context)
+        if frame and frame.SNPTitleVisibilityPending then
+            ns.NameplateText.SyncFullTitleVisibility(frame, context)
+        end
         if frame and frame.SNPState and CachedNameHasDrifted(frame, context) then
             if not RepairCachedName(frame, context) then ApplySimpleStyle(frame, context) end
         end

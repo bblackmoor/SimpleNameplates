@@ -101,6 +101,7 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
         frame.SNPThreatText:Hide()
     end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
+    frame.SNPFullTitleAvailable = nil
     Text.RestoreNameDisplay(frame, context)
     if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
     Text.RestoreOriginalBarHeight(frame, assessment.healthBar, context)
@@ -115,6 +116,7 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     RestoreNativePresentation(frame, assessment, context, removedUnit)
     frame.SNPNameStyle, frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = nil, nil, nil, nil
     frame.SNPOriginalVisibility, frame.SNPOriginalUnit, frame.SNPOriginalPresentation = nil, nil, nil
+    frame.SNPTitleVisibilityPending = nil
 end
 
 local function Request(frame, context, removedUnit)

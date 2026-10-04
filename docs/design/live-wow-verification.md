@@ -1,7 +1,7 @@
 # Live WoW integration verification
 
 Status: pending. Details Framework phases 1–6 repository work and follow-up fixes
-are complete through 1.0.161, with all 17 local smoke suites passing. These checks
+are complete through 1.0.162, with all 17 local smoke suites passing. These checks
 require a World of Warcraft client; local Lua stubs do not establish actual frame
 behavior, secure CVar behavior, or Midnight secret-value safety. Record the client
 build, addon version, date, and observed result when running them. Leave a check
@@ -67,13 +67,19 @@ open until it is observed in game.
 - [ ] Compare Slug off/on with built-in and SharedMedia fonts at several UI scales. Check floating, above-bar and inside-bar names, titles, threat, native health text and cast labels; confirm smoothness, thin outlines, both black underlayers and unchanged padding.
 - [ ] Switch/copy profiles, reload, reset Appearance and disable styling. Verify the toggle follows profiles, old caches do not undo the chosen rendering, and native font flags restore without taint or secret-value errors.
 
+## Uniform presentation and cast/title transitions (1.0.162)
+
+- [ ] Verify available health bars in every Active priority category, both combat states and sanctuary/non-sanctuary areas. Keep Inactive categories native, widget-only actor text suppressed, and missing-bar names colored. Check bar widths, inside/above placement, Slug and threat text.
+- [ ] With TRP3 enabled/absent, verify long titles and NPC service subtitles below health bars; missing-bar titles stay below the name. Observe cast and channel start/end/interruption: the native cast bar replaces the title and the title returns afterward. Verify no idle cast bar is forced visible.
+- [ ] Repeat with plate/bar reuse, temporary forbidden/restricted access, unknown cast visibility, title toggles and disabling styling. Confirm no stale title revival, duplicate cast bars, lost shields, or taint/secret-value errors.
+
 ## Nameplate presentation and integration
 
 - [ ] After 1.0.160, repeat cast-effect checks through plate/bar/icon reuse and temporary access loss. Confirm old icons do not restart or stop the current effect, and floating, above-bar and inside-bar name placement survives cached repair.
 - [ ] Switch Profiles while plates are visible; confirm fonts, sizes, colors, threat percentage, and visual effects refresh immediately. Verify name-only plates and Blizzard-controlled overhead names reflect the documented limits.
 - [ ] Move names inside and above health bars. Inside-bar font sizing and bar-height padding are correct; switching back and disabling styling restore Blizzard's original bar height.
 - [ ] Observe interruptible and non-interruptible casts and channels. Test None, Moving dashes, Autocast Shine, Action Button Glow, and Proc Glow; effects appear only when Blizzard reports interruptibility. The existing shield and cast information remain intact.
-- [ ] With TRP3 installed and absent, exercise cached RP names, short/full titles, OOC marker, unavailable-field fallback, and name-length limits. Full titles disappear for visible health bars as documented.
+- [ ] With TRP3 installed and absent, exercise cached RP names, short/full titles, OOC marker, unavailable-field fallback, and name-length limits. Full titles appear below health bars and disappear during active casts/channels.
 - [ ] Target and update plates during combat and after reload/logout. Confirm frame repair, name visibility, and diagnostic output without restricted-value inspection or Lua errors.
 
 The repository smoke scripts cover saved-data validation, settings callbacks, classification, and event/hook registration. Record client observations here; do not close these items from stub results alone.
@@ -89,12 +95,12 @@ Test Silvermoon Shared and Silvermoon Horde separately, including transitions be
 - [ ] After phase 3, compare eligible PvP, sanctuary, non-PvP, and same-faction duel cases. PvP flags alone must not promote a player; faction identity remains in diagnostics when a combat priority wins. Confirm targeting a friendly unit does not make it Attacking.
 - [ ] Verify category/profile changes do not apply replacement settings. Check defaults, presets, obsolete-field discard, and diagnostics reporting Blizzard presentation for Inactive/disabled styling. Confirm the separate critter control remains functional after original values from removed replacement use are restored.
 - [ ] After phases 2–4, check context changes and the same entity's presentation across boundaries, including accessible and restricted frames.
-- [ ] After phase 4, in combat show health bars for all Active entities where supported; out of combat show bars only for Neutral, Hostile, and Attacking. Inactive categories keep Blizzard presentation. Refresh when entering/leaving combat; suppress TRP3 long titles whenever a health bar is displayed.
+- [ ] After phase 4, in combat show health bars for all Active entities where supported; out of combat also show available bars for every Active category. Inactive categories keep Blizzard presentation. Refresh when entering/leaving combat; place long titles below health bars, hiding them during casts/channels.
 
 ## Runtime phase 4 (1.0.106)
 
-- [ ] Verify every Active category gains a supported bar during player combat, including same/opposite-faction players, interactive NPCs, unmatched NPCs, and minions. On combat exit, only Attacking/Hostile/Neutral retain supported bars. Inactive categories retain Blizzard presentation and missing-bar entities keep colored names.
+- [ ] Verify every Active category gains a supported bar during player combat, including same/opposite-faction players, interactive NPCs, unmatched NPCs, and minions. On combat exit, every Active category retains its supported health bar. Inactive categories retain Blizzard presentation and missing-bar entities keep colored names.
 - [ ] Verify above/inside layout, full selected name size, four-unit top/three-unit bottom bar padding, white inside-bar text with two black underlayers, white above-bar names, category colors, threat text, and cast effects through repeated combat entry/exit and Blizzard name/health repair hooks. Old cached text must not undo a transition.
-- [ ] Verify long titles disappear for requested or observed bars and return for name-only presentation, including friendly combat bars and missing-bar cases. Diagnose unavailable shown state explicitly.
+- [ ] Verify long titles appear below health bars and disappear during active casts/channels, including friendly combat bars and missing-bar cases. Diagnose unavailable shown state explicitly.
 - [ ] Disable styling during lockdown on a previously styled frame; after combat, confirm original visibility and bar/container heights return while styling stays disabled. Repeat with temporarily forbidden base plates and Inactive categories becoming accessible without a context event.
 - [ ] Remove/recycle plates while restricted and verify deferred cleanup does not clear another entity's name or leave stale overlays. Confirm scoped sanctuary/PvP rule identifiers in diagnostics, with no nameplate-visibility CVar writes.

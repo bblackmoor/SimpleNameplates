@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.162
+
+* Simplifies ordinary Active plates to one presentation policy: show every available health bar, independent of category, world context or combat state, colored by priority. Keeps missing-bar floating names, Inactive/disabled native presentation and widget-only exceptions. Uses existing Blizzard bars without a new dependency or fabricated health values.
+* Places NPC service subtitles and enabled TRP3 long titles below the health bar, falling back below the name when no bar exists. Native cast/channel visibility replaces the title; cast end restores it immediately. Does not force idle cast bars visible. Deferred visibility reads retry, and stale/replaced cast bars cannot revive a title.
+* Updates settings, runtime evaluation and installation documentation, plus uniform-policy and lifecycle regressions. All seventeen smoke suites and whitespace checks pass. Native-client rendering, cast transitions and security checks remain pending.
+
 ## 1.0.161
 
 * Adds a per-profile Use smoother font rendering (Slug) switch near Appearance's font choices, off by default. Applies Slug to accessible names, titles, native health labels, threat text and cast labels; uses thin outlines outside health bars and preserves both black underlayers and padding inside.
