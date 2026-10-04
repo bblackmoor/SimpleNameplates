@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.150
+
+* Completes phase 1 of the Details Framework settings conversion: records the source-verified UI baseline, setting ownership/defaults, exact reset/profile semantics, verified upstream widget APIs and dependencies, and later implementation/verification checkpoints. No widgets or runtime behavior change.
+* Marks older architecture prose as historical and corrects obsolete Pulse/toggle references in README and the live-verification checklist. All thirteen existing smoke suites pass.
+
 ## 1.0.149
 
 * Fixes shared-font availability validation: a global override can no longer disguise empty or non-string data in the selected font's own registration. Availability checks always return a boolean; invalid registrations use the existing fallback.

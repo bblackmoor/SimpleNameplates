@@ -14,7 +14,7 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | 4 | Friendly | Green | Name out of combat; health bar in combat when supported |
 | 5 | NPC - Interactive | Light grey | Interactive NPC: name out of combat; supported bar in combat |
 | 6 | NPC - Background | Gray | Remaining entities: name out of combat; supported bar in combat |
-| — | Interruptible cast | Cyan | Optional moving-dash or pulsing cast-bar border |
+| — | Interruptible cast | Cyan | Optional LibCustomGlow cast-bar effect |
 | — | Native overhead names without an accessible plate | Unchanged | Entity types and contexts are recorded below |
 
 ## How It Works
@@ -25,7 +25,7 @@ Instead, it keeps Blizzard's normal Midnight nameplates and recolors their exist
 
 Entity observations are collected separately in `EntityFacts.lua`, then the first matching priority wins. Faction, player control/ownership, directional attackability, interaction evidence, and unknown values remain separate facts. Thus an opposing player in sanctuary can be Friendly while retaining its opposite-faction identity; a hostile interactive NPC uses the higher combat priority. A PvP flag or desired War Mode alone does not establish an eligible opponent. Readable attackability determines eligibility, including duels; contextual sanctuary evidence prevents a flag-only inference.
 
-Appearance profiles have one NPC - Interactive color (light grey `#D3D3D3` by default) and one NPC - Background color (medium grey `#999999` by default), shared inside and outside sanctuaries and across combat states. Existing Priority Colors choices remain authoritative; obsolete separate sanctuary NPC colors are discarded during normal settings validation. Player - Friendly likewise uses one shared color, green (`#33CC33`) by default, in all world contexts. Existing Friendly color choices are retained; the obsolete separate sanctuary player color is discarded during validation. Higher danger categories always keep their own colors. Opposite-faction players retain their existing colors. The top Reset all colors button restores every color and switch below it. High Contrast uses its factory palette; Default and custom profiles use the factory Default palette. Priority-category switches reset globally to Active, and the selected profile's cast-highlight switch resets to Inactive. Colors affect only addon-accessible nameplates; Blizzard-controlled overhead names remain unchanged.
+Appearance profiles have one NPC - Interactive color (light grey `#D3D3D3` by default) and one NPC - Background color (medium grey `#999999` by default), shared inside and outside sanctuaries and across combat states. Existing Priority Colors choices remain authoritative; obsolete separate sanctuary NPC colors are discarded during normal settings validation. Player - Friendly likewise uses one shared color, green (`#33CC33`) by default, in all world contexts. Existing Friendly color choices are retained; the obsolete separate sanctuary player color is discarded during validation. Higher danger categories always keep their own colors. Opposite-faction players retain their existing colors. The top Reset all colors button restores every color and switch below it. High Contrast uses its factory palette; Default and custom profiles use the factory Default palette. Priority-category switches reset globally to Active, and the selected profile's cast Effect selector resets to None. Colors affect only addon-accessible nameplates; Blizzard-controlled overhead names remain unchanged.
 
 NPC - Interactive currently means readable `UnitIsInteractable` evidence on an NPC. This is not a permanent vendor/service catalog, and friendliness or overhead-name color alone is insufficient. Missing, failed, or secret observations remain unknown. NPC - Background is the remaining-entity fallback, not a claim that unknown entities offer no interaction.
 
@@ -199,3 +199,5 @@ Licensed under the GNU General Public License v3.0 (GPL-3.0):
 https://www.gnu.org/licenses/gpl-3.0.en.html
 
 Source: https://github.com/bblackmoor/SimpleNameplates
+
+The staged Details Framework settings conversion is tracked in the [source-verified baseline and implementation plan](docs/design/details-framework-conversion.md).
