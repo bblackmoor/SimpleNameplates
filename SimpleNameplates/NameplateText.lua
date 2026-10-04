@@ -13,7 +13,7 @@ local GetHealthBar = ns.NameplateFrames.GetHealthBar
 local function NameFontPath(context)
     if context.sanctuary == true and GetAppearanceSetting("matchSanctuaryFont") == true then
         -- The engine's world-label font family is localized by Blizzard.
-        -- Read only its face: preserve the profile's size and our outline/layout.
+        -- Read only its face: preserve the profile's size and our text layout.
         if SystemFont_World and type(SystemFont_World.GetFont) == "function" then
             local ok, path = pcall(SystemFont_World.GetFont, SystemFont_World)
             if ok then
@@ -85,10 +85,10 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
 
     fullTitle = EnsureFullTitleText(frame)
     local titleSize = math.max(6, math.floor(baseNameSize * 0.8 + 0.5))
-    fullTitle:SetFont(NameFontPath(context), titleSize, "OUTLINE")
+    fullTitle:SetFont(NameFontPath(context), titleSize, "")
     fullTitle:SetText(text)
-    fullTitle:SetShadowColor(0, 0, 0, 1)
-    fullTitle:SetShadowOffset(1, -1)
+    fullTitle:SetShadowColor(0, 0, 0, 0)
+    fullTitle:SetShadowOffset(0, 0)
     fullTitle:ClearAllPoints()
     fullTitle:SetPoint("TOP", frame.name, "BOTTOM", 0, -1)
     fullTitle:SetJustifyH("CENTER")
@@ -184,9 +184,9 @@ end
 local function ShowInsideName(frame, bar, text, fontPath, size, rightInset)
     local insideName = GetInsideName(frame, bar)
     insideName:SetText(text)
-    insideName:SetFont(fontPath, size, "OUTLINE")
-    insideName:SetShadowColor(0, 0, 0, 1)
-    insideName:SetShadowOffset(1, -1)
+    insideName:SetFont(fontPath, size, "")
+    insideName:SetShadowColor(0, 0, 0, 0)
+    insideName:SetShadowOffset(0, 0)
     insideName:SetTextColor(1, 1, 1, 1)
     insideName:ClearAllPoints()
     insideName:SetPoint("LEFT", bar, "LEFT", 3, 0)
@@ -212,7 +212,7 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.text = displayName
     expected.font = fontPath
     expected.size = size
-    expected.flags = "OUTLINE"
+    expected.flags = ""
     expected.r, expected.g, expected.b = nameR, nameG, nameB
     expected.nameOnly = nameOnly
     expected.inside = inside == true
@@ -246,13 +246,13 @@ local function StyleName(frame, state, context, decision)
     local bar = GetHealthBar(frame, context)
     local nameOnly = decision.nameOnly
     local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize, context, decision)
-    local rightInset = GetThreatEnabled() and -42 or -3
+    local rightInset = GetThreatEnabled() and -(math.ceil(size * 3) + 6) or -3
     PositionName(frame, name, bar, nameOnly, inside, rightInset)
 
     local fontPath = NameFontPath(context)
-    name:SetFont(fontPath, size, "OUTLINE")
-    name:SetShadowColor(0, 0, 0, 1)
-    name:SetShadowOffset(1, -1)
+    name:SetFont(fontPath, size, "")
+    name:SetShadowColor(0, 0, 0, 0)
+    name:SetShadowOffset(0, 0)
     local nameR, nameG, nameB = 1, 1, 1
     if nameOnly then nameR, nameG, nameB = PriorityColorForState(decision.colorState or state) end
     -- Blizzard also tints nameplate text with UnitSelectionColor through the
@@ -360,8 +360,8 @@ local function RepairCachedName(frame, context)
     if expected.suppressed then SuppressText(frame, context); return true end
     name:SetText(expected.text)
     name:SetFont(expected.font, expected.size, expected.flags)
-    name:SetShadowColor(0, 0, 0, 1)
-    name:SetShadowOffset(1, -1)
+    name:SetShadowColor(0, 0, 0, 0)
+    name:SetShadowOffset(0, 0)
     name:SetVertexColor(1, 1, 1, 1)
     name:SetTextColor(expected.r, expected.g, expected.b, 1)
     if expected.inside and expected.bar then

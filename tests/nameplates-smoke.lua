@@ -225,6 +225,8 @@ equal(plateFrame.SNPInsideName.text, "Roleplay Name", "inside name retained")
 equal(plateFrame.name.alpha, 0, "original inside name concealed")
 equal(plateFrame.healthBar.height, 20, "inside padding retained")
 equal(plateFrame.SNPInsideName.size, 12, "inside name retains selected size")
+equal(plateFrame.SNPInsideName.flags, "", "inside name has no outline")
+equal(plateFrame.name.flags, "", "name has no outline")
 appearance.nameSize = 36
 ns.RefreshAll()
 equal(plateFrame.SNPInsideName.size, 36, "large inside name retains full size")
@@ -646,7 +648,7 @@ for _, case in ipairs({
     equal(plateFrame.healthBar.barG, case.green, "sanctuary health repair")
 end
 
--- Match the localized world-name face without changing size or outline.
+-- Match the localized world-name face while retaining the selected size and plain text.
 appearance.matchSanctuaryFont = true
 SystemFont_World = {GetFont = function() return "Fonts\\WorldLocalized.ttf", 64, "" end}
 unit = {reaction = 5, interactable = true}
@@ -654,7 +656,8 @@ ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
 ns.RefreshAll()
 equal(plateFrame.name.font, "Fonts\\WorldLocalized.ttf", "sanctuary uses localized world font")
 equal(plateFrame.name.size, 12, "sanctuary preserves name size")
-equal(plateFrame.name.flags, "OUTLINE", "sanctuary preserves outline")
+equal(plateFrame.name.flags, "", "sanctuary name has no outline")
+equal(plateFrame.SNPFullTitleText.flags, "", "title has no outline")
 equal(plateFrame.SNPFullTitleText.font, "Fonts\\WorldLocalized.ttf", "sanctuary TRP3 title font")
 plateFrame.name:SetFont("Fonts\\Drift.ttf", 12, "OUTLINE")
 events.scripts.OnUpdate(events, 0.5)

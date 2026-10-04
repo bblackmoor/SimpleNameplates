@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.134
+
+* Removes dark outlines and shadows from styled names, NPC/TRP3 titles, and threat percentages, and removes the dark backing around interruptible-cast borders.
+* Makes threat percentages follow the selected name size while preserving the separate threat font; inside-bar names reserve proportionate space for the larger percentage.
+
 ## 1.0.133
 
 * Keeps inside-bar names at the full selected font size and expands health bars and containers as needed, with three UI units of padding above and below. Original heights are restored when inside-bar styling ends.

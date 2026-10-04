@@ -78,10 +78,8 @@ local function EnsureInterruptibleHighlight(frame, context)
         castBar = castBar,
         owner = frame,
         frame = overlay,
-        backing = CreateBorder(0, 6, 6),
         border = CreateBorder(2, 4, 7),
     }
-    for _, edge in ipairs(highlight.backing) do edge:SetColorTexture(0, 0, 0, 1) end
     local pulse = overlay:CreateAnimationGroup()
     local fadeOut = pulse:CreateAnimation("Alpha")
     fadeOut:SetFromAlpha(1)

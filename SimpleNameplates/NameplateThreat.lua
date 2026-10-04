@@ -48,7 +48,9 @@ local function UpdateThreatText(frame, state, context, decision)
         ClearThreatText(frame, "no displayed health bar"); return
     end
     local text = EnsureThreatText(frame, bar)
-    text:SetFont(FontPath(GetAppearanceSetting("threatFont")), 9, "OUTLINE")
+    text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, "")
+    text:SetShadowColor(0, 0, 0, 0)
+    text:SetShadowOffset(0, 0)
     local ok, _, _, scaled, raw = pcall(UnitDetailedThreatSituation, "player", frame.unit)
     if not ok then ClearThreatText(frame, "threat API unavailable"); return end
     if RenderPercent(text, raw) then frame.SNPThreatStatus = "displayed raw percentage"

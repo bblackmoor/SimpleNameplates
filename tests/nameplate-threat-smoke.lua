@@ -12,6 +12,7 @@ function UnitDetailedThreatSituation(who, unit)
     return false, 1, scaled, raw
 end
 local enabled, accessible = true, true
+local nameSize = 21
 local function Bar()
     local bar = {}
     function bar:CreateFontString(_, layer, template)
@@ -24,7 +25,9 @@ local function Bar()
         function text:SetWordWrap() end
         function text:SetMaxLines() end
         function text:SetTextColor() end
-        function text:SetFont(_, size) self.size = size end
+        function text:SetFont(font, size, flags) self.font, self.size, self.flags = font, size, flags end
+        function text:SetShadowColor(_, _, _, alpha) self.shadowAlpha = alpha end
+        function text:SetShadowOffset(x, y) self.shadowX, self.shadowY = x, y end
         function text:SetText(value) self.text = value end
         function text:SetFormattedText(format, value)
             self.argument = value
@@ -46,7 +49,7 @@ local ns = {
         if type(value) == "number" then return value end
     end,
     FontPath = function() return "Fonts\\ARIALN.TTF" end,
-    GetAppearanceSetting = function() return "ARIALN" end,
+    GetAppearanceSetting = function(key) return key == "nameSize" and nameSize or "ARIALN" end,
     GetThreatEnabled = function() return enabled end,
     NameplateFrames = {GetHealthBar = function(value) return value.healthBar end},
 }
@@ -58,7 +61,13 @@ Update(true)
 equal(frame.SNPThreatText.text, "73%", "raw percentage preferred")
 equal(frame.SNPThreatText.shown, true, "percentage explicitly shown")
 equal(frame.SNPThreatText.drawLevel, 7, "percentage drawn above bar artwork")
-equal(frame.SNPThreatText.size, 9, "threat font retains readable size")
+equal(frame.SNPThreatText.size, 21, "threat matches default name size")
+equal(frame.SNPThreatText.flags, "", "threat has no outline")
+equal(frame.SNPThreatText.shadowAlpha, 0, "threat has no shadow")
+equal(frame.SNPThreatText.font, "Fonts\\ARIALN.TTF", "separate threat font retained")
+nameSize = 36
+Update(true)
+equal(frame.SNPThreatText.size, 36, "threat follows changed name size")
 raw = 0
 Update(true)
 equal(frame.SNPThreatText.text, "0%", "readable zero displayed")

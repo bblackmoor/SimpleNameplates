@@ -91,7 +91,7 @@ end
 
 local function AddNameSizeNote(content, layout)
     AddDescription(content, layout,
-        "All names use this size. Titles use 80%, rounded. " ..
+        "Names and threat percentages use this size. Titles use 80%, rounded. " ..
         "Health bars expand to fit inside-bar names with three UI units of padding above and below. Native world labels cannot be resized.")
 end
 
