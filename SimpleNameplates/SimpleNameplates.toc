@@ -3,8 +3,8 @@
 ## Category: Unit Frames
 ## Notes: Colors accessible Blizzard plates. Known limit: opposite-faction PC world names in sanctuary; entity types and contexts are listed in About.
 ## Author: Brandon Blackmoor <bblackmoor@blackgate.net>
-## Version: 1.0.150
-## OptionalDeps: LibSharedMedia-3.0, SharedMedia, totalRP3, LibCustomGlow-1.0, Masque
+## Version: 1.0.151
+## OptionalDeps: LibSharedMedia-3.0, SharedMedia, totalRP3, LibCustomGlow-1.0, Masque, LibDFramework-1.0
 ## SavedVariables: SimpleNameplatesDB
 ## IconTexture: Interface\Icons\INV_Misc_Eye_01
 ## X-License: GPL-3.0
@@ -14,6 +14,7 @@ Libs/LibStub/LibStub.lua
 Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua
 Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua
 Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua
+Libs\DetailsFramework\load.xml
 
 Defaults.lua
 FontMedia.lua
@@ -38,6 +39,7 @@ NameplatePresentation.lua
 Nameplates.lua
 Diagnostics.lua
 SettingsControls.lua
+SettingsWidgets.lua
 SettingsAbout.lua
 SettingsBehavior.lua
 SettingsProfiles.lua

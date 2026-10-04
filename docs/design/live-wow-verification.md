@@ -2,6 +2,12 @@
 
 Status: pending. These checks require a World of Warcraft client; local Lua stubs do not establish actual frame behavior, secure CVar behavior, or Midnight secret-value safety. Record the client build, addon version, date, and observed result when running them. Leave a check open until it is observed in game.
 
+## Details Framework foundation (1.0.151)
+
+- [ ] With Details, Plater and standalone Details Framework disabled, reload and log in; confirm no library startup errors and all existing settings pages behave as before.
+- [ ] Repeat with an external DF embedder enabled; record its DF minor version and confirm startup/settings work without library conflicts.
+- [ ] Enter/leave combat and reload with the new bundle; record any taint/secret-value errors. Phase 2 does not convert visible controls, so adapter rendering remains a later page-conversion check.
+
 ## Setup and saved data
 
 - [ ] Fresh install with no `SimpleNameplatesDB`: Default and High Contrast appear, the active Profile is Default, and Global behavior uses factory values.
@@ -47,4 +53,3 @@ Test Silvermoon Shared and Silvermoon Horde separately, including transitions be
 - [ ] Verify long titles disappear for requested or observed bars and return for name-only presentation, including friendly combat bars and missing-bar cases. Diagnose unavailable shown state explicitly.
 - [ ] Disable styling during lockdown on a previously styled frame; after combat, confirm original visibility and bar/container heights return while styling stays disabled. Repeat with temporarily forbidden base plates and Inactive categories becoming accessible without a context event.
 - [ ] Remove/recycle plates while restricted and verify deferred cleanup does not clear another entity's name or leave stale overlays. Confirm scoped sanctuary/PvP rule identifiers in diagnostics, with no nameplate-visibility CVar writes.
-

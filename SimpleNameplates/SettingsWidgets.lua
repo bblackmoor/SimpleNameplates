@@ -1,0 +1,204 @@
+-- Details Framework boundary for later page conversions. Legacy pages do not
+-- call this module yet. No saved settings, page registration, or plate work here.
+local _, ns = ...
+local Widgets = {}
+ns.SettingsWidgets = Widgets
+
+local WHITE = "Interface\\Buttons\\WHITE8X8"
+local backdrop = {bgFile = WHITE, edgeFile = WHITE, edgeSize = 1}
+local buttonTemplate = {
+    backdrop = backdrop, backdropcolor = {0.22, 0.22, 0.23, 1},
+    backdropbordercolor = {0.45, 0.45, 0.46, 1},
+    onentercolor = {0.32, 0.32, 0.33, 1}, textsize = 12,
+}
+local switchTemplate = {
+    width = 44, height = 20,
+    backdrop = backdrop, is_toggle = true, toggle_knob_padding = 2,
+    enabled_backdropcolor = {0.19, 0.42, 0.31, 1},
+    disabled_backdropcolor = {0.25, 0.25, 0.26, 1},
+    toggle_knob_color_on = {0.72, 0.72, 0.73, 1},
+    toggle_knob_color_off = {0.72, 0.72, 0.73, 1},
+}
+local sliderTemplate = {
+    backdrop = backdrop, backdropcolor = {0.25, 0.25, 0.26, 1},
+    thumbtexture = WHITE, thumbwidth = 12, thumbheight = 20,
+    thumbcolor = {0.72, 0.72, 0.73, 1}, amount_color = {1, 1, 1, 1},
+}
+local dropdownTemplate = {
+    backdrop = backdrop, backdropcolor = {0.22, 0.22, 0.23, 1},
+    backdropbordercolor = {0.45, 0.45, 0.46, 1},
+    dropicon = "Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Up",
+    dropiconsize = {16, 16},
+}
+local requiredMethods = {"CreateSwitch", "CreateSlider", "CreateDropDown",
+    "CreateButton", "CreateColorPickButton"}
+
+-- Resolve at construction time: another embedder can upgrade the same LibStub
+-- table after this file loads. Legacy pages remain usable if DF is unavailable.
+function Widgets.GetFramework()
+    local framework = LibStub and LibStub:GetLibrary("DetailsFramework-1.0", true)
+    if not framework then return nil, "Details Framework is unavailable" end
+    for _, method in ipairs(requiredMethods) do
+        if type(framework[method]) ~= "function" then
+            return nil, "Details Framework is missing " .. method
+        end
+    end
+    return framework
+end
+
+local function Framework()
+    local framework, reason = Widgets.GetFramework()
+    assert(framework, reason)
+    return framework
+end
+
+function Widgets.GetFrame(control)
+    if not control then return nil end
+    if control.frame then return control.frame end
+    if control.GetUIObject then return control:GetUIObject() end
+    return control.widget or control
+end
+
+local Handle = {}
+Handle.__index = Handle
+function Handle:GetFrame() return self.frame end
+function Handle:SetPoint(point, relative, relativePoint, x, y)
+    self.frame:SetPoint(point, Widgets.GetFrame(relative), relativePoint, x or 0, y or 0)
+end
+function Handle:SetEnabled(enabled)
+    self.enabled = enabled == true
+    if self.enabled then self.widget:Enable() else self.widget:Disable() end
+    -- Some DF Enable/Disable methods only set wrapper lockdown and alpha.
+    if self.enabled then self.frame:Enable() else self.frame:Disable() end
+    self.frame:SetAlpha(self.enabled and 1 or 0.5)
+end
+
+-- Restore the guard even when a widget method fails. Each handle has its own
+-- depth so nested refreshes and refreshes of other controls stay independent.
+function Handle:Refresh(method, ...)
+    self.refreshDepth = self.refreshDepth + 1
+    local ok, result = pcall(method, self.widget, ...)
+    self.refreshDepth = self.refreshDepth - 1
+    if not ok then error(result, 0) end
+    return result
+end
+local function NewHandle(widget, onChanged)
+    return setmetatable({widget = widget, frame = Widgets.GetFrame(widget),
+        refreshDepth = 0, enabled = true, onChanged = onChanged}, Handle)
+end
+local function Notify(handle, ...)
+    if handle.enabled and handle.refreshDepth == 0 and handle.onChanged then
+        handle.onChanged(...)
+    end
+end
+
+function Widgets.CreateSwitch(parent, onChanged)
+    local handle
+    local widget = Framework():CreateSwitch(Widgets.GetFrame(parent),
+        function(_, _, value) if handle then Notify(handle, value == true) end end,
+        false, 44, 20, nil, nil, nil, nil, nil, nil, nil, nil, switchTemplate)
+    handle = NewHandle(widget, onChanged)
+    function handle:SetChecked(value) self:Refresh(self.widget.SetValue, value == true) end
+    function handle:GetChecked() return self.widget:GetValue() == true end
+    return handle
+end
+
+function Widgets.CreateSlider(parent, minimum, maximum, step, onChanged)
+    assert(minimum < maximum and step > 0, "Invalid slider range")
+    local widget = Framework():CreateSlider(Widgets.GetFrame(parent), 180, 20,
+        minimum, maximum, step, minimum, false, nil, nil, nil, sliderTemplate)
+    local handle = NewHandle(widget, onChanged)
+    local function Normalize(value)
+        return math.max(minimum, math.min(maximum,
+            minimum + math.floor((value - minimum) / step + 0.5) * step))
+    end
+    widget:SetValueChangedFunction(function(_, _, value)
+        value = Normalize(value)
+        -- Typed input may bypass native drag stepping.
+        if widget:GetValue() ~= value then handle:SetValue(value) end
+        Notify(handle, value)
+    end)
+    function handle:SetValue(value)
+        -- Do not use DF's SetValueNoCallback: an unchanged value may leave its
+        -- one-shot flag set and swallow the next user change.
+        self:Refresh(self.widget.SetValue, Normalize(value))
+    end
+    function handle:GetValue() return Normalize(self.widget:GetValue()) end
+    return handle
+end
+
+-- optionsFunction returns {label, value, font?} entries. It is evaluated once
+-- per explicit invalidation, never on a simple selected-label refresh.
+function Widgets.CreateDropdown(parent, optionsFunction, onChanged)
+    local handle, cached
+    local function Options()
+        if not cached then
+            cached = {}
+            for _, option in ipairs(optionsFunction()) do
+                local entry = {label = option.label, value = option.value, font = option.font}
+                entry.onclick = function(_, _, value) Notify(handle, value) end
+                cached[#cached + 1] = entry
+            end
+        end
+        return cached
+    end
+    local widget = Framework():CreateDropDown(Widgets.GetFrame(parent), Options,
+        nil, 190, 20, nil, nil, dropdownTemplate)
+    -- DF reskins this nested scroll thumb with Details' icons2 texture.
+    local thumb = widget.scroll.thumb
+    thumb:SetTexture(WHITE)
+    thumb:SetTexCoord(0, 1, 0, 1)
+    handle = NewHandle(widget, onChanged)
+    function handle:InvalidateOptions() cached = nil end
+    function handle:SetValue(value)
+        self.value = value
+        self:Refresh(self.widget.Select, value, false, false, false)
+    end
+    function handle:GetValue() return self.value end
+    function handle:SetLabel(text) self.widget.label:SetText(text) end
+    local notify = onChanged
+    handle.onChanged = function(value)
+        handle.value = value
+        if notify then notify(value) end
+    end
+    return handle
+end
+
+function Widgets.CreateButton(parent, text, onClick, width)
+    local handle
+    local widget = Framework():CreateButton(Widgets.GetFrame(parent),
+        function() Notify(handle) end, width or 190, 24, text,
+        nil, nil, nil, nil, nil, nil, buttonTemplate)
+    handle = NewHandle(widget, onClick)
+    return handle
+end
+
+function Widgets.CreateColorPicker(parent, onChanged)
+    local widget = Framework():CreateColorPickButton(Widgets.GetFrame(parent),
+        nil, nil, function() end, nil, buttonTemplate)
+    widget.widget:SetSize(26, 26)
+    widget.background_texture:Hide() -- RGB only; no transparency grid.
+    local handle = NewHandle(widget, onChanged)
+    function handle:SetColor(r, g, b) self:Refresh(self.widget.SetColor, r, g, b, 1) end
+    function handle:GetColor()
+        local r, g, b = self.widget:GetColor()
+        return r, g, b
+    end
+    -- Keep the DF swatch but use Blizzard's modern RGB-only picker contract.
+    -- DF's stock swatch passes alpha through its opening path, enabling opacity.
+    -- Capture RGB per opening; user Cancel must restore it and notify the page.
+    widget:SetClickFunction(function()
+        if not handle.enabled then return end
+        local r, g, b = handle:GetColor()
+        local function Apply(red, green, blue)
+            handle:SetColor(red, green, blue)
+            Notify(handle, red, green, blue)
+        end
+        ColorPickerFrame:SetupColorPickerAndShow({r = r, g = g, b = b,
+            hasOpacity = false,
+            swatchFunc = function() Apply(ColorPickerFrame:GetColorRGB()) end,
+            cancelFunc = function() Apply(r, g, b) end,
+        })
+    end)
+    return handle
+end

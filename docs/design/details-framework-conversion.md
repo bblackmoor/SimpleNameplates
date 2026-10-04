@@ -170,8 +170,35 @@ actual DF rendering, native secure behavior or combat safety.
 
 ## Remaining implementation phases
 
+Phase 2 is complete in 1.0.151. `Libs/DetailsFramework/load.xml` and its entire
+pinned load chain load after the existing embedded dependencies. The separate
+`SettingsWidgets.lua` module exposes `CreateSwitch`, `CreateSlider`,
+`CreateDropdown`, `CreateButton`, `CreateColorPicker`, and `GetFrame` without
+replacing `ns.SettingsUI` or constructing/registering any pages. Native profile
+dialogs remain in place; a text-entry adapter is deferred until a converted
+page needs one.
+
+Handles expose explicit native frames, enable state and silent value setters.
+Slider refreshes use a depth guard rather than DF's one-shot suppression flag.
+Dropdowns cache options until `InvalidateOptions`; `SetLabel` does no menu
+work. Picker swatches are DF controls with an adapted click callback that opens
+Blizzard's RGB-only picker and restores captured RGB on user Cancel. No DF
+globals/templates are patched. Used controls receive explicit Blizzard assets,
+including the nested dropdown scrollbar thumb that DF normally reskins with
+Details' `icons2` image.
+
+`details-framework-smoke.lua` loads all 52 scripts/9 manifests with native UI
+stubs and real embedded dependencies, exercises the actual DF widgets through
+the adapter, inspects final widget assets, and emulates a higher compatible
+LibStub minor winning arbitration. This does not test a different external DF
+implementation or native client behavior. All 14 smoke suites pass; core tests
+also compile recursive XML script references and retain explicit addon order.
+Before converting Colors, verify client startup/settings with Details and
+Plater absent, then with an external embedder present. Rendering, secure/combat
+behavior and actual external-copy compatibility remain unobserved.
+
 1. Baseline — complete in 1.0.150; no widget/runtime conversion yet.
-2. Bundle the pinned DF load chain and introduce an isolated widget adapter;
+2. Foundation — complete in 1.0.151: bundle the pinned DF load chain and introduce an isolated widget adapter;
    leave all pages on their existing implementation. Validate assets, wrapper
    boundaries, callback suppression and standalone/coexisting library loading.
 3. Convert Colors; preserve six global modes, RGB apply/cancel/reset, profile

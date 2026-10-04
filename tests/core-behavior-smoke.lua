@@ -458,16 +458,32 @@ equal(ns.RestoreFriendlyClassColors, nil, "unsafe CVar restorer removed")
 -- All declared addon modules must exist, compile, and load in dependency order.
 local toc = assert(io.open("SimpleNameplates/SimpleNameplates.toc", "r"))
 local modules = {}
+local function CompileXML(path)
+    local file = assert(io.open("SimpleNameplates/" .. path, "r"))
+    local text = file:read("*a")
+    file:close()
+    local directory = path:match("^(.*[/])") or ""
+    for _, name in text:gmatch('<(%w+)%s+file%s*=%s*"([^"]+)"') do
+        if name:match("%.xml$") then
+            CompileXML(directory .. name)
+        else
+            assert(loadfile("SimpleNameplates/" .. directory .. name), name .. " must compile")
+        end
+    end
+end
 for line in toc:lines() do
+    line = line:gsub("\\", "/") -- Native TOC paths may use Windows separators.
     if line:match("%.lua$") then
         modules[#modules + 1] = line
         assert(loadfile("SimpleNameplates/" .. line), line .. " must compile")
+    elseif line:match("%.xml$") then
+        modules[#modules + 1] = line
+        CompileXML(line)
     end
 end
 toc:close()
 equal(table.concat(modules, ","),
-    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua,Defaults.lua,FontMedia.lua,Core.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
+    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
     "TOC module order")
 
 print("Core behavior smoke: passed")
-

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.151
+
+* Completes phase 2 of the Details Framework conversion: bundles the pinned minor 762 library's complete Lua/XML load chain and LGPL license, and adds an isolated settings widget adapter. Existing settings pages still use their original controls; saved settings and nameplate behavior are unchanged.
+* Adapts native frame boundaries, toggle switches, slider rounding and silent refreshes, cached dropdown choices, action buttons, and RGB-only picker apply/cancel. Supplies Blizzard widget assets, including the nested dropdown scroll thumb, so Details and Plater are not required.
+* Adds a smoke suite that loads the actual library with native UI stubs and exercises adapter behavior and LibStub arbitration; recursively validates the embedded load manifest in the core suite. Client startup/rendering and coexistence with installed external copies remain pending in-game checks.
+
 ## 1.0.150
 
 * Completes phase 1 of the Details Framework settings conversion: records the source-verified UI baseline, setting ownership/defaults, exact reset/profile semantics, verified upstream widget APIs and dependencies, and later implementation/verification checkpoints. No widgets or runtime behavior change.

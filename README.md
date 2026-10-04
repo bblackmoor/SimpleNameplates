@@ -182,6 +182,12 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 Cast highlighting uses [LibCustomGlow](https://github.com/Stanzilla/LibCustomGlow) (MIT) and [LibStub](https://github.com/lua-wow/LibStub) (public domain). Both are included; no separate installation is required. Choose **None**, **Moving dashes**, **Autocast Shine**, **Action Button Glow**, or **Proc Glow** below the cast-highlight color on Colors. This selector replaces the separate Active switch; None turns highlighting off.
 
+Details Framework minor 762 (LGPL-2.1-or-later) is also bundled as the foundation
+for the staged settings conversion. Details and Plater are not required.
+Existing settings pages retain their original controls during this phase.
+See [library provenance](SimpleNameplates/Libs/README.md) and run
+`luatex --luaonly tests/details-framework-smoke.lua` for the library/adapter check.
+
 ## Development
 
 The [original staged refactor plan](docs/design/implementation-plan.md), [world-context runtime plan](docs/design/runtime-refactor-plan.md), and [source ownership guide](docs/design/settings-architecture.md) describe the Global behavior and appearance Profile boundaries. Run `lua tests/bar-artwork-smoke.lua`, `lua tests/core-behavior-smoke.lua`, `lua tests/settings-smoke.lua`, `lua tests/nameplates-smoke.lua`, `lua tests/nameplate-threat-smoke.lua`, `lua tests/world-context-smoke.lua`, `lua tests/entity-facts-smoke.lua`, and `lua tests/presentation-rules-smoke.lua` from the repository root for the local behavioral checks. Runtime phases 1–4 are implemented; phase 5 is client verification. The [live WoW checklist](docs/design/live-wow-verification.md) records integration checks that require the game client.

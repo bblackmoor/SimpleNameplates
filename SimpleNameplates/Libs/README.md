@@ -20,5 +20,18 @@ https://github.com/WoWUIDev/Ace3/blob/master/CallbackHandler-1.0/CallbackHandler
 Source blob: `05fb9d2276dd45bd784ecc64672ca4fec0e96612`.
 Ace3 distribution license retained in `CallbackHandler-1.0/LICENSE`.
 
-Only line endings and trailing whitespace are normalized. Library behavior is unchanged.
+Library whitespace is normalized. Library behavior is unchanged.
 Libraries use LibStub version arbitration to coexist with other addons' copies.
+
+DetailsFramework-1.0, minor 762, from
+https://github.com/Tercioo/Details-Framework/tree/653af57120e1287be784d468324590a9c150ae98.
+The complete upstream `load.xml` chain is embedded in `DetailsFramework/`:
+52 Lua scripts and 9 XML manifests, plus the LGPL-2.1-or-later `LICENSE`.
+Source provenance and upstream blob hashes are recorded in `DetailsFramework/UPSTREAM.json`.
+Only whitespace is normalized (see UPSTREAM.json); no library behavior is patched.
+The upstream standalone TOC, examples and documentation are not loaded or bundled.
+Existing LibStub, CallbackHandler and LibSharedMedia load first. No Ace framework,
+profile scaffold or optional DF helper dependencies are used by our adapter.
+`SettingsWidgets.lua` supplies Blizzard textures instead of Details image paths
+for its controls; Details and Plater are not required. Legacy settings pages
+continue to use `SettingsControls.lua` until their individual conversion phases.
