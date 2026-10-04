@@ -24,7 +24,6 @@ local function EnsureThreatText(frame, bar)
     text:SetJustifyH("RIGHT")
     text:SetWordWrap(false)
     text:SetMaxLines(1)
-    text:SetTextColor(1, 1, 1, 1)
     frame.SNPThreatText, frame.SNPThreatTextBar = text, bar
     return text
 end
@@ -48,6 +47,7 @@ local function UpdateThreatText(frame, state, context, decision)
         ClearThreatText(frame, "no displayed health bar"); return
     end
     local text = EnsureThreatText(frame, bar)
+    text:SetTextColor(ns.NameplateFrames.HealthBarTextColor(decision.colorState or state))
     text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, "")
     text:SetShadowColor(0, 0, 0, 0)
     text:SetShadowOffset(0, 0)

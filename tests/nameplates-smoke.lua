@@ -28,6 +28,7 @@ C_Timer = { After = function(delay, callback) timers[#timers + 1] = { delay, cal
 function wipe(t) for key in pairs(t) do t[key] = nil end end
 
 local unit = {}
+local barColorOverride
 local threatEnabled, threatPercent = false, nil
 function UnitDetailedThreatSituation() return false, 1, nil, threatPercent end
 function UnitThreatSituation(who) return who == "player" and unit.aggro and 2 or nil end
@@ -71,6 +72,7 @@ local ns = {
     GetThreatEnabled = function() return threatEnabled end,
     GetHideCritterCompanionNames = function() return false end,
     PriorityColorForState = function(state)
+        if barColorOverride then return barColorOverride[1], barColorOverride[2], barColorOverride[3] end
         if state == "useful" then return 211 / 255, 211 / 255, 211 / 255 end
         if state == "useless" then return 153 / 255, 153 / 255, 153 / 255 end
         return 1, 0, 0
@@ -205,7 +207,17 @@ equal(plateFrame.healthBar.shown, true, "friendly combat bar")
 equal(plateFrame.SNPFullTitleText.shown, false, "friendly combat hides long title")
 equal(plateFrame.SNPInsideName.shown, true, "friendly combat inside name")
 equal(plateFrame.healthBar.height, 20, "friendly combat padding")
-equal(plateFrame.name.g, 1, "bar name is white")
+equal(plateFrame.name.g, 0, "bright bar inside name is black")
+equal(plateFrame.SNPInsideName.r, 0, "inside overlay matches contrast color")
+barColorOverride = {0, 0, 0.2}
+ns.RefreshAll()
+equal(plateFrame.SNPInsideName.r, 1, "dark bar inside name switches to white")
+plateFrame.name:SetTextColor(0, 0, 0)
+ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
+equal(plateFrame.SNPInsideName.r, 1, "cached repair preserves contrasting inside text")
+barColorOverride = nil
+ns.RefreshAll()
+
 plateFrame.SNPNameStyle = oldNameStyle
 equal(ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get()), false, "stale cache rejected")
 events.scripts.OnUpdate(events, 0.5)

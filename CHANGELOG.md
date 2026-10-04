@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.138
+
+* Chooses black or white for inside-bar names, threat percentages, and native health labels using the configured bar color's relative luminance and the higher contrast. Above-bar and name-only colors retain their behavior; cached repair and native-label restoration preserve the new treatment.
+* Removes the redundant cast-highlight switch from Appearance and updates the Colors explanation. Appearance reset now leaves the Colors-only cast-highlight setting unchanged.
+
 ## 1.0.137
 
 * Moves Reset all colors beneath the Colors profile selector and removes the bottom reset section and separate Reset priority colors button. Restores the factory High Contrast palette only for High Contrast; all other profiles use Default.

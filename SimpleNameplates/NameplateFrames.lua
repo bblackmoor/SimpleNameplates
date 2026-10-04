@@ -26,6 +26,20 @@ local function SetShownSafe(region, shown, context)
     if shown then region:Show() else region:Hide() end
 end
 
+-- Saved profile RGB is readable even when the unit's health is secret.
+local function LinearChannel(value)
+    if value <= 0.04045 then return value / 12.92 end
+    return ((value + 0.055) / 1.055) ^ 2.4
+end
+
+local function HealthBarTextColor(state)
+    local r, g, b = ns.PriorityColorForState(state)
+    local luminance = 0.2126 * LinearChannel(r) + 0.7152 * LinearChannel(g) + 0.0722 * LinearChannel(b)
+    -- Choose the higher contrast of black and white using relative luminance.
+    local value = (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) and 0 or 1
+    return value, value, value
+end
+
 -- Keep native progress/value logic; replace only the decorative artwork.
 local function ReadValues(region, method, context)
     local fn = Capabilities.SafeField(region, method, context)
@@ -90,6 +104,20 @@ local function ClearNativeTextEdges(frame, region, context)
     region:SetShadowOffset(0, 0)
 end
 
+local function StyleHealthText(frame, region, color, context)
+    local original = OriginalArtwork(frame, region, context)
+    if not original then return end
+    ClearNativeTextEdges(frame, region, context)
+    if not original.textColor then
+        original.textColor = ReadValues(region, "GetTextColor", context)
+        original.vertexColor = ReadValues(region, "GetVertexColor", context)
+    end
+    if original.textColor then
+        region:SetTextColor(color, color, color, 1)
+        if original.vertexColor then region:SetVertexColor(1, 1, 1, 1) end
+    end
+end
+
 local function FlattenBar(frame, bar, backgroundKey, context)
     if Capabilities.ObjectStatus(bar, context) ~= "accessible" then return end
     RemoveArtworkEdge(frame, Capabilities.SafeField(bar, backgroundKey, context), context)
@@ -131,6 +159,10 @@ local function ApplyBarArtwork(frame, assessment, context)
     InstallArtworkHooks(frame, healthBar, context)
     InstallArtworkHooks(frame, castBar, context)
     FlattenBar(frame, healthBar, "bgTexture", context)
+    local color = HealthBarTextColor(frame.SNPPresentation and frame.SNPPresentation.colorState or frame.SNPState)
+    for _, key in ipairs({"Text", "RightText", "LeftText"}) do
+        StyleHealthText(frame, Capabilities.SafeField(healthBar, key, context), color, context)
+    end
     for _, key in ipairs({"selectedBorder", "deselectedOverlay"}) do
         RemoveArtworkEdge(frame, Capabilities.SafeField(healthBar, key, context), context)
     end
@@ -155,6 +187,8 @@ local function RestoreBarArtwork(frame, context)
             else region:SetTexture(original.fill.texture) end
             if original.fill.coords then region:SetTexCoord(unpackValues(original.fill.coords)) end
         end
+        if original.textColor then region:SetTextColor(unpackValues(original.textColor)) end
+        if original.vertexColor then region:SetVertexColor(unpackValues(original.vertexColor)) end
         if original.font then
             region:SetFont(original.font[1], original.font[2], original.font[3] or "")
             if original.shadowColor then region:SetShadowColor(unpackValues(original.shadowColor)) end
@@ -171,6 +205,7 @@ local function RestoreBarArtwork(frame, context)
 end
 
 ns.NameplateFrames = {
+    HealthBarTextColor = HealthBarTextColor,
     ApplyBarArtwork = ApplyBarArtwork, RestoreBarArtwork = RestoreBarArtwork,
     GetUnitFrame = GetUnitFrame, GetFrameFromPlate = GetFrameFromPlate,
     GetHealthBar = GetHealthBar, GetCastBar = GetCastBar, SetShownSafe = SetShownSafe,

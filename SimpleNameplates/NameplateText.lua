@@ -9,6 +9,7 @@ local PriorityColorForState, FontPath = ns.PriorityColorForState, ns.FontPath
 local GetAppearanceSetting, GetTRP3Setting = ns.GetAppearanceSetting, ns.GetTRP3Setting
 local GetThreatEnabled = ns.GetThreatEnabled
 local GetHealthBar = ns.NameplateFrames.GetHealthBar
+local HealthBarTextColor = ns.NameplateFrames.HealthBarTextColor
 
 local function NameFontPath(context)
     if context.sanctuary == true and GetAppearanceSetting("matchSanctuaryFont") == true then
@@ -181,13 +182,13 @@ local function GetInsideName(frame, bar)
     return insideName
 end
 
-local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, rightRegion)
+local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, rightRegion, textColor)
     local insideName = GetInsideName(frame, bar)
     insideName:SetText(text)
     insideName:SetFont(fontPath, size, "")
     insideName:SetShadowColor(0, 0, 0, 0)
     insideName:SetShadowOffset(0, 0)
-    insideName:SetTextColor(1, 1, 1, 1)
+    insideName:SetTextColor(textColor, textColor, textColor, 1)
     insideName:ClearAllPoints()
     insideName:SetPoint("LEFT", bar, "LEFT", 3, 0)
     insideName:SetPoint("RIGHT", rightRegion or bar, rightRegion and "LEFT" or "RIGHT", rightInset, 0)
@@ -261,7 +262,8 @@ local function StyleName(frame, state, context, decision)
     name:SetShadowColor(0, 0, 0, 0)
     name:SetShadowOffset(0, 0)
     local nameR, nameG, nameB = 1, 1, 1
-    if nameOnly then nameR, nameG, nameB = PriorityColorForState(decision.colorState or state) end
+    if nameOnly then nameR, nameG, nameB = PriorityColorForState(decision.colorState or state)
+    elseif inside then nameR, nameG, nameB = HealthBarTextColor(decision.colorState or state) end
     -- Blizzard also tints nameplate text with UnitSelectionColor through the
     -- FontString's vertex color. Keep that tint neutral so the configured
     -- Simple Nameplates color is displayed exactly.
@@ -269,7 +271,7 @@ local function StyleName(frame, state, context, decision)
     name:SetTextColor(nameR, nameG, nameB, 1)
     name:Show()
     if inside then
-        ShowInsideName(frame, bar, displayName, fontPath, size, rightInset, rightRegion)
+        ShowInsideName(frame, bar, displayName, fontPath, size, rightInset, rightRegion, nameR)
     else
         RestoreNameDisplay(frame, context)
     end
@@ -396,7 +398,7 @@ local function RepairCachedName(frame, context)
     name:Show()
     if expected.inside and expected.bar then
         ShowInsideName(frame, expected.bar, expected.text, expected.font,
-            expected.size, expected.rightInset or -3, expected.rightRegion)
+            expected.size, expected.rightInset or -3, expected.rightRegion, expected.r)
     else
         RestoreNameDisplay(frame, context)
     end

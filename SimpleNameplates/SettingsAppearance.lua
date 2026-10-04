@@ -7,8 +7,6 @@ local AddSection, RunRefreshers, RefreshNameplates = U.AddSection, U.RunRefreshe
 local GetAppearanceSetting, SetAppearanceSetting, ResetAppearance =
     ns.GetAppearanceSetting, ns.SetAppearanceSetting, ns.ResetAppearance
 local GetThreatEnabled, SetThreatEnabled = ns.GetThreatEnabled, ns.SetThreatEnabled
-local GetInterruptibleHighlightEnabled, SetInterruptibleHighlightEnabled =
-    ns.GetInterruptibleHighlightEnabled, ns.SetInterruptibleHighlightEnabled
 
 local function OptionLabel(options, value)
     for _, option in ipairs(options) do
@@ -146,28 +144,23 @@ end
 local function CreateAppearancePanel()
     local panel, content, layout = CreateScrollablePanel("Appearance")
     AddTitle(content, layout, "Appearance")
-    AddDescription(content, layout, "Text, layout, and display effects for the selected appearance profile.")
+    AddDescription(content, layout, "Text and layout for the selected appearance profile.")
     local refreshers = {}
     local function Refresh() RunRefreshers(refreshers) end
     ns.AddProfileSelector(content, layout, refreshers, Refresh)
     U.AddActionButton(content, layout, "Reset settings", function()
         ResetAppearance()
         SetThreatEnabled(ns.Defaults.showThreat)
-        SetInterruptibleHighlightEnabled(ns.Defaults.interruptibleHighlight)
         ns.SetHideCritterCompanionNames(ns.Defaults.hideCritterCompanionNames)
         Refresh()
         RefreshNameplates()
     end)
     AddDescription(content, layout,
-        "Resets every setting below: this profile's fonts, sizing, placement, threat display and cast highlighting, " ..
+        "Resets every setting below: this profile's fonts, sizing, placement and threat display, " ..
         "plus global critter/companion visibility. Colors and profile activation are on other pages.")
     AddSharedAppearanceControls(content, layout, refreshers)
     AddOutOfCombatControls({content = content, layout = layout})
     AddInCombatTextControls(content, layout, refreshers)
-    U.AddToggle(content, layout, refreshers, "Highlight interruptible casts and channels",
-        GetInterruptibleHighlightEnabled, SetInterruptibleHighlightEnabled, RefreshNameplates)
-    AddDescription(content, layout,
-        "Pulses the cast-bar border when Blizzard reports an interruptible cast or channel. Its color is on Colors.")
     ns.AddGlobalAppearanceControls(content, layout, refreshers)
     panel:SetScript("OnShow", Refresh)
     Refresh()

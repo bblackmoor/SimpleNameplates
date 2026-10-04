@@ -1,5 +1,7 @@
 -- Verify native edge removal and reversible bar/text artwork.
 local ns = {}
+local barRGB = {1, 1, 0}
+ns.PriorityColorForState = function() return barRGB[1], barRGB[2], barRGB[3] end
 local unpackValues = unpack or table.unpack
 assert(loadfile("SimpleNameplates/Core.lua"))("SimpleNameplates", ns)
 ns.WorldContext = {Get = function() return {combatLockdown = false} end}
@@ -16,6 +18,10 @@ local function Region()
     function r:SetAtlas(v) self.atlas = v end
     function r:GetTexCoord() return unpackValues(self.coords) end
     function r:SetTexCoord(...) self.coords = {...} end
+    function r:GetTextColor() return self.r or 0.7, self.g or 0.8, self.b or 0.9, 1 end
+    function r:SetTextColor(r, g, b) self.r, self.g, self.b = r, g, b end
+    function r:GetVertexColor() return 0.5, 0.5, 0.5, 1 end
+    function r:SetVertexColor(r, g, b) self.vr, self.vg, self.vb = r, g, b end
     function r:GetFont() return self.font, self.size, self.flags end
     function r:SetFont(f, s, flags) self.font, self.size, self.flags = f, s, flags end
     function r:GetShadowColor() return unpackValues(self.shadow) end
@@ -37,6 +43,7 @@ local function Bar(backgroundKey)
     return bar
 end
 local health, cast = Bar("bgTexture"), Bar("Background")
+health.Text, health.RightText, health.LeftText = Region(), Region(), Region()
 health.selectedBorder, health.deselectedOverlay = Region(), Region()
 cast.Border, cast.DropShadow, cast.Text = Region(), Region(), Region()
 cast.BorderShield = Region()
@@ -44,6 +51,21 @@ local frame = {healthBar = health, castBar = cast}
 local context = ns.WorldContext.Get()
 local assessment = ns.PresentationCapabilities.InspectFrame(frame, context)
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
+for _, key in ipairs({"Text", "RightText", "LeftText"}) do
+    assert(health[key].r == 0 and health[key].g == 0 and health[key].b == 0, "bright bar native text black")
+    assert(health[key].vr == 1, "native text tint neutral")
+end
+for _, case in ipairs({
+    {0, 0, 0, 1}, {1, 1, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 0},
+    {0, 0, 1, 1}, {1, 1, 0, 0}, {0.1, 0.1, 0.1, 1}, {0.7, 0.7, 0.7, 0},
+}) do
+    barRGB = case
+    local r, g, b = ns.NameplateFrames.HealthBarTextColor("hostile")
+    assert(r == case[4] and g == r and b == r, "luminance contrast color")
+end
+barRGB = {0, 0, 1}
+ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
+assert(health.Text.r == 1, "native health text follows dark bar color")
 assert(health.bgTexture.alpha == 0 and health.selectedBorder.alpha == 0)
 assert(health.deselectedOverlay.alpha == 0 and cast.Border.alpha == 0)
 assert(cast.DropShadow.alpha == 0 and cast.BorderShield.alpha == 1, "shield stays intact")
@@ -60,6 +82,7 @@ assert(not pcall(ns.NameplateFrames.RestoreBarArtwork, frame, context))
 assert(frame.SNPOriginalArtwork, "failed restoration keeps backup")
 health.bgTexture.IsForbidden = nil
 ns.NameplateFrames.RestoreBarArtwork(frame, context)
+assert(health.Text.r == 0.7 and health.Text.g == 0.8 and health.Text.vr == 0.5, "native health text restored")
 assert(health.bgTexture.alpha == 1 and health.selectedBorder.alpha == 1)
 assert(cast.Border.alpha == 1 and cast.DropShadow.alpha == 1)
 assert(health.barTexture.atlas == "native-fill" and health.barTexture.coords[1] == 0.1)

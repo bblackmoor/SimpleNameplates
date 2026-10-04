@@ -141,7 +141,7 @@ local function CreateColorsPanel()
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
     CreateColorRow(context, "Interruptible cast highlight",
-        "Active enables the pulsing border for this profile. Its switch is shared with Appearance.",
+        "Active pulses a border in this color when Blizzard reports an interruptible cast or channel. Inactive disables the highlight for this profile.",
         function() return EffectColor("interruptible") end,
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
         function() ResetEffectColor("interruptible") end, {
