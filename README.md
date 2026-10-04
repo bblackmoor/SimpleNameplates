@@ -33,7 +33,7 @@ This avoids duplicate nameplates and preserves the normal Blizzard nameplate fun
 
 Even when WoW is configured to show friendly, enemy, and always-visible nameplates, it may not create a nameplate for every unit. If Blizzard supplies no addon-accessible nameplate frame, Simple Nameplates has nothing it can recolor.
 
-On login and when styling is enabled in `/snp appearance`, Simple Nameplates checks Blizzard's plate settings. If a readable setting conflicts, styling pauses and a setup dialog lists its current value, required value, and purpose. Choose **Apply and enable** to make the listed changes, or **Disable styling** to leave styling off. Compatible settings produce no dialog. The check requires Always Show Nameplates, Enemy Unit Nameplate, Friendly Player Nameplates, and Friendly NPC Nameplates on, with **Only Show Names off** so the addon can manage friendly health bars in combat. It does not alter the NPC Names world-label filter, stacking, realm names, or size. Unsupported/unreadable CVars are skipped. This setup cannot guarantee plates for nonattackable opposite-faction players in sanctuary.
+On login and when styling is enabled using **Active** in `/snp profiles`, Simple Nameplates checks Blizzard's plate settings. If a readable setting conflicts, styling pauses and a setup dialog lists its current value, required value, and purpose. Choose **Apply and enable** to make the listed changes, or **Disable styling** to leave styling off. Compatible settings produce no dialog. The check requires Always Show Nameplates, Enemy Unit Nameplate, Friendly Player Nameplates, and Friendly NPC Nameplates on, with **Only Show Names off** so the addon can manage friendly health bars in combat. It does not alter the NPC Names world-label filter, stacking, realm names, or size. Unsupported/unreadable CVars are skipped. This setup cannot guarantee plates for nonattackable opposite-faction players in sanctuary.
 
 Only values changed through the setup dialog are backed up, separately for each character, and survive `/reload`. Disabling styling restores them; writes and restoration wait until combat ends when necessary, and failed restoration retains its backup for retry. A rejected setup change leaves styling paused with a retry/disable choice. Settings are checked again on each login or explicit enable, rather than continuously overwritten during play.
 
@@ -64,7 +64,7 @@ NPC subtitles such as `<Voidforge Steward>` are read first from structured GUID 
 
 ## Global behavior
 
-Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp`. Category activation is on **Colors** (`/snp colors`). Enable styling and Hide critter/companion names are global controls on Appearance; category activation is beside each category color on Colors.
+Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp`. Category activation is on **Colors** (`/snp colors`). The global Active switch is beside the selected profile on Profiles. Hide critter/companion names is on Appearance; category activation is beside each category color on Colors.
 
 The six categories are evaluated from top to bottom. The first matching category wins. Every category has an Active / Inactive thumb switch; category hiding is not available:
 
@@ -78,12 +78,12 @@ The settings pages are organized by purpose. Changes apply immediately and are s
 | Page | Contents | Command |
 | --- | --- | --- |
 | About | Version, source, commands, presentation limits, and informational native-label swatches | `/snp about` |
-| Profiles | Select, create, copy, rename, delete, and restore appearance profiles | `/snp profiles` |
-| Appearance | Fonts, sizing, layout, display effects, plus global styling and critter/companion visibility switches | `/snp appearance` or `/snp` |
+| Profiles | Select, create, copy, rename, delete, and restore profiles; global Active switch | `/snp profiles` |
+| Appearance | Fonts, sizing, layout, display effects, global critter/companion visibility, and Reset settings | `/snp appearance` or `/snp` |
 | Colors | Profile colors and global Active/Inactive category switches | `/snp colors` |
 | TRP3 | All global RP-name, title, and OOC options | `/snp trp3` |
 
-Appearance and Colors each have a compact Selected profile control; profile-management actions are on Profiles. Global Enable styling and Hide critter/companion switches are above Reset text and layout on Appearance. Category switches sit beside their color swatches on Colors: On means Active, Off means Inactive. None of these switches changes with the appearance profile or color/text resets. The former Behavior tab and its command are removed. Enable styling remains an account-wide global setting, not part of an appearance profile.
+Appearance and Colors each have a compact Selected profile control; profile-management actions are on Profiles. On Profiles, the selector sits farther left with an Active/Inactive thumb switch immediately to its right, matching the Colors-page controls. This switch enables styling globally for all characters and profiles, including the existing startup compatibility review. Appearance has **Reset settings** immediately beneath its profile selector, and global Hide critter/companion names farther down. Category switches sit beside their color swatches on Colors. Changing profiles does not change these global switches. The former Behavior tab and its command are removed.
 
 Profiles are shared account-wide, while each character remembers its active profile. **Create** starts with factory-default appearance settings; **Copy** duplicates the complete active profile. Profiles can be renamed and deleted, except **Default**, which is the permanent fallback. Deleting a profile moves characters assigned to it back to Default.
 
@@ -107,7 +107,7 @@ Appearance groups presentation by combat state:
 
 The sections use the same saved settings in both combat states. All TRP3 options, including the global long-title switch, are together on TRP3. Name-only titles can remain visible in combat if no supported health bar is available.
 
-Headings use sentence case, labels use normal white text, and muted descriptions wrap below the relevant row. Controls share a common column. Individual resets follow their controls; section actions appear beneath the section's controls, with explicit scope. **Reset text and layout** retains the previous appearance-reset behavior: it resets fonts, sizing, sanctuary font matching and name placement, and enables threat display. Colors and the cast-highlight switch keep their values.
+Headings use sentence case, labels use normal white text, and muted descriptions wrap below the relevant row. Controls share a common column. Individual resets follow their controls; section actions appear beneath the section's controls, with explicit scope. **Reset settings** restores every setting below it on Appearance: the selected profile's fonts, sizing, sanctuary font matching, name placement, threat display (on), and cast highlighting (off), plus global critter/companion hiding (off). It leaves profile selection, the Profiles-page Active switch, Colors-page settings, and TRP3 preferences unchanged.
 
 **Match Blizzard font in sanctuaries** is enabled by default in each appearance profile. It uses Blizzard's localized native world-name font face for addon-controlled names and NPC/TRP3 titles throughout sanctuary areas, including names inside health bars. Turn it off to use the selected Name font everywhere. Outside sanctuaries, the selected font applies normally. Sizes, colors, positioning, and the separate threat font retain their existing behavior. This improves consistency with inaccessible opposite-faction PC labels; it does not make those labels editable or guarantee identical sizing and outlines.
 

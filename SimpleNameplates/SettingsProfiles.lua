@@ -87,10 +87,12 @@ local function InstallProfileButtonScripts(buttons, changed)
 end
 
 -- Compact selector shared by the visual pages; management remains here.
-local function AddProfileSelector(content, layout, refreshers, onChanged)
-    local row = U.CreateSettingRow(content, layout, "Selected profile")
+local function AddProfileSelector(content, layout, refreshers, onChanged, controlX)
+    local row, label = U.CreateSettingRow(content, layout, "Selected profile")
     local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X - 16, 0)
+    controlX = controlX or U.CONTROL_X
+    label:SetWidth(controlX - 16)
+    dropdown:SetPoint("LEFT", row, "LEFT", controlX - 16, 0)
     UIDropDownMenu_SetWidth(dropdown, 190)
     local function Refresh()
         local active = ns.GetActiveProfileName()
@@ -114,6 +116,7 @@ local function AddProfileSelector(content, layout, refreshers, onChanged)
     end)
     refreshers[#refreshers + 1] = Refresh
     Refresh()
+    return row, dropdown
 end
 ns.AddProfileSelector = AddProfileSelector
 
@@ -126,7 +129,9 @@ local function CreateProfilesPanel()
         "Category activation, addon behavior, and TRP3 preferences are global.")
     local refreshers = {}
     local function Refresh() U.RunRefreshers(refreshers) end
-    AddProfileSelector(content, layout, refreshers, Refresh)
+    local row, dropdown = AddProfileSelector(content, layout, refreshers, Refresh, 184)
+    ns.AddStylingSwitch(row, dropdown, refreshers)
+    AddDescription(content, layout, "Active enables Simple Nameplates for all characters and profiles.")
     U.AddSection(content, layout, "Manage profiles")
     AddDescription(content, layout,
         "Create starts with factory defaults. Copy duplicates the selected profile. " ..

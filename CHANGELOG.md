@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.136
+
+* Places Reset settings directly below the Appearance profile selector; resets all settings below it, including cast highlighting and global critter/companion hiding. Colors and activation remain unchanged.
+* Moves global addon activation to Profiles beside a left-shifted profile selector, using the Colors-style switch with Active/Inactive status and preserving startup compatibility checks.
+
 ## 1.0.135
 
 * Removes native health/cast-bar decorative borders, shaded overlays, and cast-label outlines/shadows. Uses flat fills and backgrounds while preserving progress, icons, and interruptibility indicators; restores artwork when styling ends.

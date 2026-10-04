@@ -64,7 +64,7 @@ local function NewProfile(presetName)
         effectColors = {},
         appearance = {},
         showThreat = DEFAULT_SHOW_THREAT,
-        interruptibleHighlight = false,
+        interruptibleHighlight = defaults.interruptibleHighlight,
     }
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
         local color = preset and preset.priorityColors and preset.priorityColors[key] or default

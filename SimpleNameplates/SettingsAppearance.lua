@@ -150,6 +150,17 @@ local function CreateAppearancePanel()
     local refreshers = {}
     local function Refresh() RunRefreshers(refreshers) end
     ns.AddProfileSelector(content, layout, refreshers, Refresh)
+    U.AddActionButton(content, layout, "Reset settings", function()
+        ResetAppearance()
+        SetThreatEnabled(ns.Defaults.showThreat)
+        SetInterruptibleHighlightEnabled(ns.Defaults.interruptibleHighlight)
+        ns.SetHideCritterCompanionNames(ns.Defaults.hideCritterCompanionNames)
+        Refresh()
+        RefreshNameplates()
+    end)
+    AddDescription(content, layout,
+        "Resets every setting below: this profile's fonts, sizing, placement, threat display and cast highlighting, " ..
+        "plus global critter/companion visibility. Colors and profile activation are on other pages.")
     AddSharedAppearanceControls(content, layout, refreshers)
     AddOutOfCombatControls({content = content, layout = layout})
     AddInCombatTextControls(content, layout, refreshers)
@@ -158,16 +169,6 @@ local function CreateAppearancePanel()
     AddDescription(content, layout,
         "Pulses the cast-bar border when Blizzard reports an interruptible cast or channel. Its color is on Colors.")
     ns.AddGlobalAppearanceControls(content, layout, refreshers)
-    AddSection(content, layout, "Reset text and layout")
-    AddDescription(content, layout,
-        "Restores this profile's fonts, name size, sanctuary font matching, and name placement, and enables threat display. " ..
-        "Colors and the cast-highlight switch keep their values.")
-    U.AddActionButton(content, layout, "Reset text and layout", function()
-        ResetAppearance()
-        SetThreatEnabled(true)
-        Refresh()
-        RefreshNameplates()
-    end)
     panel:SetScript("OnShow", Refresh)
     Refresh()
     layout:Finish()

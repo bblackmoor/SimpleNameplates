@@ -98,6 +98,7 @@ local npcColors = { friendly = {0.2, 0.8, 0.2}, useful = {0.8, 0.8, 0.8}, useles
 local modes = { friendly = "active" }
 local profile = { matchSanctuaryFont = true, nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE" }
 local ns = {
+    Defaults = {showThreat = true, interruptibleHighlight = false, hideCritterCompanionNames = false},
     VERSION = "1.0.test", SOURCE_URL = "https://github.com/bblackmoor/SimpleNameplates",
     FONT_OPTIONS = { { value = "ARIALN", label = "Arial Narrow" } },
     MIN_NAME_SIZE = 8, MAX_NAME_SIZE = 36,
@@ -257,7 +258,7 @@ local stylingSwitch
 for _, item in ipairs(frames) do
     if item.kind == "Button" and item.width == 44 then
         for _, label in ipairs(frames) do
-            if label.parent == item.parent and label.text == "Enable Simple Nameplates styling" then
+            if label.parent == item.parent and label.text == "Selected profile" then
                 stylingSwitch = item
             end
         end
@@ -367,11 +368,19 @@ button("Reset all profile colors"):Click()
 equal(allColorResets, 1, "complete color reset remains available")
 castEnabled, threatEnabled = true, false
 profile.nameSize, profile.matchSanctuaryFont = 31, false
-button("Reset text and layout"):Click()
+profile.nameFont, profile.threatFont, profile.namePlacement = "SKURRI", "MORPHEUS", "INSIDE"
+hideCritters = true
+button("Reset settings"):Click()
 equal(profile.nameSize, 21, "text reset restores size")
 equal(profile.matchSanctuaryFont, true, "text reset restores sanctuary switch")
+equal(profile.nameFont, "FRIZQT", "page reset restores name font")
+equal(profile.threatFont, "ARIALN", "page reset restores threat font")
+equal(profile.namePlacement, "ABOVE", "page reset restores placement")
+equal(hideCritters, false, "page reset restores critter hiding")
+equal(styling, false, "page reset preserves activation")
+
 equal(threatEnabled, true, "text reset preserves prior threat-enable behavior")
-equal(castEnabled, true, "text reset preserves cast toggle")
+equal(castEnabled, false, "page reset restores cast toggle")
 equal(allColorResets, 1, "text reset does not reset colors")
 -- Each category has one global activation control.
 local function modeSwitch(labelText)
@@ -397,7 +406,7 @@ for _, labelText in ipairs({"1. Attacking me", "2. Will attack me — Hostile", 
     equal(toggle:GetChecked(), false, "danger toggle supports inactive")
     toggle:Click()
 end
-assert(belongsTo(stylingSwitch, categories[3].panel), "master switch moved to Appearance")
+assert(belongsTo(stylingSwitch, categories[2].panel), "master switch moved to Profiles")
 local hideSwitch = assert(switchFor("Hide critter and companion names"))
 assert(belongsTo(hideSwitch, categories[3].panel), "critter switch moved to Appearance")
 hideSwitch:Click()
@@ -407,13 +416,40 @@ stylingSwitch:Click()
 equal(styling, true, "moved enable switch enables styling")
 equal(setupChecks, 1, "enabling checks compatibility")
 usefulSwitch:Click()
-button("Reset text and layout"):Click()
+button("Reset settings"):Click()
 button("Reset all profile colors"):Click()
 equal(styling, true, "reset retains global styling choice")
-equal(hideCritters, true, "reset retains critter choice")
+equal(hideCritters, false, "page reset restores global critter default")
 equal(modes.useful, "inactive", "reset retains global category mode")
-assert(stylingSwitch.parent.points.TOPLEFT[4] > button("Reset text and layout").points.TOPLEFT[4], "enable control precedes text reset")
-assert(hideSwitch.parent.points.TOPLEFT[4] > button("Reset text and layout").points.TOPLEFT[4], "critter control precedes text reset")
+local profileDropdown
+for _, item in ipairs(frames) do
+    if item.parent == stylingSwitch.parent and item.template == "UIDropDownMenuTemplate" then profileDropdown = item end
+end
+assert(profileDropdown, "activation shares selector row")
+equal(profileDropdown.points.LEFT[3], 168, "Profiles selector moved left")
+equal(stylingSwitch.points.LEFT[1], profileDropdown, "activation immediately follows selector")
+equal(stylingSwitch.points.LEFT[3], 8, "activation has consistent gap")
+local activationStatus
+for _, item in ipairs(frames) do
+    if item.parent == stylingSwitch.parent and item.text == "Active" then activationStatus = item end
+end
+assert(activationStatus, "active status shown")
+assert(not button("Reset text and layout"), "old reset removed")
+assert(button("Reset settings").points.TOPLEFT[4] > hideSwitch.parent.points.TOPLEFT[4], "reset precedes global visibility")
+
+assert(button("Reset settings").points.TOPLEFT[4] > sanctuaryFont.parent.points.TOPLEFT[4], "reset precedes font controls")
+-- Startup review failures must show the effective inactive state.
+stylingSwitch:Click()
+setupAllowed = false
+ns.CheckNameplateSetup = function()
+    setupChecks = setupChecks + 1
+    styling = false
+    return false
+end
+stylingSwitch:Click()
+equal(stylingSwitch:GetChecked(), false, "setup rejection keeps switch off")
+equal(activationStatus.text, "Inactive", "setup rejection updates status")
+
 -- No activation toggle is invented for the effect color; its display switch stays on Appearance.
 local effectSwatch = colorRow("Interruptible cast highlight")
 for _, item in ipairs(frames) do
