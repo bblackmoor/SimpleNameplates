@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.137
+
+* Moves Reset all colors beneath the Colors profile selector and removes the bottom reset section and separate Reset priority colors button. Restores the factory High Contrast palette only for High Contrast; all other profiles use Default.
+* Resets every setting below the button, including global priority activation to Active and profile cast highlighting to Inactive. Adds a matching Active/Inactive switch beside the cast-highlight color, shared with Appearance.
+
 ## 1.0.136
 
 * Places Reset settings directly below the Appearance profile selector; resets all settings below it, including cast highlighting and global critter/companion hiding. Colors and activation remain unchanged.

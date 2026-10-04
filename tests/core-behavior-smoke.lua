@@ -86,6 +86,47 @@ for _, case in ipairs({
 end
 equal(ns.EnsureDB().profiles.Default.priorityColors.sanctuaryUseful, nil, "no separate useful sanctuary setting")
 equal(ns.EnsureDB().profiles.Default.priorityColors.sanctuaryUseless, nil, "no separate useless sanctuary setting")
+-- Colors-page reset uses the displayed profile name, including global modes.
+equal(ns.CreateProfile("Color reset test"), true, "create custom reset target")
+local expectedPalettes = {
+    {"Default", ns.Defaults.priorityColors, ns.Defaults.effectColors},
+    {"High Contrast", ns.Defaults.colorPresets.highContrast.priorityColors, ns.Defaults.colorPresets.highContrast.effectColors},
+    {"Color reset test", ns.Defaults.priorityColors, ns.Defaults.effectColors},
+}
+for _, case in ipairs(expectedPalettes) do
+    ns.SetActiveProfileName(case[1])
+    for state in pairs(ns.Defaults.categoryModes) do
+        ns.SetPriorityColor(state, 0.1, 0.2, 0.3)
+        ns.SetCategoryMode(state, "inactive")
+    end
+    ns.SetEffectColor("interruptible", 0.2, 0.3, 0.4)
+    ns.SetInterruptibleHighlightEnabled(true)
+    ns.SetAppearanceSetting("nameSize", 30)
+    ns.SetThreatEnabled(false)
+    ns.SetStylingEnabled(false)
+    ns.ResetAllColors()
+    for state, expected in pairs(case[2]) do
+        local r, g, b = ns.PriorityColorForState(state)
+        equal(r, expected.r, case[1] .. " reset " .. state .. " red")
+        equal(g, expected.g, case[1] .. " reset " .. state .. " green")
+        equal(b, expected.b, case[1] .. " reset " .. state .. " blue")
+        equal(ns.GetCategoryMode(state), "active", "reset global activation")
+    end
+    local r, g, b = ns.EffectColor("interruptible")
+    local expected = case[3].interruptible
+    equal(r, expected.r, case[1] .. " reset cast red")
+    equal(g, expected.g, case[1] .. " reset cast green")
+    equal(b, expected.b, case[1] .. " reset cast blue")
+    equal(ns.GetInterruptibleHighlightEnabled(), false, "reset profile cast activation")
+    equal(ns.GetAppearanceSetting("nameSize"), 30, "Colors reset preserves Appearance settings")
+    equal(ns.GetThreatEnabled(), false, "Colors reset preserves threat display")
+    equal(ns.GetStylingEnabled(), false, "Colors reset preserves addon activation")
+    ns.ResetAppearance()
+    ns.SetThreatEnabled(true)
+    ns.SetStylingEnabled(true)
+end
+ns.SetActiveProfileName("Color reset test")
+ns.DeleteActiveProfile()
 equal(ns.SetActiveProfileName("High Contrast"), true, "select bundled")
 equal(ns.GetActiveProfileName(), "High Contrast", "bundled selected")
 equal(ns.PriorityColorForState("attacking"), 1, "contrast red component")

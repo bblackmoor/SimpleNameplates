@@ -135,7 +135,11 @@ local ns = {
     SetThreatEnabled = function(value) threatEnabled = value end,
     GetInterruptibleHighlightEnabled = function() return castEnabled end,
     SetInterruptibleHighlightEnabled = function(value) castEnabled = value end,
-    ResetAllColors = function() allColorResets = allColorResets + 1 end,
+    ResetAllColors = function()
+        allColorResets = allColorResets + 1
+        castEnabled = false
+        for _, state in ipairs({"attacking", "hostile", "neutral", "friendly", "useful", "useless"}) do modes[state] = "active" end
+    end,
     GetTRP3Enabled = function() return trp3Enabled end,
     SetTRP3Enabled = function(value) trp3Enabled = value end,
     GetTRP3Setting = function(key) return trp3Settings[key] ~= false end,
@@ -360,12 +364,11 @@ local _, _, effectFill = colorRow("Interruptible cast highlight")
 assert(belongsTo(effectFill, categories[4].panel), "cast color belongs to Colors")
 local castSwitch = assert(switchFor("Highlight interruptible casts and channels"))
 assert(belongsTo(castSwitch, categories[3].panel), "cast toggle belongs to Appearance")
-resetStates = {}
-button("Reset priority colors"):Click()
-equal(table.concat(resetStates, ","), "attacking,hostile,neutral,friendly,useful,useless", "priority reset scope")
-equal(allColorResets, 0, "priority reset does not call complete color reset")
-button("Reset all profile colors"):Click()
-equal(allColorResets, 1, "complete color reset remains available")
+assert(not button("Reset priority colors"), "priority reset button removed")
+assert(not button("Reset all profile colors"), "old bottom reset removed")
+button("Reset all colors"):Click()
+equal(allColorResets, 1, "complete page reset available")
+assert(button("Reset all colors").points.TOPLEFT[4] > effectFill.parent.parent.points.TOPLEFT[4], "reset precedes cast controls")
 castEnabled, threatEnabled = true, false
 profile.nameSize, profile.matchSanctuaryFont = 31, false
 profile.nameFont, profile.threatFont, profile.namePlacement = "SKURRI", "MORPHEUS", "INSIDE"
@@ -417,10 +420,10 @@ equal(styling, true, "moved enable switch enables styling")
 equal(setupChecks, 1, "enabling checks compatibility")
 usefulSwitch:Click()
 button("Reset settings"):Click()
-button("Reset all profile colors"):Click()
+button("Reset all colors"):Click()
 equal(styling, true, "reset retains global styling choice")
 equal(hideCritters, false, "page reset restores global critter default")
-equal(modes.useful, "inactive", "reset retains global category mode")
+equal(modes.useful, "active", "Colors reset restores global category mode")
 local profileDropdown
 for _, item in ipairs(frames) do
     if item.parent == stylingSwitch.parent and item.template == "UIDropDownMenuTemplate" then profileDropdown = item end
@@ -450,10 +453,28 @@ stylingSwitch:Click()
 equal(stylingSwitch:GetChecked(), false, "setup rejection keeps switch off")
 equal(activationStatus.text, "Inactive", "setup rejection updates status")
 
--- No activation toggle is invented for the effect color; its display switch stays on Appearance.
+-- The effect switch shares the profile setting with Appearance.
 local effectSwatch = colorRow("Interruptible cast highlight")
+local effectSwitch = assert(switchFor("Interruptible cast highlight"))
+assert(belongsTo(effectSwitch, categories[4].panel), "effect activation belongs to Colors")
+equal(effectSwitch.points.LEFT[1], effectSwatch, "effect switch follows color")
+categories[4].panel.scripts.OnShow(categories[4].panel)
+effectSwitch:Click()
+equal(castEnabled, true, "effect activation enables cast highlighting")
+categories[3].panel.scripts.OnShow(categories[3].panel)
+equal(castSwitch:GetChecked(), true, "Appearance refresh shares effect activation")
+castSwitch:Click()
+categories[4].panel.scripts.OnShow(categories[4].panel)
+equal(effectSwitch:GetChecked(), false, "Colors refresh shares Appearance switch")
+effectSwitch:Click()
+button("Reset all colors"):Click()
+equal(effectSwitch:GetChecked(), false, "Colors reset restores effect activation")
+for _, labelText in ipairs({"1. Attacking me", "6. NPC - Background"}) do
+    local swatch = colorRow(labelText)
+    assert(button("Reset all colors").points.TOPLEFT[4] > swatch.parent.points.TOPLEFT[4], "reset precedes priority settings")
+end
 for _, item in ipairs(frames) do
-    assert(not (item.parent == effectSwatch.parent and item.kind == "Button" and item.width == 44), "effect color has no category mode")
+    assert(not (belongsTo(item, categories[4].panel) and item.text == "Reset colors"), "bottom reset section removed")
 end
 
 -- Shared layout remeasures wrapped descriptions and keeps actions on their own rows.

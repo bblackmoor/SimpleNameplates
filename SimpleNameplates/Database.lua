@@ -458,6 +458,10 @@ local function ResetAllColors()
     for key, default in pairs(defaults.effectColors) do
         profile.effectColors[key] = CopyColor(default)
     end
+    profile.interruptibleHighlight = defaults.interruptibleHighlight
+    local modes = EnsureDB().global.categoryModes
+    for key, default in pairs(DEFAULT_CATEGORY_MODES) do modes[key] = default end
+    if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
 end
 
 local function GetInterruptibleHighlightEnabled()

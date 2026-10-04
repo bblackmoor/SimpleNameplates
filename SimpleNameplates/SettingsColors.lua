@@ -26,7 +26,7 @@ local function OpenColorPicker(getColor, setColor, updateSwatch)
     })
 end
 
-local function CreateColorRow(context, text, displayText, getColor, setColor, resetColor, modeKey)
+local function CreateColorRow(context, text, displayText, getColor, setColor, resetColor, activation)
     local row = U.CreateSettingRow(context.content, context.layout, text)
     local swatch = CreateFrame("Button", nil, row, "BackdropTemplate")
     swatch:SetSize(26, 26)
@@ -55,9 +55,9 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
     local function RefreshSwatches() RunRefreshers(context.swatchRefreshers) end
     swatch:SetScript("OnClick", function() OpenColorPicker(getColor, setColor, RefreshSwatches) end)
     local resetAnchor = swatch
-    if modeKey then
+    if activation then
         local toggle = U.CreateSwitch(row, function(checked)
-            ns.SetCategoryMode(modeKey, checked and "active" or "inactive")
+            activation.set(checked)
             ns.DisableFriendlyClassColors()
             RunRefreshers(context.refreshers)
             RefreshNameplates()
@@ -68,7 +68,7 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
         status:SetWidth(56)
         status:SetJustifyH("LEFT")
         local function RefreshMode()
-            local active = ns.GetCategoryMode(modeKey) == "active"
+            local active = activation.get()
             toggle:SetChecked(active)
             status:SetText(active and "Active" or "Inactive")
         end
@@ -92,7 +92,10 @@ local function CreatePriorityColorRow(context, text, state, displayText)
     CreateColorRow(context, text, displayText,
         function() return PriorityColorForState(state) end,
         function(r, g, b) SetPriorityColor(state, r, g, b) end,
-        function() ResetPriorityColor(state) end, state)
+        function() ResetPriorityColor(state) end, {
+            get = function() return ns.GetCategoryMode(state) == "active" end,
+            set = function(checked) ns.SetCategoryMode(state, checked and "active" or "inactive") end,
+        })
 end
 
 local function AddPriorityColorControls(context)
@@ -113,14 +116,6 @@ local function AddPriorityColorControls(context)
     CreatePriorityColorRow(context, "6. NPC - Background", "useless",
         "Remaining entity: colored name out of combat; health bar in combat when supported")
 
-    U.AddActionButton(context.content, context.layout, "Reset priority colors", function()
-        for _, state in ipairs({"attacking", "hostile", "neutral", "friendly", "useful", "useless"}) do
-            ResetPriorityColor(state)
-        end
-        RunRefreshers(context.swatchRefreshers)
-        RefreshNameplates()
-    end)
-
 
 end
 
@@ -134,20 +129,25 @@ local function CreateColorsPanel()
         RunRefreshers(context.swatchRefreshers)
     end
     ns.AddProfileSelector(content, layout, context.refreshers, Refresh)
-    AddPriorityColorControls(context)
-    AddSection(content, layout, "Cast highlight color")
-    CreateColorRow(context, "Interruptible cast highlight",
-        "The pulsing border is enabled on Appearance. This setting changes its color.",
-        function() return EffectColor("interruptible") end,
-        function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
-        function() ResetEffectColor("interruptible") end)
-    AddSection(content, layout, "Reset colors")
-    AddDescription(content, layout, "Resets every color in this profile: Priority colors and the cast highlight color.")
-    U.AddActionButton(content, layout, "Reset all profile colors", function()
+    U.AddActionButton(content, layout, "Reset all colors", function()
         ns.ResetAllColors()
+        ns.DisableFriendlyClassColors()
         Refresh()
         RefreshNameplates()
     end)
+    AddDescription(content, layout,
+        "Resets all colors and switches below. High Contrast uses its factory palette; every other profile uses Default. " ..
+        "Priority switches reset globally to Active; cast highlighting resets to Inactive for this profile.")
+    AddPriorityColorControls(context)
+    AddSection(content, layout, "Cast highlight color")
+    CreateColorRow(context, "Interruptible cast highlight",
+        "Active enables the pulsing border for this profile. Its switch is shared with Appearance.",
+        function() return EffectColor("interruptible") end,
+        function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
+        function() ResetEffectColor("interruptible") end, {
+            get = ns.GetInterruptibleHighlightEnabled,
+            set = ns.SetInterruptibleHighlightEnabled,
+        })
     panel:SetScript("OnShow", Refresh)
     Refresh()
     layout:Finish()
