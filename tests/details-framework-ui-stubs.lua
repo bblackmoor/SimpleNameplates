@@ -164,7 +164,17 @@ function methods:GetRegions()
 end
 UIParent=object('UIParent'); GameTooltip=object('GameTooltip'); ColorPickerFrame=object('ColorPickerFrame')
 for _,k in ipairs({'GameFontNormal','GameFontHighlight','GameFontNormalSmall','GameFontHighlightSmall','GameFontNormalLarge','GameFontHighlightLarge','NumberFontNormal','NumberFontNormalSmall'}) do _G[k]=object(k,nil,'Font') end
-function ColorPickerFrame:SetupColorPickerAndShow(info) self.info=info end
+function ColorPickerFrame:SetupColorPickerAndShow(info)
+    self.info, self.extraInfo = info, info.extraInfo
+    self:Show()
+    info.swatchFunc() -- Native setup may synchronously set the initial selection.
+end
+function ColorPickerFrame:GetExtraInfo() return self.extraInfo end
+function ColorPickerFrame:Hide()
+    local wasShown = self.shown
+    self.shown = false
+    if wasShown and self.scripts.OnHide then self.scripts.OnHide(self) end
+end
 PixelUtil={SetSize=function(o,...)o:SetSize(...)end,SetPoint=function(o,...)o:SetPoint(...)end,SetWidth=function(o,...)o:SetWidth(...)end,SetHeight=function(o,...)o:SetHeight(...)end,GetPixelToUIUnitFactor=function()return 1 end}
 
 return {objects = objects}

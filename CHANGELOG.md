@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.157
+
+* Fixes stale color-picker callbacks that could undo a later reset or affect a newly selected profile. Each opening owns a token; resets, profile switches, swatch disable/hide and page hide cancel previews, while accepted edits retire their callbacks. Another addon's picker is not closed or edited. Native setup's initial color event does not write settings or refresh plates.
+* Binds Copy, Rename and Delete dialogs to the profile selected when opened. If selection changes before acceptance, the action is rejected with a prompt to reopen the dialog instead of operating on the new selection.
+* Separates picker opening/application/completion from swatch construction and adds regressions for both reproduced bugs, accepted/replaced/disabled editors, cross-profile rollback and foreign-picker ownership. All seventeen smoke suites and whitespace checks pass; native client checks remain pending.
+
 ## 1.0.156
 
 * Completes phase 6 repository cleanup for the Details Framework conversion: removes unused native switch/toggle/action implementations and shares adapted switch rows, activation status, dropdown alignment and page-action layout across settings pages. Keeps page-specific setters, refreshes, dialog behavior, reset scope and preview cancellation.

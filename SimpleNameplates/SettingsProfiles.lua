@@ -3,8 +3,15 @@ local _, ns = ...
 local U, W = ns.SettingsUI, ns.SettingsWidgets
 local AddDescription, RefreshNameplates = U.AddDescription, U.RefreshNameplates
 
-local function CancelAppearanceEdits()
+local function CancelProfileEdits()
+    W.CancelColorEdit()
     if ns.CancelAppearanceEdits then ns.CancelAppearanceEdits(true) end
+end
+
+local function DialogProfileIsCurrent(data)
+    if not data.profileName or data.profileName == ns.GetActiveProfileName() then return true end
+    print("|cff0cd29fSimple Nameplates:|r Selected profile changed. Reopen the profile dialog to continue.")
+    return false
 end
 
 local function RegisterProfileDialogs()
@@ -19,6 +26,7 @@ local function RegisterProfileDialogs()
             editBox:HighlightText()
         end,
         OnAccept = function(self, data)
+            if not DialogProfileIsCurrent(data) then return end
             local editBox = self.GetEditBox and self:GetEditBox() or self.editBox
             local ok, message = data.action(editBox:GetText())
             if not ok and message then print("|cff0cd29fSimple Nameplates:|r " .. message) end
@@ -35,6 +43,7 @@ local function RegisterProfileDialogs()
         text = "Delete the profile |cffffffff%s|r? Characters using it will switch to Default.",
         button1 = DELETE or "Delete", button2 = CANCEL or "Cancel",
         OnAccept = function(_, data)
+            if not DialogProfileIsCurrent(data) then return end
             local ok, message = ns.DeleteActiveProfile()
             if not ok and message then print("|cff0cd29fSimple Nameplates:|r " .. message) end
             if ok then data.onChanged() end
@@ -53,16 +62,21 @@ local function RegisterProfileDialogs()
 end
 
 local function CreateProfileButtons(content, layout, changed)
-    local function OpenNameDialog(action, initial)
+    local function OpenNameDialog(action, initial, profileName)
         StaticPopup_Show("SNP_PROFILE_NAME", nil, nil,
-            {action = action, initial = initial, onChanged = changed})
+            {action = action, initial = initial, profileName = profileName, onChanged = changed})
+    end
+    local function OpenActiveNameDialog(action, suffix)
+        local name = ns.GetActiveProfileName()
+        OpenNameDialog(action, name .. suffix, name)
     end
     local definitions = {
         {"Create", function() OpenNameDialog(ns.CreateProfile, "") end},
-        {"Copy", function() OpenNameDialog(ns.CopyActiveProfile, ns.GetActiveProfileName() .. " Copy") end},
-        {"Rename", function() OpenNameDialog(ns.RenameActiveProfile, ns.GetActiveProfileName()) end},
+        {"Copy", function() OpenActiveNameDialog(ns.CopyActiveProfile, " Copy") end},
+        {"Rename", function() OpenActiveNameDialog(ns.RenameActiveProfile, "") end},
         {"Delete", function()
-            StaticPopup_Show("SNP_DELETE_PROFILE", ns.GetActiveProfileName(), nil, {onChanged = changed})
+            StaticPopup_Show("SNP_DELETE_PROFILE", ns.GetActiveProfileName(), nil,
+                {profileName = ns.GetActiveProfileName(), onChanged = changed})
         end},
     }
     local row = CreateFrame("Frame", nil, content)
@@ -93,7 +107,7 @@ local function AddProfileSelector(content, layout, refreshers, onChanged, contro
         end
         return options
     end, function(name)
-        CancelAppearanceEdits()
+        CancelProfileEdits()
         ns.SetActiveProfileName(name)
         Refresh()
         if onChanged then onChanged() end

@@ -149,4 +149,36 @@ panel:GetScript("OnShow")(panel)
 panel:GetScript("OnShow")(panel)
 assert(Snapshot(SimpleNameplatesDB) == initial and refreshes == before, "show/reflow refresh is read-only")
 assert(ns.GetThreatEnabled() and ns.GetStylingEnabled(), "unrelated global settings preserved")
+-- Old picker callbacks must not undo a reset or write into the next profile.
+local attacking = Control(Row("1. Attacking me"), "color")
+ns.SetPriorityColor("attacking", 0.7, 0.8, 0.9)
+panel:GetScript("OnShow")(panel)
+Click(attacking)
+local oldPicker = ColorPickerFrame.info
+oldPicker.swatchFunc()
+Click(resetAll)
+oldPicker.cancelFunc()
+RGBEqual({ns.PriorityColorForState("attacking")}, 1, 0, 1)
+oldPicker.swatchFunc()
+RGBEqual({ns.PriorityColorForState("attacking")}, 1, 0, 1)
+-- Switching profiles rolls back the original profile before refreshing the new one.
+ns.SetPriorityColor("attacking", 0.7, 0.8, 0.9)
+panel:GetScript("OnShow")(panel)
+Click(attacking); oldPicker = ColorPickerFrame.info; oldPicker.swatchFunc()
+local target = Snapshot(ns.EnsureDB().profiles.Default)
+for _, option in ipairs(selector.MyObject.func()) do
+    if option.value == "Default" then option.onclick(nil, nil, option.value) end
+end
+RGBEqual({ns.EnsureDB().profiles["High Contrast"].priorityColors.attacking.r,
+    ns.EnsureDB().profiles["High Contrast"].priorityColors.attacking.g,
+    ns.EnsureDB().profiles["High Contrast"].priorityColors.attacking.b}, 0.7, 0.8, 0.9)
+oldPicker.cancelFunc(); oldPicker.swatchFunc()
+assert(Snapshot(ns.EnsureDB().profiles.Default) == target)
+Click(attacking); oldPicker = ColorPickerFrame.info; oldPicker.swatchFunc()
+local reset = Control(Row("1. Attacking me"), "button")
+Click(reset); oldPicker.cancelFunc()
+RGBEqual({ns.PriorityColorForState("attacking")}, 1, 0, 0)
+Click(attacking); oldPicker = ColorPickerFrame.info; oldPicker.swatchFunc()
+panel:GetScript("OnHide")(panel); oldPicker.swatchFunc()
+RGBEqual({ns.PriorityColorForState("attacking")}, 1, 0, 0)
 print("Colors settings integration smoke: passed")

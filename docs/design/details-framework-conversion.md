@@ -1,6 +1,6 @@
 # Details Framework settings conversion
 
-Current status (1.0.156): phases 1–6 repository work is complete; all 17 smoke
+Current status (1.0.157): phases 1–6 repository work is complete; all 17 smoke
 suites pass. Final in-game verification remains pending. The baseline and earlier
 phase notes below describe their recorded releases, not the current widget inventory.
 
@@ -360,3 +360,28 @@ historical design notes remain historical and are not instructions to restore
 removed controls. No further implementation phase is planned. Final acceptance
 still requires observed client rendering/input, external-copy compatibility and
 combat/taint checks in live-wow-verification.md.
+
+## Post-conversion review (1.0.157)
+
+Review reproduced two settings races with the real library/database tests: an
+old color Cancel callback restored a custom color after Reset all colors, and
+accepting Delete after changing selection deleted the newly selected profile.
+The tests failed before fixes and pass afterward.
+
+The adapter now separates OpenColorEditor, ApplyColor and FinishColorEdit from
+swatch construction. Each opening is tagged through Blizzard's extraInfo /
+GetExtraInfo contract; stale callbacks are ignored. Explicit cancellation
+rolls back before resets or shared profile selection and closes only the owned
+picker. Native hide retires accepted edits without rollback. Disable/hide also
+close a swatch's editor, and opening another swatch rolls back the previous
+preview. Native setup's synchronous color event is suppressed. The modern
+picker lifecycle was checked against the [Blizzard source mirror](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_ColorPickerFrame/Mainline/ColorPickerFrame.lua).
+
+Copy/Rename/Delete dialogs capture their target profile name; acceptance checks
+it against the current selection and rejects a changed target. Create remains
+independent of the previously selected profile. Database behavior is unchanged.
+New regressions cover stale callbacks after page/individual resets and profile
+changes, previous-profile rollback, Okay/hide commitment, editor replacement,
+disable, another addon's picker, initial setup suppression, and all three stale
+profile actions. All 17 smoke suites pass; native client timing/security still
+requires the open live checklist.

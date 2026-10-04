@@ -41,6 +41,7 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
     frame:HookScript("OnLeave", function() GameTooltip:Hide() end)
     local resetAnchor = activation and AddActivation(context, row, swatch, activation) or frame
     local reset = W.CreateButton(row, "Reset", function()
+        W.CancelColorEdit()
         resetColor()
         RefreshContext(context)
         RefreshNameplates()
@@ -101,6 +102,7 @@ local function CreateColorsPanel()
     end
     ns.AddProfileSelector(content, layout, context.refreshers, Refresh)
     U.AddPageAction(content, layout, "Reset all colors", function()
+        W.CancelColorEdit()
         ns.ResetAllColors()
         Refresh()
         RefreshNameplates()
@@ -117,6 +119,7 @@ local function CreateColorsPanel()
         function() ResetEffectColor("interruptible") end)
     AddCastEffectSelector(context)
     panel:SetScript("OnShow", Refresh)
+    panel:SetScript("OnHide", W.CancelColorEdit)
     Refresh()
     layout:Finish()
     return panel

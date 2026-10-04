@@ -179,4 +179,19 @@ ns.TRP3=integration
 before=Snapshot(SimpleNameplatesDB); old=integrations; local oldRefresh=refreshes
 Show(panels[1]); Show(panels[2])
 assert(Snapshot(SimpleNameplatesDB)==before and integrations==old and refreshes==oldRefresh, "show refreshes are silent")
+-- A confirmation stays tied to the profile named when it was opened.
+Choose("Custom"); Click(delete)
+local staleDelete = popup
+Choose("High Contrast")
+before=Snapshot(SimpleNameplatesDB)
+StaticPopupDialogs.SNP_DELETE_PROFILE.OnAccept(nil, staleDelete.data)
+assert(Snapshot(SimpleNameplatesDB)==before, "stale confirmation cannot delete the newly selected profile")
+for _, action in ipairs({"Copy", "Rename"}) do
+    Choose("Custom"); Click(Button(action))
+    local staleName = popup
+    Choose("High Contrast")
+    before = Snapshot(SimpleNameplatesDB)
+    popup = staleName; AcceptName("Wrong target")
+    assert(Snapshot(SimpleNameplatesDB) == before, "stale " .. action .. " dialog is ignored")
+end
 print("Profiles, TRP3 and About integration smoke: passed")

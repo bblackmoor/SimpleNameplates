@@ -146,6 +146,44 @@ picker.cancelFunc()
 assert(changes == 7 and rgb[1] == 0.2 and rgb[2] == 0.3 and rgb[3] == 0.4)
 assert(color:GetColor() == 0.2, "cancel restores captured RGB and notifies")
 
+-- Picker lifecycle: setup is silent; replacement, hide and disable retire callbacks.
+local count = changes
+Click(color.frame)
+local first = ColorPickerFrame.info
+assert(changes == count, "native initial color event is suppressed")
+first.swatchFunc()
+assert(color:GetColor() == 0.8)
+local other = widgets.CreateColorPicker(UIParent, function() Changed() end)
+other:SetColor(0.1, 0.2, 0.3)
+Click(other.frame)
+assert(color:GetColor() == 0.2, "opening another swatch rolls back the first preview")
+count = changes
+first.cancelFunc(); first.swatchFunc()
+assert(changes == count and other:GetColor() == 0.1, "retired callbacks are ignored")
+local accepted = ColorPickerFrame.info
+accepted.swatchFunc()
+ColorPickerFrame:Hide() -- Native Okay hides after applying its final swatch callback.
+count = changes
+widgets.CancelColorEdit(); accepted.cancelFunc()
+assert(changes == count and other:GetColor() == 0.8, "accepted previews stay committed")
+other:SetColor(0.1, 0.2, 0.3)
+Click(other.frame)
+local disabled = ColorPickerFrame.info
+disabled.swatchFunc()
+other:SetEnabled(false)
+count = changes
+disabled.swatchFunc(); disabled.cancelFunc()
+assert(changes == count and other:GetColor() == 0.1 and not ColorPickerFrame:IsShown(), "disable rolls back and retires the editor")
+other:SetEnabled(true)
+Click(color.frame)
+local displaced = ColorPickerFrame.info
+displaced.swatchFunc()
+ColorPickerFrame:SetupColorPickerAndShow({extraInfo = {}, swatchFunc = function() end})
+count = changes
+widgets.CancelColorEdit(); displaced.cancelFunc(); displaced.swatchFunc()
+assert(changes == count and ColorPickerFrame:IsShown(), "another addon's picker is left open")
+ColorPickerFrame:Hide()
+
 -- Inspect final assets on every adapter-created native child, including menus.
 local function DescendsFrom(object, ancestor)
     while object do

@@ -2,7 +2,8 @@
 
 Status: pending. Details Framework phases 1–6 repository work is complete in
 1.0.156, with all 17 local smoke suites passing; no native client observation is
-implied by that result. These checks require a World of Warcraft client; local Lua stubs do not establish actual frame behavior, secure CVar behavior, or Midnight secret-value safety. Record the client build, addon version, date, and observed result when running them. Leave a check open until it is observed in game.
+implied by that result. Version 1.0.157 adds picker/dialog race fixes; all 17 suites
+still pass. These checks require a World of Warcraft client; local Lua stubs do not establish actual frame behavior, secure CVar behavior, or Midnight secret-value safety. Record the client build, addon version, date, and observed result when running them. Leave a check open until it is observed in game.
 
 ## Details Framework foundation (1.0.151)
 
@@ -32,6 +33,12 @@ implied by that result. These checks require a World of Warcraft client; local L
 - [ ] Test TRP3 detected/absent, master and dependent switches, saved choices, disabled/dimmed labels and actual name/title fallback/refreshes.
 - [ ] Verify About's source link is borderless, changes color on hover and opens a usable Ctrl+C dialog. The three color examples remain undimmed and never open a picker; their info links and tooltips work.
 - [ ] Record client build, DF minor, addon version and combat/taint observations. Leave unobserved checks pending.
+
+## Picker and profile-dialog review (1.0.157)
+
+- [ ] Preview a color, then reset that row or the entire page, switch profiles, hide Colors, or open another swatch. Verify rollback stays with the original profile and later Cancel cannot undo a reset or affect the next edit. Accept with Okay and verify the accepted color remains after subsequent page/profile actions.
+- [ ] Open another addon's picker while a Simple Nameplates edit is active; verify this addon does not close or edit the other picker's session.
+- [ ] Open Copy, Rename or Delete, change the selected profile before accepting, then accept. Verify no profile changes and the message asks to reopen the dialog. Confirm normal unchanged-selection operations still work.
 
 ## Setup and saved data
 

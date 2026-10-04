@@ -69,7 +69,8 @@ end
 GameTooltip = region("Tooltip")
 ColorPickerFrame = region("Picker")
 function ColorPickerFrame:GetColorRGB() return 0.4, 0.5, 0.6 end
-function ColorPickerFrame:SetupColorPickerAndShow(options) self.options = options end
+function ColorPickerFrame:GetExtraInfo() return self.extraInfo end
+function ColorPickerFrame:SetupColorPickerAndShow(options) self.options, self.extraInfo = options, options.extraInfo end
 local menuOptions = {}
 StaticPopupDialogs = {}
 function StaticPopup_Show(key, text, _, data)
