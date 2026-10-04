@@ -97,17 +97,16 @@ Simple Nameplates styles accessible nameplates supplied by the game; it has no s
 
 **Hide critter and companion names** controls ordinary overhead names for noncombat critters and companions. Their prior WoW settings are restored when disabled.
 
-Appearance groups presentation by combat state:
+Appearance groups fonts, health-bar controls, and global visibility:
 
 | Section | Controls and presentation |
 | --- | --- |
 | Fonts and sizing | Unit-name font, shared 8–36 point name size, and sanctuary font matching |
-| Out of combat | Explains floating names and automatic NPC service titles; danger categories retain supported bars |
-| In combat | Bar-name placement and threat font/display; also applies whenever bars appear out of combat. Cast highlighting is on Colors. |
+| Health bars | Bar-name placement and threat font/display, with one note explaining combat visibility. Cast highlighting is on Colors. |
 
 The sections use the same saved settings in both combat states. All TRP3 options, including the global long-title switch, are together on TRP3. Name-only titles can remain visible in combat if no supported health bar is available.
 
-Headings use sentence case, labels use normal white text, and muted descriptions wrap below the relevant row. Controls share a common column. Individual resets follow their controls; section actions appear beneath the section's controls, with explicit scope. **Reset settings** restores every setting below it on Appearance: the selected profile's fonts, sizing, sanctuary font matching, name placement, threat display (on), plus global critter/companion hiding (off). It leaves profile selection, the Profiles-page Active switch, color values, global category activation, and TRP3 preferences unchanged. Cast highlighting is controlled and reset on Colors.
+Headings use sentence case, labels use normal white text, and brief notes explain scope or exceptions without repeating the labels. Controls share a common column. Individual resets follow their controls; section actions appear beneath the section's controls, with explicit scope. **Reset settings** restores every setting below it on Appearance: the selected profile's fonts, sizing, sanctuary font matching, name placement, threat display (on), plus global critter/companion hiding (off). It leaves profile selection, the Profiles-page Active switch, color values, global category activation, and TRP3 preferences unchanged. Cast highlighting is controlled and reset on Colors.
 
 **Match Blizzard font in sanctuaries** is enabled by default in each appearance profile. It uses Blizzard's localized native world-name font face for addon-controlled names and NPC/TRP3 titles throughout sanctuary areas, including names inside health bars. Turn it off to use the selected Name font everywhere. Outside sanctuaries, the selected font applies normally. Sizes, colors, positioning, and the separate threat font retain their existing behavior. This improves consistency with inaccessible opposite-faction PC labels; it does not make those labels editable or guarantee identical sizing and outlines.
 

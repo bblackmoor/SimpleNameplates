@@ -95,7 +95,7 @@ local function ShowReview(issues, failure)
     local text = table.concat(lines, "\n\n")
     if failure then text = failure .. "\n\n" .. text end
     StaticPopupDialogs.SNP_NAMEPLATE_SETUP = {
-        text = "|cff0cd29fSimple Nameplates — Setup|r\n\n%s\n\nApply these changes and enable styling, or disable styling. Changed settings are saved and restored when styling is disabled.\n\nWoW may still withhold some plates, including opposite-faction players in sanctuary.",
+        text = "|cff0cd29fSimple Nameplates — Setup|r\n\n%s\n\nChanged WoW settings are restored when styling is disabled.\n\nWoW may still withhold some plates, including opposite-faction players in sanctuary.",
         button1 = "Apply and enable", button2 = "Disable styling",
         OnAccept = function() Apply() end,
         OnCancel = function() Disable() end,

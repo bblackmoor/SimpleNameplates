@@ -42,11 +42,9 @@ end
 
 local function AddGlobalAppearanceControls(content, layout, refreshers)
     U.AddSection(content, layout, "Global visibility")
-    U.AddDescription(content, layout,
-        "This setting applies to every character and profile. Reset settings also restores it to its default.")
     U.AddToggle(content, layout, refreshers, "Hide critter and companion names",
         ns.GetHideCritterCompanionNames, ns.SetHideCritterCompanionNames)
-    U.AddDescription(content, layout, "Hides native world names for noncombat critters and companions.")
+    U.AddDescription(content, layout, "Noncombat units only.")
 end
 ns.AddStylingSwitch = AddStylingSwitch
 ns.AddGlobalAppearanceControls = AddGlobalAppearanceControls

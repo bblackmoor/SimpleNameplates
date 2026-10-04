@@ -101,28 +101,21 @@ end
 local function AddPriorityColorControls(context)
     AddSection(context.content, context.layout, "Priority colors")
     AddDescription(context.content, context.layout,
-        "The switch beside each color is global: Active applies addon styling; Inactive leaves Blizzard presentation. " ..
-        "Colors remain profile settings and can be edited while inactive.")
+        "First matching category wins. These switches apply globally; Inactive keeps Blizzard's display.")
     CreatePriorityColorRow(context, "1. Attacking me", "attacking",
-        "Health bar; includes attacks on your controlled units; overrides 2–6")
+        "Includes attacks on your controlled units.")
     CreatePriorityColorRow(context, "2. Will attack me — Hostile", "hostile",
-        "Health bar for aggressive NPCs and eligible PvP opponents")
-    CreatePriorityColorRow(context, "3. Can attack me — Neutral", "neutral",
-        "Health bar for entities that can attack you without a higher priority")
-    CreatePriorityColorRow(context, "4. Player - Friendly", "friendly",
-        "Colored name out of combat; colored health bar in combat when supported")
-    CreatePriorityColorRow(context, "5. NPC - Interactive", "useful",
-        "Interactive NPC: colored name out of combat; health bar in combat when supported")
+        "Includes eligible PvP opponents.")
+    CreatePriorityColorRow(context, "3. Can attack me — Neutral", "neutral")
+    CreatePriorityColorRow(context, "4. Player - Friendly", "friendly")
+    CreatePriorityColorRow(context, "5. NPC - Interactive", "useful")
     CreatePriorityColorRow(context, "6. NPC - Background", "useless",
-        "Remaining entity: colored name out of combat; health bar in combat when supported")
-
-
+        "Fallback for unmatched entities.")
 end
 
 local function CreateColorsPanel()
     local panel, content, layout = U.CreateScrollablePanel("Colors")
     U.AddTitle(content, layout, "Colors")
-    AddDescription(content, layout, "Appearance-profile colors apply to accessible names and bars in both combat states.")
     local context = {content = content, layout = layout, swatchRefreshers = {}, refreshers = {}}
     local function Refresh()
         RunRefreshers(context.refreshers)
@@ -136,12 +129,12 @@ local function CreateColorsPanel()
         RefreshNameplates()
     end)
     AddDescription(content, layout,
-        "Resets all colors and switches below. High Contrast uses its factory palette; every other profile uses Default. " ..
-        "Priority switches reset globally to Active; cast highlighting resets to Inactive for this profile.")
+        "Restores High Contrast defaults for that profile, Default for all others. " ..
+        "Resets global priority switches to Active and this profile's cast highlight to Inactive.")
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
     CreateColorRow(context, "Interruptible cast highlight",
-        "Active pulses a border in this color when Blizzard reports an interruptible cast or channel. Inactive disables the highlight for this profile.",
+        "Pulses the cast-bar border for interruptible casts and channels. This switch applies only to the selected profile.",
         function() return EffectColor("interruptible") end,
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
         function() ResetEffectColor("interruptible") end, {

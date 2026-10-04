@@ -14,17 +14,17 @@ local PRESENTATION_LIMITS = {
 
 local function RegisterWorldLabelPopups()
     StaticPopupDialogs["SNP_BLIZZARD_OVERHEAD_INFO"] = {
-        text = "Nonattackable opposite-faction PCs in sanctuary have been observed with native periwinkle overhead labels and no matching addon-accessible plate. That presentation remains outside the addon's control. The verified entity types and world contexts are listed in About.\n\nNative pet, guardian, totem, and minion world labels are also separate from nameplate text. Simple Nameplates styles those entities only where Blizzard supplies an accessible plate.",
+        text = "In the sanctuary contexts listed here, nonattackable opposite-faction PCs have native overhead names without an accessible nameplate. The addon cannot style those names.\n\nPet, guardian, totem and minion world labels are also separate; their accessible nameplates can still be styled.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["SNP_BLIZZARD_INTERACTIVE_INFO"] = {
-        text = "Blizzard's native interactive-NPC world labels are separate from addon-accessible nameplates. Their native color is controlled by the game.\n\nInteractive NPCs can also have ordinary nameplates that Simple Nameplates styles, including service titles when verified. Enable Friendly NPC Nameplates for ordinary friendly NPC plates. A native world-label color does not establish whether a separate plate is available.",
+        text = "Native world labels use Blizzard's colors. Enable Friendly NPC Nameplates to allow styling of separate accessible plates and verified service titles.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["SNP_BLIZZARD_VENDOR_INFO"] = {
-        text = "Blizzard's native vendor-NPC world labels are separate from addon-accessible nameplates. Their native color is controlled by the game.\n\nVendor NPCs can also have ordinary nameplates that Simple Nameplates styles, including service titles when verified. Enable Friendly NPC Nameplates for ordinary friendly NPC plates. Vendors are not a blanket unalterable entity category.",
+        text = "Native vendor world labels use Blizzard's colors. Enable Friendly NPC Nameplates to allow styling of separate accessible plates and verified service titles.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
@@ -74,9 +74,7 @@ local function CreateAboutPanel()
     AddTitle(content, layout, "About")
     RegisterWorldLabelPopups()
     AddDescription(content, layout,
-        "A deliberately simple standalone nameplate-color addon. It recolors addon-accessible " ..
-        "Blizzard Midnight nameplates with customizable Priority Colors and an optional " ..
-        "interruptible cast highlight.")
+        "Customizes accessible Blizzard nameplates with priority colors, text styling and a pulsing cast highlight.")
 
     AddDescription(content, layout, "Version " .. VERSION .. "\nAuthor: Brandon Blackmoor\nCategory: Unit Frames\nLicense: GPL-3.0")
 
@@ -108,20 +106,17 @@ local function CreateAboutPanel()
         "/snp about — This page")
     U.AddSection(content, layout, "Presentation limits")
     AddDescription(content, layout,
-        "These observed entity/context combinations have native overhead names but no matching addon-accessible " ..
-        "plate. Simple Nameplates currently cannot change their name color, font, size, titles, or layout. " ..
-        "Visibility settings were enabled; no supported workaround was found.", 76)
+        "No accessible nameplate was found in these contexts despite enabled visibility settings; " ..
+        "the addon cannot change the native name, font, size, color, titles or position.")
     for _, case in ipairs(PRESENTATION_LIMITS) do
-        AddDescription(content, layout, case[1] .. " — " .. case[2], 58)
+        AddDescription(content, layout, case[1] .. " — " .. case[2])
     end
     AddDescription(content, layout,
-        "Recorded 2026-10-02. This is an observed limitation, not proof that every opposite-faction " ..
-        "PC is inaccessible in every context. Duplicate actor text on widget-only NPC plates was " ..
-        "resolved in v1.0.117; ordinary NPC names and service titles can be styled.", 70)
+        "Observed 2026-10-02; other contexts may differ. Duplicate NPC widget labels were fixed in v1.0.117; " ..
+        "ordinary NPC names and service titles can be styled.")
     U.AddSection(content, layout, "Native world-label examples")
     AddDescription(content, layout,
-        "These swatches describe Blizzard's separate world labels, not editable nameplate colors. " ..
-        "An ordinary accessible NPC or minion plate can still be styled. Click an info link for details.")
+        "Read-only examples of Blizzard's separate world labels. Accessible NPC and minion nameplates can still be styled.")
     local context = {content = content, layout = layout}
     CreateLockedColorRow(context, "Opposite-faction PC labels in sanctuary",
         102 / 255, 102 / 255, 1, "SNP_BLIZZARD_OVERHEAD_INFO")

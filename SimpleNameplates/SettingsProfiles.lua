@@ -38,7 +38,7 @@ local function RegisterProfileDialogs()
         timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["SNP_RESTORE_BUNDLED_PROFILES"] = {
-        text = "Restore the bundled Default and High Contrast profiles? This replaces their current appearance settings and recreates High Contrast if it was deleted or renamed.",
+        text = "Restore factory settings for Default and High Contrast? Their changes will be lost; missing bundled profiles will be recreated.",
         button1 = "Restore", button2 = CANCEL or "Cancel",
         OnAccept = function(_, data)
             ns.RestoreBundledProfiles()
@@ -125,17 +125,15 @@ local function CreateProfilesPanel()
     local panel, content, layout = U.CreateScrollablePanel("Profiles")
     U.AddTitle(content, layout, "Profiles")
     AddDescription(content, layout,
-        "Appearance profiles are shared account-wide. Each character remembers its selected profile. " ..
-        "Category activation, addon behavior, and TRP3 preferences are global.")
+        "Profiles are account-wide; each character remembers its selection.")
     local refreshers = {}
     local function Refresh() U.RunRefreshers(refreshers) end
     local row, dropdown = AddProfileSelector(content, layout, refreshers, Refresh, 184)
     ns.AddStylingSwitch(row, dropdown, refreshers)
-    AddDescription(content, layout, "Active enables Simple Nameplates for all characters and profiles.")
+    AddDescription(content, layout, "Enables addon styling for all characters and profiles.")
     U.AddSection(content, layout, "Manage profiles")
     AddDescription(content, layout,
-        "Create starts with factory defaults. Copy duplicates the selected profile. " ..
-        "Default can be edited but cannot be renamed or deleted.")
+        "Create uses factory defaults. Default cannot be renamed or deleted.")
     local buttons = CreateProfileButtons(content, layout)
     local function Changed() Refresh(); RefreshNameplates() end
     InstallProfileButtonScripts(buttons, Changed)
@@ -146,8 +144,7 @@ local function CreateProfilesPanel()
     end
     U.AddSection(content, layout, "Restore bundled profiles")
     AddDescription(content, layout,
-        "Replaces the appearance settings in Default and High Contrast and recreates High Contrast if missing. " ..
-        "Custom profiles are left unchanged.")
+        "Resets Default and High Contrast, recreating High Contrast if missing. Custom profiles are unchanged.")
     U.AddActionButton(content, layout, "Restore bundled profiles", function()
         StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil, {onChanged = Changed})
     end, 210)

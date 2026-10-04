@@ -89,8 +89,7 @@ end
 
 local function AddNameSizeNote(content, layout)
     AddDescription(content, layout,
-        "Names and threat percentages use this size. Titles use 80%, rounded. " ..
-        "Health bars expand to fit inside-bar names with three UI units of padding above and below. Native world labels cannot be resized.")
+        "Also sets threat-text size. Titles use 80%; inside-bar names add three units of padding above and below.")
 end
 
 local function AddSanctuaryFontControl(content, layout, refreshers)
@@ -98,13 +97,11 @@ local function AddSanctuaryFontControl(content, layout, refreshers)
         function() return GetAppearanceSetting("matchSanctuaryFont") end,
         function(checked) SetAppearanceSetting("matchSanctuaryFont", checked) end, RefreshNameplates)
     AddDescription(content, layout,
-        "Uses Blizzard's native world-name font in sanctuaries. The selected Name font applies elsewhere, " ..
-        "or everywhere when this switch is off. Size, colors, and placement keep their settings.")
+        "When off, the selected Name font applies everywhere.")
 end
 
 local function AddSharedAppearanceControls(content, layout, refreshers)
     AddSection(content, layout, "Fonts and sizing")
-    AddDescription(content, layout, "Fonts and name size are shared between combat states. Colors are on the Colors page.")
 
     CreateAppearanceDropdown(content, layout, refreshers, "Name font", ns.FONT_OPTIONS,
         function() return GetAppearanceSetting("nameFont") end,
@@ -114,23 +111,10 @@ local function AddSharedAppearanceControls(content, layout, refreshers)
     AddNameSizeNote(content, layout)
 end
 
-local function AddOutOfCombatControls(context)
-    local content, layout = context.content, context.layout
-    AddSection(content, layout, "Out of combat")
-    AddDescription(content, layout,
-        "Friendly players and Useful/Otherwise NPCs use colored names with available titles. " ..
-        "Attacking, Hostile, and Neutral entities retain supported bars. NPC service titles appear " ..
-        "automatically beneath name-only labels at 80% of the name size; visible health bars hide full titles.")
-    AddDescription(content, layout,
-        "TRP3 name and title options are on the TRP3 page. Name-only titles can also appear in combat when no supported health bar is available.")
-end
-
 local function AddInCombatTextControls(content, layout, refreshers)
-    AddSection(content, layout, "In combat")
+    AddSection(content, layout, "Health bars")
     AddDescription(content, layout,
-        "Every Active category uses supported health and cast bars while you are in combat. " ..
-        "The controls below apply whenever those bars are visible, including danger categories out of combat. " ..
-        "Names use the shared font and size above; colors are on the Colors page.")
+        "Out of combat, only Attacking, Hostile and Neutral use bars. In combat, all Active categories use available bars.")
     CreateAppearanceDropdown(content, layout, refreshers, "Health-bar name placement", {
         { value = "ABOVE", label = "Above bar" }, { value = "INSIDE", label = "Inside bar" },
     }, function() return GetAppearanceSetting("namePlacement") end,
@@ -144,7 +128,6 @@ end
 local function CreateAppearancePanel()
     local panel, content, layout = CreateScrollablePanel("Appearance")
     AddTitle(content, layout, "Appearance")
-    AddDescription(content, layout, "Text and layout for the selected appearance profile.")
     local refreshers = {}
     local function Refresh() RunRefreshers(refreshers) end
     ns.AddProfileSelector(content, layout, refreshers, Refresh)
@@ -156,10 +139,8 @@ local function CreateAppearancePanel()
         RefreshNameplates()
     end)
     AddDescription(content, layout,
-        "Resets every setting below: this profile's fonts, sizing, placement and threat display, " ..
-        "plus global critter/companion visibility. Colors and profile activation are on other pages.")
+        "Resets the settings below, including global critter/companion visibility.")
     AddSharedAppearanceControls(content, layout, refreshers)
-    AddOutOfCombatControls({content = content, layout = layout})
     AddInCombatTextControls(content, layout, refreshers)
     ns.AddGlobalAppearanceControls(content, layout, refreshers)
     panel:SetScript("OnShow", Refresh)

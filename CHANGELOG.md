@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.139
+
+* Trims repeated settings explanations and information dialogs, retaining reset scope, global/profile distinctions, exceptions, and verified presentation limits.
+* Consolidates Appearance bar guidance under Health bars, removes the explanation-only Out of combat section, and lets About notes size to their shorter text. Setting behavior is unchanged.
+
 ## 1.0.138
 
 * Chooses black or white for inside-bar names, threat percentages, and native health labels using the configured bar color's relative luminance and the higher contrast. Above-bar and name-only colors retain their behavior; cached repair and native-label restoration preserve the new treatment.

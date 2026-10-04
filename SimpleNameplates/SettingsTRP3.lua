@@ -6,7 +6,7 @@ local function CreateTRP3Panel()
     local panel, content, layout = U.CreateScrollablePanel("TRP3")
     U.AddTitle(content, layout, "TRP3")
     U.AddDescription(content, layout,
-        "Optional Total RP 3 integration. These settings apply globally across appearance profiles.")
+        "Applies to all characters and profiles.")
     local refreshers, controls = {}, {}
     local function RefreshIntegration() if ns.TRP3 then ns.TRP3.Refresh() end end
     local function Refresh()
@@ -18,16 +18,15 @@ local function CreateTRP3Panel()
             control.label:SetTextColor(shade, shade, shade, 1)
         end
     end
-    U.AddSection(content, layout, "Integration")
     U.AddToggle(content, layout, refreshers, "Display TRP3 profile information",
         ns.GetTRP3Enabled, ns.SetTRP3Enabled, function() RefreshIntegration(); Refresh() end)
     local status = U.AddDescription(content, layout, "")
     refreshers[#refreshers + 1] = function()
         if ns.TRP3 and ns.TRP3.IsAvailable() then
-            status:SetText("Total RP 3 detected. Selected options apply to cached player profiles.")
+            status:SetText("Total RP 3 detected.")
             status:SetTextColor(0.35, 0.85, 0.35, 1)
         else
-            status:SetText("Total RP 3 is not available. Your choices are retained for when it is installed and enabled.")
+            status:SetText("Requires Total RP 3 to be installed and enabled.")
             status:SetTextColor(0.72, 0.72, 0.72, 1)
         end
     end
@@ -47,11 +46,9 @@ local function CreateTRP3Panel()
     AddOption("Show short title before the name", "showShortTitle")
     AddOption("Show [OOC] instead of the short title", "showOOC")
     AddOption("Show TRP3 long title beneath the name", "showFullTitle",
-        "Long titles use 80% of the name size and are hidden when a health bar is visible. " ..
-        "If no supported bar is available, they can remain visible in combat.")
+        "Uses 80% of the name size; hidden while a health bar is visible.")
     U.AddDescription(content, layout,
-        "If a cached profile or selected field is unavailable, the normal WoW name is used. " ..
-        "NPC service titles are automatic and do not require TRP3.")
+        "Missing profile information uses the WoW name. NPC service titles do not require TRP3.")
     panel:SetScript("OnShow", Refresh)
     Refresh()
     layout:Finish()
