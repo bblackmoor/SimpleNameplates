@@ -19,7 +19,7 @@ local function ApplyVisibility(frame, decision, assessment, context)
     end
 end
 
-local function ApplySimpleStyle(frame, context)
+local function ApplyStyle(frame, context)
     context = context or GetContext()
     local assessment = Cap.InspectFrame(frame, context)
     if not assessment.canAccess then return end
@@ -57,6 +57,18 @@ local function ApplySimpleStyle(frame, context)
     if decision.showHealthBar then assessment.healthBar:SetStatusBarColor(ns.PriorityColorForState(decision.colorState)) end
     ns.CastHighlight.UpdateInterruptibleHighlight(frame, context, decision)
 end
+-- Native UI writes can invoke the repair hooks synchronously. Keep one
+-- styling pass per frame and release the guard even if a write fails.
+local function ApplySimpleStyle(frame, context)
+    context = context or GetContext()
+    if not Cap.CanAccessFrame(frame, context) then return end
+    if frame.SNPRestoring or frame.SNPApplyingStyle or frame.SNPApplyingArtwork then return end
+    frame.SNPApplyingStyle = true
+    local ok, err = pcall(ApplyStyle, frame, context)
+    frame.SNPApplyingStyle = nil
+    if not ok then error(err, 0) end
+end
+
 ns.NameplatePresentation = {
     ApplySimpleStyle = ApplySimpleStyle,
     RepairHealthColor = ApplySimpleStyle, RepairName = ApplySimpleStyle,

@@ -894,6 +894,38 @@ ns.RestoreAll()
 UnitNameplateShowsWidgetsOnly = oldWidgetsOnly
 C_TooltipInfo = nil
 
+-- Native repair callbacks during a style write must not recursively restyle.
+C_NamePlate.GetNamePlates = function() return {plate} end
+C_NamePlate.GetNamePlateForUnit = function() return plate end
+unit = {reaction = 3}
+stylingEnabled, categoryMode, highlightEnabled = true, "active", false
+appearance.namePlacement = "INSIDE"
+plateFrame.SNPInterruptibleHighlight = nil
+local originalSetFont = plateFrame.name.SetFont
+local fontWrites = 0
+function plateFrame.name:SetFont(...)
+    fontWrites = fontWrites + 1
+    assert(fontWrites < 5, "recursive native font repair")
+    originalSetFont(self, ...)
+    hooks[2].callback(plateFrame)
+end
+for index = 1, 3 do
+    categoryMode = "inactive"
+    ns.RefreshAll()
+    equal(plateFrame.SNPState, nil, "hostile toggle restores native display")
+    categoryMode, fontWrites = "active", 0
+    ns.RefreshAll()
+    equal(fontWrites, 1, "hostile toggle applies font once despite native callback")
+    equal(plateFrame.SNPInsideName.flags, "THICKOUTLINE", "hostile toggle retains outline")
+end
+plateFrame.name.SetFont = function() error("simulated font write failure") end
+local ok = pcall(ns.RefreshAll)
+equal(ok, false, "style failure remains visible")
+equal(plateFrame.SNPApplyingStyle, nil, "style failure releases reentry guard")
+plateFrame.name.SetFont = originalSetFont
+ns.RefreshAll()
+equal(plateFrame.SNPInsideName.shown, true, "styling recovers after failed write")
+
 local visited, largest = {}, 0
 local function CheckUpvalues(fn)
     if visited[fn] then return end

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.141
+
+* Guards styling and artwork updates against synchronous native callback reentry. Releases both guards after failed writes so a subsequent update can recover.
+* Adds repeated hostile-category off/on regression coverage with native callbacks during font writes, plus artwork reentry and failure recovery checks. Native thick outlines and white inside-bar text remain unchanged.
+
 ## 1.0.140
 
 * Uses WoW's native THICKOUTLINE for names, NPC/TRP3 titles, threat percentages, and native health/cast labels. Leaves outline rendering to the game, without selecting outline colors or layering text copies.

@@ -128,7 +128,8 @@ local function InstallArtworkHooks(frame, bar, context)
     if Capabilities.ObjectStatus(bar, context) ~= "accessible" then return end
     if bar.SNPArtworkHookOwner == frame then return end
     local function Refresh()
-        if frame.SNPRestoring or not frame.SNPOriginalArtwork then return end
+        if frame.SNPRestoring or frame.SNPApplyingStyle or frame.SNPApplyingArtwork
+            or not frame.SNPOriginalArtwork then return end
         local current = ns.WorldContext.Get()
         local assessment = Capabilities.InspectFrame(frame, current)
         if assessment.canAccess then ns.NameplateFrames.ApplyBarArtwork(frame, assessment, current) end
@@ -140,7 +141,7 @@ local function InstallArtworkHooks(frame, bar, context)
     bar.SNPArtworkHookOwner = frame
 end
 
-local function ApplyBarArtwork(frame, assessment, context)
+local function ApplyArtwork(frame, assessment, context)
     local healthBar, castBar = assessment.healthBar, assessment.castBar
     InstallArtworkHooks(frame, healthBar, context)
     InstallArtworkHooks(frame, castBar, context)
@@ -158,6 +159,15 @@ local function ApplyBarArtwork(frame, assessment, context)
     for _, key in ipairs({"Text", "CastTargetNameText"}) do
         StyleNativeTextOutline(frame, Capabilities.SafeField(castBar, key, context), context)
     end
+end
+
+-- Artwork hooks can also fire while a bar or its labels are being changed.
+local function ApplyBarArtwork(frame, assessment, context)
+    if frame.SNPRestoring or frame.SNPApplyingArtwork then return end
+    frame.SNPApplyingArtwork = true
+    local ok, err = pcall(ApplyArtwork, frame, assessment, context)
+    frame.SNPApplyingArtwork = nil
+    if not ok then error(err, 0) end
 end
 
 local unpackValues = unpack or table.unpack

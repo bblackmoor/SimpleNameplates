@@ -69,6 +69,21 @@ assert(health.SNPPlainBackground.bar == health and health.SNPPlainBackground.sho
 cast.barTexture:SetAtlas("changed-for-new-cast")
 cast.onShow()
 assert(cast.barTexture.atlas == nil, "new casts regain flat artwork")
+-- A native layout callback during font writes cannot recurse through artwork.
+local setFont, writes = cast.Text.SetFont, 0
+function cast.Text:SetFont(...)
+    writes = writes + 1
+    assert(writes < 5, "recursive native artwork repair")
+    setFont(self, ...)
+    cast.onShow()
+end
+ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
+assert(writes == 1, "one artwork font write despite callback")
+cast.Text.SetFont = function() error("simulated artwork failure") end
+assert(not pcall(ns.NameplateFrames.ApplyBarArtwork, frame, assessment, context))
+assert(frame.SNPApplyingArtwork == nil, "artwork failure releases guard")
+cast.Text.SetFont = setFont
+ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
 -- Restoring while a decorated region is inaccessible must retain originals.
 health.bgTexture.IsForbidden = function() return true end
 assert(not pcall(ns.NameplateFrames.RestoreBarArtwork, frame, context))
