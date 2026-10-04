@@ -1,6 +1,6 @@
 # Settings and runtime architecture
 
-Historical design notes: several settings descriptions below predate the current UI. For the Details Framework conversion, use the source-verified [current baseline and plan](details-framework-conversion.md), recorded against 1.0.149, rather than recreating obsolete controls from this document.
+Historical design notes: several settings descriptions below predate the current UI. The [Details Framework conversion record](details-framework-conversion.md) records the completed repository conversion/cleanup through 1.0.156 and pending client checks. Use that record and current source for settings ownership; descriptions below do not authorize restoring obsolete controls.
 
 Status: Original Phases 2–6 and subsequent runtime refactor phases 1–4 implemented. Global + Profile ownership and the version-2 saved-data shape are unchanged; live WoW checks remain open.
 

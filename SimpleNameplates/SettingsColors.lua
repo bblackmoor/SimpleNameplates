@@ -14,21 +14,11 @@ local function RefreshContext(context)
 end
 
 local function AddActivation(context, row, swatch, activation)
-    local toggle = W.CreateSwitch(row, function(checked)
+    local _, status = U.AddSwitchStatus(row, swatch, context.refreshers, activation.get, function(checked)
         activation.set(checked)
         RefreshContext(context)
         RefreshNameplates()
     end)
-    toggle:SetPoint("LEFT", swatch, "RIGHT", 8, 0)
-    local status = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    status:SetPoint("LEFT", toggle:GetFrame(), "RIGHT", 8, 0)
-    status:SetWidth(56)
-    status:SetJustifyH("LEFT")
-    context.refreshers[#context.refreshers + 1] = function()
-        local active = activation.get()
-        toggle:SetChecked(active)
-        status:SetText(active and "Active" or "Inactive")
-    end
     return status
 end
 
@@ -85,7 +75,6 @@ local function AddPriorityColorControls(context)
 end
 
 local function AddCastEffectSelector(context)
-    local row = U.CreateSettingRow(context.content, context.layout, "Effect")
     local options = {
         {value = "NONE", label = "None"},
         {value = "PIXEL", label = "Moving dashes"},
@@ -93,12 +82,11 @@ local function AddCastEffectSelector(context)
         {value = "BUTTON", label = "Action Button Glow"},
         {value = "PROC", label = "Proc Glow"},
     }
-    local dropdown = W.CreateDropdown(row, function() return options end, function(value)
+    local _, dropdown = U.CreateDropdownRow(context.content, context.layout, "Effect", function() return options end, function(value)
         ns.SetInterruptibleCastStyle(value)
         RefreshContext(context)
         RefreshNameplates()
     end)
-    dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
     context.refreshers[#context.refreshers + 1] = function()
         dropdown:SetValue(ns.GetInterruptibleCastStyle())
     end
@@ -112,12 +100,11 @@ local function CreateColorsPanel()
         RefreshContext(context)
     end
     ns.AddProfileSelector(content, layout, context.refreshers, Refresh)
-    local reset = W.CreateButton(content, "Reset all colors", function()
+    U.AddPageAction(content, layout, "Reset all colors", function()
         ns.ResetAllColors()
         Refresh()
         RefreshNameplates()
     end)
-    layout:Add(reset:GetFrame(), 24, 24, 8)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
         "Resets global priority switches to Active and this profile's cast highlight to None.")

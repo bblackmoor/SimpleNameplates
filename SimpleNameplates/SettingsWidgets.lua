@@ -42,7 +42,7 @@ local requiredMethods = {"CreateSwitch", "CreateSlider", "CreateDropDown",
     "CreateButton", "CreateColorPickButton"}
 
 -- Resolve at construction time: another embedder can upgrade the same LibStub
--- table after this file loads. Legacy pages remain usable if DF is unavailable.
+-- table after this file loads. Converted pages require a compatible library.
 function Widgets.GetFramework()
     local framework = LibStub and LibStub:GetLibrary("DetailsFramework-1.0", true)
     if not framework then return nil, "Details Framework is unavailable" end

@@ -79,11 +79,11 @@ The settings pages are organized by purpose. Changes apply immediately and are s
 | --- | --- | --- |
 | About | Version, source, commands, presentation limits, and informational native-label swatches | `/snp about` |
 | Profiles | Select, create, copy, rename, delete, and restore profiles; global Active switch | `/snp profiles` |
-| Appearance | Fonts, sizing, layout, display effects, global critter/companion visibility, and Reset settings | `/snp appearance` or `/snp` |
-| Colors | Profile colors, global category switches, profile cast-highlight switch, and Reset all colors | `/snp colors` |
+| Appearance | Fonts, sizing, name placement, threat display, global critter/companion visibility, and Reset settings | `/snp appearance` or `/snp` |
+| Colors | Profile colors and cast effect, global category switches, and Reset all colors | `/snp colors` |
 | TRP3 | All global RP-name, title, and OOC options | `/snp trp3` |
 
-Appearance and Colors each have a compact Selected profile control; profile-management actions are on Profiles. On Profiles, the selector sits farther left with an Active/Inactive thumb switch immediately to its right, matching the Colors-page controls. This switch enables styling globally for all characters and profiles, including the existing startup compatibility review. Appearance has **Reset settings** immediately beneath its profile selector, and global Hide critter/companion names farther down. Category switches sit beside their color swatches on Colors. The cast-highlight color has a matching profile-specific Active/Inactive switch; Colors is the only page for cast highlighting. Reset all colors sits directly below the Colors profile selector; the bottom reset section and separate priority reset are removed. Changing profiles does not change these global switches. The former Behavior tab and its command are removed.
+Appearance and Colors each have a compact Selected profile control; management actions are on Profiles. On Profiles, the selector sits farther left with an Active/Inactive switch immediately to its right. This switch enables styling globally, including the startup compatibility review. Appearance's **Reset settings** and Colors' **Reset all colors** sit directly below their selectors. Category switches sit beside their color swatches on Colors and apply globally. The cast effect selector sits below its color; **None** turns it off for the selected profile. Changing profiles preserves global switches.
 
 Profiles are shared account-wide, while each character remembers its active profile. **Create** starts with factory-default appearance settings; **Copy** duplicates the complete active profile. Profiles can be renamed and deleted, except **Default**, which is the permanent fallback. Deleting a profile moves characters assigned to it back to Default.
 
@@ -102,11 +102,12 @@ Appearance groups fonts, health-bar controls, and global visibility:
 | Section | Controls and presentation |
 | --- | --- |
 | Fonts and sizing | Unit-name font, shared 8–36 point name size, and sanctuary font matching |
-| Health bars | Bar-name placement and threat font/display, with one note explaining combat visibility. Cast highlighting is on Colors. |
+| Health bars | Bar width (80–150%), name placement, threat font/display, and combat visibility |
+| Global visibility | Hide critter and companion names |
 
 The sections use the same saved settings in both combat states. All TRP3 options, including the global long-title switch, are together on TRP3. Name-only titles can remain visible in combat if no supported health bar is available.
 
-Headings use sentence case, labels use normal white text, and brief notes explain scope or exceptions without repeating the labels. Controls share a common column. Individual resets follow their controls; section actions appear beneath the section's controls, with explicit scope. **Reset settings** restores every setting below it on Appearance: the selected profile's fonts, sizing, sanctuary font matching, name placement, threat display (on), plus global critter/companion hiding (off). It leaves profile selection, the Profiles-page Active switch, color values, global category activation, and TRP3 preferences unchanged. Cast highlighting is controlled and reset on Colors.
+Headings use sentence case, labels use normal white text, and brief notes explain scope or exceptions without repeating the labels. Controls share a common column. Individual resets follow their controls; page resets sit near the top with explicit scope. Headings have separate rows. **Reset settings** restores every setting below it on Appearance: the selected profile's fonts, sizing, sanctuary font matching, name placement, threat display (on), plus global critter/companion hiding (off). It leaves profile selection, the Profiles-page Active switch, color values, global category activation, and TRP3 preferences unchanged. Cast highlighting is controlled and reset on Colors.
 
 **Match Blizzard font in sanctuaries** is enabled by default in each appearance profile. It uses Blizzard's localized native world-name font face for addon-controlled names and NPC/TRP3 titles throughout sanctuary areas, including names inside health bars. Turn it off to use the selected Name font everywhere. Outside sanctuaries, the selected font applies normally. Sizes, colors, positioning, and the separate threat font retain their existing behavior. This improves consistency with inaccessible opposite-faction PC labels; it does not make those labels editable or guarantee identical sizing and outlines.
 
@@ -126,7 +127,7 @@ Each field has its own toggle. To keep nameplates readable, roleplaying names ar
 
 ## Saved Settings
 
-Look-and-feel settings are stored in named appearance profiles: Priority Colors, effect colors and toggles, fonts, sizing, placement, and threat display. Addon behavior and user preferences are global: styling enablement, category handling, Blizzard overhead-name controls, and TRP3 integration.
+Look-and-feel settings are stored in named appearance profiles: priority colors, cast color and effect choice, fonts, sizing, placement, and threat display. Global settings cover styling enablement, category activation, critter/companion visibility, and TRP3 preferences. Each character selects an account-wide profile.
 
 Saved settings are validated individually in their current locations. Recognized valid values are retained regardless of the saved schema marker; invalid and unknown settings are silently discarded, with defaults supplying missing values. The current category keys are `attacking`, `hostile`, `neutral`, `friendly`, `useful`, and `useless`. Obsolete category fields are discarded; valid current fields and unrelated settings remain. No old settings are renamed, relocated, or converted.
 
@@ -192,7 +193,18 @@ See [library provenance](SimpleNameplates/Libs/README.md) and run
 
 ## Development
 
-The [original staged refactor plan](docs/design/implementation-plan.md), [world-context runtime plan](docs/design/runtime-refactor-plan.md), and [source ownership guide](docs/design/settings-architecture.md) describe the Global behavior and appearance Profile boundaries. Run `lua tests/bar-artwork-smoke.lua`, `lua tests/core-behavior-smoke.lua`, `lua tests/settings-smoke.lua`, `lua tests/nameplates-smoke.lua`, `lua tests/nameplate-threat-smoke.lua`, `lua tests/world-context-smoke.lua`, `lua tests/entity-facts-smoke.lua`, and `lua tests/presentation-rules-smoke.lua` from the repository root for the local behavioral checks. Runtime phases 1–4 are implemented; phase 5 is client verification. The [live WoW checklist](docs/design/live-wow-verification.md) records integration checks that require the game client.
+The [settings conversion plan](docs/design/details-framework-conversion.md) records the completed Details Framework code conversion and cleanup. The [original refactor plan](docs/design/implementation-plan.md) and [runtime plan](docs/design/runtime-refactor-plan.md) retain earlier implementation history. Saved data remains schema 2 with global behavior and appearance profiles.
+
+Run all 17 local smoke suites from the repository root (the verified interpreter here is LuaTeX):
+
+```sh
+for test in tests/*-smoke.lua; do
+    luatex --luaonly "$test" || exit 1
+done
+git diff --check
+```
+
+These checks cover the actual bundled libraries with native UI stubs; they do not establish rendering or secure behavior in WoW. The [live WoW checklist](docs/design/live-wow-verification.md) remains open for final client verification.
 
 ## AI Disclaimer
 
@@ -207,5 +219,3 @@ Licensed under the GNU General Public License v3.0 (GPL-3.0):
 https://www.gnu.org/licenses/gpl-3.0.en.html
 
 Source: https://github.com/bblackmoor/SimpleNameplates
-
-The staged Details Framework settings conversion is tracked in the [source-verified baseline and implementation plan](docs/design/details-framework-conversion.md).

@@ -36,4 +36,6 @@ profile scaffold or optional DF helper dependencies are used by our adapter.
 for its controls; Details and Plater are not required. Colors uses the adapter
 as of 1.0.152, Appearance as of 1.0.154, and Profiles/TRP3/About as of 1.0.155.
 Native dialogs and info links remain; the existing layout helpers in
-`SettingsControls.lua` remain shared during the conversion.
+`SettingsControls.lua` now compose the adapter through shared switch, dropdown
+and page-action layouts; unused legacy controls were removed in 1.0.156.
+Client rendering, security and external-copy verification remain pending.

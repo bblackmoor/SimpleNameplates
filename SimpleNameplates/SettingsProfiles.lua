@@ -80,16 +80,13 @@ end
 
 -- Compact selector shared by the visual pages; management remains here.
 local function AddProfileSelector(content, layout, refreshers, onChanged, controlX)
-    local row, label = U.CreateSettingRow(content, layout, "Selected profile")
-    controlX = controlX or U.CONTROL_X
-    label:SetWidth(controlX - 16)
-    local dropdown
+    local row, dropdown
     local function Refresh()
         dropdown:InvalidateOptions() -- Profile names may be created/renamed/deleted elsewhere.
         local active = ns.GetActiveProfileName()
         dropdown:SetValue(active, active)
     end
-    dropdown = W.CreateDropdown(row, function()
+    row, dropdown = U.CreateDropdownRow(content, layout, "Selected profile", function()
         local options = {}
         for _, name in ipairs(ns.GetProfileNames()) do
             options[#options + 1] = {value = name, label = name}
@@ -101,8 +98,7 @@ local function AddProfileSelector(content, layout, refreshers, onChanged, contro
         Refresh()
         if onChanged then onChanged() end
         RefreshNameplates()
-    end)
-    dropdown:SetPoint("LEFT", row, "LEFT", controlX, 0)
+    end, controlX)
     refreshers[#refreshers + 1] = Refresh
     Refresh()
     return row, dropdown
@@ -133,10 +129,9 @@ local function CreateProfilesPanel()
     U.AddSection(content, layout, "Restore bundled profiles")
     AddDescription(content, layout,
         "Resets Default and High Contrast, recreating High Contrast if missing. Custom profiles are unchanged.")
-    local restore = W.CreateButton(content, "Restore bundled profiles", function()
+    U.AddPageAction(content, layout, "Restore bundled profiles", function()
         StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil, {onChanged = Changed})
     end, 210)
-    layout:Add(restore:GetFrame(), 24, 24, 8)
     panel:SetScript("OnShow", Refresh)
     Refresh()
     layout:Finish()

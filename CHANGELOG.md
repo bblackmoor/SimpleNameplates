@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.156
+
+* Completes phase 6 repository cleanup for the Details Framework conversion: removes unused native switch/toggle/action implementations and shares adapted switch rows, activation status, dropdown alignment and page-action layout across settings pages. Keeps page-specific setters, refreshes, dialog behavior, reset scope and preview cancellation.
+* Updates README settings ownership, cast-effect controls, reset placement and full-suite instructions; records the completed code conversion while leaving final native client verification open. Corrects the obsolete adapter fallback comment.
+* Updates the wrapped-layout regression to use an adapted page action. All seventeen smoke suites and whitespace checks pass; in-game rendering, input, library coexistence and combat/taint checks remain pending.
+
 ## 1.0.155
 
 * Completes phase 5 of the Details Framework conversion: Profiles uses adapted selectors, management buttons and the global styling switch; TRP3 uses adapted switches; About uses a borderless source link and dedicated read-only color displays. Native dialogs, yellow info links, layout helpers and database semantics remain unchanged.

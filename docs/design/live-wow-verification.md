@@ -1,6 +1,8 @@
 # Live WoW integration verification
 
-Status: pending. These checks require a World of Warcraft client; local Lua stubs do not establish actual frame behavior, secure CVar behavior, or Midnight secret-value safety. Record the client build, addon version, date, and observed result when running them. Leave a check open until it is observed in game.
+Status: pending. Details Framework phases 1–6 repository work is complete in
+1.0.156, with all 17 local smoke suites passing; no native client observation is
+implied by that result. These checks require a World of Warcraft client; local Lua stubs do not establish actual frame behavior, secure CVar behavior, or Midnight secret-value safety. Record the client build, addon version, date, and observed result when running them. Leave a check open until it is observed in game.
 
 ## Details Framework foundation (1.0.151)
 

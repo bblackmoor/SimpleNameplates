@@ -1,7 +1,6 @@
 -- Simple Nameplates: shared settings controls and layout.
 local _, ns = ...
 
-
 local function RefreshNameplates()
     if ns.RefreshAll then ns.RefreshAll() end
 end
@@ -92,37 +91,6 @@ local function AddDescription(content, layout, text)
     return layout:Add(description, 24, 16, 8, true)
 end
 
--- Visual switch with the same SetChecked/GetChecked contract as the former checkbox.
-local function CreateSwitch(parent, onChanged)
-    local switch = CreateFrame("Button", nil, parent)
-    switch:SetSize(44, 20)
-    local track = switch:CreateTexture(nil, "BACKGROUND")
-    track:SetAllPoints()
-    local thumb = switch:CreateTexture(nil, "ARTWORK")
-    thumb:SetSize(18, 16)
-    function switch:SetChecked(checked)
-        self.checked = checked == true
-        thumb:ClearAllPoints()
-        if self.checked then
-            track:SetColorTexture(0.19, 0.42, 0.31, self:IsEnabled() and 1 or 0.5)
-            thumb:SetPoint("RIGHT", self, "RIGHT", -2, 0)
-        else
-            track:SetColorTexture(0.25, 0.25, 0.26, self:IsEnabled() and 1 or 0.5)
-            thumb:SetPoint("LEFT", self, "LEFT", 2, 0)
-        end
-        thumb:SetColorTexture(0.72, 0.72, 0.73, self:IsEnabled() and 1 or 0.5)
-    end
-    function switch:GetChecked() return self.checked end
-    switch:SetScript("OnEnable", function(self) self:SetChecked(self.checked) end)
-    switch:SetScript("OnDisable", function(self) self:SetChecked(self.checked) end)
-    switch:SetScript("OnClick", function(self)
-        self:SetChecked(not self:GetChecked())
-        onChanged(self:GetChecked())
-    end)
-    switch:SetChecked(false)
-    return switch
-end
-
 local function AddInfoLink(parent, anchor, popupKey)
     local link = CreateFrame("Button", nil, parent)
     link:SetSize(24, 26)
@@ -139,23 +107,12 @@ local function AddInfoLink(parent, anchor, popupKey)
     return link
 end
 
-
 local CONTROL_X = 340
 local function AddSection(content, layout, text)
     layout:Space(14)
     local label = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     label:SetText(text)
     return layout:Add(label, 24, 20, 6)
-end
-
--- Headings contain no actions. Section actions follow their controls.
-local function AddActionButton(content, layout, text, onClick, width)
-    local button = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
-    button:SetSize(width or 190, 24)
-    button:SetText(text)
-    button:SetScript("OnClick", onClick)
-    layout:Add(button, 24, 24, 8)
-    return button
 end
 
 local function CreateSettingRow(content, layout, text)
@@ -170,33 +127,62 @@ local function CreateSettingRow(content, layout, text)
     return row, label
 end
 
-local function AddToggle(content, layout, refreshers, text, getter, setter, onChanged)
-    local row = CreateSettingRow(content, layout, text)
-    local toggle = CreateSwitch(row, function(checked)
-        setter(checked)
-        if onChanged then onChanged(checked) end
-    end)
+-- Resolve the adapter when building controls: it loads after this layout module.
+-- Pages retain their setters, refresh scope and lifecycle decisions.
+local function AddSwitchRow(content, layout, refreshers, text, getter, onChanged)
+    local row, label = CreateSettingRow(content, layout, text)
+    local toggle = ns.SettingsWidgets.CreateSwitch(row, onChanged)
     toggle:SetPoint("LEFT", row, "LEFT", CONTROL_X, 0)
-    local function Refresh() toggle:SetChecked(getter()) end
+    refreshers[#refreshers + 1] = function() toggle:SetChecked(getter()) end
+    return toggle, label
+end
+
+local function AddSwitchStatus(row, anchor, refreshers, getter, onChanged)
+    local toggle = ns.SettingsWidgets.CreateSwitch(row, onChanged)
+    toggle:SetPoint("LEFT", anchor, "RIGHT", 8, 0)
+    local status = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    status:SetPoint("LEFT", toggle:GetFrame(), "RIGHT", 8, 0)
+    status:SetWidth(56)
+    status:SetJustifyH("LEFT")
+    local function Refresh()
+        local active = getter()
+        toggle:SetChecked(active)
+        status:SetText(active and "Active" or "Inactive")
+    end
     refreshers[#refreshers + 1] = Refresh
-    Refresh()
-    return toggle
+    return toggle, status, Refresh
+end
+
+local function CreateDropdownRow(content, layout, text, options, onChanged, controlX)
+    local row, label = CreateSettingRow(content, layout, text)
+    controlX = controlX or CONTROL_X
+    label:SetWidth(controlX - 16)
+    local dropdown = ns.SettingsWidgets.CreateDropdown(row, options, onChanged)
+    dropdown:SetPoint("LEFT", row, "LEFT", controlX, 0)
+    return row, dropdown
+end
+
+-- Each page chooses action placement; headings remain separate rows.
+local function AddPageAction(content, layout, text, onClick, width)
+    local button = ns.SettingsWidgets.CreateButton(content, text, onClick, width)
+    layout:Add(button:GetFrame(), 24, 24, 8)
+    return button
 end
 
 local function RunRefreshers(refreshers)
     for _, refresh in ipairs(refreshers) do refresh() end
 end
 
-
 ns.SettingsUI = {
     CreateScrollablePanel = CreateScrollablePanel,
     AddTitle = AddTitle,
     AddDescription = AddDescription,
-    CreateSwitch = CreateSwitch,
     AddInfoLink = AddInfoLink,
-    AddActionButton = AddActionButton,
     CreateSettingRow = CreateSettingRow,
-    AddToggle = AddToggle,
+    AddSwitchRow = AddSwitchRow,
+    AddSwitchStatus = AddSwitchStatus,
+    CreateDropdownRow = CreateDropdownRow,
+    AddPageAction = AddPageAction,
     CONTROL_X = CONTROL_X,
     AddSection = AddSection,
     RunRefreshers = RunRefreshers,

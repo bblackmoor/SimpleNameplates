@@ -1,5 +1,9 @@
 # Details Framework settings conversion
 
+Current status (1.0.156): phases 1–6 repository work is complete; all 17 smoke
+suites pass. Final in-game verification remains pending. The baseline and earlier
+phase notes below describe their recorded releases, not the current widget inventory.
+
 Phase 1 completed on 2026-10-04 against Simple Nameplates 1.0.149,
 commit `80f8dad348c0d87497a9db6b3dd6b7437ab57c87`. This document records
 current source behavior and the implementation sequence for ChatGPT to follow.
@@ -208,8 +212,9 @@ behavior and actual external-copy compatibility remain unobserved.
    long shared-font lists, keyboard interaction and scrolling. Check in-game.
 5. Profiles, TRP3 and About conversion — implemented in 1.0.155 in separate page
    modules; preserves database/dialog semantics and disabled/read-only controls.
-6. Remove unreferenced legacy widget code, consolidate page duplication,
-   update docs, run full regression checks and final in-game verification.
+6. Repository cleanup — implemented in 1.0.156: remove unused legacy controls,
+   consolidate repeated page construction, update docs and run all regressions.
+   Final in-game verification remains pending.
 
 At the three client checkpoints, record client build, addon version and actual
 observations: alignment/reflow, scrolling, switches, picker cancel, resets,
@@ -327,3 +332,31 @@ choices and absent integration, read-only RGB displays, info dialogs and the
 transparent source link/copy dialog. Appearance and Colors regressions exercise
 the converted shared selector. All 17 suites pass. Client observations remain
 pending; phase 6 owns unused legacy helper removal and final consolidation.
+
+## Phase 6 repository cleanup (1.0.156)
+
+SettingsControls.lua retains the scrolling/reflow engine, headings, descriptions,
+setting rows, native yellow info links and refresh helper. Its unused native
+CreateSwitch, AddToggle and AddActionButton implementations/exports are removed.
+AddSwitchRow, AddSwitchStatus, CreateDropdownRow and AddPageAction compose the
+DF adapter with shared layout. They resolve ns.SettingsWidgets at construction
+time because the adapter loads after this module. The adapter remains responsible
+for wrapper boundaries, enabled state and silent widget updates.
+
+Appearance/TRP3 share switch-row alignment and refresher registration. Colors
+and Profiles share switch/status sizing and Active/Inactive text. Font, placement,
+cast-effect and profile menus share dropdown-row alignment; their providers,
+cache invalidation and label-refresh policy stay with their original owners.
+Appearance/Colors resets and Profiles bundled restore share action-row layout.
+Their placement, reset scope and callbacks are unchanged. Fonts/sliders/picker
+rollback, native profile dialogs and setup consent remain page responsibilities;
+no generic page state/controller was introduced.
+
+The settings layout test now uses the adapted page action when checking wrapped
+text reflow. All 17 existing smoke suites pass after consolidation, including
+actual DF/SharedMedia/database integration tests and recursive library loading.
+The README describes current controls/ownership and includes the full test loop;
+historical design notes remain historical and are not instructions to restore
+removed controls. No further implementation phase is planned. Final acceptance
+still requires observed client rendering/input, external-copy compatibility and
+combat/taint checks in live-wow-verification.md.

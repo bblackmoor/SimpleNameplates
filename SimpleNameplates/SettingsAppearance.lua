@@ -4,26 +4,21 @@ local U, W = ns.SettingsUI, ns.SettingsWidgets
 local function Refresh(context) U.RunRefreshers(context.refreshers) end
 
 local function AddToggle(context, label, getter, setter, onChanged)
-    local row = U.CreateSettingRow(context.content, context.layout, label)
-    local toggle = W.CreateSwitch(row, function(value)
+    U.AddSwitchRow(context.content, context.layout, context.refreshers, label, getter, function(value)
         setter(value)
         if onChanged then onChanged() end
     end)
-    toggle:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
-    context.refreshers[#context.refreshers + 1] = function() toggle:SetChecked(getter()) end
 end
 
 local function AddFont(context, label, key)
-    local row = U.CreateSettingRow(context.content, context.layout, label)
     local selected
-    local dropdown = W.CreateDropdown(row, function()
+    local _, dropdown = U.CreateDropdownRow(context.content, context.layout, label, function()
         return ns.GetFontOptions(ns.GetAppearanceSetting(key))
     end, function(value)
         ns.SetAppearanceSetting(key, value)
         Refresh(context)
         U.RefreshNameplates()
     end)
-    dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
     local function RefreshFont()
         local value = ns.GetAppearanceSetting(key)
         if value ~= selected then dropdown:InvalidateOptions(); selected = value end
@@ -68,14 +63,12 @@ local function AddSize(context, key, label, minimum, maximum, step, suffix)
 end
 
 local function AddPlacement(context)
-    local row = U.CreateSettingRow(context.content, context.layout, "Health-bar name placement")
     local options = {{value = "ABOVE", label = "Above bar"}, {value = "INSIDE", label = "Inside bar"}}
-    local dropdown = W.CreateDropdown(row, function() return options end, function(value)
+    local _, dropdown = U.CreateDropdownRow(context.content, context.layout, "Health-bar name placement", function() return options end, function(value)
         ns.SetAppearanceSetting("namePlacement", value)
         Refresh(context)
         U.RefreshNameplates()
     end)
-    dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
     context.refreshers[#context.refreshers + 1] = function()
         dropdown:SetValue(ns.GetAppearanceSetting("namePlacement"))
     end
@@ -125,7 +118,7 @@ local function CreateAppearancePanel()
     ns.RefreshFontControls = function() U.RunRefreshers(context.fontRefreshers) end
     local function RefreshPage() Refresh(context) end
     ns.AddProfileSelector(content, layout, context.refreshers, RefreshPage)
-    local reset = W.CreateButton(content, "Reset settings", function()
+    U.AddPageAction(content, layout, "Reset settings", function()
         CancelEdits(true)
         ns.ResetAppearance()
         ns.SetThreatEnabled(ns.Defaults.showThreat)
@@ -133,7 +126,6 @@ local function CreateAppearancePanel()
         RefreshPage()
         U.RefreshNameplates()
     end)
-    layout:Add(reset:GetFrame(), 24, 24, 8)
     U.AddDescription(content, layout, "Resets the settings below, including global critter/companion visibility.")
     AddControls(context)
     panel:SetScript("OnShow", RefreshPage)

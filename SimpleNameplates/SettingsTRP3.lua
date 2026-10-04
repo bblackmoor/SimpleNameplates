@@ -1,6 +1,6 @@
 -- Simple Nameplates: global Total RP 3 integration settings.
 local _, ns = ...
-local U, W = ns.SettingsUI, ns.SettingsWidgets
+local U = ns.SettingsUI
 
 local function CreateTRP3Panel()
     local panel, content, layout = U.CreateScrollablePanel("TRP3")
@@ -18,14 +18,11 @@ local function CreateTRP3Panel()
             control.label:SetTextColor(shade, shade, shade, 1)
         end
     end
-    local masterRow = U.CreateSettingRow(content, layout, "Display TRP3 profile information")
-    local master = W.CreateSwitch(masterRow, function(enabled)
+    U.AddSwitchRow(content, layout, refreshers, "Display TRP3 profile information", ns.GetTRP3Enabled, function(enabled)
         ns.SetTRP3Enabled(enabled)
         RefreshIntegration()
         Refresh()
     end)
-    master:SetPoint("LEFT", masterRow, "LEFT", U.CONTROL_X, 0)
-    refreshers[#refreshers + 1] = function() master:SetChecked(ns.GetTRP3Enabled()) end
     local status = U.AddDescription(content, layout, "")
     refreshers[#refreshers + 1] = function()
         if ns.TRP3 and ns.TRP3.IsAvailable() then
@@ -38,14 +35,12 @@ local function CreateTRP3Panel()
     end
     U.AddSection(content, layout, "Names and titles")
     local function AddOption(text, setting, description)
-        local row, label = U.CreateSettingRow(content, layout, text)
-        local toggle = W.CreateSwitch(row, function(checked)
-            ns.SetTRP3Setting(setting, checked)
-            RefreshIntegration()
-        end)
-        toggle:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
+        local toggle, label = U.AddSwitchRow(content, layout, refreshers, text,
+            function() return ns.GetTRP3Setting(setting) end, function(checked)
+                ns.SetTRP3Setting(setting, checked)
+                RefreshIntegration()
+            end)
         controls[#controls + 1] = {toggle = toggle, label = label}
-        refreshers[#refreshers + 1] = function() toggle:SetChecked(ns.GetTRP3Setting(setting)) end
         if description then U.AddDescription(content, layout, description) end
     end
     AddOption("Use TRP3 roleplaying full name", "useRoleplayingName")

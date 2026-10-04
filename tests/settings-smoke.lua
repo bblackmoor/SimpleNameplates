@@ -549,7 +549,7 @@ local sample, content, layout = ns.SettingsUI.CreateScrollablePanel("Sample")
 local description = ns.SettingsUI.AddDescription(content, layout, "Wrapped description")
 description.naturalHeight = 80
 ns.SettingsUI.AddSection(content, layout, "Sample section")
-local action = ns.SettingsUI.AddActionButton(content, layout, "Sample action", function() end)
+local action = ns.SettingsUI.AddPageAction(content, layout, "Sample action", function() end):GetFrame()
 layout:Finish()
 equal(description.height, 82, "description uses measured height")
 local firstActionY = action.points.TOPLEFT[4]
