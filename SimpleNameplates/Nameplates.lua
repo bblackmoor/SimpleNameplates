@@ -194,14 +194,14 @@ events:SetScript("OnEvent", HandleEvent)
 
 
 -- Blizzard sometimes changes name text, font, or color without calling either
--- compact unit-frame update path. Compare safe cached properties twice per
+-- compact unit-frame update path. Compare safe cached properties four times per
 -- second and write only when something has drifted. Avoid point inspection on
 -- Blizzard frames; hooks handle placement changes. Classification, TRP3
 -- profile access, threat checks, and health-bar styling remain event-driven.
 local reconcileElapsed = 0
 events:SetScript("OnUpdate", function(_, elapsed)
     reconcileElapsed = reconcileElapsed + elapsed
-    local reconcile = reconcileElapsed >= 0.50
+    local reconcile = reconcileElapsed >= 0.25
     local context = WorldContext.Get()
     if reconcile then
         reconcileElapsed = 0

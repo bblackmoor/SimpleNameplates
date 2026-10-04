@@ -118,7 +118,7 @@ events.scripts.OnEvent(events, "CVAR_UPDATE", "UnitNameFriendlyPlayerName")
 equal(calls.managed, 1, "managed CVar update reapplied")
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
 equal(calls.pending, 1, "deferred CVar action applied after combat")
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 assert(ns.RefreshAll and ns.RestoreAll and ns.DebugUnit and ns.StateForUnit, "runtime API")
 
 local cases = {
@@ -198,7 +198,7 @@ ns.RefreshAll()
 equal(plateFrame.healthBar.width, 210, "bar uses 150 percent native width")
 equal(plateFrame.HealthBarsContainer.width, 210, "container follows bar width")
 plateFrame.healthBar.width, plateFrame.HealthBarsContainer.width = 140, 140
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.healthBar.width, 210, "cached repair restores configured width")
 appearance.healthBarWidth = 125
 ns.RefreshAll()
@@ -216,7 +216,7 @@ ns.RefreshAll()
 equal(plateFrame.healthBar.shown, false, "friendly name-only presentation")
 equal(plateFrame.name.g, 0, "priority applied to floating name")
 plateFrame.name:SetTextColor(0, 1, 1)
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.name.g, 0, "cached drift repaired across module boundary")
 
 ns.TRP3 = { GetDisplayInfo = function()
@@ -231,7 +231,7 @@ appearance.namePlacement = "INSIDE"
 local oldNameStyle = {}
 for key, value in pairs(plateFrame.SNPNameStyle) do oldNameStyle[key] = value end
 events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.SNPState, "friendly", "combat does not change category")
 equal(plateFrame.healthBar.shown, true, "friendly combat bar")
 equal(plateFrame.SNPFullTitleText.shown, false, "friendly combat hides long title")
@@ -250,7 +250,7 @@ ns.RefreshAll()
 
 plateFrame.SNPNameStyle = oldNameStyle
 equal(ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get()), false, "stale cache rejected")
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.healthBar.shown, true, "stale drift cannot undo combat bar")
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
 -- A Blizzard name hook must apply the whole new decision before the queued refresh.
@@ -294,7 +294,7 @@ equal(plateFrame.SNPInsideName.points[1][5], -0.5, "asymmetric padding moves nam
 equal(plateFrame.healthBar.height, 43, "bar expands for full font plus padding")
 equal(plateFrame.HealthBarsContainer.height, 43, "container expands with bar")
 plateFrame.healthBar:SetHeight(20)
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.healthBar.height, 43, "drift repair retains expanded height")
 appearance.namePlacement, threatEnabled, threatPercent = "ABOVE", true, 100
 ns.RefreshAll()
@@ -357,7 +357,7 @@ equal(plateFrame.SNPRestoring, nil, "failed restoration releases guard")
 assert(ns.NameplateRestoration.IsPending(plateFrame), "failed restoration retained for retry")
 assert(plateFrame.SNPOriginalPresentation, "failed restoration retains native presentation")
 plateFrame.healthBar.SetStatusBarColor = setBarColor
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(ns.NameplateRestoration.IsPending(plateFrame), false, "successful retry removes pending work")
 equal(plateFrame.SNPState, "hostile", "successful retry reapplies hostile presentation")
 ns.RestoreAll()
@@ -380,11 +380,11 @@ highlightEnabled = true
 ns.RefreshAll()
 equal(castOverlay.shown, false, "name-only cast effect hidden")
 events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(castOverlay.shown, true, "combat cast effect follows Blizzard icon")
 local iconHook = hooks[#hooks].callback
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 iconHook(plateFrame.castBar.Icon, true)
 equal(castOverlay.shown, false, "icon hook cannot revive name-only effect")
 highlightEnabled = false
@@ -404,7 +404,7 @@ local savedBar = plateFrame.healthBar
 plateFrame.healthBar = nil
 unit = { reaction = 3 }
 events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.SNPPresentation.showHealthBar, false, "no fabricated health bar")
 equal(plateFrame.SNPPresentation.nameOnly, true, "missing bar uses name color")
 equal(plateFrame.name.g, 0, "missing-bar priority color")
@@ -436,7 +436,7 @@ ns.RefreshAll()
 ns.RestoreAll()
 hooks[1].callback(forbidden)
 hooks[2].callback(forbidden)
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 events.scripts.OnEvent(events, "NAME_PLATE_UNIT_REMOVED", "nameplate1")
 ns.NameplateText.RestoreNameDisplay(forbidden)
 equal(ns.NameplateText.CachedNameHasDrifted(forbidden), false, "forbidden drift skipped")
@@ -454,7 +454,7 @@ ns.RefreshAll()
 equal(plateFrame.SNPState, nil, "protected frame skipped during lockdown")
 locked = false
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 assert(plateFrame.SNPState, "protected frame refreshed after lockdown")
 plateFrame.IsProtected = nil
 C_NamePlate.GetNamePlateForUnit = function() return nil end
@@ -474,11 +474,11 @@ locked = true
 ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
 stylingEnabled = false
 ns.RestoreAll()
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 assert(plateFrame.SNPState, "protected style retained until safe restoration")
 locked = false
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.SNPState, nil, "disabled styling restoration retried")
 equal(plateFrame.SNPPresentation, nil, "presentation cache cleared on restore")
 equal(plateFrame.SNPInsideName.shown, false, "deferred inside name hidden")
@@ -490,10 +490,10 @@ local baseForbidden = true
 plate.IsForbidden = function() return baseForbidden end
 stylingEnabled = false
 ns.RestoreAll()
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 assert(plateFrame.SNPState, "forbidden base plate restoration postponed")
 baseForbidden = false
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.SNPState, nil, "base plate restoration retried with styling off")
 plate.IsForbidden = nil
 stylingEnabled = true
@@ -504,7 +504,7 @@ plateFrame.IsForbidden = function() return frameForbidden end
 categoryMode = "inactive"
 ns.RefreshAll()
 frameForbidden = false
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.SNPState, nil, "inactive restoration after access returns without context event")
 plateFrame.IsForbidden = nil
 categoryMode = "active"
@@ -521,7 +521,7 @@ ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
 C_NamePlate.GetNamePlateForUnit = function() return plate end
 ns.RefreshAll()
 equal(plateFrame.SNPOriginalUnit, "nameplate2", "recycled frame captures current owner")
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 assert(plateFrame.SNPState, "old pending cleanup does not clear recycled style")
 equal(plateFrame.name.text, "Roleplay Name", "recycled name remains")
 plateFrame.IsProtected = nil
@@ -741,10 +741,10 @@ equal(plateFrame.name.flags, "THICKOUTLINE", "sanctuary name uses native thick o
 equal(plateFrame.SNPFullTitleText.flags, "THICKOUTLINE", "title uses native thick outline")
 equal(plateFrame.SNPFullTitleText.font, "Fonts\\WorldLocalized.ttf", "sanctuary TRP3 title font")
 plateFrame.name:SetFont("Fonts\\Drift.ttf", 12, "OUTLINE")
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.name.font, "Fonts\\WorldLocalized.ttf", "cached repair retains sanctuary font")
 appearance.matchSanctuaryFont = false
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(plateFrame.name.font, "Fonts\\ARIALN.TTF", "switch off invalidates font cache")
 equal(plateFrame.SNPFullTitleText.font, "Fonts\\ARIALN.TTF", "switch off refreshes title font")
 appearance.matchSanctuaryFont = true
@@ -905,7 +905,7 @@ equal(plateFrame.SNPFullTitleText.shown, true, "ordinary service title visible")
 equal(plateFrame.name.g, 211 / 255, "ordinary useful sanctuary color retained")
 widgetFrame.name:SetAlpha(1)
 widgetFrame.SNPFullTitleText:Show()
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(widgetFrame.name.alpha, 0, "widget name drift repaired")
 equal(widgetFrame.SNPFullTitleText.shown, false, "widget title drift repaired")
 widgetFrame.name:SetAlpha(1)
@@ -924,11 +924,11 @@ equal(widgetFrame.WidgetContainer.shown, true, "restoration preserves widgets")
 stylingEnabled = true
 ns.RefreshAll()
 widgetMode = false
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(widgetFrame.name.alpha, 1, "widget-to-ordinary transition restores name")
 equal(widgetFrame.SNPFullTitleText.shown, true, "widget-to-ordinary transition styles title")
 widgetMode = true
-events.scripts.OnUpdate(events, 0.5)
+events.scripts.OnUpdate(events, 0.25)
 equal(widgetFrame.name.alpha, 0, "ordinary-to-widget transition suppresses text")
 equal(widgetFrame.healthBar.shown, true, "transition restores Blizzard bar before suppression")
 UnitNameplateShowsWidgetsOnly = function() error("restricted") end

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.145
+
+* Checks fallback nameplate formatting and retries pending plates every 0.25 seconds instead of 0.50 seconds, reducing the wait for formatting repairs.
+
 ## 1.0.144
 
 * Replaces the single inside-bar text shadow with two black text underlayers: one right 1/down 2 and one right 2/down 1 UI units. White text remains on top with no outline.
