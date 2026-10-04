@@ -114,13 +114,14 @@ local function StyleNativeTextOutline(frame, region, context, inside)
         original.font = font
         original.shadowColor = ReadValues(region, "GetShadowColor", context)
         original.shadowOffset = ReadValues(region, "GetShadowOffset", context)
+        if inside then original.drawLayer = ReadValues(region, "GetDrawLayer", context) end
     end
     region:SetFont(original.font[1], original.font[2], inside and "" or "THICKOUTLINE")
-    region:SetShadowColor(0, 0, 0, inside and 1 or 0)
-    region:SetShadowOffset(inside and 1 or 0, inside and -1 or 0)
+    region:SetShadowColor(0, 0, 0, 0)
+    region:SetShadowOffset(0, 0)
 end
 
-local function StyleHealthText(frame, region, context)
+local function StyleHealthText(frame, region, context, bar)
     local original = OriginalArtwork(frame, region, context)
     if not original then return end
     StyleNativeTextOutline(frame, region, context, true)
@@ -148,6 +149,7 @@ local function StyleHealthText(frame, region, context)
         original.textColor = ReadValues(region, "GetTextColor", context)
         original.vertexColor = ReadValues(region, "GetVertexColor", context)
     end
+    ns.TextUnderlayers.Update(region, bar)
     if original.textColor then
         region:SetTextColor(1, 1, 1, 1)
         if original.vertexColor then region:SetVertexColor(1, 1, 1, 1) end
@@ -197,7 +199,7 @@ local function ApplyArtwork(frame, assessment, context)
     InstallArtworkHooks(frame, castBar, context)
     FlattenBar(frame, healthBar, "bgTexture", context)
     for _, key in ipairs({"Text", "RightText", "LeftText"}) do
-        StyleHealthText(frame, Capabilities.SafeField(healthBar, key, context), context)
+        StyleHealthText(frame, Capabilities.SafeField(healthBar, key, context), context, healthBar)
     end
     for _, key in ipairs({"selectedBorder", "deselectedOverlay"}) do
         RemoveArtworkEdge(frame, Capabilities.SafeField(healthBar, key, context), context)
@@ -226,6 +228,8 @@ local function RestoreBarArtwork(frame, context)
         if Capabilities.ObjectStatus(region, context) ~= "accessible" then
             error("Bar artwork restoration is temporarily inaccessible")
         end
+        ns.TextUnderlayers.Hide(region)
+        if original.drawLayer then region:SetDrawLayer(unpackValues(original.drawLayer)) end
         if original.alpha ~= nil then region:SetAlpha(original.alpha) end
         if original.fill then
             if original.fill.atlas then region:SetAtlas(original.fill.atlas)

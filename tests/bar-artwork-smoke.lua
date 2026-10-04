@@ -6,6 +6,7 @@ local unpackValues = unpack or table.unpack
 assert(loadfile("SimpleNameplates/Core.lua"))("SimpleNameplates", ns)
 ns.WorldContext = {Get = function() return {combatLockdown = false} end}
 assert(loadfile("SimpleNameplates/PresentationCapabilities.lua"))("SimpleNameplates", ns)
+assert(loadfile("SimpleNameplates/TextUnderlayers.lua"))("SimpleNameplates", ns)
 assert(loadfile("SimpleNameplates/NameplateFrames.lua"))("SimpleNameplates", ns)
 local function Region()
     local r = {alpha = 1, shown = true, texture = "original", coords = {0.1, 0.9, 0.2, 0.8},
@@ -14,6 +15,15 @@ local function Region()
     function r:GetPoint(index) return unpackValues(self.points[index]) end
     function r:ClearAllPoints() self.points = {} end
     function r:SetPoint(...) self.points = self.points or {}; self.points[#self.points + 1] = {...} end
+    function r:SetDrawLayer(layer, level) self.layer, self.level = layer, level end
+    function r:GetDrawLayer() return self.layer or "ARTWORK", self.level or 0 end
+    function r:GetText() return self.text end
+    function r:SetText(text) self.text = text end
+    function r:SetJustifyH() end
+    function r:SetJustifyV() end
+    function r:SetWordWrap() end
+    function r:SetMaxLines() end
+    function r:IsShown() return self.shown end
     function r:GetAlpha() return self.alpha end
     function r:SetAlpha(v) self.alpha = v end
     function r:GetAtlas() return self.atlas end
@@ -43,6 +53,7 @@ local function Bar(backgroundKey)
     bar[backgroundKey], bar.barTexture = Region(), Region()
     bar.barTexture.atlas = "native-fill"
     function bar:CreateTexture() return Region() end
+    function bar:CreateFontString() return Region() end
     function bar:HookScript(_, callback) self.onShow = callback end
     return bar
 end
@@ -59,7 +70,7 @@ ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
 for _, key in ipairs({"Text", "RightText", "LeftText"}) do
     assert(health[key].r == 1 and health[key].g == 1 and health[key].b == 1, "bright bar native text white")
     assert(health[key].flags == "", "native health text has no outline")
-    assert(health[key].shadow[4] == 1 and health[key].offset[1] == 1 and health[key].offset[2] == -1, "native health text uses black offset copy")
+    assert(health[key].shadow[4] == 0 and #health[key].SNPUnderlayers == 2, "native health text uses black offset copy")
     assert(health[key].vr == 1, "native text tint neutral")
 end
 assert(health.Text.points[1][5] == -0.5, "native health label padding moves down")
@@ -99,6 +110,8 @@ assert(frame.SNPOriginalArtwork, "failed restoration keeps backup")
 health.bgTexture.IsForbidden = nil
 ns.NameplateFrames.RestoreBarArtwork(frame, context)
 assert(health.Text.points[1][5] == 0, "native text anchor restored")
+assert(health.Text.layer == "ARTWORK" and health.Text.level == 0, "native draw layer restored")
+for _, layer in ipairs(health.Text.SNPUnderlayers) do assert(not layer.shown, "native underlayers hidden after restoration") end
 assert(health.Text.r == 0.7 and health.Text.g == 0.8 and health.Text.vr == 0.5, "native health text restored")
 assert(health.bgTexture.alpha == 1 and health.selectedBorder.alpha == 1)
 assert(cast.Border.alpha == 1 and cast.DropShadow.alpha == 1)

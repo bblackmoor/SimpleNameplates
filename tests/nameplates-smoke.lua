@@ -92,7 +92,7 @@ local ns = {
     BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
     FRIENDLY_COLOR_CVARS = {},
 }
-for _, file in ipairs({ "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
+for _, file in ipairs({ "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "TextUnderlayers.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
     assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", ns)
 end
 equal(#frames, 1, "one event frame")
@@ -169,7 +169,7 @@ local function Region()
     function region:CreateFontString() return Region() end
     function region:SetShadowColor(...) self.shadow = {...} end
     function region:SetShadowOffset(x,y) self.shadowX, self.shadowY = x,y end
-    for _, method in ipairs({ "SetJustifyH",
+    for _, method in ipairs({ "SetJustifyH", "SetJustifyV",
         "SetWordWrap", "SetMaxLines", "SetDrawLayer" }) do region[method] = function() end end
     return region
 end
@@ -287,9 +287,9 @@ equal(plateFrame.name.flags, "", "hidden native inside name has no outline")
 appearance.nameSize = 36
 ns.RefreshAll()
 equal(plateFrame.SNPInsideName.size, 36, "large inside name retains full size")
-equal(plateFrame.SNPInsideName.shadow[4], 1, "inside name has opaque black shadow")
-equal(plateFrame.SNPInsideName.shadowX, 1, "inside name shadow one unit right")
-equal(plateFrame.SNPInsideName.shadowY, -1, "inside name shadow one unit down")
+equal(plateFrame.SNPInsideName.shadow[4], 0, "inside name native shadow disabled")
+equal(plateFrame.SNPInsideName.shadowX, 0, "inside name native shadow x cleared")
+equal(plateFrame.SNPInsideName.shadowY, 0, "inside name native shadow y cleared")
 equal(plateFrame.SNPInsideName.points[1][5], -0.5, "asymmetric padding moves name half unit down")
 equal(plateFrame.healthBar.height, 43, "bar expands for full font plus padding")
 equal(plateFrame.HealthBarsContainer.height, 43, "container expands with bar")
@@ -310,6 +310,7 @@ categoryMode = "inactive"
 ns.RefreshAll()
 equal(plateFrame.SNPState, nil, "inactive restores category presentation")
 equal(plateFrame.SNPInsideName.shown, false, "inside overlay restored")
+for _, layer in ipairs(plateFrame.SNPInsideName.SNPUnderlayers) do assert(not layer.shown, "inside underlayers hidden on disable") end
 equal(plateFrame.name.alpha, 1, "original name alpha restored")
 equal(plateFrame.healthBar.height, 20, "original bar height restored")
 equal(plateFrame.name.font, "NativeFont", "original native font restored")

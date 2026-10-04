@@ -19,6 +19,11 @@ local function Bar()
         equal(layer, "OVERLAY", "threat uses overlay")
         equal(template, "GameFontNormal", "threat starts with valid font")
         local text = {bar = self}
+        function text:GetFont() return self.font, self.size, self.flags end
+        function text:GetText() return self.text end
+        function text:IsShown() return self.shown end
+        function text:SetAlpha(value) self.alpha = value end
+        function text:SetJustifyV() end
         function text:SetDrawLayer(_, level) self.drawLevel = level end
         function text:SetPoint() end
         function text:SetJustifyH() end
@@ -42,7 +47,9 @@ local function Bar()
 end
 local frame = {unit = "nameplate1", healthBar = Bar()}
 local ns = {
-    PresentationCapabilities = {CanAccessFrame = function() return accessible end},
+    PresentationCapabilities = {CanAccessFrame = function() return accessible end, ObjectStatus = function() return "accessible" end},
+    AccessibleValue = function(value) return value end,
+    AccessibleBoolean = function(value) return value end,
     WorldContext = {Get = function() return {} end},
     AccessibleNumber = function(value)
         assert(not issecretvalue(value), "opaque percentage must bypass numeric inspection")
@@ -53,6 +60,7 @@ local ns = {
     GetThreatEnabled = function() return enabled end,
     NameplateFrames = {GetHealthBar = function(value) return value.healthBar end},
 }
+assert(loadfile("SimpleNameplates/TextUnderlayers.lua"))("SimpleNameplates", ns)
 assert(loadfile("SimpleNameplates/NameplateThreat.lua"))("SimpleNameplates", ns)
 local function Update(showBar)
     ns.NameplateThreat.UpdateThreatText(frame, "hostile", {}, {showHealthBar = showBar})
@@ -64,9 +72,9 @@ equal(frame.SNPThreatText.drawLevel, 7, "percentage drawn above bar artwork")
 equal(frame.SNPThreatText.r, 1, "threat stays white")
 equal(frame.SNPThreatText.size, 21, "threat matches default name size")
 equal(frame.SNPThreatText.flags, "", "threat has no outline")
-equal(frame.SNPThreatText.shadowAlpha, 1, "threat has black shadow")
-equal(frame.SNPThreatText.shadowX, 1, "shadow is one unit right")
-equal(frame.SNPThreatText.shadowY, -1, "shadow is one unit down")
+equal(frame.SNPThreatText.shadowAlpha, 0, "native threat shadow disabled")
+equal(frame.SNPThreatText.shadowX, 0, "native shadow x cleared")
+equal(frame.SNPThreatText.shadowY, 0, "native shadow y cleared")
 equal(frame.SNPThreatText.font, "Fonts\\ARIALN.TTF", "separate threat font retained")
 nameSize = 36
 Update(true)
@@ -86,6 +94,7 @@ raw, scaled = nil, nil
 Update(true)
 equal(frame.SNPThreatText.text, "", "absent threat never fabricated")
 equal(frame.SNPThreatText.shown, false, "absent threat hidden")
+for _, layer in ipairs(frame.SNPThreatText.SNPUnderlayers) do assert(not layer.shown, "absent threat underlayers hidden") end
 raw = 100
 enabled = false
 Update(true)

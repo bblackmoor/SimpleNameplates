@@ -181,7 +181,7 @@ end
 local function GetInsideName(frame, bar)
     local insideName = frame.SNPInsideName
     if insideName and frame.SNPInsideNameBar == bar then return insideName end
-    if insideName then insideName:Hide() end
+    if insideName then ns.TextUnderlayers.Hide(insideName); insideName:Hide() end
     insideName = bar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     insideName:SetDrawLayer("OVERLAY", 7)
     insideName:SetWordWrap(false)
@@ -195,14 +195,15 @@ local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, righ
     local insideName = GetInsideName(frame, bar)
     insideName:SetText(text)
     insideName:SetFont(fontPath, size, "")
-    insideName:SetShadowColor(0, 0, 0, 1)
-    insideName:SetShadowOffset(1, -1)
+    insideName:SetShadowColor(0, 0, 0, 0)
+    insideName:SetShadowOffset(0, 0)
     insideName:SetTextColor(textColor, textColor, textColor, 1)
     insideName:ClearAllPoints()
     insideName:SetPoint("LEFT", bar, "LEFT", 3, -0.5)
     insideName:SetPoint("RIGHT", rightRegion or bar, rightRegion and "LEFT" or "RIGHT", rightInset, rightRegion and 0 or -0.5)
     insideName:SetJustifyH("LEFT")
     insideName:Show()
+    ns.TextUnderlayers.Update(insideName, bar)
     -- Leave Blizzard's name shown for its health-text visibility logic, but
     -- avoid drawing a second copy behind the bar.
     frame.name:SetAlpha(0)
@@ -211,7 +212,7 @@ end
 local function RestoreNameDisplay(frame, context)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return end
-    if frame.SNPInsideName then frame.SNPInsideName:Hide() end
+    if frame.SNPInsideName then ns.TextUnderlayers.Hide(frame.SNPInsideName); frame.SNPInsideName:Hide() end
     if frame.name then frame.name:SetAlpha(1) end
 end
 
@@ -239,6 +240,7 @@ local function SuppressText(frame, context)
     -- Do not hide/reparent the unit frame or touch widget containers.
     if frame.name then frame.name:SetAlpha(0) end
     for _, key in ipairs({"SNPInsideName", "SNPFullTitleText", "SNPThreatText"}) do
+        ns.TextUnderlayers.Hide(frame[key])
         ns.NameplateFrames.SetShownSafe(frame[key], false, context)
     end
 end

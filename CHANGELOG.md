@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.144
+
+* Replaces the single inside-bar text shadow with two black text underlayers: one right 1/down 2 and one right 2/down 1 UI units. White text remains on top with no outline.
+* Applies to names, threat percentages, and native health labels. Reuses layers, synchronizes native text/font/visibility changes, passes secret text directly to the rendering API, and hides copies on disable or bar replacement.
+
 ## 1.0.143
 
 * Adds a profile Health bar width slider on Appearance: 80–150% of native width in 5% steps, default 100%. Reset settings restores the default; disabling category styling restores native width.

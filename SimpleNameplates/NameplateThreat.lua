@@ -10,6 +10,7 @@ local GetHealthBar = ns.NameplateFrames.GetHealthBar
 local function ClearThreatText(frame, reason)
     frame.SNPThreatStatus = reason
     if frame.SNPThreatText then
+        ns.TextUnderlayers.Hide(frame.SNPThreatText)
         frame.SNPThreatText:SetText("")
         frame.SNPThreatText:Hide()
     end
@@ -17,7 +18,7 @@ end
 
 local function EnsureThreatText(frame, bar)
     if frame.SNPThreatText and frame.SNPThreatTextBar == bar then return frame.SNPThreatText end
-    if frame.SNPThreatText then frame.SNPThreatText:Hide() end
+    if frame.SNPThreatText then ns.TextUnderlayers.Hide(frame.SNPThreatText); frame.SNPThreatText:Hide() end
     local text = bar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetDrawLayer("OVERLAY", 7)
     text:SetPoint("RIGHT", bar, "RIGHT", -3, -0.5)
@@ -49,14 +50,15 @@ local function UpdateThreatText(frame, state, context, decision)
     local text = EnsureThreatText(frame, bar)
     text:SetTextColor(1, 1, 1, 1)
     text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, "")
-    text:SetShadowColor(0, 0, 0, 1)
-    text:SetShadowOffset(1, -1)
+    text:SetShadowColor(0, 0, 0, 0)
+    text:SetShadowOffset(0, 0)
     local ok, _, _, scaled, raw = pcall(UnitDetailedThreatSituation, "player", frame.unit)
     if not ok then ClearThreatText(frame, "threat API unavailable"); return end
     if RenderPercent(text, raw) then frame.SNPThreatStatus = "displayed raw percentage"
     elseif RenderPercent(text, scaled) then frame.SNPThreatStatus = "displayed scaled percentage"
     else ClearThreatText(frame, "no displayable threat percentage"); return end
     text:Show()
+    ns.TextUnderlayers.Update(text, bar)
 end
 
 ns.NameplateThreat = { UpdateThreatText = UpdateThreatText }

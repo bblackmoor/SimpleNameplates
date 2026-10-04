@@ -95,7 +95,11 @@ end
 
 local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     frame.SNPThreatStatus = nil
-    if frame.SNPThreatText then frame.SNPThreatText:SetText("") end
+    if frame.SNPThreatText then
+        ns.TextUnderlayers.Hide(frame.SNPThreatText)
+        frame.SNPThreatText:SetText("")
+        frame.SNPThreatText:Hide()
+    end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
     Text.RestoreNameDisplay(frame, context)
     if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end

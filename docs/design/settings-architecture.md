@@ -118,3 +118,8 @@ Frame restoration captures native name font, colors, shadows, alignment, anchors
 `appearance.healthBarWidth` stores a profile percentage, default 100, bounded to 80–150 in steps of 5. Appearance exposes a slider and its Reset settings action resets this value. Native bar/container widths are captured before scaling, retained across subsequent changes, restored on disable or when returning to 100%, and repaired when native layout overwrites a custom width. No nameplate sizing CVar or native health update function is invoked.
 
 Inside health-bar text uses white glyphs with no outline and a black native shadow at (1, -1). Outside name/title text retains THICKOUTLINE. The minimum bar height for text is font size plus seven units: four above and three below, with a half-unit downward center offset. Native health-label points and shadows are restored with the rest of the captured presentation.
+
+
+### Dual inside-bar underlayers (1.0.144)
+
+`TextUnderlayers.lua` owns two reusable black FontStrings behind each white inside-bar label, at (1, -2) and (2, -1). The single native shadow is disabled. Copies share the source font, text, alignment, alpha, and bounds; source method hooks synchronize native label updates without inspecting secret text. Hiding or restoring the source deactivates its copies, and native health labels regain their original draw layer on restoration. Width and padding behavior remain unchanged.
