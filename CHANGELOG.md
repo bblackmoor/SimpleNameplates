@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.146
+
+* Adds a profile Effect selector below the interruptible-cast color on Colors: Moving dashes (default) or Pulse. Reset all colors also restores the default effect.
+* Bundles LibCustomGlow and LibStub for Pixel Glow dashed borders using the selected color. Preserves Blizzard-driven interruptibility detection, stops effects on hide/disable/bar replacement, and uses explicit readable geometry with pulse fallback when dimensions are restricted.
+
 ## 1.0.145
 
 * Checks fallback nameplate formatting and retries pending plates every 0.25 seconds instead of 0.50 seconds, reducing the wait for formatting repairs.

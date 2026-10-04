@@ -59,6 +59,20 @@ equal(widthNS.GetAppearanceSetting("healthBarWidth"), 125, "copied width survive
 widthNS.ResetAppearance()
 equal(widthNS.GetAppearanceSetting("healthBarWidth"), 100, "Appearance reset restores native width")
 
+-- Cast renderer is profile-specific, survives reload, and resets with Colors.
+local effectNS = fresh()
+equal(effectNS.GetInterruptibleCastStyle(), "PIXEL", "moving dashes default")
+effectNS.SetInterruptibleCastStyle("PULSE")
+effectNS.CopyActiveProfile("Pulse cast bars")
+effectNS = loadCore()
+equal(effectNS.GetInterruptibleCastStyle(), "PULSE", "copied cast effect survives reload")
+effectNS.SetInterruptibleCastStyle("invalid")
+equal(effectNS.GetInterruptibleCastStyle(), "PULSE", "invalid effect ignored")
+effectNS.ResetAppearance()
+equal(effectNS.GetInterruptibleCastStyle(), "PULSE", "Appearance reset preserves cast effect")
+effectNS.ResetAllColors()
+equal(effectNS.GetInterruptibleCastStyle(), "PIXEL", "Colors reset restores moving dashes")
+
 -- Fresh defaults and independent character selection.
 local ns = fresh()
 local db = ns.EnsureDB()
@@ -436,7 +450,7 @@ for line in toc:lines() do
 end
 toc:close()
 equal(table.concat(modules, ","),
-    "Defaults.lua,Core.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
+    "Libs/LibStub/LibStub.lua,Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua,Defaults.lua,Core.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
     "TOC module order")
 
 print("Core behavior smoke: passed")

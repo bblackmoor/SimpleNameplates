@@ -1,4 +1,4 @@
--- Simple Nameplates: Blizzard-driven interruptible-cast border and pulse.
+-- Simple Nameplates: Blizzard-driven interruptible-cast pulse or moving dashes.
 local _, ns = ...
 local CanAccessFrame = ns.PresentationCapabilities.CanAccessFrame
 local GetContext = ns.WorldContext.Get
@@ -6,6 +6,47 @@ local GetStylingEnabled = ns.GetStylingEnabled
 local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
 local EffectColor = ns.EffectColor
 local GetHealthBar, GetCastBar = ns.NameplateFrames.GetHealthBar, ns.NameplateFrames.GetCastBar
+
+local Glow = LibStub and LibStub("LibCustomGlow-1.0", true)
+local GLOW_KEY = "SNPInterruptible"
+
+local function StopRenderer(highlight)
+    if highlight.pulse then highlight.pulse:Stop() end
+    if highlight.glowRunning and Glow then Glow.PixelGlow_Stop(highlight.glowHost, GLOW_KEY) end
+    highlight.glowRunning, highlight.glowColor = nil, nil
+    for _, edge in ipairs(highlight.border) do edge:Hide() end
+    highlight.frame:SetAlpha(1)
+end
+
+local function ApplyRenderer(highlight)
+    if not highlight.pulse then return end
+    local r, g, b = EffectColor("interruptible")
+    local style = ns.GetInterruptibleCastStyle()
+    local width, height
+    if style == "PIXEL" and Glow then
+        local ok, w, h = pcall(highlight.castBar.GetSize, highlight.castBar)
+        if ok then width, height = ns.AccessibleNumber(w), ns.AccessibleNumber(h) end
+    end
+    if width and height and width > 0 and height > 0 then
+        highlight.pulse:Stop()
+        highlight.frame:SetAlpha(1)
+        for _, edge in ipairs(highlight.border) do edge:Hide() end
+        -- The library performs geometry arithmetic. Give it an addon-owned
+        -- host with explicit readable dimensions, never secret native sizes.
+        highlight.glowHost:SetSize(width + 6, height + 6)
+        local color = highlight.glowColor
+        if not highlight.glowRunning or not color or color[1] ~= r or color[2] ~= g or color[3] ~= b then
+            Glow.PixelGlow_Start(highlight.glowHost, {r, g, b, 1}, 12, 0.125, 8, 2, 0, 0, false, GLOW_KEY)
+            highlight.glowRunning, highlight.glowColor = true, {r, g, b}
+        end
+    else
+        -- Keep the existing pulse if the library or safe geometry is unavailable.
+        if highlight.glowRunning and Glow then Glow.PixelGlow_Stop(highlight.glowHost, GLOW_KEY) end
+        highlight.glowRunning, highlight.glowColor = nil, nil
+        for _, edge in ipairs(highlight.border) do edge:SetColorTexture(r, g, b, 1); edge:Show() end
+        if not highlight.pulse:IsPlaying() then highlight.pulse:Play() end
+    end
+end
 
 local function SetInterruptibleHighlightShown(overlay, shown)
     if not overlay then return end
@@ -21,6 +62,7 @@ local function InstallInterruptibleHighlightHook(highlight)
     local overlay = highlight.frame
     local ok = pcall(hooksecurefunc, icon, "SetShown", function(_, shown)
         if not CanAccessFrame(highlight.owner, GetContext()) then return end
+        if highlight.owner.SNPInterruptibleHighlight ~= highlight then overlay:Hide(); return end
         local decision = highlight.owner.SNPPresentation
         if GetStylingEnabled() and GetInterruptibleHighlightEnabled()
             and decision and decision.showCastBar then
@@ -92,10 +134,14 @@ local function EnsureInterruptibleHighlight(frame, context)
     fadeIn:SetDuration(0.55)
     fadeIn:SetOrder(2)
     pulse:SetLooping("REPEAT")
-    overlay:SetScript("OnShow", function() pulse:Play() end)
+    highlight.pulse = pulse
+    local glowHost = CreateFrame("Frame", nil, overlay)
+    glowHost:SetPoint("TOPLEFT", castBar, "TOPLEFT", -3, 3)
+    glowHost:SetFrameLevel(overlay:GetFrameLevel())
+    highlight.glowHost = glowHost
+    overlay:SetScript("OnShow", function() ApplyRenderer(highlight) end)
     overlay:SetScript("OnHide", function()
-        pulse:Stop()
-        overlay:SetAlpha(1)
+        StopRenderer(highlight)
     end)
     frame.SNPInterruptibleHighlight = highlight
 
@@ -129,6 +175,7 @@ local function UpdateInterruptibleHighlight(frame, context, decision)
     if not icon then highlight.frame:Hide(); return end
     local ok, shown = pcall(icon.IsShown, icon)
     if ok then SetInterruptibleHighlightShown(highlight.frame, shown) end
+    if ns.AccessibleBoolean(highlight.frame:IsShown()) == true then ApplyRenderer(highlight) end
 end
 
 

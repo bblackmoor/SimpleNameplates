@@ -112,6 +112,35 @@ local function AddPriorityColorControls(context)
         "Fallback for unmatched entities.")
 end
 
+local function AddCastEffectSelector(context)
+    local row = U.CreateSettingRow(context.content, context.layout, "Effect")
+    local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
+    dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X - 16, 0)
+    UIDropDownMenu_SetWidth(dropdown, 190)
+    local options = {{value = "PIXEL", label = "Moving dashes"}, {value = "PULSE", label = "Pulse"}}
+    local function Refresh()
+        local value = ns.GetInterruptibleCastStyle()
+        UIDropDownMenu_SetSelectedValue(dropdown, value)
+        UIDropDownMenu_SetText(dropdown, value == "PULSE" and "Pulse" or "Moving dashes")
+    end
+    UIDropDownMenu_Initialize(dropdown, function(_, level)
+        for _, option in ipairs(options) do
+            local value = option.value
+            local info = UIDropDownMenu_CreateInfo()
+            info.text, info.value = option.label, value
+            info.checked = ns.GetInterruptibleCastStyle() == value
+            info.func = function()
+                ns.SetInterruptibleCastStyle(value)
+                Refresh()
+                RefreshNameplates()
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    context.refreshers[#context.refreshers + 1] = Refresh
+    Refresh()
+end
+
 local function CreateColorsPanel()
     local panel, content, layout = U.CreateScrollablePanel("Colors")
     U.AddTitle(content, layout, "Colors")
@@ -128,17 +157,18 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Resets global priority switches to Active and this profile's cast highlight to Inactive.")
+        "Resets global priority switches to Active and this profile's cast highlight to Inactive with Moving dashes.")
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
     CreateColorRow(context, "Interruptible cast highlight",
-        "Pulses the cast-bar border for interruptible casts and channels. This switch applies only to the selected profile.",
+        "Highlights interruptible casts and channels. This switch applies only to the selected profile.",
         function() return EffectColor("interruptible") end,
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
         function() ResetEffectColor("interruptible") end, {
             get = ns.GetInterruptibleHighlightEnabled,
             set = ns.SetInterruptibleHighlightEnabled,
         })
+    AddCastEffectSelector(context)
     panel:SetScript("OnShow", Refresh)
     Refresh()
     layout:Finish()

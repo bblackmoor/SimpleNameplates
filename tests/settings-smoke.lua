@@ -96,6 +96,7 @@ local setupAllowed, setupChecks = true, 0
 local attacking = { 1, 0, 0 }
 local npcColors = { friendly = {0.2, 0.8, 0.2}, useful = {0.8, 0.8, 0.8}, useless = {0.6, 0.6, 0.6} }
 local modes = { friendly = "active" }
+local castStyle = "PIXEL"
 local profile = { matchSanctuaryFont = true, nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE", healthBarWidth = 100 }
 local ns = {
     Defaults = {showThreat = true, interruptibleHighlight = false, hideCritterCompanionNames = false},
@@ -134,11 +135,13 @@ local ns = {
     SetStylingEnabled = function(value) styling = value end,
     GetThreatEnabled = function() return threatEnabled end,
     SetThreatEnabled = function(value) threatEnabled = value end,
+    GetInterruptibleCastStyle = function() return castStyle end,
+    SetInterruptibleCastStyle = function(value) castStyle = value end,
     GetInterruptibleHighlightEnabled = function() return castEnabled end,
     SetInterruptibleHighlightEnabled = function(value) castEnabled = value end,
     ResetAllColors = function()
         allColorResets = allColorResets + 1
-        castEnabled = false
+        castEnabled, castStyle = false, "PIXEL"
         for _, state in ipairs({"attacking", "hostile", "neutral", "friendly", "useful", "useless"}) do modes[state] = "active" end
     end,
     GetTRP3Enabled = function() return trp3Enabled end,
@@ -366,8 +369,20 @@ assert(belongsTo(effectFill, categories[4].panel), "cast color belongs to Colors
 assert(not switchFor("Highlight interruptible casts and channels"), "redundant Appearance cast toggle removed")
 assert(not button("Reset priority colors"), "priority reset button removed")
 assert(not button("Reset all profile colors"), "old bottom reset removed")
+local effectSelector
+for _, item in ipairs(frames) do
+    if item.initialize and item.selected == "PIXEL" then effectSelector = item end
+end
+assert(effectSelector and belongsTo(effectSelector, categories[4].panel), "cast effect selector on Colors")
+menuOptions = {}
+effectSelector.initialize(nil, 1)
+for _, option in ipairs(menuOptions) do if option.value == "PULSE" then option.func() end end
+equal(castStyle, "PULSE", "effect selector changes profile effect")
+equal(effectSelector.selected, "PULSE", "effect selection refreshes immediately")
 button("Reset all colors"):Click()
 equal(allColorResets, 1, "complete page reset available")
+equal(castStyle, "PIXEL", "Colors reset includes effect")
+equal(effectSelector.selected, "PIXEL", "effect selector refreshes after reset")
 assert(button("Reset all colors").points.TOPLEFT[4] > effectFill.parent.parent.points.TOPLEFT[4], "reset precedes cast controls")
 castEnabled, threatEnabled = true, false
 local widthSlider

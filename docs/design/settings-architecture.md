@@ -123,3 +123,8 @@ Inside health-bar text uses white glyphs with no outline and a black native shad
 ### Dual inside-bar underlayers (1.0.144)
 
 `TextUnderlayers.lua` owns two reusable black FontStrings behind each white inside-bar label, at (1, -2) and (2, -1). The single native shadow is disabled. Copies share the source font, text, alignment, alpha, and bounds; source method hooks synchronize native label updates without inspecting secret text. Hiding or restoring the source deactivates its copies, and native health labels regain their original draw layer on restoration. Width and padding behavior remain unchanged.
+
+
+### Cast-highlight renderer choice (1.0.146)
+
+`interruptibleCastStyle` is a profile enum: PIXEL (Moving dashes, default) or PULSE. It validates, copies, reloads, and resets with Colors. Appearance reset leaves it unchanged. The Effect dropdown sits below the cast color and Active switch. CastHighlight retains the native icon-visibility mirror for interruptibility. Pulse uses the existing border animation; Pixel Glow uses bundled LibCustomGlow-1.0 on an addon-owned host with explicit readable dimensions. Restricted geometry falls back to pulse. Hide, disable, replacement, or changing to Pulse releases the glow and its OnUpdate callback; retired icon hooks cannot revive old overlays.

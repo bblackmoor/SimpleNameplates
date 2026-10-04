@@ -66,6 +66,7 @@ local function NewProfile(presetName)
         appearance = {},
         showThreat = DEFAULT_SHOW_THREAT,
         interruptibleHighlight = defaults.interruptibleHighlight,
+        interruptibleCastStyle = defaults.interruptibleCastStyle,
     }
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
         local color = preset and preset.priorityColors and preset.priorityColors[key] or default
@@ -120,6 +121,9 @@ local function ValidateProfileToggles(profile, saved)
     profile.showThreat = SavedBoolean(saved.showThreat, profile.showThreat)
     profile.interruptibleHighlight = SavedBoolean(saved.interruptibleHighlight,
         profile.interruptibleHighlight)
+    if saved.interruptibleCastStyle == "PIXEL" or saved.interruptibleCastStyle == "PULSE" then
+        profile.interruptibleCastStyle = saved.interruptibleCastStyle
+    end
 end
 
 local function ValidatedProfile(saved, presetName)
@@ -466,6 +470,7 @@ local function ResetAllColors()
         profile.effectColors[key] = CopyColor(default)
     end
     profile.interruptibleHighlight = defaults.interruptibleHighlight
+    profile.interruptibleCastStyle = defaults.interruptibleCastStyle
     local modes = EnsureDB().global.categoryModes
     for key, default in pairs(DEFAULT_CATEGORY_MODES) do modes[key] = default end
     if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
@@ -477,6 +482,14 @@ end
 
 local function SetInterruptibleHighlightEnabled(enabled)
     ActiveProfile().interruptibleHighlight = enabled == true
+end
+
+local function GetInterruptibleCastStyle()
+    return ActiveProfile().interruptibleCastStyle
+end
+
+local function SetInterruptibleCastStyle(style)
+    if style == "PIXEL" or style == "PULSE" then ActiveProfile().interruptibleCastStyle = style end
 end
 
 local function GetStylingEnabled()
@@ -517,6 +530,8 @@ ns.EffectColor = EffectColor
 ns.SetEffectColor = SetEffectColor
 ns.ResetEffectColor = ResetEffectColor
 ns.ResetAllColors = ResetAllColors
+ns.GetInterruptibleCastStyle = GetInterruptibleCastStyle
+ns.SetInterruptibleCastStyle = SetInterruptibleCastStyle
 ns.GetInterruptibleHighlightEnabled = GetInterruptibleHighlightEnabled
 ns.SetInterruptibleHighlightEnabled = SetInterruptibleHighlightEnabled
 ns.GetStylingEnabled = GetStylingEnabled

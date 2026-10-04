@@ -93,6 +93,7 @@ ns.Defaults = {
     stylingEnabled = DEFAULT_STYLING_ENABLED,
     showThreat = DEFAULT_SHOW_THREAT,
     interruptibleHighlight = false,
+    interruptibleCastStyle = "PIXEL",
     hideCritterCompanionNames = DEFAULT_HIDE_CRITTER_COMPANION_NAMES,
 }
 

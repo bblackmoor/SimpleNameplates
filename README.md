@@ -14,7 +14,7 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | 4 | Friendly | Green | Name out of combat; health bar in combat when supported |
 | 5 | NPC - Interactive | Light grey | Interactive NPC: name out of combat; supported bar in combat |
 | 6 | NPC - Background | Gray | Remaining entities: name out of combat; supported bar in combat |
-| — | Interruptible cast | Cyan | Optional pulsing cast-bar border |
+| — | Interruptible cast | Cyan | Optional moving-dash or pulsing cast-bar border |
 | — | Native overhead names without an accessible plate | Unchanged | Entity types and contexts are recorded below |
 
 ## How It Works
@@ -177,6 +177,10 @@ Simple Nameplates does not inspect or calculate with secret threat values. It pa
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so applying the shared red attacking color to PCs is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
+
+## Bundled libraries
+
+Cast highlighting uses [LibCustomGlow](https://github.com/Stanzilla/LibCustomGlow) (MIT) and [LibStub](https://github.com/lua-wow/LibStub) (public domain). Both are included; no separate installation is required. Choose **Moving dashes** or **Pulse** below the cast-highlight color on Colors.
 
 ## Development
 
