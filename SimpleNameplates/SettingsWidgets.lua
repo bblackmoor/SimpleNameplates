@@ -74,6 +74,7 @@ function Handle:SetPoint(point, relative, relativePoint, x, y)
     self.frame:SetPoint(point, Widgets.GetFrame(relative), relativePoint, x or 0, y or 0)
 end
 function Handle:SetEnabled(enabled)
+    if enabled ~= true and self.CancelEdit then self:CancelEdit() end
     self.enabled = enabled == true
     if self.enabled then self.widget:Enable() else self.widget:Disable() end
     -- Some DF Enable/Disable methods only set wrapper lockdown and alpha.
@@ -111,6 +112,59 @@ function Widgets.CreateSwitch(parent, onChanged)
     return handle
 end
 
+-- Each adapted slider owns its editor. DF's shared editor captures the first
+-- slider in its Escape closure; keep our editing lifecycle local to this handle.
+local function InstallSliderEditor(handle, normalize)
+    local editor, originalValue, editing
+    local function ApplyText()
+        local value = tonumber(editor:GetText())
+        if not value or value ~= value or value == math.huge or value == -math.huge then return false end
+        value = normalize(value)
+        if value ~= handle:GetValue() then handle.widget:SetValue(value) end
+        return true
+    end
+    local function Finish(cancel)
+        if not editing then return end
+        if not cancel and not ApplyText() then cancel = true end
+        editing = false
+        if cancel and handle:GetValue() ~= originalValue then
+            -- Preview changes already notified the page; cancellation must also
+            -- restore its saved value, not just the native slider position.
+            handle.widget:SetValue(originalValue)
+        end
+        editor:ClearFocus()
+        editor:Hide()
+    end
+    handle.CancelEdit = function() Finish(true) end
+    handle.widget.TypeValue = function()
+        if not handle.enabled or editing then return end
+        if not editor then
+            editor = CreateFrame("EditBox", nil, handle.frame, "BackdropTemplate")
+            editor:SetSize(60, 20)
+            editor:SetPoint("CENTER", handle.frame, "CENTER")
+            editor:SetBackdrop(backdrop)
+            editor:SetBackdropColor(0.04, 0.04, 0.04, 1)
+            editor:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
+            editor:SetFontObject("GameFontHighlightSmall")
+            editor:SetJustifyH("CENTER")
+            editor:SetAutoFocus(false)
+            editor:SetScript("OnTextChanged", function() if editing then ApplyText() end end)
+            editor:SetScript("OnEscapePressed", function() Finish(true) end)
+            editor:SetScript("OnEnterPressed", function() Finish(false) end)
+            editor:SetScript("OnHide", function() Finish(true) end)
+            editor:SetScript("OnEditFocusLost", function() Finish(true) end)
+            handle.frame:HookScript("OnHide", function() Finish(true) end)
+            handle.frame:HookScript("OnDisable", function() Finish(true) end)
+        end
+        originalValue = handle:GetValue()
+        editor:SetText(tostring(originalValue))
+        editing = true
+        editor:Show()
+        editor:SetFocus()
+        editor:HighlightText()
+    end
+end
+
 function Widgets.CreateSlider(parent, minimum, maximum, step, onChanged)
     assert(minimum < maximum and step > 0, "Invalid slider range")
     local widget = Framework():CreateSlider(Widgets.GetFrame(parent), 180, 20,
@@ -132,6 +186,7 @@ function Widgets.CreateSlider(parent, minimum, maximum, step, onChanged)
         self:Refresh(self.widget.SetValue, Normalize(value))
     end
     function handle:GetValue() return Normalize(self.widget:GetValue()) end
+    InstallSliderEditor(handle, Normalize)
     return handle
 end
 

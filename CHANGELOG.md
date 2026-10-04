@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.153
+
+* Fixes typed slider cancellation in the DF adapter: each slider owns its editor and Escape restores its own opening value, including saved-setting changes from previews. Enter commits a valid rounded/clamped value; closing, focus loss or disabling cancels the preview. Does not patch the bundled library or convert Appearance yet.
+* Adds real-DF regressions for two different sliders, cancellation isolation, Enter, invalid input and editor cleanup. All fifteen smoke suites pass.
+
 ## 1.0.152
 
 * Completes phase 3 of the Details Framework conversion: Colors now uses DF color swatches, sliding switches, reset buttons and its five-choice cast effect dropdown. Retains the shared native profile selector, top page reset, control spacing, swatch insets, button dimensions and RGB-only picker apply/cancel.

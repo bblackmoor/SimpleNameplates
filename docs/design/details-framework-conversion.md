@@ -250,3 +250,15 @@ The phase 3 implementation is complete; the planned client checkpoint is still
 pending. Record native rendering/scrolling, picker behavior, profile switches,
 resets and combat/taint observations with Details/Plater absent and with an
 external embedder present before treating client verification as complete.
+
+## Slider cancellation fix (1.0.153)
+
+The phase 4 review reproduced a DF shared-editor Escape closure restoring the
+first slider's value when canceling another slider. SettingsWidgets now gives
+each adapted slider a private native editor through an instance-local TypeValue
+override. Opening captures that slider's current value; valid previews use the
+existing range/step normalization, Enter commits, and Escape/close/focus loss/
+disable restores its opening value and notifies the page if a preview changed
+it. The bundled DF source and its shared editor are untouched. The real-DF
+adapter smoke test covers both sliders and cleanup; Appearance conversion and
+native client verification remain pending.

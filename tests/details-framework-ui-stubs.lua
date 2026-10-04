@@ -71,7 +71,12 @@ function methods:GetFont() return STANDARD_TEXT_FONT,12,'' end
 function methods:GetText() return self.text or '' end
 function methods:GetValue() return self.value or 0 end
 function methods:SetValue(v) local changed=v~=self.value; self.value=v; if changed and self.scripts.OnValueChanged then self.scripts.OnValueChanged(self,v) end end
-function methods:SetText(v) self.text=v end
+function methods:SetText(v)
+    self.text = v
+    if self.scripts.OnTextChanged then self.scripts.OnTextChanged(self, false) end
+end
+function methods:SetFocus() end
+function methods:HighlightText() end
 function methods:SetSize(w,h) self.width,self.height=w,h end
 function methods:SetWidth(w) self.width=w end
 function methods:SetHeight(h) self.height=h end

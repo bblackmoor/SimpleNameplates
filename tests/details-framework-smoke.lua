@@ -54,6 +54,54 @@ slider.widget.SetValue = setValue
 slider.widget:SetValue(100)
 assert(changes == 3, "next user edit survives failed refresh")
 
+-- Typed editing belongs to each slider, even after another slider opened first.
+local typedWidth, typedSize, widthWrites, sizeWrites = 100, 21, 0, 0
+local width = widgets.CreateSlider(UIParent, 80, 150, 5, function(value)
+    typedWidth = value; widthWrites = widthWrites + 1
+end)
+local size = widgets.CreateSlider(UIParent, 8, 36, 1, function(value)
+    typedSize = value; sizeWrites = sizeWrites + 1
+end)
+width:SetValue(100)
+size:SetValue(21)
+local function Editor(control)
+    control.frame:GetScript("OnMouseDown")(control.frame, "RightButton")
+    for _, object in ipairs(ui.objects) do
+        if object.kind == "EditBox" and object:GetParent() == control.frame then return object end
+    end
+    error("Slider editor missing")
+end
+local widthEditor = Editor(width)
+assert(width:GetValue() == 100 and widthWrites == 0, "opening editor leaves value unchanged")
+widthEditor:SetText("133")
+assert(width:GetValue() == 135 and typedWidth == 135)
+widthEditor:GetScript("OnEscapePressed")()
+assert(width:GetValue() == 100 and typedWidth == 100 and widthWrites == 2)
+local sizeEditor = Editor(size)
+assert(sizeEditor ~= widthEditor and size:GetValue() == 21)
+sizeEditor:SetText("30")
+sizeEditor:GetScript("OnEscapePressed")()
+assert(size:GetValue() == 21 and typedSize == 21 and sizeWrites == 2,
+    "second slider Escape restores its own opening value")
+assert(width:GetValue() == 100 and widthWrites == 2, "cancel does not change the other slider")
+Editor(width):SetText("140")
+widthEditor:GetScript("OnEnterPressed")()
+assert(width:GetValue() == 140 and typedWidth == 140 and widthWrites == 3)
+Editor(size):SetText("29")
+sizeEditor:GetScript("OnHide")()
+assert(size:GetValue() == 21 and typedSize == 21, "closing editor cancels preview")
+Editor(size):SetText("28")
+sizeEditor:GetScript("OnEditFocusLost")()
+assert(size:GetValue() == 21 and typedSize == 21, "focus loss cancels preview")
+Editor(size):SetText("31")
+size:SetEnabled(false)
+assert(size:GetValue() == 21 and typedSize == 21, "disable cancels before suppressing callbacks")
+size:SetEnabled(true)
+Editor(size):SetText("invalid")
+sizeEditor:GetScript("OnEnterPressed")()
+assert(size:GetValue() == 21 and typedSize == 21, "invalid input cannot change saved value")
+assert(not DetailsFrameworkSliderEditBox, "adapter does not patch DF's shared editor")
+
 local builds = 0
 local dropdown = widgets.CreateDropdown(UIParent, function()
     builds = builds + 1
