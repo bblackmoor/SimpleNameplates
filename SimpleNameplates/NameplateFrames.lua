@@ -26,7 +26,152 @@ local function SetShownSafe(region, shown, context)
     if shown then region:Show() else region:Hide() end
 end
 
+-- Keep native progress/value logic; replace only the decorative artwork.
+local function ReadValues(region, method, context)
+    local fn = Capabilities.SafeField(region, method, context)
+    if type(fn) ~= "function" then return nil end
+    local values = {pcall(fn, region)}
+    if not values[1] then return nil end
+    table.remove(values, 1)
+    for index, value in ipairs(values) do
+        values[index] = ns.AccessibleValue(value)
+        if values[index] == nil then return nil end
+    end
+    return values
+end
+
+local function OriginalArtwork(frame, region, context)
+    if Capabilities.ObjectStatus(region, context) ~= "accessible" then return nil end
+    local originals = frame.SNPOriginalArtwork or {}
+    frame.SNPOriginalArtwork = originals
+    local original = originals[region]
+    if not original then
+        original = {}
+        originals[region] = original
+    end
+    return original
+end
+
+local function RemoveArtworkEdge(frame, region, context)
+    local original = OriginalArtwork(frame, region, context)
+    if not original then return end
+    if original.alpha == nil then
+        original.alpha = ns.AccessibleNumber(Capabilities.ReadRegion(region, "GetAlpha", context))
+    end
+    if original.alpha ~= nil then region:SetAlpha(0) end
+end
+
+local function FlattenFill(frame, region, context)
+    local original = OriginalArtwork(frame, region, context)
+    if not original then return end
+    if not original.fill then
+        local atlas = Capabilities.ReadRegion(region, "GetAtlas", context)
+        local texture = Capabilities.ReadRegion(region, "GetTexture", context)
+        local coords = ReadValues(region, "GetTexCoord", context)
+        if not atlas and not texture then return end
+        original.fill = {atlas = atlas, texture = texture, coords = coords}
+    end
+    region:SetTexture("Interface\\Buttons\\WHITE8X8")
+    region:SetTexCoord(0, 1, 0, 1)
+end
+
+local function ClearNativeTextEdges(frame, region, context)
+    local original = OriginalArtwork(frame, region, context)
+    if not original then return end
+    if not original.font then
+        local font = ReadValues(region, "GetFont", context)
+        if not font or type(font[1]) ~= "string" or type(font[2]) ~= "number" then return end
+        original.font = font
+        original.shadowColor = ReadValues(region, "GetShadowColor", context)
+        original.shadowOffset = ReadValues(region, "GetShadowOffset", context)
+    end
+    region:SetFont(original.font[1], original.font[2], "")
+    region:SetShadowColor(0, 0, 0, 0)
+    region:SetShadowOffset(0, 0)
+end
+
+local function FlattenBar(frame, bar, backgroundKey, context)
+    if Capabilities.ObjectStatus(bar, context) ~= "accessible" then return end
+    RemoveArtworkEdge(frame, Capabilities.SafeField(bar, backgroundKey, context), context)
+    local fill = Capabilities.SafeField(bar, "barTexture", context)
+        or Capabilities.ReadRegion(bar, "GetStatusBarTexture", context)
+    FlattenFill(frame, fill, context)
+    local background = bar.SNPPlainBackground
+    if not background and type(bar.CreateTexture) == "function" then
+        background = bar:CreateTexture(nil, "BACKGROUND", nil, -1)
+        background:SetAllPoints(bar)
+        background:SetColorTexture(0, 0, 0, 0.4)
+        bar.SNPPlainBackground = background
+    end
+    if background then
+        frame.SNPPlainBackgrounds = frame.SNPPlainBackgrounds or {}
+        frame.SNPPlainBackgrounds[background] = true
+        background:Show()
+    end
+end
+
+local function InstallArtworkHooks(frame, bar, context)
+    if Capabilities.ObjectStatus(bar, context) ~= "accessible" then return end
+    if bar.SNPArtworkHookOwner == frame then return end
+    local function Refresh()
+        if frame.SNPRestoring or not frame.SNPOriginalArtwork then return end
+        local current = ns.WorldContext.Get()
+        local assessment = Capabilities.InspectFrame(frame, current)
+        if assessment.canAccess then ns.NameplateFrames.ApplyBarArtwork(frame, assessment, current) end
+    end
+    if type(bar.HookScript) == "function" then bar:HookScript("OnShow", Refresh) end
+    if hooksecurefunc and type(bar.ApplyStyleAndAnchoring) == "function" then
+        hooksecurefunc(bar, "ApplyStyleAndAnchoring", Refresh)
+    end
+    bar.SNPArtworkHookOwner = frame
+end
+
+local function ApplyBarArtwork(frame, assessment, context)
+    local healthBar, castBar = assessment.healthBar, assessment.castBar
+    InstallArtworkHooks(frame, healthBar, context)
+    InstallArtworkHooks(frame, castBar, context)
+    FlattenBar(frame, healthBar, "bgTexture", context)
+    for _, key in ipairs({"selectedBorder", "deselectedOverlay"}) do
+        RemoveArtworkEdge(frame, Capabilities.SafeField(healthBar, key, context), context)
+    end
+    FlattenBar(frame, castBar, "Background", context)
+    for _, key in ipairs({"Border", "TextBorder", "DropShadow"}) do
+        RemoveArtworkEdge(frame, Capabilities.SafeField(castBar, key, context), context)
+    end
+    for _, key in ipairs({"Text", "CastTargetNameText"}) do
+        ClearNativeTextEdges(frame, Capabilities.SafeField(castBar, key, context), context)
+    end
+end
+
+local unpackValues = unpack or table.unpack
+local function RestoreBarArtwork(frame, context)
+    for region, original in pairs(frame.SNPOriginalArtwork or {}) do
+        if Capabilities.ObjectStatus(region, context) ~= "accessible" then
+            error("Bar artwork restoration is temporarily inaccessible")
+        end
+        if original.alpha ~= nil then region:SetAlpha(original.alpha) end
+        if original.fill then
+            if original.fill.atlas then region:SetAtlas(original.fill.atlas)
+            else region:SetTexture(original.fill.texture) end
+            if original.fill.coords then region:SetTexCoord(unpackValues(original.fill.coords)) end
+        end
+        if original.font then
+            region:SetFont(original.font[1], original.font[2], original.font[3] or "")
+            if original.shadowColor then region:SetShadowColor(unpackValues(original.shadowColor)) end
+            if original.shadowOffset then region:SetShadowOffset(unpackValues(original.shadowOffset)) end
+        end
+    end
+    for region in pairs(frame.SNPPlainBackgrounds or {}) do
+        if Capabilities.ObjectStatus(region, context) ~= "accessible" then
+            error("Plain bar background restoration is temporarily inaccessible")
+        end
+        region:Hide()
+    end
+    frame.SNPOriginalArtwork, frame.SNPPlainBackgrounds = nil, nil
+end
+
 ns.NameplateFrames = {
+    ApplyBarArtwork = ApplyBarArtwork, RestoreBarArtwork = RestoreBarArtwork,
     GetUnitFrame = GetUnitFrame, GetFrameFromPlate = GetFrameFromPlate,
     GetHealthBar = GetHealthBar, GetCastBar = GetCastBar, SetShownSafe = SetShownSafe,
 }

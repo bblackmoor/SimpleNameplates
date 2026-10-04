@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.135
+
+* Removes native health/cast-bar decorative borders, shaded overlays, and cast-label outlines/shadows. Uses flat fills and backgrounds while preserving progress, icons, and interruptibility indicators; restores artwork when styling ends.
+* Anchors inside-bar names three units before displayed threat text, or three units from the bar edge when threat is blank, avoiding unused reserved space and retaining the layout during cached repair.
+
 ## 1.0.134
 
 * Removes dark outlines and shadows from styled names, NPC/TRP3 titles, and threat percentages, and removes the dark backing around interruptible-cast borders.

@@ -28,6 +28,8 @@ C_Timer = { After = function(delay, callback) timers[#timers + 1] = { delay, cal
 function wipe(t) for key in pairs(t) do t[key] = nil end end
 
 local unit = {}
+local threatEnabled, threatPercent = false, nil
+function UnitDetailedThreatSituation() return false, 1, nil, threatPercent end
 function UnitThreatSituation(who) return who == "player" and unit.aggro and 2 or nil end
 function UnitIsUnit(token, target) return unit.targetPlayer and token == "nameplate1target" and target == "player" or false end
 function UnitIsOwnerOrControllerOfUnit() return false end
@@ -66,7 +68,7 @@ local ns = {
     GetAppearanceSetting = function(key) return appearance[key] end,
     GetTRP3Setting = function(key) return trp3Options[key] or false end,
     GetInterruptibleHighlightEnabled = function() return highlightEnabled end,
-    GetThreatEnabled = function() return false end,
+    GetThreatEnabled = function() return threatEnabled end,
     GetHideCritterCompanionNames = function() return false end,
     PriorityColorForState = function(state)
         if state == "useful" then return 211 / 255, 211 / 255, 211 / 255 end
@@ -226,6 +228,19 @@ equal(plateFrame.name.alpha, 0, "original inside name concealed")
 equal(plateFrame.healthBar.height, 20, "inside padding retained")
 equal(plateFrame.SNPInsideName.size, 12, "inside name retains selected size")
 equal(plateFrame.SNPInsideName.flags, "", "inside name has no outline")
+threatEnabled, threatPercent = true, nil
+ns.RefreshAll()
+equal(plateFrame.SNPInsideName.points[2][2], plateFrame.healthBar, "blank threat uses full bar width")
+equal(plateFrame.SNPInsideName.points[2][4], -3, "blank threat leaves only right padding")
+threatPercent = 255
+ns.RefreshAll()
+equal(plateFrame.SNPInsideName.points[2][2], plateFrame.SNPThreatText, "name ends beside visible threat")
+equal(plateFrame.SNPInsideName.points[2][3], "LEFT", "name uses actual threat left edge")
+ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
+equal(plateFrame.SNPInsideName.points[2][2], plateFrame.SNPThreatText, "cached repair preserves threat anchor")
+threatEnabled, threatPercent = false, nil
+ns.RefreshAll()
+
 equal(plateFrame.name.flags, "", "name has no outline")
 appearance.nameSize = 36
 ns.RefreshAll()

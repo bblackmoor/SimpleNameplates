@@ -51,9 +51,10 @@ local function ApplySimpleStyle(frame, context)
         return
     end
     ApplyVisibility(frame, decision, assessment, context)
+    ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
+    ns.NameplateThreat.UpdateThreatText(frame, state, context, decision)
     Text.StyleName(frame, state, context, decision)
     if decision.showHealthBar then assessment.healthBar:SetStatusBarColor(ns.PriorityColorForState(decision.colorState)) end
-    ns.NameplateThreat.UpdateThreatText(frame, state, context, decision)
     ns.CastHighlight.UpdateInterruptibleHighlight(frame, context, decision)
 end
 ns.NameplatePresentation = {

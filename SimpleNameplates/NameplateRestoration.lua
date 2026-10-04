@@ -28,6 +28,7 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     Text.RestoreNameDisplay(frame, context)
     if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
     Text.RestoreOriginalBarHeight(frame, assessment.healthBar, context)
+    ns.NameplateFrames.RestoreBarArtwork(frame, context)
     local original = frame.SNPOriginalVisibility or {}
     for _, key in ipairs(visibilityKeys) do
         if original[key] ~= nil then SetShownSafe(frame[key], original[key], context) end

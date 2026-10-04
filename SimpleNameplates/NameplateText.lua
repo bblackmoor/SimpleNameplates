@@ -147,7 +147,7 @@ local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context
     return true, insideNameSize
 end
 
-local function PositionName(frame, name, bar, nameOnly, inside, rightInset)
+local function PositionName(frame, name, bar, nameOnly, inside, rightInset, rightRegion)
     if nameOnly then
         name:ClearAllPoints()
         if bar then
@@ -159,7 +159,7 @@ local function PositionName(frame, name, bar, nameOnly, inside, rightInset)
     elseif inside then
         name:ClearAllPoints()
         name:SetPoint("LEFT", bar, "LEFT", 3, 0)
-        name:SetPoint("RIGHT", bar, "RIGHT", rightInset, 0)
+        name:SetPoint("RIGHT", rightRegion or bar, rightRegion and "LEFT" or "RIGHT", rightInset, 0)
         name:SetJustifyH("LEFT")
     elseif bar then
         name:ClearAllPoints()
@@ -181,7 +181,7 @@ local function GetInsideName(frame, bar)
     return insideName
 end
 
-local function ShowInsideName(frame, bar, text, fontPath, size, rightInset)
+local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, rightRegion)
     local insideName = GetInsideName(frame, bar)
     insideName:SetText(text)
     insideName:SetFont(fontPath, size, "")
@@ -190,7 +190,7 @@ local function ShowInsideName(frame, bar, text, fontPath, size, rightInset)
     insideName:SetTextColor(1, 1, 1, 1)
     insideName:ClearAllPoints()
     insideName:SetPoint("LEFT", bar, "LEFT", 3, 0)
-    insideName:SetPoint("RIGHT", bar, "RIGHT", rightInset, 0)
+    insideName:SetPoint("RIGHT", rightRegion or bar, rightRegion and "LEFT" or "RIGHT", rightInset, 0)
     insideName:SetJustifyH("LEFT")
     insideName:Show()
     -- Leave Blizzard's name shown for its health-text visibility logic, but
@@ -206,7 +206,7 @@ local function RestoreNameDisplay(frame, context)
 end
 
 local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
-        nameOnly, inside, rightInset, bar)
+        nameOnly, inside, rightInset, bar, rightRegion)
     local expected = frame.SNPNameStyle or {}
     frame.SNPNameStyle = expected
     expected.text = displayName
@@ -217,6 +217,7 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.nameOnly = nameOnly
     expected.inside = inside == true
     expected.rightInset = rightInset
+    expected.rightRegion = rightRegion
     expected.bar = bar
     expected.barHeight = inside and InsideBarHeight(frame, size) or nil
     expected.frame = frame
@@ -246,8 +247,14 @@ local function StyleName(frame, state, context, decision)
     local bar = GetHealthBar(frame, context)
     local nameOnly = decision.nameOnly
     local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize, context, decision)
-    local rightInset = GetThreatEnabled() and -(math.ceil(size * 3) + 6) or -3
-    PositionName(frame, name, bar, nameOnly, inside, rightInset)
+    local rightInset = -3
+    local rightRegion
+    if GetThreatEnabled() and frame.SNPThreatTextBar == bar
+        and (frame.SNPThreatStatus == "displayed raw percentage"
+            or frame.SNPThreatStatus == "displayed scaled percentage") then
+        rightRegion = frame.SNPThreatText
+    end
+    PositionName(frame, name, bar, nameOnly, inside, rightInset, rightRegion)
 
     local fontPath = NameFontPath(context)
     name:SetFont(fontPath, size, "")
@@ -262,13 +269,13 @@ local function StyleName(frame, state, context, decision)
     name:SetTextColor(nameR, nameG, nameB, 1)
     name:Show()
     if inside then
-        ShowInsideName(frame, bar, displayName, fontPath, size, rightInset)
+        ShowInsideName(frame, bar, displayName, fontPath, size, rightInset, rightRegion)
     else
         RestoreNameDisplay(frame, context)
     end
     StyleFullTitle(frame, state, fullTitle, baseSize, decision, context)
     CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
-        nameOnly, inside, rightInset, bar)
+        nameOnly, inside, rightInset, bar, rightRegion)
     frame.SNPNameStyle.presentation = decision
 end
 
@@ -379,7 +386,8 @@ local function RepairCachedName(frame, context)
         name:ClearAllPoints()
         if expected.inside then
             name:SetPoint("LEFT", expected.bar, "LEFT", 3, 0)
-            name:SetPoint("RIGHT", expected.bar, "RIGHT", expected.rightInset or -42, 0)
+            name:SetPoint("RIGHT", expected.rightRegion or expected.bar,
+                expected.rightRegion and "LEFT" or "RIGHT", expected.rightInset or -3, 0)
         else
             name:SetPoint("BOTTOMLEFT", expected.bar, "TOPLEFT", 0, 2)
         end
@@ -388,7 +396,7 @@ local function RepairCachedName(frame, context)
     name:Show()
     if expected.inside and expected.bar then
         ShowInsideName(frame, expected.bar, expected.text, expected.font,
-            expected.size, expected.rightInset or -3)
+            expected.size, expected.rightInset or -3, expected.rightRegion)
     else
         RestoreNameDisplay(frame, context)
     end

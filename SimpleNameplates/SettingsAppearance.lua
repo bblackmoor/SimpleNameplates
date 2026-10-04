@@ -101,7 +101,7 @@ local function AddSanctuaryFontControl(content, layout, refreshers)
         function(checked) SetAppearanceSetting("matchSanctuaryFont", checked) end, RefreshNameplates)
     AddDescription(content, layout,
         "Uses Blizzard's native world-name font in sanctuaries. The selected Name font applies elsewhere, " ..
-        "or everywhere when this switch is off. Size, outline, colors, and placement keep their settings.")
+        "or everywhere when this switch is off. Size, colors, and placement keep their settings.")
 end
 
 local function AddSharedAppearanceControls(content, layout, refreshers)
