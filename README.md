@@ -184,7 +184,9 @@ Cast highlighting uses [LibCustomGlow](https://github.com/Stanzilla/LibCustomGlo
 
 Details Framework minor 762 (LGPL-2.1-or-later) is also bundled as the foundation
 for the staged settings conversion. Details and Plater are not required.
-Existing settings pages retain their original controls during this phase.
+Colors uses the DF widget adapter; other settings pages retain their original
+controls until their individual conversion phases. Saved settings keep their
+existing meaning and layout remains consistent with the previous page.
 See [library provenance](SimpleNameplates/Libs/README.md) and run
 `luatex --luaonly tests/details-framework-smoke.lua` for the library/adapter check.
 

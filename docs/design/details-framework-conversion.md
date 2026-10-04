@@ -201,7 +201,7 @@ behavior and actual external-copy compatibility remain unobserved.
 2. Foundation — complete in 1.0.151: bundle the pinned DF load chain and introduce an isolated widget adapter;
    leave all pages on their existing implementation. Validate assets, wrapper
    boundaries, callback suppression and standalone/coexisting library loading.
-3. Convert Colors; preserve six global modes, RGB apply/cancel/reset, profile
+3. Colors conversion — implemented in 1.0.152; preserve six global modes, RGB apply/cancel/reset, profile
    colors, the five effect choices and top reset placement. Check in-game.
 4. Convert Appearance; preserve fonts and late registrations, slider ranges,
    sanctuary matching, placement, threat and global critter reset scope. Test
@@ -220,3 +220,33 @@ Documentation debt noted for later phases: About still mentions a pulsing
 highlight although Pulse was removed; older design prose still mentions
 sanctuary duplicates, class-color writes and controls that were removed. None
 of these historical descriptions authorizes restoring the old behavior.
+
+## Phase 3 implementation (1.0.152)
+
+Colors' seven editable swatches, six activation switches, seven individual
+reset buttons, page-reset button and effect dropdown now use SettingsWidgets.
+The shared native profile selector and layout/reflow helpers remain in place;
+Profiles and the other pages are not converted in this phase. Swatches retain
+26×26 dimensions, a dark background, three-unit fill inset, border hover and
+native tooltip ownership. Individual resets retain 54×22 dimensions; the page
+reset remains 190×24 above the controls. DF's dropdown uses the actual control
+column, without the old native dropdown's sixteen-unit template compensation.
+
+One context refresh list replaces separate mode/effect and swatch redraw lists.
+Widget setters suppress callbacks, so redraws and page shows do not change
+saved values or schedule plate refreshes. Explicit user actions refresh the
+page and plates once. Database schema, ownership and reset definitions remain
+unchanged. The RGB-only adapter retains the opening color for user Cancel.
+
+The existing settings suite now loads real DF against native UI stubs and
+retains its page-order, callback, ownership, enable-state and layout assertions.
+`settings-colors-smoke.lua` additionally uses the real database to verify all
+six modes, picker apply/cancel/redraw, individual reset scope, all five effects
+through DF's option-click handler, profile switching, High Contrast reset,
+unrelated-profile/settings preservation, and silent construction/show refresh.
+All 15 suites pass. A shared test loader removes duplicated manifest loading.
+
+The phase 3 implementation is complete; the planned client checkpoint is still
+pending. Record native rendering/scrolling, picker behavior, profile switches,
+resets and combat/taint observations with Details/Plater absent and with an
+external embedder present before treating client verification as complete.

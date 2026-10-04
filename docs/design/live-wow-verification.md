@@ -8,6 +8,13 @@ Status: pending. These checks require a World of Warcraft client; local Lua stub
 - [ ] Repeat with an external DF embedder enabled; record its DF minor version and confirm startup/settings work without library conflicts.
 - [ ] Enter/leave combat and reload with the new bundle; record any taint/secret-value errors. Phase 2 does not convert visible controls, so adapter rendering remains a later page-conversion check.
 
+## Details Framework Colors conversion (1.0.152)
+
+- [ ] Check Colors alignment, wrapped descriptions and scrolling; verify swatch borders/insets, switch thumbs, status text, reset buttons, and the effect dropdown at different UI scales.
+- [ ] Apply and cancel RGB edits for priority/cast colors; use each individual reset and Reset all colors in Default, High Contrast and a custom profile. Verify the documented profile/global reset scope and no opacity control.
+- [ ] Switch profiles and reopen Colors; check refreshed colors/effects without changing global activation modes. Exercise all five effects, including None, and compare actual cast highlighting.
+- [ ] Repeat startup/settings and combat checks without Details/Plater and with an external DF embedder; record client build and library minor, and leave unobserved rendering/taint checks pending.
+
 ## Setup and saved data
 
 - [ ] Fresh install with no `SimpleNameplatesDB`: Default and High Contrast appear, the active Profile is Default, and Global behavior uses factory values.

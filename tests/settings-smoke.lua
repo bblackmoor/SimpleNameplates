@@ -6,9 +6,14 @@ local function equal(actual, expected, label)
     end
 end
 
+dofile("tests/details-framework-ui-stubs.lua")
+local nativeCreateFrame = CreateFrame
 local frames, opened, popups, categories = {}, {}, {}, {}
-local function region(kind, parent, template)
-    local item = { kind = kind, parent = parent, template = template, enabled = true }
+local function region(kind, parent, template, name)
+    local item = nativeCreateFrame(kind, name, parent, template)
+    local nativeMethods = getmetatable(item).__index
+    kind = ({button = "Button", frame = "Frame", slider = "Slider"})[kind] or kind
+    item.kind, item.template, item.enabled = kind, template, true
     frames[#frames + 1] = item
     local methods = {
         SetPoint = function(self, point, relative, relativePoint, x, y)
@@ -25,7 +30,7 @@ local function region(kind, parent, template)
         GetStringWidth = function(self) return #(self.text or "") * 8 end,
         GetStringHeight = function(self) return self.naturalHeight or 16 end,
         SetColorTexture = function(self, r, g, b) self.color = {r, g, b} end,
-        SetBackdrop = function() end,
+        SetBackdrop = nativeMethods.SetBackdrop,
         SetBackdropColor = function() end, SetBackdropBorderColor = function() end,
         SetScrollChild = function(self, value) self.scrollChild = value end,
         SetScript = function(self, event, fn) self.scripts = self.scripts or {}; self.scripts[event] = fn end,
@@ -40,14 +45,22 @@ local function region(kind, parent, template)
         GetParent = function(self) return self.parent end,
         GetID = function(self) return self.id end,
         GetEditBox = function(self) return self.editBox end,
-        Click = function(self) if self.scripts and self.scripts.OnClick then self.scripts.OnClick(self) end end,
+        GetChecked = function(self) return self.MyObject:GetValue() end,
+        Click = function(self)
+            if self.scripts and self.scripts.OnClick then self.scripts.OnClick(self)
+            elseif self.scripts and self.scripts.OnMouseDown then
+                self.scripts.OnMouseDown(self, "LeftButton")
+                self.scripts.OnMouseUp(self, "LeftButton")
+            end
+        end,
     }
-    methods.CreateFontString = function(self) return region("FontString", self) end
-    methods.CreateTexture = function(self) return region("Texture", self) end
+    methods.CreateFontString = function(self, name) return region("FontString", self, nil, name) end
+    methods.CreateTexture = function(self, name) return region("Texture", self, nil, name) end
+    for name, method in pairs(nativeMethods) do if not methods[name] then methods[name] = method end end
     return setmetatable(item, { __index = methods })
 end
-function CreateFrame(kind, _, parent, template)
-    local frame = region(kind, parent, template)
+function CreateFrame(kind, name, parent, template)
+    local frame = region(kind, parent, template, name)
     if template == "OptionsSliderTemplate" then
         frame.Low, frame.High, frame.Text = region("FontString", frame), region("FontString", frame), region("FontString", frame)
     end
@@ -169,6 +182,8 @@ for _, name in ipairs({
 
 }) do ns[name] = function() end end
 
+dofile("tests/details-framework-loader.lua")("Libs/DetailsFramework/load.xml")
+
 local function loadSettings()
     for line in assert(io.open("SimpleNameplates/SimpleNameplates.toc")):lines() do
         if line:match("^Settings[%w]*%.lua$") then
@@ -211,9 +226,13 @@ equal(#opened, openedBeforeObsoleteCommand, "obsolete behavior command does not 
 for _, c in ipairs(categories) do
     if c.panel.scripts and c.panel.scripts.OnShow then c.panel.scripts.OnShow(c.panel) end
 end
+local function TextOf(item)
+    if type(item.text) == "table" then return item.text:GetText() end
+    return item.text
+end
 local function button(text)
     for _, item in ipairs(frames) do
-        if item.kind == "Button" and item.text == text then return item end
+        if item.kind == "Button" and TextOf(item) == text then return item end
     end
 end
 local function switchFor(labelText)
@@ -312,7 +331,7 @@ stylingSwitch:Click()
 equal(styling, false, "master styling callback")
 local swatch
 for _, item in ipairs(frames) do
-    if item.kind == "Button" and item.template == "BackdropTemplate" then
+    if item.MyObject and item.MyObject.__iscolorpicker then
         swatch = item
         break
     end
@@ -332,7 +351,7 @@ local function colorRow(labelText)
         if item.kind == "FontString" and item.text == labelText then
             for _, control in ipairs(frames) do
                 if control.parent == item.parent and control.kind == "Button"
-                    and control.template == "BackdropTemplate" then row = item.parent; break end
+                    and control.MyObject and control.MyObject.__iscolorpicker then row = item.parent; break end
             end
             if row then break end
         end
@@ -341,12 +360,12 @@ local function colorRow(labelText)
     local swatch, reset, fill
     for _, item in ipairs(frames) do
         if item.parent == row and item.kind == "Button" then
-            if item.template == "BackdropTemplate" then swatch = item end
-            if item.text == "Reset" then reset = item end
+            if item.MyObject and item.MyObject.__iscolorpicker then swatch = item end
+            if TextOf(item) == "Reset" then reset = item end
         end
     end
     for _, item in ipairs(frames) do
-        if item.kind == "Texture" and item.parent == swatch then fill = item; break end
+        if item == swatch.MyObject.color_texture then fill = item; break end
     end
     return assert(swatch), assert(reset), assert(fill)
 end
@@ -406,24 +425,23 @@ assert(not button("Reset priority colors"), "priority reset button removed")
 assert(not button("Reset all profile colors"), "old bottom reset removed")
 local effectSelector
 for _, item in ipairs(frames) do
-    if item.initialize and item.selected == "NONE" then effectSelector = item end
+    if item.MyObject and item.MyObject.type == "dropdown" then effectSelector = item end
 end
 assert(effectSelector and belongsTo(effectSelector, categories[4].panel), "cast effect selector on Colors")
-menuOptions = {}
-effectSelector.initialize(nil, 1)
+menuOptions = effectSelector.MyObject.func()
 equal(#menuOptions, 5, "selector has None and four library effects")
 local expected = {"NONE", "PIXEL", "AUTOCAST", "BUTTON", "PROC"}
 for i, option in ipairs(menuOptions) do
     equal(option.value, expected[i], "effect choice order")
-    option.func()
+    option.onclick(effectSelector.MyObject, nil, option.value)
     equal(castStyle, expected[i], "effect selector changes profile effect")
-    equal(effectSelector.selected, expected[i], "effect selection refreshes immediately")
+    equal(effectSelector.MyObject.myvalue, expected[i], "effect selection refreshes immediately")
     equal(castEnabled, expected[i] ~= "NONE", "None controls activation")
 end
 button("Reset all colors"):Click()
 equal(allColorResets, 1, "complete page reset available")
 equal(castStyle, "NONE", "Colors reset includes effect")
-equal(effectSelector.selected, "NONE", "effect selector refreshes after reset")
+equal(effectSelector.MyObject.myvalue, "NONE", "effect selector refreshes after reset")
 assert(button("Reset all colors").points.TOPLEFT[4] > effectFill.parent.parent.points.TOPLEFT[4], "reset precedes cast controls")
 castEnabled, threatEnabled = true, false
 local widthSlider
@@ -522,7 +540,7 @@ equal(activationStatus.text, "Inactive", "setup rejection updates status")
 assert(not switchFor("Interruptible cast highlight"), "cast activation switch removed")
 assert(colorRow("Interruptible cast highlight"), "cast color remains available")
 button("Reset all colors"):Click()
-equal(effectSelector.selected, "NONE", "Colors reset selects None")
+equal(effectSelector.MyObject.myvalue, "NONE", "Colors reset selects None")
 equal(castEnabled, false, "Colors reset disables highlighting")
 for _, labelText in ipairs({"1. Attacking me", "6. NPC - Background"}) do
     local swatch = colorRow(labelText)

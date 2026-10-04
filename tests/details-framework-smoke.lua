@@ -2,28 +2,8 @@
 -- Run from repository root: luatex --luaonly tests/details-framework-smoke.lua
 local ui = dofile("tests/details-framework-ui-stubs.lua")
 local root = "SimpleNameplates/"
-local function Load(file) assert(loadfile(root .. file))() end
-for _, file in ipairs({"Libs/LibStub/LibStub.lua",
-    "Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua",
-    "Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua"}) do Load(file) end
-
-local scripts, manifests = 0, 0
-local function LoadXML(path)
-    manifests = manifests + 1
-    local file = assert(io.open(root .. path))
-    local text = file:read("*a")
-    file:close()
-    local directory = path:match("^(.*[/])") or ""
-    for _, name in text:gmatch('<(%w+)%s+file%s*=%s*"([^"]+)"') do
-        if name:match("%.xml$") then
-            LoadXML(directory .. name)
-        else
-            scripts = scripts + 1
-            assert(xpcall(assert(loadfile(root .. directory .. name)), debug.traceback))
-        end
-    end
-end
-LoadXML("Libs/DetailsFramework/load.xml")
+local LoadXML = dofile("tests/details-framework-loader.lua")
+local scripts, manifests = LoadXML("Libs/DetailsFramework/load.xml")
 assert(scripts == 52 and manifests == 9, "complete pinned load chain")
 assert(not Details and not Plater, "standalone test has no addon hosts")
 local df = LibStub:GetLibrary("DetailsFramework-1.0")

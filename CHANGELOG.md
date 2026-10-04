@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.152
+
+* Completes phase 3 of the Details Framework conversion: Colors now uses DF color swatches, sliding switches, reset buttons and its five-choice cast effect dropdown. Retains the shared native profile selector, top page reset, control spacing, swatch insets, button dimensions and RGB-only picker apply/cancel.
+* Consolidates Colors redraws into one silent refresh path while preserving six global activation modes, profile colors/effects, individual reset scope, and High Contrast/whole-page reset behavior. Other settings pages and nameplate rendering are unchanged.
+* Updates the existing settings suite to exercise real DF controls and adds a converted-page integration suite using the actual profile database. All fifteen smoke suites pass; client layout, combat/taint and external-embedder checks remain pending.
+
 ## 1.0.151
 
 * Completes phase 2 of the Details Framework conversion: bundles the pinned minor 762 library's complete Lua/XML load chain and LGPL license, and adds an isolated settings widget adapter. Existing settings pages still use their original controls; saved settings and nameplate behavior are unchanged.

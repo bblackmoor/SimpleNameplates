@@ -33,5 +33,6 @@ The upstream standalone TOC, examples and documentation are not loaded or bundle
 Existing LibStub, CallbackHandler and LibSharedMedia load first. No Ace framework,
 profile scaffold or optional DF helper dependencies are used by our adapter.
 `SettingsWidgets.lua` supplies Blizzard textures instead of Details image paths
-for its controls; Details and Plater are not required. Legacy settings pages
-continue to use `SettingsControls.lua` until their individual conversion phases.
+for its controls; Details and Plater are not required. Colors uses the adapter
+as of 1.0.152. Other pages retain their legacy controls, and the existing layout
+helpers in `SettingsControls.lua` remain shared during the conversion.

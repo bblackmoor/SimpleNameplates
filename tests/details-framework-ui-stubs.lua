@@ -113,7 +113,11 @@ function methods:GetNumPoints() return 0 end
 for _,k in ipairs({'SetPoint','ClearAllPoints','SetAllPoints','SetBackdrop','SetBackdropColor','SetBackdropBorderColor','SetAlpha','SetTexture','SetColorTexture','SetVertexColor','SetTexCoord','SetDrawLayer','SetFont','SetFontObject','SetTextColor','SetJustifyH','SetJustifyV','SetShadowColor','SetShadowOffset','RegisterEvent','RegisterUnitEvent','UnregisterEvent','Hide','Show','SetFrameStrata','SetFrameLevel','SetParent','SetScale','Enable','Disable','EnableMouse','SetClampedToScreen','SetMovable','SetResizable','RegisterForDrag','RegisterForClicks','SetNormalTexture','SetPushedTexture','SetHighlightTexture','SetDisabledTexture','SetAutoFocus','SetOrientation','SetMinMaxValues','SetValueStep','SetObeyStepOnDrag','SetThumbTexture','SetBlendMode','SetAtlas','SetHitRectInsets','SetLooping','SetDuration','SetOrder','SetSmoothing','SetFromAlpha','SetToAlpha','SetTarget','SetChildKey','SetOffset','SetStartDelay','SetEndDelay','SetSpeed','SetDegrees','SetOrigin','SetScript','SetMaxLetters','SetNumeric','SetMultiLine','SetTextInsets','SetFontString','SetToplevel','SetIgnoreParentAlpha','Stop','Play','SetDesaturated'}) do
  if not methods[k] then methods[k]=function() end end
 end
-function methods:SetPoint(...) self.point = {...} end
+function methods:SetPoint(...)
+    self.point = {...}
+    self.points = self.points or {}
+    self.points[self.point[1]] = self.point
+end
 function methods:SetBackdrop(value) self.backdrop=value end
 function methods:SetTexture(value) self.texture=value end
 function methods:SetColorTexture(...) self.color={...} end

@@ -7,83 +7,55 @@ local PriorityColorForState, SetPriorityColor, ResetPriorityColor =
     ns.PriorityColorForState, ns.SetPriorityColor, ns.ResetPriorityColor
 local EffectColor, SetEffectColor, ResetEffectColor = ns.EffectColor, ns.SetEffectColor, ns.ResetEffectColor
 
-local function OpenColorPicker(getColor, setColor, updateSwatch)
-    local oldR, oldG, oldB = getColor()
-    local function ApplyPickerColor()
-        local r, g, b = ColorPickerFrame:GetColorRGB()
-        setColor(r, g, b)
-        updateSwatch()
+local W = ns.SettingsWidgets
+
+local function RefreshContext(context)
+    RunRefreshers(context.refreshers)
+end
+
+local function AddActivation(context, row, swatch, activation)
+    local toggle = W.CreateSwitch(row, function(checked)
+        activation.set(checked)
+        RefreshContext(context)
         RefreshNameplates()
+    end)
+    toggle:SetPoint("LEFT", swatch, "RIGHT", 8, 0)
+    local status = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    status:SetPoint("LEFT", toggle:GetFrame(), "RIGHT", 8, 0)
+    status:SetWidth(56)
+    status:SetJustifyH("LEFT")
+    context.refreshers[#context.refreshers + 1] = function()
+        local active = activation.get()
+        toggle:SetChecked(active)
+        status:SetText(active and "Active" or "Inactive")
     end
-    ColorPickerFrame:SetupColorPickerAndShow({
-        r = oldR, g = oldG, b = oldB, hasOpacity = false,
-        swatchFunc = ApplyPickerColor,
-        cancelFunc = function()
-            setColor(oldR, oldG, oldB)
-            updateSwatch()
-            RefreshNameplates()
-        end,
-    })
+    return status
 end
 
 local function CreateColorRow(context, text, displayText, getColor, setColor, resetColor, activation)
     local row = U.CreateSettingRow(context.content, context.layout, text)
-    local swatch = CreateFrame("Button", nil, row, "BackdropTemplate")
-    swatch:SetSize(26, 26)
+    local swatch = W.CreateColorPicker(row, function(r, g, b)
+        setColor(r, g, b)
+        RefreshContext(context)
+        RefreshNameplates()
+    end)
     swatch:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
-    swatch:SetBackdrop({bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1})
-    swatch:SetBackdropColor(0.04, 0.04, 0.04, 1)
-    swatch:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
-    local fill = swatch:CreateTexture(nil, "ARTWORK")
-    fill:SetPoint("TOPLEFT", 3, -3)
-    fill:SetPoint("BOTTOMRIGHT", -3, 3)
-    local function UpdateSwatch() fill:SetColorTexture(getColor()) end
-    context.swatchRefreshers[#context.swatchRefreshers + 1] = UpdateSwatch
-    UpdateSwatch()
-    swatch:SetScript("OnEnter", function(self)
-        self:SetBackdropBorderColor(1, 1, 1, 1)
+    context.refreshers[#context.refreshers + 1] = function() swatch:SetColor(getColor()) end
+    local frame = swatch:GetFrame()
+    frame:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetText(text)
         GameTooltip:AddLine("Click to choose a color.", 1, 1, 1)
         GameTooltip:Show()
     end)
-    swatch:SetScript("OnLeave", function(self)
-        self:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
-        GameTooltip:Hide()
-    end)
-    local function RefreshSwatches() RunRefreshers(context.swatchRefreshers) end
-    swatch:SetScript("OnClick", function() OpenColorPicker(getColor, setColor, RefreshSwatches) end)
-    local resetAnchor = swatch
-    if activation then
-        local toggle = U.CreateSwitch(row, function(checked)
-            activation.set(checked)
-            RunRefreshers(context.refreshers)
-            RefreshNameplates()
-        end)
-        toggle:SetPoint("LEFT", swatch, "RIGHT", 8, 0)
-        local status = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        status:SetPoint("LEFT", toggle, "RIGHT", 8, 0)
-        status:SetWidth(56)
-        status:SetJustifyH("LEFT")
-        local function RefreshMode()
-            local active = activation.get()
-            toggle:SetChecked(active)
-            status:SetText(active and "Active" or "Inactive")
-        end
-        context.refreshers[#context.refreshers + 1] = RefreshMode
-        RefreshMode()
-        resetAnchor = status
-    end
-    local reset = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-    reset:SetSize(54, 22)
-    reset:SetPoint("LEFT", resetAnchor, "RIGHT", 8, 0)
-    reset:SetText("Reset")
-    reset:SetScript("OnClick", function()
+    frame:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    local resetAnchor = activation and AddActivation(context, row, swatch, activation) or frame
+    local reset = W.CreateButton(row, "Reset", function()
         resetColor()
-        RefreshSwatches()
+        RefreshContext(context)
         RefreshNameplates()
-    end)
+    end, 54, 22)
+    reset:SetPoint("LEFT", resetAnchor, "RIGHT", 8, 0)
     if displayText then AddDescription(context.content, context.layout, displayText) end
 end
 
@@ -114,9 +86,6 @@ end
 
 local function AddCastEffectSelector(context)
     local row = U.CreateSettingRow(context.content, context.layout, "Effect")
-    local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X - 16, 0)
-    UIDropDownMenu_SetWidth(dropdown, 190)
     local options = {
         {value = "NONE", label = "None"},
         {value = "PIXEL", label = "Moving dashes"},
@@ -124,45 +93,31 @@ local function AddCastEffectSelector(context)
         {value = "BUTTON", label = "Action Button Glow"},
         {value = "PROC", label = "Proc Glow"},
     }
-    local function Refresh()
-        local value = ns.GetInterruptibleCastStyle()
-        UIDropDownMenu_SetSelectedValue(dropdown, value)
-        for _, option in ipairs(options) do
-            if option.value == value then UIDropDownMenu_SetText(dropdown, option.label); break end
-        end
-    end
-    UIDropDownMenu_Initialize(dropdown, function(_, level)
-        for _, option in ipairs(options) do
-            local value = option.value
-            local info = UIDropDownMenu_CreateInfo()
-            info.text, info.value = option.label, value
-            info.checked = ns.GetInterruptibleCastStyle() == value
-            info.func = function()
-                ns.SetInterruptibleCastStyle(value)
-                Refresh()
-                RefreshNameplates()
-            end
-            UIDropDownMenu_AddButton(info, level)
-        end
+    local dropdown = W.CreateDropdown(row, function() return options end, function(value)
+        ns.SetInterruptibleCastStyle(value)
+        RefreshContext(context)
+        RefreshNameplates()
     end)
-    context.refreshers[#context.refreshers + 1] = Refresh
-    Refresh()
+    dropdown:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
+    context.refreshers[#context.refreshers + 1] = function()
+        dropdown:SetValue(ns.GetInterruptibleCastStyle())
+    end
 end
 
 local function CreateColorsPanel()
     local panel, content, layout = U.CreateScrollablePanel("Colors")
     U.AddTitle(content, layout, "Colors")
-    local context = {content = content, layout = layout, swatchRefreshers = {}, refreshers = {}}
+    local context = {content = content, layout = layout, refreshers = {}}
     local function Refresh()
-        RunRefreshers(context.refreshers)
-        RunRefreshers(context.swatchRefreshers)
+        RefreshContext(context)
     end
     ns.AddProfileSelector(content, layout, context.refreshers, Refresh)
-    U.AddActionButton(content, layout, "Reset all colors", function()
+    local reset = W.CreateButton(content, "Reset all colors", function()
         ns.ResetAllColors()
         Refresh()
         RefreshNameplates()
     end)
+    layout:Add(reset:GetFrame(), 24, 24, 8)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
         "Resets global priority switches to Active and this profile's cast highlight to None.")

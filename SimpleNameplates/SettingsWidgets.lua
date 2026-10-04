@@ -1,5 +1,5 @@
--- Details Framework boundary for later page conversions. Legacy pages do not
--- call this module yet. No saved settings, page registration, or plate work here.
+-- Details Framework boundary for converted settings pages.
+-- No saved settings, page registration, or plate work here.
 local _, ns = ...
 local Widgets = {}
 ns.SettingsWidgets = Widgets
@@ -10,6 +10,14 @@ local buttonTemplate = {
     backdrop = backdrop, backdropcolor = {0.22, 0.22, 0.23, 1},
     backdropbordercolor = {0.45, 0.45, 0.46, 1},
     onentercolor = {0.32, 0.32, 0.33, 1}, textsize = 12,
+}
+local swatchTemplate = {
+    backdrop = backdrop, backdropcolor = {0.04, 0.04, 0.04, 1},
+    backdropbordercolor = {0.45, 0.45, 0.45, 1},
+    onentercolor = {0.04, 0.04, 0.04, 1},
+    onleavecolor = {0.04, 0.04, 0.04, 1},
+    onenterbordercolor = {1, 1, 1, 1},
+    onleavebordercolor = {0.45, 0.45, 0.45, 1},
 }
 local switchTemplate = {
     width = 44, height = 20,
@@ -164,10 +172,10 @@ function Widgets.CreateDropdown(parent, optionsFunction, onChanged)
     return handle
 end
 
-function Widgets.CreateButton(parent, text, onClick, width)
+function Widgets.CreateButton(parent, text, onClick, width, height)
     local handle
     local widget = Framework():CreateButton(Widgets.GetFrame(parent),
-        function() Notify(handle) end, width or 190, 24, text,
+        function() Notify(handle) end, width or 190, height or 24, text,
         nil, nil, nil, nil, nil, nil, buttonTemplate)
     handle = NewHandle(widget, onClick)
     return handle
@@ -175,9 +183,12 @@ end
 
 function Widgets.CreateColorPicker(parent, onChanged)
     local widget = Framework():CreateColorPickButton(Widgets.GetFrame(parent),
-        nil, nil, function() end, nil, buttonTemplate)
+        nil, nil, function() end, nil, swatchTemplate)
     widget.widget:SetSize(26, 26)
     widget.background_texture:Hide() -- RGB only; no transparency grid.
+    widget.color_texture:ClearAllPoints()
+    widget.color_texture:SetPoint("TOPLEFT", widget.widget, "TOPLEFT", 3, -3)
+    widget.color_texture:SetPoint("BOTTOMRIGHT", widget.widget, "BOTTOMRIGHT", -3, 3)
     local handle = NewHandle(widget, onChanged)
     function handle:SetColor(r, g, b) self:Refresh(self.widget.SetColor, r, g, b, 1) end
     function handle:GetColor()
