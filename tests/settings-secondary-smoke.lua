@@ -194,4 +194,23 @@ for _, action in ipairs({"Copy", "Rename"}) do
     popup = staleName; AcceptName("Wrong target")
     assert(Snapshot(SimpleNameplatesDB) == before, "stale " .. action .. " dialog is ignored")
 end
+-- Current Blizzard dialogs expose GetButton1 rather than a button1 field.
+Click(Button("Create"))
+local keyboardData = popup.data
+local keyboardDialog = CreateFrame("Frame")
+local keyboardEdit = CreateFrame("EditBox", nil, keyboardDialog)
+keyboardEdit:SetText("Keyboard profile")
+keyboardDialog.GetEditBox = function() return keyboardEdit end
+local accept = CreateFrame("Button", nil, keyboardDialog)
+accept.Click = function() StaticPopupDialogs.SNP_PROFILE_NAME.OnAccept(keyboardDialog, keyboardData) end
+keyboardDialog.GetButton1 = function() return accept end
+StaticPopupDialogs.SNP_PROFILE_NAME.EditBoxOnEnterPressed(keyboardEdit)
+assert(ns.GetActiveProfileName() == "Keyboard profile", "Enter accepts a modern profile dialog")
+Click(Button("Create")); keyboardData = popup.data
+keyboardEdit:SetText("Blocked keyboard profile"); accept:Disable()
+StaticPopupDialogs.SNP_PROFILE_NAME.EditBoxOnEnterPressed(keyboardEdit)
+assert(not ns.EnsureDB().profiles["Blocked keyboard profile"], "Enter respects a disabled accept button")
+accept:Enable(); keyboardDialog.GetButton1 = nil; keyboardDialog.button1 = accept
+StaticPopupDialogs.SNP_PROFILE_NAME.EditBoxOnEnterPressed(keyboardEdit)
+assert(ns.GetActiveProfileName() == "Blocked keyboard profile", "legacy accept field remains supported")
 print("Profiles, TRP3 and About integration smoke: passed")

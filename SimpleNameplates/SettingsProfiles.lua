@@ -34,7 +34,8 @@ local function RegisterProfileDialogs()
         end,
         EditBoxOnEnterPressed = function(self)
             local dialog = self:GetParent()
-            if dialog.button1 then dialog.button1:Click() end
+            local button = dialog.GetButton1 and dialog:GetButton1() or dialog.button1
+            if button and button:IsEnabled() then button:Click() end
         end,
         EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
         timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,

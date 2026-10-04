@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.158
+
+* Fixes Enter acceptance in profile-name dialogs on current Blizzard UI by using GetButton1(), retaining the legacy button1 fallback and respecting disabled accept buttons. Adds a regression that failed before the fix and coverage for both button contracts.
+* Corrects README and live-checklist omissions: inside-bar text is white without an outline, with two black underlayers; bar padding is four units above and three below. Runtime text presentation is unchanged.
+* All seventeen smoke suites and whitespace checks pass. Native client keyboard/rendering/security checks remain pending.
+
 ## 1.0.157
 
 * Fixes stale color-picker callbacks that could undo a later reset or affect a newly selected profile. Each opening owns a token; resets, profile switches, swatch disable/hide and page hide cancel previews, while accepted edits retire their callbacks. Another addon's picker is not closed or edited. Native setup's initial color event does not write settings or refresh plates.

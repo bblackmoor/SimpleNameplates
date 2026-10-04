@@ -1,6 +1,6 @@
 # Details Framework settings conversion
 
-Current status (1.0.157): phases 1–6 repository work is complete; all 17 smoke
+Current status (1.0.158): phases 1–6 repository work is complete; all 17 smoke
 suites pass. Final in-game verification remains pending. The baseline and earlier
 phase notes below describe their recorded releases, not the current widget inventory.
 
@@ -385,3 +385,18 @@ changes, previous-profile rollback, Okay/hide commitment, editor replacement,
 disable, another addon's picker, initial setup suppression, and all three stale
 profile actions. All 17 smoke suites pass; native client timing/security still
 requires the open live checklist.
+
+## Errors and omissions review (1.0.158)
+
+The modern Blizzard GameDialogMixin exposes GetButton1(); the profile-name Enter
+callback still read only the legacy button1 field and silently did nothing on
+that contract. The real-library/database test reproduced the omission before
+the fix. Enter now uses the getter with a legacy fallback and checks the native
+button's enabled state. Tests cover modern and legacy acceptance plus a disabled
+accept button. The contract was checked against the [Blizzard dialog source mirror](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_StaticPopup_Game/GameDialog.lua).
+
+README and live-checklist text still described an outline/no-shadow presentation,
+three-unit top padding and luminance-based text colors. Those descriptions now
+match the current white inside-bar glyphs, two black underlayers, and four/three
+padding; the rendering code itself is unchanged. All 17 suites pass. Actual
+keyboard/rendering/security observations remain pending in the live checklist.
