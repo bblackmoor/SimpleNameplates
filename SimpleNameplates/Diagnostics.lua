@@ -251,7 +251,7 @@ local function DebugScannedPlates(candidates, context)
         local assessment, token = candidate.assessment, candidate.token
         print("  Relevant nameplate " .. index .. ": token " .. DebugValue(token)
             .. "; unit name: " .. DebugValue(candidate.unitName)
-            .. "; matches target: " .. DebugBoolean(candidate.targetMatch)
+            .. "; matches inspected unit: " .. DebugBoolean(candidate.targetMatch)
             .. "; same name: " .. DebugBoolean(candidate.nameMatch))
         if type(token) == "string" then
             local _, _, facts = StateForUnit(token, context)
@@ -273,8 +273,9 @@ end
 local function DebugUnit(unit, context)
     context = context or GetContext()
     DebugContext(context)
-    if AccessibleBoolean(UnitExists(unit)) ~= true then
-        print("|cff0cd29fSimple Nameplates:|r No target selected.")
+    if AccessibleBoolean(ReadUnitAPI(UnitExists, unit)) ~= true then
+        local message = unit == "mouseover" and "No mouseover unit available." or "No target selected."
+        print("|cff0cd29fSimple Nameplates:|r " .. message)
         return
     end
 
@@ -282,12 +283,12 @@ local function DebugUnit(unit, context)
     local state, rule, facts = StateForUnit(unit, context)
     local matches, direct, scanned, unknown, enumerationAvailable, candidates = FindDiagnosticPlates(unit, context)
     local assessment = matches[1] and matches[1].assessment or direct
-    print("|cff0cd29fSimple Nameplates debug:|r " .. name)
+    print("|cff0cd29fSimple Nameplates debug [" .. unit .. "]:|r " .. name)
     print("  Nameplate lookup: direct " .. direct.status .. "; enumeration available: "
         .. DebugBoolean(enumerationAvailable) .. "; scanned: " .. scanned
         .. "; matching frames: " .. #matches .. "; identity unavailable: " .. unknown
         .. "; unique relevant frames: " .. #candidates)
-    print("  Plate details limited to target identity, direct lookup, or same readable name; unrelated plates omitted.")
+    print("  Plate details limited to inspected-unit identity, direct lookup, or same readable name; unrelated plates omitted.")
     DebugClassification(state, rule, assessment, context, facts)
     DebugUnitRelationships(facts)
     DebugNPCTooltip(unit, facts)

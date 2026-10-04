@@ -171,6 +171,21 @@ equal(table.concat({categories[1].name,categories[2].name,categories[3].name,cat
 ns.RegisterSettingsPanel()
 equal(#categories, 5, "one-time registration")
 equal(SLASH_SNP1, "/snp", "slash registration")
+local debugUnits = {}
+ns.DebugUnit = function(unit) debugUnits[#debugUnits + 1] = unit end
+for _, route in ipairs({
+    {"debug", "target"}, {"debug target", "target"},
+    {"debug mouseover", "mouseover"}, {"  DIAGNOSE   MOUSEOVER  ", "mouseover"},
+}) do
+    local openedBefore = #opened
+    SlashCmdList.SNP(route[1])
+    equal(debugUnits[#debugUnits], route[2], "diagnostic route " .. route[1])
+    equal(#opened, openedBefore, "diagnostics do not open settings")
+end
+local debugCount = #debugUnits
+SlashCmdList.SNP("debug invalid")
+equal(#debugUnits, debugCount, "invalid diagnostic unit is not inspected")
+
 for _, route in ipairs({{"",3},{"about",1},{"profiles",2},{"appearance",3},{"colors",4},{"trp3",5}}) do
     SlashCmdList.SNP(route[1])
     equal(opened[#opened], route[2], "route " .. route[1])
@@ -266,7 +281,7 @@ equal(attacking[1], 0.4, "color picker applies")
 ColorPickerFrame.options.cancelFunc()
 equal(attacking[1], 1, "color picker cancel restores")
 
--- Duplicate NPC controls share a saved key and repaint together in both directions.
+-- Category color pickers update, cancel, and reset their saved values.
 local function colorRow(labelText)
     local row
     for _, item in ipairs(frames) do

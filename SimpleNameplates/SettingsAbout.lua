@@ -104,6 +104,7 @@ local function CreateAboutPanel()
         "/snp colors — Color settings\n" ..
         "/snp trp3 — TRP3 settings\n" ..
         "/snp debug — Explain the current target\n" ..
+        "/snp debug mouseover — Inspect without targeting\n" ..
         "/snp about — This page")
     U.AddSection(content, layout, "Presentation limits")
     AddDescription(content, layout,
@@ -132,3 +133,4 @@ local function CreateAboutPanel()
     return panel
 end
 ns.SettingsPanels.About = CreateAboutPanel
+

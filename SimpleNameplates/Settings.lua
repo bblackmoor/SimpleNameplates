@@ -21,8 +21,14 @@ local function RegisterSettingsPanel()
     SLASH_SNP1 = "/snp"
     SlashCmdList.SNP = function(message)
         local command = string.lower(strtrim(message or ""))
-        if command == "debug" or command == "diagnose" then
-            if ns.DebugUnit then ns.DebugUnit("target") end
+        local verb, argument = command:match("^(%S+)%s*(.-)$")
+        if verb == "debug" or verb == "diagnose" then
+            local unit = argument == "" and "target" or argument
+            if unit ~= "target" and unit ~= "mouseover" then
+                print("|cff0cd29fSimple Nameplates:|r /snp debug [target|mouseover]")
+                return
+            end
+            if ns.DebugUnit then ns.DebugUnit(unit) end
             return
         end
         if InCombatLockdown and InCombatLockdown() then
@@ -31,7 +37,8 @@ local function RegisterSettingsPanel()
         end
         local category = aliases[command] and categories[aliases[command]]
         if category then Settings.OpenToCategory(category:GetID())
-        else print("|cff0cd29fSimple Nameplates:|r /snp, /snp profiles, /snp appearance, /snp colors, /snp trp3, /snp debug, /snp about") end
+        else print("|cff0cd29fSimple Nameplates:|r /snp, /snp profiles, /snp appearance, /snp colors, /snp trp3, /snp debug [target|mouseover], /snp about") end
     end
 end
 ns.RegisterSettingsPanel = RegisterSettingsPanel
+

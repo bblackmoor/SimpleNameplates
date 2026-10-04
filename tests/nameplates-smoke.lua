@@ -534,8 +534,8 @@ ns.DebugUnit("target")
 report = table.concat(output, "\n")
 assert(report:find("matching frames: 0", 1, true), "same names never count as identity matches")
 assert(report:find("unique relevant frames: 2", 1, true), "both same-name frames selected and deduplicated")
-assert(report:find("token nameplate2; unit name: Orin Straylight; matches target: no; same name: yes", 1, true), "widget candidate distinguished")
-assert(report:find("token nameplate3; unit name: Orin Straylight; matches target: no; same name: yes", 1, true), "ordinary candidate distinguished")
+assert(report:find("token nameplate2; unit name: Orin Straylight; matches inspected unit: no; same name: yes", 1, true), "widget candidate distinguished")
+assert(report:find("token nameplate3; unit name: Orin Straylight; matches inspected unit: no; same name: yes", 1, true), "ordinary candidate distinguished")
 assert(report:find("Plate kind [nameplate2]: softinteract match: no; widgets only: yes", 1, true), "widget plate retained")
 assert(report:find("Plate kind [nameplate3]: softinteract match: no; widgets only: no", 1, true), "ordinary plate retained")
 assert(not report:find("Unrelated", 1, true), "crowded surroundings omitted")
@@ -585,6 +585,26 @@ unitExists = false
 ns.DebugUnit("target")
 assert(table.concat(output, "\n"):find("Simple Nameplates context:", 1, true), "no-target context")
 assert(table.concat(output, "\n"):find("No target selected.", 1, true), "no-target reported")
+-- A mouseover report works with no selected target and no nearby plate.
+unitExists = true
+local oldExists = UnitExists
+UnitExists = function(token) return token == "mouseover" end
+C_NamePlate.GetNamePlateForUnit = function() return nil end
+C_NamePlate.GetNamePlates = function() return {} end
+output = {}
+local mouseoverFrameCount, mouseoverHookCount = #frames, #hooks
+ns.DebugUnit("mouseover")
+local mouseoverReport = table.concat(output, "\n")
+assert(mouseoverReport:find("debug [mouseover]", 1, true), "report identifies inspected token")
+assert(mouseoverReport:find("direct missing", 1, true), "distant mouseover plate absence reported")
+assert(mouseoverReport:find("matching frames: 0", 1, true), "no mouseover plate invented")
+equal(#frames, mouseoverFrameCount, "mouseover diagnostic creates no frames")
+equal(#hooks, mouseoverHookCount, "mouseover diagnostic creates no hooks")
+output = {}
+unitExists = false
+UnitExists = oldExists
+ns.DebugUnit("mouseover")
+assert(table.concat(output, "\n"):find("No mouseover unit available.", 1, true), "missing mouseover reported")
 unitExists = true
 print = originalPrint
 

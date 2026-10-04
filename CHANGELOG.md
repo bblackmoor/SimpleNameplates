@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.132
+
+* Adds `/snp debug mouseover` to inspect hovered creatures without changing the target or their nameplate presentation. Existing `/snp debug` continues to inspect the target.
+* Identifies the inspected token in reports and handles missing mouseover units explicitly.
+
 ## 1.0.131
 
 * Removes the redundant Sanctuary colors section and its duplicate controls and descriptions. Priority colors remains the single place to edit all six categories; color and activation behavior is unchanged.
