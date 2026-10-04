@@ -20,7 +20,7 @@ local function EnsureThreatText(frame, bar)
     if frame.SNPThreatText then frame.SNPThreatText:Hide() end
     local text = bar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetDrawLayer("OVERLAY", 7)
-    text:SetPoint("RIGHT", bar, "RIGHT", -3, 0)
+    text:SetPoint("RIGHT", bar, "RIGHT", -3, -0.5)
     text:SetJustifyH("RIGHT")
     text:SetWordWrap(false)
     text:SetMaxLines(1)
@@ -48,9 +48,9 @@ local function UpdateThreatText(frame, state, context, decision)
     end
     local text = EnsureThreatText(frame, bar)
     text:SetTextColor(1, 1, 1, 1)
-    text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, "THICKOUTLINE")
-    text:SetShadowColor(0, 0, 0, 0)
-    text:SetShadowOffset(0, 0)
+    text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, "")
+    text:SetShadowColor(0, 0, 0, 1)
+    text:SetShadowOffset(1, -1)
     local ok, _, _, scaled, raw = pcall(UnitDetailedThreatSituation, "player", frame.unit)
     if not ok then ClearThreatText(frame, "threat API unavailable"); return end
     if RenderPercent(text, raw) then frame.SNPThreatStatus = "displayed raw percentage"

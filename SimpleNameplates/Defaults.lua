@@ -59,6 +59,7 @@ local DEFAULT_APPEARANCE = {
     nameSize = 21,
     threatFont = "ARIALN",
     namePlacement = "ABOVE",
+    healthBarWidth = 100,
 }
 local MIN_NAME_SIZE = 8
 local MAX_NAME_SIZE = 36
@@ -79,6 +80,8 @@ ns.FONT_OPTIONS = FONT_OPTIONS
 ns.DEFAULT_APPEARANCE = DEFAULT_APPEARANCE
 ns.MIN_NAME_SIZE = MIN_NAME_SIZE
 ns.MAX_NAME_SIZE = MAX_NAME_SIZE
+ns.MIN_HEALTH_BAR_WIDTH = 80
+ns.MAX_HEALTH_BAR_WIDTH = 150
 ns.Defaults = {
     priorityColors = DEFAULT_PRIORITY_COLORS,
     categoryModes = DEFAULT_CATEGORY_MODES,

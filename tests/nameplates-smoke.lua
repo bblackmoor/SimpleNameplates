@@ -52,7 +52,7 @@ end
 function UnitAffectingCombat() return false end
 function UnitIsInteractable() return unit.interactable or false end
 
-local appearance = { namePlacement = "ABOVE", nameSize = 12, nameFont = "ARIALN", threatFont = "ARIALN" }
+local appearance = { namePlacement = "ABOVE", nameSize = 12, nameFont = "ARIALN", threatFont = "ARIALN", healthBarWidth = 100 }
 local categoryMode = "active"
 local trp3Options = {}
 local calls = {}
@@ -140,7 +140,7 @@ for _, case in ipairs(cases) do
 end
 -- Exercise presentation across modules, not just event registration.
 local function Region()
-    local region = { shown = true, alpha = 1, height = 20 }
+    local region = { shown = true, alpha = 1, height = 20, width = 140 }
     function region:Show() self.shown = true end
     function region:Hide() self.shown = false end
     function region:IsShown() return self.shown end
@@ -149,6 +149,8 @@ local function Region()
     function region:GetAlpha() return self.alpha end
     function region:SetHeight(value) self.height = value end
     function region:GetHeight() return self.height end
+    function region:GetWidth() return self.width end
+    function region:SetWidth(width) self.width = width end
     function region:SetText(value) self.text = value end
     function region:GetText() return self.text end
     function region:SetFormattedText(format, value) self.text = format:format(value) end
@@ -165,7 +167,9 @@ local function Region()
     function region:ClearAllPoints() self.points = {} end
     function region:SetPoint(...) self.points = self.points or {}; self.points[#self.points + 1] = {...} end
     function region:CreateFontString() return Region() end
-    for _, method in ipairs({ "SetShadowColor", "SetShadowOffset", "SetJustifyH",
+    function region:SetShadowColor(...) self.shadow = {...} end
+    function region:SetShadowOffset(x,y) self.shadowX, self.shadowY = x,y end
+    for _, method in ipairs({ "SetJustifyH",
         "SetWordWrap", "SetMaxLines", "SetDrawLayer" }) do region[method] = function() end end
     return region
 end
@@ -188,6 +192,24 @@ equal(plateFrame.healthBar.shown, true, "hostile bar visible")
 equal(plateFrame.name.r, 1, "bar name white red")
 equal(plateFrame.name.g, 1, "bar name white green")
 equal(plateFrame.healthBar.barG, 0, "priority applied to health bar")
+-- Width follows the profile, resists Blizzard layout drift, and restores.
+appearance.healthBarWidth = 150
+ns.RefreshAll()
+equal(plateFrame.healthBar.width, 210, "bar uses 150 percent native width")
+equal(plateFrame.HealthBarsContainer.width, 210, "container follows bar width")
+plateFrame.healthBar.width, plateFrame.HealthBarsContainer.width = 140, 140
+events.scripts.OnUpdate(events, 0.5)
+equal(plateFrame.healthBar.width, 210, "cached repair restores configured width")
+appearance.healthBarWidth = 125
+ns.RefreshAll()
+equal(plateFrame.healthBar.width, 175, "changing width does not compound scaling")
+categoryMode = "inactive"
+ns.RefreshAll()
+equal(plateFrame.healthBar.width, 140, "inactive restores native bar width")
+equal(plateFrame.HealthBarsContainer.width, 140, "inactive restores container width")
+categoryMode, appearance.healthBarWidth = "active", 100
+ns.RefreshAll()
+
 
 unit = { player = true, faction = "Alliance", reaction = 5 }
 ns.RefreshAll()
@@ -247,7 +269,7 @@ equal(plateFrame.SNPInsideName.text, "Roleplay Name", "inside name retained")
 equal(plateFrame.name.alpha, 0, "original inside name concealed")
 equal(plateFrame.healthBar.height, 20, "inside padding retained")
 equal(plateFrame.SNPInsideName.size, 12, "inside name retains selected size")
-equal(plateFrame.SNPInsideName.flags, "THICKOUTLINE", "inside name uses native thick outline")
+equal(plateFrame.SNPInsideName.flags, "", "inside name has no outline")
 threatEnabled, threatPercent = true, nil
 ns.RefreshAll()
 equal(plateFrame.SNPInsideName.points[2][2], plateFrame.healthBar, "blank threat uses full bar width")
@@ -261,15 +283,25 @@ equal(plateFrame.SNPInsideName.points[2][2], plateFrame.SNPThreatText, "cached r
 threatEnabled, threatPercent = false, nil
 ns.RefreshAll()
 
-equal(plateFrame.name.flags, "THICKOUTLINE", "name uses native thick outline")
+equal(plateFrame.name.flags, "", "hidden native inside name has no outline")
 appearance.nameSize = 36
 ns.RefreshAll()
 equal(plateFrame.SNPInsideName.size, 36, "large inside name retains full size")
-equal(plateFrame.healthBar.height, 42, "bar expands for full font plus padding")
-equal(plateFrame.HealthBarsContainer.height, 42, "container expands with bar")
+equal(plateFrame.SNPInsideName.shadow[4], 1, "inside name has opaque black shadow")
+equal(plateFrame.SNPInsideName.shadowX, 1, "inside name shadow one unit right")
+equal(plateFrame.SNPInsideName.shadowY, -1, "inside name shadow one unit down")
+equal(plateFrame.SNPInsideName.points[1][5], -0.5, "asymmetric padding moves name half unit down")
+equal(plateFrame.healthBar.height, 43, "bar expands for full font plus padding")
+equal(plateFrame.HealthBarsContainer.height, 43, "container expands with bar")
 plateFrame.healthBar:SetHeight(20)
 events.scripts.OnUpdate(events, 0.5)
-equal(plateFrame.healthBar.height, 42, "drift repair retains expanded height")
+equal(plateFrame.healthBar.height, 43, "drift repair retains expanded height")
+appearance.namePlacement, threatEnabled, threatPercent = "ABOVE", true, 100
+ns.RefreshAll()
+equal(plateFrame.healthBar.height, 43, "above-bar names still leave padding for threat text")
+equal(plateFrame.SNPInsideName.shown, false, "threat text does not move above-bar name inside")
+equal(plateFrame.name.flags, "THICKOUTLINE", "outside name keeps thick outline")
+appearance.namePlacement, threatEnabled, threatPercent = "INSIDE", false, nil
 appearance.nameSize = 12
 ns.RefreshAll()
 
@@ -937,7 +969,7 @@ for index = 1, 3 do
     categoryMode, fontWrites = "active", 0
     ns.RefreshAll()
     equal(fontWrites, 1, "hostile toggle applies font once despite native callback")
-    equal(plateFrame.SNPInsideName.flags, "THICKOUTLINE", "hostile toggle retains outline")
+    equal(plateFrame.SNPInsideName.flags, "", "hostile toggle retains shadow rendering")
 end
 plateFrame.name.SetFont = function() error("simulated font write failure") end
 local ok = pcall(ns.RefreshAll)

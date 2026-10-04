@@ -10,6 +10,10 @@ assert(loadfile("SimpleNameplates/NameplateFrames.lua"))("SimpleNameplates", ns)
 local function Region()
     local r = {alpha = 1, shown = true, texture = "original", coords = {0.1, 0.9, 0.2, 0.8},
         font = "font", size = 10, flags = "OUTLINE", shadow = {0, 0, 0, 1}, offset = {1, -1}}
+    function r:GetNumPoints() return #(self.points or {}) end
+    function r:GetPoint(index) return unpackValues(self.points[index]) end
+    function r:ClearAllPoints() self.points = {} end
+    function r:SetPoint(...) self.points = self.points or {}; self.points[#self.points + 1] = {...} end
     function r:GetAlpha() return self.alpha end
     function r:SetAlpha(v) self.alpha = v end
     function r:GetAtlas() return self.atlas end
@@ -44,6 +48,7 @@ local function Bar(backgroundKey)
 end
 local health, cast = Bar("bgTexture"), Bar("Background")
 health.Text, health.RightText, health.LeftText = Region(), Region(), Region()
+health.Text:SetPoint("CENTER", health, "CENTER", 0, 0)
 health.selectedBorder, health.deselectedOverlay = Region(), Region()
 cast.Border, cast.DropShadow, cast.Text = Region(), Region(), Region()
 cast.BorderShield = Region()
@@ -53,11 +58,14 @@ local assessment = ns.PresentationCapabilities.InspectFrame(frame, context)
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
 for _, key in ipairs({"Text", "RightText", "LeftText"}) do
     assert(health[key].r == 1 and health[key].g == 1 and health[key].b == 1, "bright bar native text white")
-    assert(health[key].flags == "THICKOUTLINE", "native health text uses game outline")
+    assert(health[key].flags == "", "native health text has no outline")
+    assert(health[key].shadow[4] == 1 and health[key].offset[1] == 1 and health[key].offset[2] == -1, "native health text uses black offset copy")
     assert(health[key].vr == 1, "native text tint neutral")
 end
+assert(health.Text.points[1][5] == -0.5, "native health label padding moves down")
 barRGB = {0, 0, 1}
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
+assert(health.Text.points[1][5] == -0.5, "native text padding does not accumulate")
 assert(health.Text.r == 1, "native health text stays white on dark bars")
 assert(health.bgTexture.alpha == 0 and health.selectedBorder.alpha == 0)
 assert(health.deselectedOverlay.alpha == 0 and cast.Border.alpha == 0)
@@ -90,6 +98,7 @@ assert(not pcall(ns.NameplateFrames.RestoreBarArtwork, frame, context))
 assert(frame.SNPOriginalArtwork, "failed restoration keeps backup")
 health.bgTexture.IsForbidden = nil
 ns.NameplateFrames.RestoreBarArtwork(frame, context)
+assert(health.Text.points[1][5] == 0, "native text anchor restored")
 assert(health.Text.r == 0.7 and health.Text.g == 0.8 and health.Text.vr == 0.5, "native health text restored")
 assert(health.bgTexture.alpha == 1 and health.selectedBorder.alpha == 1)
 assert(cast.Border.alpha == 1 and cast.DropShadow.alpha == 1)

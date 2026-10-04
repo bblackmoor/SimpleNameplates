@@ -50,6 +50,7 @@ local function ApplyStyle(frame, context)
         Text.StyleName(frame, state, context, decision)
         return
     end
+    ns.NameplateFrames.ApplyBarWidth(frame, assessment, context)
     ApplyVisibility(frame, decision, assessment, context)
     ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
     ns.NameplateThreat.UpdateThreatText(frame, state, context, decision)

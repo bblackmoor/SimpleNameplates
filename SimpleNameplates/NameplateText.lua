@@ -112,7 +112,7 @@ local function RestoreOriginalBarHeight(frame, bar, context)
 end
 
 local function InsideBarHeight(frame, nameSize)
-    return math.max(nameSize + 6, frame.SNPOriginalBarHeight or 0,
+    return math.max(nameSize + 7, frame.SNPOriginalBarHeight or 0,
         frame.SNPOriginalHealthBarsContainerHeight or 0)
 end
 
@@ -121,7 +121,17 @@ local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context
     if not CanAccessFrame(frame, context) then return false, baseNameSize end
     local inside = GetAppearanceSetting("namePlacement") == "INSIDE"
         and decision and decision.showHealthBar and bar ~= nil
-    if not inside then
+    local hasThreat = frame.SNPThreatStatus == "displayed raw percentage"
+        or frame.SNPThreatStatus == "displayed scaled percentage"
+    local hasNativeText = false
+    if bar and decision and decision.showHealthBar then
+        for _, key in ipairs({"Text", "RightText", "LeftText"}) do
+            if AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(bar[key], "IsShown", context)) == true then
+                hasNativeText = true
+            end
+        end
+    end
+    if not inside and not hasThreat and not hasNativeText then
         RestoreOriginalBarHeight(frame, bar, context)
         return false, baseNameSize
     end
@@ -144,7 +154,7 @@ local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context
     local barHeight = InsideBarHeight(frame, insideNameSize)
     bar:SetHeight(barHeight)
     if container then container:SetHeight(barHeight) end
-    return true, insideNameSize
+    return inside, insideNameSize
 end
 
 local function PositionName(frame, name, bar, nameOnly, inside, rightInset, rightRegion)
@@ -184,13 +194,13 @@ end
 local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, rightRegion, textColor)
     local insideName = GetInsideName(frame, bar)
     insideName:SetText(text)
-    insideName:SetFont(fontPath, size, "THICKOUTLINE")
-    insideName:SetShadowColor(0, 0, 0, 0)
-    insideName:SetShadowOffset(0, 0)
+    insideName:SetFont(fontPath, size, "")
+    insideName:SetShadowColor(0, 0, 0, 1)
+    insideName:SetShadowOffset(1, -1)
     insideName:SetTextColor(textColor, textColor, textColor, 1)
     insideName:ClearAllPoints()
-    insideName:SetPoint("LEFT", bar, "LEFT", 3, 0)
-    insideName:SetPoint("RIGHT", rightRegion or bar, rightRegion and "LEFT" or "RIGHT", rightInset, 0)
+    insideName:SetPoint("LEFT", bar, "LEFT", 3, -0.5)
+    insideName:SetPoint("RIGHT", rightRegion or bar, rightRegion and "LEFT" or "RIGHT", rightInset, rightRegion and 0 or -0.5)
     insideName:SetJustifyH("LEFT")
     insideName:Show()
     -- Leave Blizzard's name shown for its health-text visibility logic, but
@@ -212,14 +222,16 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.text = displayName
     expected.font = fontPath
     expected.size = size
-    expected.flags = "THICKOUTLINE"
+    expected.flags = inside and "" or "THICKOUTLINE"
     expected.r, expected.g, expected.b = nameR, nameG, nameB
     expected.nameOnly = nameOnly
     expected.inside = inside == true
     expected.rightInset = rightInset
     expected.rightRegion = rightRegion
     expected.bar = bar
-    expected.barHeight = inside and InsideBarHeight(frame, size) or nil
+    expected.barHeight = frame.SNPOriginalBarHeight and InsideBarHeight(frame, size) or nil
+    expected.barWidth = frame.SNPBarWidth
+    expected.containerWidth = frame.SNPContainerWidth
     expected.frame = frame
 end
 
@@ -257,7 +269,7 @@ local function StyleName(frame, state, context, decision)
     PositionName(frame, name, bar, nameOnly, inside, rightInset, rightRegion)
 
     local fontPath = NameFontPath(context)
-    name:SetFont(fontPath, size, "THICKOUTLINE")
+    name:SetFont(fontPath, size, inside and "" or "THICKOUTLINE")
     name:SetShadowColor(0, 0, 0, 0)
     name:SetShadowOffset(0, 0)
     local nameR, nameG, nameB = 1, 1, 1
@@ -325,14 +337,17 @@ local function CachedNameHasDrifted(frame, context)
     if font ~= expected.font or not NearlyEqual(size, expected.size) or flags ~= expected.flags then
         return true
     end
-    if expected.inside and expected.bar
+    if expected.barHeight and expected.bar
         and not NearlyEqual(expected.bar:GetHeight(), expected.barHeight) then
         return true
     end
-    if expected.inside and frame.HealthBarsContainer
+    if expected.barHeight and frame.HealthBarsContainer
         and not NearlyEqual(frame.HealthBarsContainer:GetHeight(), expected.barHeight) then
         return true
     end
+    if expected.barWidth and not NearlyEqual(expected.bar:GetWidth(), expected.barWidth) then return true end
+    if expected.containerWidth and frame.HealthBarsContainer
+        and not NearlyEqual(frame.HealthBarsContainer:GetWidth(), expected.containerWidth) then return true end
     if expected.inside then
         local insideName = frame.SNPInsideName
         if not insideName or AccessibleBoolean(insideName:IsShown()) ~= true or not NearlyEqual(name:GetAlpha(), 0) then
@@ -372,10 +387,12 @@ local function RepairCachedName(frame, context)
     name:SetShadowOffset(0, 0)
     name:SetVertexColor(1, 1, 1, 1)
     name:SetTextColor(expected.r, expected.g, expected.b, 1)
-    if expected.inside and expected.bar then
+    if expected.barHeight and expected.bar then
         expected.bar:SetHeight(expected.barHeight)
         if frame.HealthBarsContainer then frame.HealthBarsContainer:SetHeight(expected.barHeight) end
     end
+    if expected.barWidth then expected.bar:SetWidth(expected.barWidth) end
+    if expected.containerWidth and frame.HealthBarsContainer then frame.HealthBarsContainer:SetWidth(expected.containerWidth) end
     if expected.nameOnly then
         name:ClearAllPoints()
         if expected.bar then

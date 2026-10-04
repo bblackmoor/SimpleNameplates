@@ -44,7 +44,7 @@ local function CreateAppearanceDropdown(content, layout, refreshers, labelText, 
     Refresh()
 end
 
-local function AddNameSizeControl(content, layout, refreshers)
+local function AddSizeControl(content, layout, refreshers, key, label, minimum, maximum, step, suffix)
     local sizeBlock = CreateFrame("Frame", nil, content)
     sizeBlock.SNPLayoutFullWidth = true
     layout:Add(sizeBlock, 24, 48, 6)
@@ -52,30 +52,30 @@ local function AddNameSizeControl(content, layout, refreshers)
     sizeLabel:SetPoint("TOPLEFT", 0, -12)
     local sizeValue = sizeBlock:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     sizeValue:SetPoint("TOPLEFT", U.CONTROL_X + 188, -12)
-    local sizeSlider = CreateFrame("Slider", "SimpleNameplatesNameSizeSlider", sizeBlock, "OptionsSliderTemplate")
+    local sizeSlider = CreateFrame("Slider", key == "nameSize" and "SimpleNameplatesNameSizeSlider" or "SimpleNameplatesHealthBarWidthSlider", sizeBlock, "OptionsSliderTemplate")
     sizeSlider:SetPoint("TOPLEFT", U.CONTROL_X, -10)
     sizeSlider:SetSize(180, 18)
-    sizeSlider:SetMinMaxValues(ns.MIN_NAME_SIZE, ns.MAX_NAME_SIZE)
-    sizeSlider:SetValueStep(1)
+    sizeSlider:SetMinMaxValues(minimum, maximum)
+    sizeSlider:SetValueStep(step)
     sizeSlider:SetObeyStepOnDrag(true)
-    sizeSlider.Low:SetText(tostring(ns.MIN_NAME_SIZE))
-    sizeSlider.High:SetText(tostring(ns.MAX_NAME_SIZE))
+    sizeSlider.Low:SetText(tostring(minimum))
+    sizeSlider.High:SetText(tostring(maximum))
     sizeSlider.Text:SetText("")
 
     local refreshingSize = false
     local function RefreshNameSize()
-        local value = GetAppearanceSetting("nameSize")
+        local value = GetAppearanceSetting(key)
         refreshingSize = true
         sizeSlider:SetValue(value)
         refreshingSize = false
-        sizeLabel:SetText("Name size")
-        sizeValue:SetText(tostring(value) .. " pt")
+        sizeLabel:SetText(label)
+        sizeValue:SetText(tostring(value) .. suffix)
     end
     sizeSlider:SetScript("OnValueChanged", function(_, rawValue)
-        local value = math.floor(rawValue + 0.5)
-        sizeValue:SetText(tostring(value) .. " pt")
-        if refreshingSize or value == GetAppearanceSetting("nameSize") then return end
-        SetAppearanceSetting("nameSize", value)
+        local value = math.floor(rawValue / step + 0.5) * step
+        sizeValue:SetText(tostring(value) .. suffix)
+        if refreshingSize or value == GetAppearanceSetting(key) then return end
+        SetAppearanceSetting(key, value)
         RefreshNameplates()
     end)
     refreshers[#refreshers + 1] = RefreshNameSize
@@ -89,7 +89,7 @@ end
 
 local function AddNameSizeNote(content, layout)
     AddDescription(content, layout,
-        "Also sets threat-text size. Titles use 80%; inside-bar names add three units of padding above and below.")
+        "Also sets threat-text size. Titles use 80%; inside-bar text has four units above and three below.")
 end
 
 local function AddSanctuaryFontControl(content, layout, refreshers)
@@ -107,7 +107,7 @@ local function AddSharedAppearanceControls(content, layout, refreshers)
         function() return GetAppearanceSetting("nameFont") end,
         function(value) SetAppearanceSetting("nameFont", value) end)
     AddSanctuaryFontControl(content, layout, refreshers)
-    AddNameSizeControl(content, layout, refreshers)
+    AddSizeControl(content, layout, refreshers, "nameSize", "Name size", ns.MIN_NAME_SIZE, ns.MAX_NAME_SIZE, 1, " pt")
     AddNameSizeNote(content, layout)
 end
 
@@ -115,6 +115,7 @@ local function AddInCombatTextControls(content, layout, refreshers)
     AddSection(content, layout, "Health bars")
     AddDescription(content, layout,
         "Out of combat, only Attacking, Hostile and Neutral use bars. In combat, all Active categories use available bars.")
+    AddSizeControl(content, layout, refreshers, "healthBarWidth", "Health bar width", ns.MIN_HEALTH_BAR_WIDTH, ns.MAX_HEALTH_BAR_WIDTH, 5, "%")
     CreateAppearanceDropdown(content, layout, refreshers, "Health-bar name placement", {
         { value = "ABOVE", label = "Above bar" }, { value = "INSIDE", label = "Inside bar" },
     }, function() return GetAppearanceSetting("namePlacement") end,

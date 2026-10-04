@@ -26,11 +26,41 @@ local function SetShownSafe(region, shown, context)
     if shown then region:Show() else region:Hide() end
 end
 
+local function RestoreBarWidth(frame, assessment)
+    if assessment.healthBar and frame.SNPOriginalBarWidth then
+        assessment.healthBar:SetWidth(frame.SNPOriginalBarWidth)
+    end
+    if frame.HealthBarsContainer and frame.SNPOriginalContainerWidth then
+        frame.HealthBarsContainer:SetWidth(frame.SNPOriginalContainerWidth)
+    end
+    frame.SNPOriginalBarWidth, frame.SNPOriginalContainerWidth = nil, nil
+    frame.SNPBarWidth, frame.SNPContainerWidth = nil, nil
+end
+
+local function ApplyBarWidth(frame, assessment, context)
+    local percent = ns.GetAppearanceSetting("healthBarWidth") or 100
+    if percent == 100 then RestoreBarWidth(frame, assessment); return end
+    for _, item in ipairs({
+        {assessment.healthBar, "SNPOriginalBarWidth", "SNPBarWidth"},
+        {frame.HealthBarsContainer, "SNPOriginalContainerWidth", "SNPContainerWidth"},
+    }) do
+        local region, originalKey, expectedKey = item[1], item[2], item[3]
+        if region and not frame[originalKey] then
+            local width = ns.AccessibleNumber(Capabilities.ReadRegion(region, "GetWidth", context))
+            if width and width > 0 then frame[originalKey] = width end
+        end
+        if region and frame[originalKey] then
+            frame[expectedKey] = frame[originalKey] * percent / 100
+            region:SetWidth(frame[expectedKey])
+        end
+    end
+end
+
 -- Keep native progress/value logic; replace only the decorative artwork.
-local function ReadValues(region, method, context)
+local function ReadValues(region, method, context, ...)
     local fn = Capabilities.SafeField(region, method, context)
     if type(fn) ~= "function" then return nil end
-    local values = {pcall(fn, region)}
+    local values = {pcall(fn, region, ...)}
     if not values[1] then return nil end
     table.remove(values, 1)
     for index, value in ipairs(values) do
@@ -75,7 +105,7 @@ local function FlattenFill(frame, region, context)
     region:SetTexCoord(0, 1, 0, 1)
 end
 
-local function StyleNativeTextOutline(frame, region, context)
+local function StyleNativeTextOutline(frame, region, context, inside)
     local original = OriginalArtwork(frame, region, context)
     if not original then return end
     if not original.font then
@@ -85,15 +115,35 @@ local function StyleNativeTextOutline(frame, region, context)
         original.shadowColor = ReadValues(region, "GetShadowColor", context)
         original.shadowOffset = ReadValues(region, "GetShadowOffset", context)
     end
-    region:SetFont(original.font[1], original.font[2], "THICKOUTLINE")
-    region:SetShadowColor(0, 0, 0, 0)
-    region:SetShadowOffset(0, 0)
+    region:SetFont(original.font[1], original.font[2], inside and "" or "THICKOUTLINE")
+    region:SetShadowColor(0, 0, 0, inside and 1 or 0)
+    region:SetShadowOffset(inside and 1 or 0, inside and -1 or 0)
 end
 
 local function StyleHealthText(frame, region, context)
     local original = OriginalArtwork(frame, region, context)
     if not original then return end
-    StyleNativeTextOutline(frame, region, context)
+    StyleNativeTextOutline(frame, region, context, true)
+    if original.points == nil then
+        local count = ns.AccessibleNumber(Capabilities.ReadRegion(region, "GetNumPoints", context))
+        if count then
+            local points = {}
+            for index = 1, count do
+                local values = ReadValues(region, "GetPoint", context, index)
+                if not values or type(values[4]) ~= "number" or type(values[5]) ~= "number" then
+                    points = nil; break
+                end
+                points[#points + 1] = values
+            end
+            original.points = points
+        end
+    end
+    if original.points then
+        region:ClearAllPoints()
+        for _, point in ipairs(original.points) do
+            region:SetPoint(point[1], point[2], point[3], point[4], point[5] - 0.5)
+        end
+    end
     if not original.textColor then
         original.textColor = ReadValues(region, "GetTextColor", context)
         original.vertexColor = ReadValues(region, "GetVertexColor", context)
@@ -184,6 +234,10 @@ local function RestoreBarArtwork(frame, context)
         end
         if original.textColor then region:SetTextColor(unpackValues(original.textColor)) end
         if original.vertexColor then region:SetVertexColor(unpackValues(original.vertexColor)) end
+        if original.points then
+            region:ClearAllPoints()
+            for _, point in ipairs(original.points) do region:SetPoint(unpackValues(point)) end
+        end
         if original.font then
             region:SetFont(original.font[1], original.font[2], original.font[3] or "")
             if original.shadowColor then region:SetShadowColor(unpackValues(original.shadowColor)) end
@@ -200,6 +254,7 @@ local function RestoreBarArtwork(frame, context)
 end
 
 ns.NameplateFrames = {
+    ApplyBarWidth = ApplyBarWidth, RestoreBarWidth = RestoreBarWidth,
     ApplyBarArtwork = ApplyBarArtwork, RestoreBarArtwork = RestoreBarArtwork,
     GetUnitFrame = GetUnitFrame, GetFrameFromPlate = GetFrameFromPlate,
     GetHealthBar = GetHealthBar, GetCastBar = GetCastBar, SetShownSafe = SetShownSafe,

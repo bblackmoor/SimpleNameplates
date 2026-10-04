@@ -32,7 +32,7 @@ local function region(kind, parent, template)
         GetScript = function(self, event) return self.scripts and self.scripts[event] end,
         SetEnabled = function(self, yes) self.enabled = yes end,
         IsEnabled = function(self) return self.enabled end,
-        SetMinMaxValues = function() end, SetValueStep = function() end,
+        SetMinMaxValues = function(self, low, high) self.low, self.high = low, high end, SetValueStep = function(self, step) self.step = step end,
         SetObeyStepOnDrag = function() end, SetValue = function(self, value) self.value = value end,
         EnableMouse = function() end, SetOwner = function() end,
         AddLine = function() end, Show = function() end, Hide = function() end,
@@ -96,12 +96,12 @@ local setupAllowed, setupChecks = true, 0
 local attacking = { 1, 0, 0 }
 local npcColors = { friendly = {0.2, 0.8, 0.2}, useful = {0.8, 0.8, 0.8}, useless = {0.6, 0.6, 0.6} }
 local modes = { friendly = "active" }
-local profile = { matchSanctuaryFont = true, nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE" }
+local profile = { matchSanctuaryFont = true, nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE", healthBarWidth = 100 }
 local ns = {
     Defaults = {showThreat = true, interruptibleHighlight = false, hideCritterCompanionNames = false},
     VERSION = "1.0.test", SOURCE_URL = "https://github.com/bblackmoor/SimpleNameplates",
     FONT_OPTIONS = { { value = "ARIALN", label = "Arial Narrow" } },
-    MIN_NAME_SIZE = 8, MAX_NAME_SIZE = 36,
+    MIN_NAME_SIZE = 8, MIN_HEALTH_BAR_WIDTH = 80, MAX_HEALTH_BAR_WIDTH = 150, MAX_NAME_SIZE = 36,
     DEFAULT_PROFILE_NAME = "Default",
     PriorityColorForState = function(state) return unpack(npcColors[state] or attacking) end,
     SetPriorityColor = function(state, r, g, b)
@@ -119,6 +119,7 @@ local ns = {
     SetAppearanceSetting = function(key, value) profile[key] = value end,
     ResetAppearance = function()
         profile.nameSize, profile.nameFont, profile.threatFont = 21, "FRIZQT", "ARIALN"
+        profile.healthBarWidth = 100
         profile.namePlacement, profile.matchSanctuaryFont = "ABOVE", true
     end,
     GetActiveProfileName = function() return active end,
@@ -369,11 +370,20 @@ button("Reset all colors"):Click()
 equal(allColorResets, 1, "complete page reset available")
 assert(button("Reset all colors").points.TOPLEFT[4] > effectFill.parent.parent.points.TOPLEFT[4], "reset precedes cast controls")
 castEnabled, threatEnabled = true, false
+local widthSlider
+for _, item in ipairs(frames) do
+    if item.kind == "Slider" and item.low == 80 and item.high == 150 then widthSlider = item end
+end
+assert(widthSlider and belongsTo(widthSlider, categories[3].panel), "width slider belongs to Appearance")
+equal(widthSlider.step, 5, "width slider uses modest five-percent steps")
+widthSlider.scripts.OnValueChanged(widthSlider, 125)
+equal(profile.healthBarWidth, 125, "width slider changes profile setting")
 profile.nameSize, profile.matchSanctuaryFont = 31, false
 profile.nameFont, profile.threatFont, profile.namePlacement = "SKURRI", "MORPHEUS", "INSIDE"
 hideCritters = true
 button("Reset settings"):Click()
 equal(profile.nameSize, 21, "text reset restores size")
+equal(profile.healthBarWidth, 100, "page reset restores width")
 equal(profile.matchSanctuaryFont, true, "text reset restores sanctuary switch")
 equal(profile.nameFont, "FRIZQT", "page reset restores name font")
 equal(profile.threatFont, "ARIALN", "page reset restores threat font")

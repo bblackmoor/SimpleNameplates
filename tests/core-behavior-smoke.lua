@@ -42,6 +42,23 @@ local function fresh()
     return loadCore()
 end
 
+-- Width defaults, clamps, survives profile copying/reload, and resets.
+local widthNS = fresh()
+equal(widthNS.GetAppearanceSetting("healthBarWidth"), 100, "native width default")
+widthNS.SetAppearanceSetting("healthBarWidth", 300)
+equal(widthNS.GetAppearanceSetting("healthBarWidth"), 150, "width upper clamp")
+widthNS.SetAppearanceSetting("healthBarWidth", 10)
+equal(widthNS.GetAppearanceSetting("healthBarWidth"), 80, "width lower clamp")
+widthNS.SetAppearanceSetting("healthBarWidth", 124)
+equal(widthNS.GetAppearanceSetting("healthBarWidth"), 125, "width uses five-percent steps")
+widthNS.SetAppearanceSetting("healthBarWidth", 0/0)
+equal(widthNS.GetAppearanceSetting("healthBarWidth"), 125, "invalid width ignored")
+widthNS.CopyActiveProfile("Wider bars")
+widthNS = loadCore()
+equal(widthNS.GetAppearanceSetting("healthBarWidth"), 125, "copied width survives reload")
+widthNS.ResetAppearance()
+equal(widthNS.GetAppearanceSetting("healthBarWidth"), 100, "Appearance reset restores native width")
+
 -- Fresh defaults and independent character selection.
 local ns = fresh()
 local db = ns.EnsureDB()

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.143
+
+* Adds a profile Health bar width slider on Appearance: 80–150% of native width in 5% steps, default 100%. Reset settings restores the default; disabling category styling restores native width.
+* White text inside health bars uses a black shadow one UI unit right and down, with no outline. Names and titles outside bars retain native thick outlines.
+* Increases minimum top padding for inside-bar text from three to four UI units, preserving three below. Includes threat text even when names are above bars, and restores native health-label anchors on disable.
+
 ## 1.0.142
 
 * Stops changing friendly class-color CVars, whose synchronous Blizzard callbacks can compare secret health values while executing from addon code. Category and cast-highlight switches now refresh only addon presentation.

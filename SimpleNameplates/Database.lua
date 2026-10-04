@@ -12,6 +12,7 @@ local DEFAULT_STYLING_ENABLED = defaults.stylingEnabled
 local DEFAULT_SHOW_THREAT = defaults.showThreat
 local DEFAULT_HIDE_CRITTER_COMPANION_NAMES = defaults.hideCritterCompanionNames
 local MIN_NAME_SIZE, MAX_NAME_SIZE = ns.MIN_NAME_SIZE, ns.MAX_NAME_SIZE
+local MIN_BAR_WIDTH, MAX_BAR_WIDTH = ns.MIN_HEALTH_BAR_WIDTH, ns.MAX_HEALTH_BAR_WIDTH
 local MANAGED_NAME_CVARS = ns.MANAGED_NAME_CVARS
 
 local dbReady = false
@@ -103,6 +104,10 @@ local function ValidateProfileAppearance(profile, saved)
         and savedAppearance.nameSize >= MIN_NAME_SIZE
         and savedAppearance.nameSize <= MAX_NAME_SIZE then
         profile.appearance.nameSize = math.floor(savedAppearance.nameSize + 0.5)
+    end
+    if IsFiniteNumber(savedAppearance.healthBarWidth)
+        and savedAppearance.healthBarWidth >= MIN_BAR_WIDTH and savedAppearance.healthBarWidth <= MAX_BAR_WIDTH then
+        profile.appearance.healthBarWidth = math.floor(savedAppearance.healthBarWidth / 5 + 0.5) * 5
     end
     profile.appearance.threatFont = FONT_BY_VALUE[savedAppearance.threatFont]
         and savedAppearance.threatFont or profile.appearance.threatFont
@@ -385,6 +390,8 @@ local function SetAppearanceSetting(key, value)
     elseif key == "nameSize" and type(value) == "number" then
         appearance[key] = math.max(MIN_NAME_SIZE,
             math.min(MAX_NAME_SIZE, math.floor(value + 0.5)))
+    elseif key == "healthBarWidth" and IsFiniteNumber(value) then
+        appearance[key] = math.max(MIN_BAR_WIDTH, math.min(MAX_BAR_WIDTH, math.floor(value / 5 + 0.5) * 5))
     elseif key == "namePlacement" and (value == "ABOVE" or value == "INSIDE") then
         appearance[key] = value
     end

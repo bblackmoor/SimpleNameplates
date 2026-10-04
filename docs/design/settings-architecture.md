@@ -111,3 +111,10 @@ NameplateRestoration captures original shown states before styling and retries s
 Friendly class-color CVars are now observed only. Simple Nameplates no longer captures, disables, or restores them: writing them can synchronously call Blizzard's nameplate option rebuild and heal-prediction code from tainted addon execution. Category, reset, and master switches apply presentation directly to accessible frames without class-color CVar writes.
 
 Frame restoration captures native name font, colors, shadows, alignment, anchors, text, and health-bar color before styling, and restores those values without calling `CompactUnitFrame_UpdateAll`, `CompactUnitFrame_UpdateName`, or `CompactUnitFrame_UpdateHealthColor`. Native health values and heal prediction remain Blizzard's responsibility. Failed presentation writes keep originals for retry. Older sections describing friendly class-color CVar ownership record previous behavior and are superseded by this correction.
+
+
+### Health-bar sizing and text (1.0.143)
+
+`appearance.healthBarWidth` stores a profile percentage, default 100, bounded to 80–150 in steps of 5. Appearance exposes a slider and its Reset settings action resets this value. Native bar/container widths are captured before scaling, retained across subsequent changes, restored on disable or when returning to 100%, and repaired when native layout overwrites a custom width. No nameplate sizing CVar or native health update function is invoked.
+
+Inside health-bar text uses white glyphs with no outline and a black native shadow at (1, -1). Outside name/title text retains THICKOUTLINE. The minimum bar height for text is font size plus seven units: four above and three below, with a half-unit downward center offset. Native health-label points and shadows are restored with the rest of the captured presentation.
