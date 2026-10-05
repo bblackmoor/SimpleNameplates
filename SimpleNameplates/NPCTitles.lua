@@ -264,4 +264,6 @@ local function Inspect(unit, facts)
     return result
 end
 
+GetTitle = ns.Profiler.Wrap("NPC title lookup", GetTitle)
+
 ns.NPCTitles = {GetTitle = GetTitle, Extract = Extract, Inspect = Inspect}

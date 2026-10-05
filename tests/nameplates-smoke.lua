@@ -92,7 +92,7 @@ local ns = {
     BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
     FRIENDLY_COLOR_CVARS = {},
 }
-for _, file in ipairs({ "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "FontRendering.lua", "TextUnderlayers.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
+for _, file in ipairs({ "Profiler.lua", "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "FontRendering.lua", "TextUnderlayers.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
     assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", ns)
 end
 equal(#frames, 1, "one event frame")
@@ -1078,5 +1078,23 @@ for _, fn in ipairs({ ns.StateForUnit, ns.RefreshAll, ns.RestoreAll,
     ns.DebugUnit, events.scripts.OnEvent, events.scripts.OnUpdate,
     hooks[1].callback, hooks[2].callback }) do
     CheckUpvalues(fn)
+end
+-- Exercise the real timing wrappers, including runtime reconciliation.
+local perfOutput, originalPrint = {}, print
+print = function(message) perfOutput[#perfOutput + 1] = message end
+local timer = 0
+GetTimePreciseSec = function() timer = timer + 0.001; return timer end
+ns.Profiler.Command("start")
+ns.RefreshAll()
+plateFrame.name.text = "Drifted"
+events.scripts.OnUpdate(events, 0.25)
+ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
+ns.Profiler.Command("stop")
+ns.Profiler.Command("report")
+print = originalPrint
+for _, label in ipairs({"Full styling", "Classification", "NPC title lookup", "Text repair", "Runtime update", "Reconciliation"}) do
+    local found
+    for _, line in ipairs(perfOutput) do if line:find(label .. ":", 1, true) then found = true end end
+    assert(found, "runtime instrumentation missing: " .. label)
 end
 print("Nameplates smoke: passed")

@@ -70,6 +70,8 @@ local function ApplySimpleStyle(frame, context)
     if not ok then error(err, 0) end
 end
 
+ApplySimpleStyle = ns.Profiler.Wrap("Full styling", ApplySimpleStyle)
+
 ns.NameplatePresentation = {
     ApplySimpleStyle = ApplySimpleStyle,
     RepairHealthColor = ApplySimpleStyle, RepairName = ApplySimpleStyle,

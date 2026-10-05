@@ -5,6 +5,7 @@ local ns = {
     AccessibleNumber = function(v) if type(v) == "number" then return v end end,
 }
 Enum = {TooltipDataLineType = {None = 0, UnitName = 2, UnitLevel = 47, QuestTitle = 17}}
+assert(loadfile("SimpleNameplates/Profiler.lua"))("SimpleNameplates", ns)
 assert(loadfile("SimpleNameplates/NPCTitles.lua"))("SimpleNameplates", ns)
 local function tooltip(title)
     return {lines = {

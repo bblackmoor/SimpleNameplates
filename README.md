@@ -137,6 +137,8 @@ Saved settings are validated individually in their current locations. Recognized
 
 In Active categories, confirmed widget-only plates retain their widgets but do not draw an additional name or title. Ordinary NPC plates continue displaying names and service subtitles. This prevents duplicate addon labels when WoW supplies both plate types for one NPC. Friendly NPC nameplates must be enabled in WoW to supply ordinary friendly NPC plates; Simple Nameplates does not change that visibility setting.
 
+`/snp perf start` starts an opt-in performance session; `/snp perf stop` freezes it and `/snp perf report` prints the results. Profiling is off by default, resets on reload, and changes no saved settings. Run it briefly in a representative busy scene. Reports show call counts, total/average/longest elapsed milliseconds for full styling, classification, NPC-title lookup, cached text repair, the per-frame runtime update and its quarter-second reconciliation scan. These timings include nested calls and measurement overhead: they overlap and must not be summed as total addon CPU. Start/end addon memory readings include profiler storage, shared-library attribution and garbage collection; a decrease is valid and does not identify allocations by function. Memory is sampled only at start/stop. Commands work during combat. No additional library is required.
+
 `/snp debug` inspects your target; `/snp debug mouseover` inspects the hovered unit without targeting it. For a distant enemy, put `/snp debug mouseover` in a keybound macro and press the key while hovering over its body. The report identifies the inspected unit token and distinguishes missing plates from inaccessible ones. If nothing is under the pointer, it reports that no mouseover unit is available.
 
 `/snp debug` limits detailed plate reports to the targeted unit, its direct nameplate lookup, and plates sharing its readable unit name. Same-name candidates are explicitly distinguished from identity matches, and each relevant frame is printed once. Unrelated nearby plates contribute only to scan counts, keeping duplicate presentations together in chat.
@@ -197,7 +199,7 @@ See [library provenance](SimpleNameplates/Libs/README.md) and run
 
 The [settings conversion plan](docs/design/details-framework-conversion.md) records the completed Details Framework code conversion and cleanup. The [original refactor plan](docs/design/implementation-plan.md) and [runtime plan](docs/design/runtime-refactor-plan.md) retain earlier implementation history. Saved data remains schema 2 with global behavior and appearance profiles.
 
-Run all 17 local smoke suites from the repository root (the verified interpreter here is LuaTeX):
+Run all 18 local smoke suites from the repository root (the verified interpreter here is LuaTeX):
 
 ```sh
 for test in tests/*-smoke.lua; do

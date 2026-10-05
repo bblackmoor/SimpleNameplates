@@ -498,7 +498,7 @@ for line in toc:lines() do
 end
 toc:close()
 equal(table.concat(modules, ","),
-    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
+    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,Profiler.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
     "TOC module order")
 
 print("Core behavior smoke: passed")

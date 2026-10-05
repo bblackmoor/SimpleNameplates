@@ -18,6 +18,8 @@ local function StateForUnit(unit, context)
     return state, rule, facts
 end
 
+StateForUnit = ns.Profiler.Wrap("Classification", StateForUnit)
+
 ns.NameplateClassification = {
     StateForUnit = StateForUnit, Classify = Classify,
     TargetsPlayerControlledUnit = ns.EntityFacts.TargetsPlayerControlledUnit,

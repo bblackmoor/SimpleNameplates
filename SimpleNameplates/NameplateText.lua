@@ -437,6 +437,8 @@ local function RepairCachedName(frame, context)
 end
 
 
+RepairCachedName = ns.Profiler.Wrap("Text repair", RepairCachedName)
+
 ns.NameplateText = {
     SyncFullTitleVisibility = SyncFullTitleVisibility,
     StyleName = StyleName,

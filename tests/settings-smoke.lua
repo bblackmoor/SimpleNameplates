@@ -179,6 +179,8 @@ for _, name in ipairs({
 
 dofile("tests/details-framework-loader.lua")("Libs/DetailsFramework/load.xml")
 
+assert(loadfile("SimpleNameplates/Profiler.lua"))("SimpleNameplates", ns)
+
 local function loadSettings()
     for line in assert(io.open("SimpleNameplates/SimpleNameplates.toc")):lines() do
         if line:match("^Settings[%w]*%.lua$") then
@@ -565,6 +567,16 @@ for _, item in ipairs(frames) do
     end
 end
 
+-- Performance commands remain available during combat and bypass settings opening.
+local perfArgument
+local originalCommand = ns.Profiler.Command
+ns.Profiler.Command = function(argument) perfArgument = argument end
+local originalCombat = InCombatLockdown
+InCombatLockdown = function() return true end
+SlashCmdList.SNP("perf start")
+equal(perfArgument, "start", "profiling slash routing works in combat")
+ns.Profiler.Command = originalCommand
+InCombatLockdown = originalCombat
 print("Settings smoke: passed")
 
 for _, item in ipairs(frames) do

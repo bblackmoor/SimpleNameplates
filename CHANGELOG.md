@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.163
+
+* Adds session-only, off-by-default `/snp perf start`, `stop` and `report` commands. Measures full styling, classification, NPC-title lookup, cached text repair, runtime updates and reconciliation without changing refresh behavior or saved settings.
+* Reports call count and total/average/longest elapsed time, explicitly labels overlapping inclusive timings, and samples addon memory only at start/stop. Disabled wrappers perform no timing or memory work.
+* Adds deterministic lifecycle, return/error preservation and real runtime/slash integration coverage. All eighteen smoke suites and whitespace checks pass; native-client profiling and security checks remain pending.
+
 ## 1.0.162
 
 * Simplifies ordinary Active plates to one presentation policy: show every available health bar, independent of category, world context or combat state, colored by priority. Keeps missing-bar floating names, Inactive/disabled native presentation and widget-only exceptions. Uses existing Blizzard bars without a new dependency or fabricated health values.

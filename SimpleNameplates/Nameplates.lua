@@ -198,8 +198,22 @@ events:SetScript("OnEvent", HandleEvent)
 -- second and write only when something has drifted. Avoid point inspection on
 -- Blizzard frames; hooks handle placement changes. Classification, TRP3
 -- profile access, threat checks, and health-bar styling remain event-driven.
+local function ReconcileNames(context)
+    if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
+    for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
+        local frame = GetFrameFromPlate(plate, context)
+        if frame and frame.SNPTitleVisibilityPending then
+            ns.NameplateText.SyncFullTitleVisibility(frame, context)
+        end
+        if frame and frame.SNPState and CachedNameHasDrifted(frame, context) then
+            if not RepairCachedName(frame, context) then ApplySimpleStyle(frame, context) end
+        end
+    end
+end
+ReconcileNames = ns.Profiler.Wrap("Reconciliation", ReconcileNames)
+
 local reconcileElapsed = 0
-events:SetScript("OnUpdate", function(_, elapsed)
+local function RuntimeUpdate(_, elapsed)
     reconcileElapsed = reconcileElapsed + elapsed
     local reconcile = reconcileElapsed >= 0.25
     local context = WorldContext.Get()
@@ -227,17 +241,9 @@ events:SetScript("OnUpdate", function(_, elapsed)
     FlushQueuedRefreshes()
     if not reconcile then return end
 
-    if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
-    for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
-        local frame = GetFrameFromPlate(plate, context)
-        if frame and frame.SNPTitleVisibilityPending then
-            ns.NameplateText.SyncFullTitleVisibility(frame, context)
-        end
-        if frame and frame.SNPState and CachedNameHasDrifted(frame, context) then
-            if not RepairCachedName(frame, context) then ApplySimpleStyle(frame, context) end
-        end
-    end
-end)
+    ReconcileNames(context)
+end
+events:SetScript("OnUpdate", ns.Profiler.Wrap("Runtime update", RuntimeUpdate))
 
 
 ns.QueueNameplateRefresh = QueueRefreshAll
