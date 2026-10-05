@@ -86,7 +86,7 @@ local ns = {
     DisableFriendlyClassColors = function() count("classColors") end,
     ApplyPendingManagedNameSettings = function() count("pending") end,
     ApplyManagedNameSettings = function() count("managed") end,
-    RegisterSettingsPanel = function() count("settings") end,
+    RegisterSettingsPanels = function() count("settings") end,
     ShowNameplateConflictWarning = function() count("warning") end,
     MANAGED_NAME_CVAR_SET = { unitnamefriendlyplayername = true },
     BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
@@ -1098,3 +1098,4 @@ for _, label in ipairs({"Full styling", "Classification", "NPC title lookup", "T
     assert(found, "runtime instrumentation missing: " .. label)
 end
 print("Nameplates smoke: passed")
+

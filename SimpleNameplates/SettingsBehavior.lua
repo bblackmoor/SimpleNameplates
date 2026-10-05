@@ -1,31 +1,32 @@
 -- Simple Nameplates: global styling switch and its setup/restoration lifecycle.
-local _, ns = ...
-local U = ns.SettingsUI
-local GetStylingEnabled, SetStylingEnabled = ns.GetStylingEnabled, ns.SetStylingEnabled
+local _, addon = ...
+local UI = addon.SettingsUI
+local GetStylingEnabled, SetStylingEnabled = addon.GetStylingEnabled, addon.SetStylingEnabled
 
 local function HandleStylingChanged(enabled)
     if enabled then
-        if ns.CheckNameplateSetup and not ns.CheckNameplateSetup() then return end
-        ns.ApplyManagedNameSettings()
-        U.RefreshNameplates()
+        if addon.CheckNameplateSetup and not addon.CheckNameplateSetup() then return end
+        addon.ApplyManagedNameSettings()
+        UI.RefreshNameplates()
     else
-        ns.RestoreManagedNameSettings()
-        if ns.RestoreAll then ns.RestoreAll() end
+        addon.RestoreManagedNameSettings()
+        if addon.RestoreAll then addon.RestoreAll() end
     end
 end
 
 -- Matches the Colors-page switch/status layout; activation remains global.
 local function AddStylingSwitch(row, anchor, refreshers)
     local toggle, _, refresh
-    toggle, _, refresh = U.AddSwitchStatus(row, anchor, refreshers, GetStylingEnabled, function(checked)
+    toggle, _, refresh = UI.AddSwitchStatus(row, anchor, refreshers, GetStylingEnabled, function(checked)
         SetStylingEnabled(checked)
         HandleStylingChanged(checked)
         -- Compatibility checks may pause styling while their dialog is open.
         refresh()
     end)
-    ns.RefreshStylingControl = refresh
+    addon.RefreshStylingControl = refresh
     refresh()
     return toggle
 end
 
-ns.AddStylingSwitch = AddStylingSwitch
+addon.AddStylingSwitch = AddStylingSwitch
+

@@ -189,12 +189,12 @@ local function loadSettings()
     end
 end
 loadSettings()
-assert(ns.RegisterSettingsPanel, "settings registration API")
-ns.RegisterSettingsPanel()
+assert(ns.RegisterSettingsPanels, "settings registration API")
+ns.RegisterSettingsPanels()
 equal(#categories, 5, "About and four subcategories")
 equal(table.concat({categories[1].name,categories[2].name,categories[3].name,categories[4].name,categories[5].name}, ","),
     "Simple Nameplates,Profiles,Appearance,Colors,TRP3", "tab order")
-ns.RegisterSettingsPanel()
+ns.RegisterSettingsPanels()
 equal(#categories, 5, "one-time registration")
 equal(SLASH_SNP1, "/snp", "slash registration")
 local debugUnits = {}
@@ -582,4 +582,5 @@ print("Settings smoke: passed")
 for _, item in ipairs(frames) do
     assert(item.text ~= "Replace Blizzard overhead names (experimental)", "replacement UI removed")
 end
+
 

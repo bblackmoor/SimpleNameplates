@@ -99,7 +99,7 @@ local function HandlePlayerLogin()
         if ns.GetHideCritterCompanionNames() then ns.ApplyCritterCompanionNameVisibility() end
         ns.ApplyManagedNameSettings()
     end)
-    if ns.RegisterSettingsPanel then ns.RegisterSettingsPanel() end
+    if ns.RegisterSettingsPanels then ns.RegisterSettingsPanels() end
     if ns.TRP3 and ns.TRP3.RegisterCallbacks then ns.TRP3.RegisterCallbacks() end
     if GetStylingEnabled() then
         -- Refresh once more after Blizzard finishes login setup.
@@ -250,3 +250,4 @@ ns.QueueNameplateRefresh = QueueRefreshAll
 ns.RefreshAll = RefreshAll
 ns.RestoreAll = RestoreAll
 ns.StateForUnit = StateForUnit
+

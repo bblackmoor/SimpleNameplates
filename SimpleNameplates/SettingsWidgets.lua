@@ -1,8 +1,8 @@
 -- Details Framework boundary for converted settings pages.
 -- No saved settings, page registration, or plate work here.
-local _, ns = ...
+local _, addon = ...
 local Widgets = {}
-ns.SettingsWidgets = Widgets
+addon.SettingsWidgets = Widgets
 
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 local backdrop = {bgFile = WHITE, edgeFile = WHITE, edgeSize = 1}
@@ -339,3 +339,4 @@ function Widgets.CreateColorPicker(parent, onChanged)
     widget:SetClickFunction(function() if handle.enabled then OpenColorEditor(handle) end end)
     return handle
 end
+

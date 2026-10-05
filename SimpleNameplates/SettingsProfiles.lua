@@ -1,15 +1,15 @@
 -- Simple Nameplates: appearance Profile management.
-local _, ns = ...
-local U, W = ns.SettingsUI, ns.SettingsWidgets
-local AddDescription, RefreshNameplates = U.AddDescription, U.RefreshNameplates
+local _, addon = ...
+local UI, Widgets = addon.SettingsUI, addon.SettingsWidgets
+local AddDescription, RefreshNameplates = UI.AddDescription, UI.RefreshNameplates
 
 local function CancelProfileEdits()
-    W.CancelColorEdit()
-    if ns.CancelAppearanceEdits then ns.CancelAppearanceEdits(true) end
+    Widgets.CancelColorEdit()
+    if addon.CancelAppearanceEdits then addon.CancelAppearanceEdits(true) end
 end
 
 local function DialogProfileIsCurrent(data)
-    if not data.profileName or data.profileName == ns.GetActiveProfileName() then return true end
+    if not data.profileName or data.profileName == addon.GetActiveProfileName() then return true end
     print("|cff0cd29fSimple Nameplates:|r Selected profile changed. Reopen the profile dialog to continue.")
     return false
 end
@@ -45,7 +45,7 @@ local function RegisterProfileDialogs()
         button1 = DELETE or "Delete", button2 = CANCEL or "Cancel",
         OnAccept = function(_, data)
             if not DialogProfileIsCurrent(data) then return end
-            local ok, message = ns.DeleteActiveProfile()
+            local ok, message = addon.DeleteActiveProfile()
             if not ok and message then print("|cff0cd29fSimple Nameplates:|r " .. message) end
             if ok then data.onChanged() end
         end,
@@ -55,7 +55,7 @@ local function RegisterProfileDialogs()
         text = "Restore factory settings for Default and High Contrast? Their changes will be lost; missing bundled profiles will be recreated.",
         button1 = "Restore", button2 = CANCEL or "Cancel",
         OnAccept = function(_, data)
-            ns.RestoreBundledProfiles()
+            addon.RestoreBundledProfiles()
             data.onChanged()
         end,
         timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
@@ -68,24 +68,24 @@ local function CreateProfileButtons(content, layout, changed)
             {action = action, initial = initial, profileName = profileName, onChanged = changed})
     end
     local function OpenActiveNameDialog(action, suffix)
-        local name = ns.GetActiveProfileName()
+        local name = addon.GetActiveProfileName()
         OpenNameDialog(action, name .. suffix, name)
     end
     local definitions = {
-        {"Create", function() OpenNameDialog(ns.CreateProfile, "") end},
-        {"Copy", function() OpenActiveNameDialog(ns.CopyActiveProfile, " Copy") end},
-        {"Rename", function() OpenActiveNameDialog(ns.RenameActiveProfile, "") end},
+        {"Create", function() OpenNameDialog(addon.CreateProfile, "") end},
+        {"Copy", function() OpenActiveNameDialog(addon.CopyActiveProfile, " Copy") end},
+        {"Rename", function() OpenActiveNameDialog(addon.RenameActiveProfile, "") end},
         {"Delete", function()
-            StaticPopup_Show("SNP_DELETE_PROFILE", ns.GetActiveProfileName(), nil,
-                {profileName = ns.GetActiveProfileName(), onChanged = changed})
+            StaticPopup_Show("SNP_DELETE_PROFILE", addon.GetActiveProfileName(), nil,
+                {profileName = addon.GetActiveProfileName(), onChanged = changed})
         end},
     }
     local row = CreateFrame("Frame", nil, content)
-    row.SNPLayoutFullWidth = true
+    row.LayoutFullWidth = true
     layout:Add(row, 24, 24, 8)
     local buttons = {}
     for index, definition in ipairs(definitions) do
-        local button = W.CreateButton(row, definition[1], definition[2], 88, 24)
+        local button = Widgets.CreateButton(row, definition[1], definition[2], 88, 24)
         if index == 1 then button:SetPoint("LEFT", row, "LEFT", 0, 0)
         else button:SetPoint("LEFT", buttons[index - 1], "RIGHT", 8, 0) end
         buttons[index] = button
@@ -98,18 +98,18 @@ local function AddProfileSelector(content, layout, refreshers, onChanged, contro
     local row, dropdown
     local function Refresh()
         dropdown:InvalidateOptions() -- Profile names may be created/renamed/deleted elsewhere.
-        local active = ns.GetActiveProfileName()
+        local active = addon.GetActiveProfileName()
         dropdown:SetValue(active, active)
     end
-    row, dropdown = U.CreateDropdownRow(content, layout, "Selected profile", function()
+    row, dropdown = UI.CreateDropdownRow(content, layout, "Selected profile", function()
         local options = {}
-        for _, name in ipairs(ns.GetProfileNames()) do
+        for _, name in ipairs(addon.GetProfileNames()) do
             options[#options + 1] = {value = name, label = name}
         end
         return options
     end, function(name)
         CancelProfileEdits()
-        ns.SetActiveProfileName(name)
+        addon.SetActiveProfileName(name)
         Refresh()
         if onChanged then onChanged() end
         RefreshNameplates()
@@ -118,38 +118,40 @@ local function AddProfileSelector(content, layout, refreshers, onChanged, contro
     Refresh()
     return row, dropdown
 end
-ns.AddProfileSelector = AddProfileSelector
+addon.AddProfileSelector = AddProfileSelector
 
 local function CreateProfilesPanel()
     RegisterProfileDialogs()
-    local panel, content, layout = U.CreateScrollablePanel("Profiles")
-    U.AddTitle(content, layout, "Profiles")
+    local panel, content, layout = UI.CreateScrollablePanel("Profiles")
+    UI.AddTitle(content, layout, "Profiles")
     AddDescription(content, layout,
         "Profiles are account-wide; each character remembers its selection.")
     local refreshers = {}
-    local function Refresh() U.RunRefreshers(refreshers) end
+    local function Refresh() UI.RunRefreshers(refreshers) end
     local row, dropdown = AddProfileSelector(content, layout, refreshers, Refresh, 184)
-    ns.AddStylingSwitch(row, dropdown, refreshers)
+    addon.AddStylingSwitch(row, dropdown, refreshers)
     AddDescription(content, layout, "Enables addon styling for all characters and profiles.")
-    U.AddSection(content, layout, "Manage profiles")
+    UI.AddSection(content, layout, "Manage profiles")
     AddDescription(content, layout,
         "Create uses factory defaults. Default cannot be renamed or deleted.")
     local function Changed() Refresh(); RefreshNameplates() end
     local buttons = CreateProfileButtons(content, layout, Changed)
     refreshers[#refreshers + 1] = function()
-        local protected = ns.GetActiveProfileName() == ns.DEFAULT_PROFILE_NAME
+        local protected = addon.GetActiveProfileName() == addon.DEFAULT_PROFILE_NAME
         buttons[3]:SetEnabled(not protected)
         buttons[4]:SetEnabled(not protected)
     end
-    U.AddSection(content, layout, "Restore bundled profiles")
+    UI.AddSection(content, layout, "Restore bundled profiles")
     AddDescription(content, layout,
         "Resets Default and High Contrast, recreating High Contrast if missing. Custom profiles are unchanged.")
-    U.AddPageAction(content, layout, "Restore bundled profiles", function()
+    UI.AddPageAction(content, layout, "Restore bundled profiles", function()
         StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil, {onChanged = Changed})
     end, 210)
-    panel:SetScript("OnShow", Refresh)
+    panel.Refresh = Refresh
+    panel:SetScript("OnShow", panel.Refresh)
     Refresh()
     layout:Finish()
     return panel
 end
-ns.SettingsPanels.Profiles = CreateProfilesPanel
+addon.SettingsPanels.Profiles = CreateProfilesPanel
+

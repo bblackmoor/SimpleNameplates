@@ -1,9 +1,9 @@
 -- Simple Nameplates: About settings page.
-local _, ns = ...
-local U, W = ns.SettingsUI, ns.SettingsWidgets
+local _, addon = ...
+local UI, Widgets = addon.SettingsUI, addon.SettingsWidgets
 local CreateScrollablePanel, AddTitle, AddDescription =
-    U.CreateScrollablePanel, U.AddTitle, U.AddDescription
-local VERSION, SOURCE_URL = ns.VERSION, ns.SOURCE_URL
+    UI.CreateScrollablePanel, UI.AddTitle, UI.AddDescription
+local VERSION, SOURCE_URL = addon.VERSION, addon.SOURCE_URL
 
 -- Record entity types and observed world contexts, not individual names.
 -- Mirror the register in the README without generalizing to untested contexts.
@@ -32,10 +32,10 @@ end
 
 local function CreateLockedColorRow(context, text, r, g, b, popupKey)
     local content, layout = context.content, context.layout
-    local row = U.CreateSettingRow(content, layout, text)
-    local swatch = W.CreateColorDisplay(row, r, g, b)
-    swatch:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
-    U.AddInfoLink(row, swatch:GetFrame(), popupKey)
+    local row = UI.CreateSettingRow(content, layout, text)
+    local swatch = Widgets.CreateColorDisplay(row, r, g, b)
+    swatch:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
+    UI.CreateInfoLink(row, swatch:GetFrame(), popupKey)
     row:EnableMouse(true)
     row:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -70,17 +70,17 @@ local function CreateAboutPanel()
     AddDescription(content, layout, "Version: " .. VERSION .. "\nAuthor: Brandon Blackmoor\nCategory: Unit Frames\nLicense: GPL-3.0")
 
     AddDescription(content, layout, "Source:")
-    local sourceLink = W.CreateLink(content, SOURCE_URL, function()
+    local sourceLink = Widgets.CreateLink(content, SOURCE_URL, function()
         StaticPopup_Show("SNP_COPY_SOURCE", nil, nil, SOURCE_URL)
     end)
     local sourceFrame = sourceLink:GetFrame()
-    sourceFrame.SNPLayoutFullWidth = true
+    sourceFrame.LayoutFullWidth = true
     sourceFrame.text:SetWordWrap(true)
     sourceFrame.text:SetNonSpaceWrap(true)
     sourceFrame.LayoutText = sourceFrame.text
     layout:Add(sourceFrame, 24, 16, 8, true)
 
-    U.AddSection(content, layout, "Commands")
+    UI.AddSection(content, layout, "Commands")
     AddDescription(content, layout,
         "/snp or /snp appearance — Appearance settings\n" ..
         "/snp profiles — Manage appearance profiles\n" ..
@@ -90,7 +90,7 @@ local function CreateAboutPanel()
         "/snp debug mouseover — Inspect without targeting\n" ..
         "/snp perf [start|stop|report] — Record or report performance\n" ..
         "/snp about — This page")
-    U.AddSection(content, layout, "Presentation limits")
+    UI.AddSection(content, layout, "Presentation limits")
     AddDescription(content, layout,
         "No accessible nameplate was found in these contexts despite enabled visibility settings; " ..
         "the addon cannot change the native name, font, size, color, titles or position.")
@@ -100,7 +100,7 @@ local function CreateAboutPanel()
     AddDescription(content, layout,
         "Observed 2026-10-02; other contexts may differ. Duplicate NPC widget labels were fixed in v1.0.117; " ..
         "ordinary NPC names and service titles can be styled.")
-    U.AddSection(content, layout, "Native world-label examples")
+    UI.AddSection(content, layout, "Native world-label examples")
     AddDescription(content, layout,
         "Read-only examples of Blizzard's separate world labels. Accessible NPC and minion nameplates can still be styled.")
     local context = {content = content, layout = layout}
@@ -113,6 +113,6 @@ local function CreateAboutPanel()
     layout:Finish()
     return panel
 end
-ns.SettingsPanels.About = CreateAboutPanel
+addon.SettingsPanels.About = CreateAboutPanel
 
 

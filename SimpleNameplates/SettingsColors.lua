@@ -1,20 +1,20 @@
 -- Simple Nameplates: profile colors and global category activation.
-local _, ns = ...
-local U = ns.SettingsUI
+local _, addon = ...
+local UI = addon.SettingsUI
 local AddSection, AddDescription, RunRefreshers, RefreshNameplates =
-    U.AddSection, U.AddDescription, U.RunRefreshers, U.RefreshNameplates
+    UI.AddSection, UI.AddDescription, UI.RunRefreshers, UI.RefreshNameplates
 local PriorityColorForState, SetPriorityColor, ResetPriorityColor =
-    ns.PriorityColorForState, ns.SetPriorityColor, ns.ResetPriorityColor
-local EffectColor, SetEffectColor, ResetEffectColor = ns.EffectColor, ns.SetEffectColor, ns.ResetEffectColor
+    addon.PriorityColorForState, addon.SetPriorityColor, addon.ResetPriorityColor
+local EffectColor, SetEffectColor, ResetEffectColor = addon.EffectColor, addon.SetEffectColor, addon.ResetEffectColor
 
-local W = ns.SettingsWidgets
+local Widgets = addon.SettingsWidgets
 
 local function RefreshContext(context)
     RunRefreshers(context.refreshers)
 end
 
 local function AddActivation(context, row, swatch, activation)
-    local _, status = U.AddSwitchStatus(row, swatch, context.refreshers, activation.get, function(checked)
+    local _, status = UI.AddSwitchStatus(row, swatch, context.refreshers, activation.get, function(checked)
         activation.set(checked)
         RefreshContext(context)
         RefreshNameplates()
@@ -23,13 +23,13 @@ local function AddActivation(context, row, swatch, activation)
 end
 
 local function CreateColorRow(context, text, displayText, getColor, setColor, resetColor, activation)
-    local row = U.CreateSettingRow(context.content, context.layout, text)
-    local swatch = W.CreateColorPicker(row, function(r, g, b)
+    local row = UI.CreateSettingRow(context.content, context.layout, text)
+    local swatch = Widgets.CreateColorPicker(row, function(r, g, b)
         setColor(r, g, b)
         RefreshContext(context)
         RefreshNameplates()
     end)
-    swatch:SetPoint("LEFT", row, "LEFT", U.CONTROL_X, 0)
+    swatch:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
     context.refreshers[#context.refreshers + 1] = function() swatch:SetColor(getColor()) end
     local frame = swatch:GetFrame()
     frame:HookScript("OnEnter", function(self)
@@ -40,8 +40,8 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
     end)
     frame:HookScript("OnLeave", function() GameTooltip:Hide() end)
     local resetAnchor = activation and AddActivation(context, row, swatch, activation) or frame
-    local reset = W.CreateButton(row, "Reset", function()
-        W.CancelColorEdit()
+    local reset = Widgets.CreateButton(row, "Reset", function()
+        Widgets.CancelColorEdit()
         resetColor()
         RefreshContext(context)
         RefreshNameplates()
@@ -55,8 +55,8 @@ local function CreatePriorityColorRow(context, text, state, displayText)
         function() return PriorityColorForState(state) end,
         function(r, g, b) SetPriorityColor(state, r, g, b) end,
         function() ResetPriorityColor(state) end, {
-            get = function() return ns.GetCategoryMode(state) == "active" end,
-            set = function(checked) ns.SetCategoryMode(state, checked and "active" or "inactive") end,
+            get = function() return addon.GetCategoryMode(state) == "active" end,
+            set = function(checked) addon.SetCategoryMode(state, checked and "active" or "inactive") end,
         })
 end
 
@@ -83,27 +83,27 @@ local function AddCastEffectSelector(context)
         {value = "BUTTON", label = "Action Button Glow"},
         {value = "PROC", label = "Proc Glow"},
     }
-    local _, dropdown = U.CreateDropdownRow(context.content, context.layout, "Effect", function() return options end, function(value)
-        ns.SetInterruptibleCastStyle(value)
+    local _, dropdown = UI.CreateDropdownRow(context.content, context.layout, "Effect", function() return options end, function(value)
+        addon.SetInterruptibleCastStyle(value)
         RefreshContext(context)
         RefreshNameplates()
     end)
     context.refreshers[#context.refreshers + 1] = function()
-        dropdown:SetValue(ns.GetInterruptibleCastStyle())
+        dropdown:SetValue(addon.GetInterruptibleCastStyle())
     end
 end
 
 local function CreateColorsPanel()
-    local panel, content, layout = U.CreateScrollablePanel("Colors")
-    U.AddTitle(content, layout, "Colors")
+    local panel, content, layout = UI.CreateScrollablePanel("Colors")
+    UI.AddTitle(content, layout, "Colors")
     local context = {content = content, layout = layout, refreshers = {}}
     local function Refresh()
         RefreshContext(context)
     end
-    ns.AddProfileSelector(content, layout, context.refreshers, Refresh)
-    U.AddPageAction(content, layout, "Reset all colors", function()
-        W.CancelColorEdit()
-        ns.ResetAllColors()
+    addon.AddProfileSelector(content, layout, context.refreshers, Refresh)
+    UI.AddPageAction(content, layout, "Reset all colors", function()
+        Widgets.CancelColorEdit()
+        addon.ResetAllColors()
         Refresh()
         RefreshNameplates()
     end)
@@ -118,11 +118,13 @@ local function CreateColorsPanel()
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
         function() ResetEffectColor("interruptible") end)
     AddCastEffectSelector(context)
-    panel:SetScript("OnShow", Refresh)
-    panel:SetScript("OnHide", W.CancelColorEdit)
+    panel.Refresh = Refresh
+    panel:SetScript("OnShow", panel.Refresh)
+    panel:SetScript("OnHide", Widgets.CancelColorEdit)
     Refresh()
     layout:Finish()
     return panel
 end
-ns.SettingsPanels.Colors = CreateColorsPanel
+addon.SettingsPanels.Colors = CreateColorsPanel
+
 

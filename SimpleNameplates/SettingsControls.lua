@@ -1,8 +1,8 @@
 -- Simple Nameplates: shared settings controls and layout.
-local _, ns = ...
+local _, addon = ...
 
 local function RefreshNameplates()
-    if ns.RefreshAll then ns.RefreshAll() end
+    if addon.RefreshAll then addon.RefreshAll() end
 end
 
 -- Canvas settings pages are not scrollable on their own. Each page owns a
@@ -24,7 +24,7 @@ local function CreateScrollablePanel(name)
         local offset = 18
         for _, item in ipairs(layout.items) do
             local height = item.height
-            if item.region and item.region.SNPLayoutFullWidth then
+            if item.region and item.region.LayoutFullWidth then
                 item.region:SetWidth(math.max(1, content:GetWidth() - item.x - 24))
             end
             if item.autoHeight then
@@ -59,7 +59,7 @@ local function CreateScrollablePanel(name)
     function layout:Add(region, x, height, gap, autoHeight)
         self.items[#self.items + 1] = {region = region, x = x or 24,
             height = height or 20, gap = gap or 0, autoHeight = autoHeight}
-        if region.SNPLayoutFullWidth then region:SetWidth(math.max(1, content:GetWidth() - (x or 24) - 24)) end
+        if region.LayoutFullWidth then region:SetWidth(math.max(1, content:GetWidth() - (x or 24) - 24)) end
         region:SetHeight(height or 20)
         region:SetPoint("TOPLEFT", content, "TOPLEFT", x or 24, -self.offset)
         self.offset = self.offset + (height or 20) + (gap or 0)
@@ -89,14 +89,14 @@ end
 
 local function AddDescription(content, layout, text)
     local description = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    description.SNPLayoutFullWidth = true
+    description.LayoutFullWidth = true
     description:SetTextColor(0.72, 0.72, 0.72, 1)
     description:SetJustifyH("LEFT")
     description:SetText(text)
     return layout:Add(description, 24, 16, 8, true)
 end
 
-local function AddInfoLink(parent, anchor, popupKey)
+local function CreateInfoLink(parent, anchor, popupKey)
     local link = CreateFrame("Button", nil, parent)
     link:SetSize(24, 26)
     link:SetPoint("LEFT", anchor, "RIGHT", 12, 0)
@@ -122,7 +122,7 @@ end
 
 local function CreateSettingRow(content, layout, text)
     local row = CreateFrame("Frame", nil, content)
-    row.SNPLayoutFullWidth = true
+    row.LayoutFullWidth = true
     local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     label:SetPoint("LEFT")
     label:SetWidth(CONTROL_X - 16)
@@ -136,14 +136,14 @@ end
 -- Pages retain their setters, refresh scope and lifecycle decisions.
 local function AddSwitchRow(content, layout, refreshers, text, getter, onChanged)
     local row, label = CreateSettingRow(content, layout, text)
-    local toggle = ns.SettingsWidgets.CreateSwitch(row, onChanged)
+    local toggle = addon.SettingsWidgets.CreateSwitch(row, onChanged)
     toggle:SetPoint("LEFT", row, "LEFT", CONTROL_X, 0)
     refreshers[#refreshers + 1] = function() toggle:SetChecked(getter()) end
     return toggle, label
 end
 
 local function AddSwitchStatus(row, anchor, refreshers, getter, onChanged)
-    local toggle = ns.SettingsWidgets.CreateSwitch(row, onChanged)
+    local toggle = addon.SettingsWidgets.CreateSwitch(row, onChanged)
     toggle:SetPoint("LEFT", anchor, "RIGHT", 8, 0)
     local status = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     status:SetPoint("LEFT", toggle:GetFrame(), "RIGHT", 8, 0)
@@ -162,14 +162,14 @@ local function CreateDropdownRow(content, layout, text, options, onChanged, cont
     local row, label = CreateSettingRow(content, layout, text)
     controlX = controlX or CONTROL_X
     label:SetWidth(controlX - 16)
-    local dropdown = ns.SettingsWidgets.CreateDropdown(row, options, onChanged)
+    local dropdown = addon.SettingsWidgets.CreateDropdown(row, options, onChanged)
     dropdown:SetPoint("LEFT", row, "LEFT", controlX, 0)
     return row, dropdown
 end
 
 -- Each page chooses action placement; headings remain separate rows.
 local function AddPageAction(content, layout, text, onClick, width)
-    local button = ns.SettingsWidgets.CreateButton(content, text, onClick, width)
+    local button = addon.SettingsWidgets.CreateButton(content, text, onClick, width)
     layout:Add(button:GetFrame(), 24, 24, 8)
     return button
 end
@@ -178,11 +178,11 @@ local function RunRefreshers(refreshers)
     for _, refresh in ipairs(refreshers) do refresh() end
 end
 
-ns.SettingsUI = {
+addon.SettingsUI = {
     CreateScrollablePanel = CreateScrollablePanel,
     AddTitle = AddTitle,
     AddDescription = AddDescription,
-    AddInfoLink = AddInfoLink,
+    CreateInfoLink = CreateInfoLink,
     CreateSettingRow = CreateSettingRow,
     AddSwitchRow = AddSwitchRow,
     AddSwitchStatus = AddSwitchStatus,
@@ -193,5 +193,5 @@ ns.SettingsUI = {
     RunRefreshers = RunRefreshers,
     RefreshNameplates = RefreshNameplates,
 }
-ns.SettingsPanels = {}
+addon.SettingsPanels = {}
 

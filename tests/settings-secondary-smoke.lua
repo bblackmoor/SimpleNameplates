@@ -265,7 +265,7 @@ do
                 assert(text:find("Author: Brandon Blackmoor", 1, true))
                 assert(text:find("Category:", 1, true) and text:find("License: GPL-3.0", 1, true))
             end
-            if object.SNPLayoutFullWidth then
+            if object.LayoutFullWidth then
                 paragraphs[#paragraphs + 1] = object
                 object.GetStringHeight = function(self)
                     assert(self:GetHeight() == 0, "clear previous text height before measuring")
