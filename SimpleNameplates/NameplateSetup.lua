@@ -162,7 +162,11 @@ Check = function()
     -- legacy CVar restoration later at login can invalidate this review.
     SetPending(true)
     if InCombat() then deferredAction = "check"; return false end
-    ns.RestoreManagedNameSettings()
+    if ns.RestoreManagedNameSettings() == false then
+        Suspend()
+        deferredAction = "check"
+        return false
+    end
     local issues = Issues()
     if #issues == 0 then
         SetPending(false)

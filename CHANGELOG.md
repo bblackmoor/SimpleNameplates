@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.175
+
+* Binds captured health-bar and container presentation to the native regions being styled. Restores retired regions before capturing replacement baselines, including container-only changes detected during reconciliation. Replacement bars retain their own dimensions, visibility and colors on disable; inaccessible retired regions defer work until access returns.
+* Keeps setup paused when restoration of legacy managed CVars fails. Retained originals are retried before compatibility is reviewed or styling resumes, preventing later restoration from silently invalidating setup consent.
+* Adds replacement geometry/color/visibility, restricted-region retry and deferred-CVar setup regressions. Updates documentation; all twenty smoke suites and whitespace checks pass. Native WoW verification remains pending.
+
 ## 1.0.174
 
 * Repairs hidden native names and readable text-only drift in both above-bar and inside-bar layouts. Compares only accessible strings; restricted current or expected names remain uninspected and are forwarded only to the text API.

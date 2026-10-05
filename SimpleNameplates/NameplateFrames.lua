@@ -27,11 +27,13 @@ local function SetShownSafe(region, shown, context)
 end
 
 local function RestoreBarWidth(frame, assessment)
-    if assessment.healthBar and frame.SNPOriginalBarWidth then
-        assessment.healthBar:SetWidth(frame.SNPOriginalBarWidth)
+    local bar = frame.SNPOriginalHealthBar or assessment.healthBar
+    local container = frame.SNPOriginalHealthBarsContainer or frame.HealthBarsContainer
+    if bar and frame.SNPOriginalBarWidth then
+        bar:SetWidth(frame.SNPOriginalBarWidth)
     end
-    if frame.HealthBarsContainer and frame.SNPOriginalContainerWidth then
-        frame.HealthBarsContainer:SetWidth(frame.SNPOriginalContainerWidth)
+    if container and frame.SNPOriginalContainerWidth then
+        container:SetWidth(frame.SNPOriginalContainerWidth)
     end
     frame.SNPOriginalBarWidth, frame.SNPOriginalContainerWidth = nil, nil
     frame.SNPBarWidth, frame.SNPContainerWidth = nil, nil

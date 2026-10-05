@@ -35,7 +35,7 @@ Even when WoW is configured to show friendly, enemy, and always-visible nameplat
 
 On login and when styling is enabled using **Active** in `/snp profiles`, Simple Nameplates checks Blizzard's plate settings. If a readable setting conflicts, styling pauses and a setup dialog lists its current value, required value, and purpose. Choose **Apply and enable** to make the listed changes, or **Disable styling** to leave styling off. Compatible settings produce no dialog. The check requires Always Show Nameplates, Enemy Unit Nameplate, Friendly Player Nameplates, and Friendly NPC Nameplates on, with **Only Show Names off** so the addon can manage friendly health bars. It does not alter the NPC Names world-label filter, stacking, realm names, or size. Unsupported/unreadable CVars are skipped. This setup cannot guarantee plates for nonattackable opposite-faction players in sanctuary.
 
-Only values changed through the setup dialog are backed up, separately for each character, and survive `/reload`. Disabling styling restores them; writes and restoration wait until combat ends when necessary, and failed restoration retains its backup for retry. A rejected setup change leaves styling paused with a retry/disable choice. Settings are checked again on each login or explicit enable, rather than continuously overwritten during play.
+Only values changed through the setup dialog are backed up, separately for each character, and survive `/reload`. Disabling styling restores them; writes and restoration wait until combat ends when necessary, and failed restoration retains its backup for retry. A rejected setup change leaves styling paused with a retry/disable choice. If restoration of settings retained from an older version fails, setup stays paused and retries before reviewing compatibility, so a later restoration cannot silently invalidate an approved setup. Settings are checked again on each login or explicit enable, rather than continuously overwritten during play.
 
 ## Known Presentation Limits
 
@@ -69,7 +69,7 @@ Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp`
 The six categories are evaluated from top to bottom. The first matching category wins. Every category has an Active / Inactive thumb switch; category hiding is not available:
 
 * **Active** applies its Priority Color and Simple Nameplates styling, including threat percentage when WoW supplies a displayable value.
-* **Inactive** leaves Blizzard's display unchanged for that category. Restoration of previously styled restricted frames is retried when access returns, including while styling is disabled. Restoration uses the current WoW unit name and preserves Blizzard's current cast/channel visibility.
+* **Inactive** leaves Blizzard's display unchanged for that category. Restoration of previously styled restricted frames is retried when access returns, including while styling is disabled. Restoration uses the current WoW unit name and preserves Blizzard's current cast/channel visibility. Native health bars and containers retain their own captured dimensions, visibility and colors; replacement regions receive a fresh baseline after retired regions are restored.
 
 ## Appearance Profiles and Settings
 

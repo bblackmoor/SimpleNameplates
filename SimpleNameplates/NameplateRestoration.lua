@@ -73,8 +73,8 @@ local function RestoreNativePresentation(frame, assessment, context, removedUnit
             name:SetText(UnitName(unit))
         end
     end
-    if assessment.healthBar and original.barColor then
-        assessment.healthBar:SetStatusBarColor(unpackValues(original.barColor))
+    if frame.SNPOriginalHealthBar and original.barColor then
+        frame.SNPOriginalHealthBar:SetStatusBarColor(unpackValues(original.barColor))
     end
 end
 
@@ -89,6 +89,8 @@ local function Capture(frame, assessment, context)
     values.nameAlpha = ns.AccessibleNumber(Cap.ReadRegion(assessment.name, "GetAlpha", context))
     frame.SNPOriginalVisibility = values
     frame.SNPOriginalUnit = ns.AccessibleValue(frame.unit)
+    frame.SNPOriginalHealthBar = assessment.healthBar
+    frame.SNPOriginalHealthBarsContainer = frame.HealthBarsContainer
 end
 
 local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
@@ -107,13 +109,16 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     ns.NameplateFrames.RestoreBarWidth(frame, assessment)
     local original = frame.SNPOriginalVisibility or {}
     for _, key in ipairs(visibilityKeys) do
-        if original[key] ~= nil then SetShownSafe(frame[key], original[key], context) end
+        local region = frame[key]
+        if key == "HealthBarsContainer" then region = frame.SNPOriginalHealthBarsContainer end
+        if original[key] ~= nil then SetShownSafe(region, original[key], context) end
     end
-    if original.healthBar ~= nil then SetShownSafe(assessment.healthBar, original.healthBar, context) end
+    if original.healthBar ~= nil then SetShownSafe(frame.SNPOriginalHealthBar, original.healthBar, context) end
     if original.nameAlpha ~= nil and assessment.name then assessment.name:SetAlpha(original.nameAlpha) end
     RestoreNativePresentation(frame, assessment, context, removedUnit)
     frame.SNPNameStyle, frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = nil, nil, nil, nil
     frame.SNPOriginalVisibility, frame.SNPOriginalUnit, frame.SNPOriginalPresentation = nil, nil, nil
+    frame.SNPOriginalHealthBar, frame.SNPOriginalHealthBarsContainer = nil, nil
     frame.SNPTitleVisibilityPending = nil
 end
 

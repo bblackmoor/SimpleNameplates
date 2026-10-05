@@ -81,7 +81,8 @@ local function InspectFrame(frame, context)
     end
     -- Remaining regions are touched by visibility, restoration, or drift repair.
     for _, key in ipairs({ "CastBar", "castBarAnchor", "classificationIndicator", "ClassificationFrame",
-        "selectionHighlight", "SNPInsideName", "SNPFullTitleText", "SNPThreatText" }) do
+        "selectionHighlight", "SNPInsideName", "SNPFullTitleText", "SNPThreatText",
+        "SNPOriginalHealthBar", "SNPOriginalHealthBarsContainer" }) do
         local status = ObjectStatus(InspectField(frame, key), context)
         if status ~= "missing" and status ~= "accessible" then
             result.status, result.reason = status, key

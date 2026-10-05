@@ -129,10 +129,11 @@ local function RestoreOriginalBarHeight(frame, bar, context)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return end
     if not frame then return end
+    bar = frame.SNPOriginalHealthBar or bar
     if bar and frame.SNPOriginalBarHeight then
         bar:SetHeight(frame.SNPOriginalBarHeight)
     end
-    local container = frame.HealthBarsContainer
+    local container = frame.SNPOriginalHealthBarsContainer or frame.HealthBarsContainer
     if container and frame.SNPOriginalHealthBarsContainerHeight then
         container:SetHeight(frame.SNPOriginalHealthBarsContainerHeight)
     end
@@ -341,6 +342,8 @@ local function CacheIsCurrent(frame, expected, context)
     if expected.font ~= NameFontPath(context) then return false end
     local bar = GetHealthBar(frame, context)
     if expected.bar ~= bar then return false end
+    if frame.SNPOriginalVisibility
+        and frame.SNPOriginalHealthBarsContainer ~= frame.HealthBarsContainer then return false end
     local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(bar, "IsShown", context))
     if shown ~= nil and shown ~= decision.showHealthBar then return false end
     return true

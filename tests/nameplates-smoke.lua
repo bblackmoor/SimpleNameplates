@@ -1198,5 +1198,60 @@ events.scripts.OnUpdate(events, 0.25)
 equal(retryOverlay.shown, false, "pending cast retry cannot revive disabled styling")
 stylingEnabled = true
 
+-- Region replacement starts from the replacement's own native geometry.
+ns.RestoreAll()
+stylingEnabled, categoryMode = true, "active"
+unit, trp3Options = {reaction = 3}, {}
+appearance.namePlacement, appearance.nameSize, appearance.healthBarWidth = "INSIDE", 21, 150
+plateFrame.healthBar, plateFrame.HealthBarsContainer = Region(), Region()
+ns.RefreshAll()
+local retiredBar, retiredContainer = plateFrame.healthBar, plateFrame.HealthBarsContainer
+local replacementBar, replacementContainer = Region(), Region()
+replacementBar:SetWidth(200); replacementBar:SetHeight(30)
+replacementBar:SetStatusBarColor(0.1, 0.2, 0.3)
+replacementContainer:SetWidth(220); replacementContainer:SetHeight(30)
+plateFrame.healthBar, plateFrame.HealthBarsContainer = replacementBar, replacementContainer
+ns.RefreshAll()
+equal(replacementBar.width, 300, "replacement scales its own native width")
+equal(replacementContainer.width, 330, "replacement container scales its own native width")
+equal(retiredBar.width, 140, "retired bar width restored")
+equal(retiredBar.height, 20, "retired bar height restored")
+equal(retiredContainer.width, 140, "retired container width restored")
+ns.RestoreAll()
+equal(replacementBar.width, 200, "replacement native width restored")
+equal(replacementBar.height, 30, "replacement native height restored")
+equal(replacementContainer.width, 220, "replacement container width restored")
+equal(replacementContainer.height, 30, "replacement container height restored")
+equal(replacementBar.barG, 0.2, "replacement native color restored")
+
+-- Container-only replacement must invalidate cached repair before any writes.
+ns.RefreshAll()
+local containerOnly = Region()
+containerOnly:SetWidth(240); containerOnly:SetHeight(40); containerOnly:Hide()
+plateFrame.HealthBarsContainer = containerOnly
+events.scripts.OnUpdate(events, 0.25)
+equal(containerOnly.width, 360, "container-only replacement uses its own width")
+equal(containerOnly.height, 40, "container-only replacement keeps taller native height")
+equal(replacementContainer.width, 220, "retired container restored during reconciliation")
+ns.RestoreAll()
+equal(containerOnly.width, 240, "container-only native width restored")
+equal(containerOnly.shown, false, "container-only native visibility restored")
+
+-- Retired restricted regions stay untouched and are released once access returns.
+ns.RefreshAll()
+local inaccessibleOldBar = plateFrame.healthBar
+local retiredBlocked = true
+inaccessibleOldBar.IsForbidden = function() return retiredBlocked end
+local accessibleNewBar = Region()
+accessibleNewBar:SetWidth(180); accessibleNewBar:SetHeight(25)
+plateFrame.healthBar = accessibleNewBar
+ns.RefreshAll()
+equal(accessibleNewBar.width, 180, "restricted retired bar defers replacement styling")
+retiredBlocked = false
+events.scripts.OnUpdate(events, 0.25)
+equal(accessibleNewBar.width, 270, "replacement styled when retired bar accessible")
+ns.RestoreAll()
+equal(accessibleNewBar.width, 180, "replacement width restores after access retry")
+
 print("Nameplates smoke: passed")
 

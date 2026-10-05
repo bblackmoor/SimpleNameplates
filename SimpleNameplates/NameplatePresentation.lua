@@ -36,6 +36,13 @@ local function ApplyStyle(frame, context)
         assessment = Cap.InspectFrame(frame, context)
         if not assessment.canAccess then return end
     end
+    if frame.SNPOriginalVisibility and (frame.SNPOriginalHealthBar ~= assessment.healthBar
+        or frame.SNPOriginalHealthBarsContainer ~= frame.HealthBarsContainer) then
+        -- Release retired regions before capturing the replacement's baseline.
+        if not Restore.Request(frame, context) then return end
+        assessment = Cap.InspectFrame(frame, context)
+        if not assessment.canAccess then return end
+    end
     local state, _, facts = Classify(unit, context)
     local decision = Resolve(context, facts, state, assessment, ns.GetStylingEnabled(), ns.GetCategoryMode(state))
     if decision.action ~= "style" then Restore.Request(frame, context); return end

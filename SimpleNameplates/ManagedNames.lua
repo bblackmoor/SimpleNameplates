@@ -138,12 +138,12 @@ end
 local function RestoreAllManagedNameSettings()
     if InCombatLockdown and InCombatLockdown() then
         pendingManagedAction = "restore"
-        return
+        return false
     end
     local db = EnsureDB()
     local originals = db.global.managedNameCVarOriginals
     pendingManagedAction = nil
-    if type(originals) ~= "table" then return end
+    if type(originals) ~= "table" then return true end
     applyingManagedNameSettings = true
     for cvar, value in pairs(originals) do
         if SetCVarValue(cvar, value) then
@@ -153,6 +153,7 @@ local function RestoreAllManagedNameSettings()
         end
     end
     applyingManagedNameSettings = false
+    return pendingManagedAction == nil
 end
 
 local function GetHideCritterCompanionNames()
@@ -169,7 +170,7 @@ local function ApplyCritterCompanionNameVisibility()
 end
 
 local function RestoreManagedNameSettings()
-    RestoreAllManagedNameSettings()
+    return RestoreAllManagedNameSettings()
 end
 
 local function ApplyPendingManagedNameSettings()

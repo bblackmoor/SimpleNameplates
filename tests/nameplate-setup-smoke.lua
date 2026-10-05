@@ -184,4 +184,22 @@ ns.CheckNameplateSetup()
 StaticPopupDialogs.SNP_NAMEPLATE_SETUP.OnAccept()
 equal(#writes, 0, "no changes without character backup identity")
 equal(ns.GetStylingEnabled(), false, "unknown character keeps styling suspended")
+-- Setup cannot approve settings whose legacy restoration is still pending.
+ns = Fresh()
+ns.EnsureDB().global.managedNameCVarOriginals.nameplateShowFriendlyNpcs = "0"
+rejected.nameplateShowFriendlyNpcs = "silent"
+equal(ns.CheckNameplateSetup(), false, "legacy restore failure suspends setup")
+equal(ns.GetStylingEnabled(), false, "styling paused until legacy originals restored")
+equal(shown, nil, "no premature review of transient settings")
+ns.ApplyManagedNameSettings()
+rejected.nameplateShowFriendlyNpcs = nil
+ns.ApplyPendingManagedNameSettings()
+ns.RetryNameplateSetup()
+equal(cvars.nameplateShowFriendlyNpcs, "0", "legacy retry releases original")
+equal(ns.GetStylingEnabled(), false, "styling still paused for compatibility consent")
+equal(shown.key, "SNP_NAMEPLATE_SETUP", "review appears after restoration finishes")
+StaticPopupDialogs.SNP_NAMEPLATE_SETUP.OnAccept()
+equal(ns.GetStylingEnabled(), true, "fresh consent resumes styling")
+equal(cvars.nameplateShowFriendlyNpcs, "1", "consent reapplies required NPC plates")
+
 print("Nameplate setup smoke: passed")
