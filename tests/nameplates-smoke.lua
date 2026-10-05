@@ -618,6 +618,32 @@ ns.DebugUnit("nameplate1")
 equal(#frames, frameCount, "diagnostic creates no frame")
 equal(#hooks, hookCount, "diagnostic installs no hook")
 equal(plateFrame.SNPInterruptibleHighlight, nil, "diagnostic creates no overlay")
+-- Diagnose the actual current icon's registered hook without installing one.
+local diagnosticIcon = Region()
+plateFrame.castBar.Icon = diagnosticIcon
+plateFrame.SNPInterruptibleHighlight = {owner = plateFrame, castBar = plateFrame.castBar, frame = Region()}
+ns.CastHighlight.EnsureInterruptibleHighlight(plateFrame)
+assert(plateFrame.SNPInterruptibleHighlight.hookedIcons[diagnosticIcon], "diagnostic fixture installs real cast hook")
+local diagnosticFrames, diagnosticHooks = #frames, #hooks
+output = {}
+ns.DebugUnit("nameplate1")
+assert(table.concat(output, "\n"):find("hook installed yes", 1, true), "registered current icon hook diagnosed")
+plateFrame.castBar.Icon = Region()
+output = {}
+ns.DebugUnit("nameplate1")
+assert(table.concat(output, "\n"):find("hook installed no", 1, true), "replacement unhooked icon diagnosed")
+plateFrame.castBar.Icon = diagnosticIcon
+output = {}
+ns.DebugUnit("nameplate1")
+assert(table.concat(output, "\n"):find("hook installed yes", 1, true), "returning registered icon diagnosed")
+plateFrame.castBar.Icon = nil
+output = {}
+ns.DebugUnit("nameplate1")
+assert(table.concat(output, "\n"):find("cast icon found no; hook installed no", 1, true), "missing current icon diagnosed")
+equal(#frames, diagnosticFrames, "hook diagnosis creates no frames")
+equal(#hooks, diagnosticHooks, "hook diagnosis installs no hooks")
+plateFrame.SNPInterruptibleHighlight = nil
+
 output = {}
 categoryMode = "inactive"
 ns.DebugUnit("nameplate1")

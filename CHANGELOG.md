@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.180
+
+* Fixes /snp debug cast-hook reporting to read the current icon's entry in the registered-hook table instead of the obsolete single-icon field. Replacement and missing icons report no hook until registered; returning hooked icons report correctly. Diagnostics remain read-only.
+* Adds real-hook, replacement, returning-icon and missing-icon diagnostic regressions; updates documentation. All twenty smoke suites and whitespace checks pass. Native WoW verification remains pending.
+
 ## 1.0.179
 
 * Coordinates native health labels, addon threat and inside-bar names. Threat stays at the right edge; displayed health labels form a chain to its left, and names reserve the whole group. Region anchors track changing text widths without inspecting restricted health values. Unknown health visibility conservatively reserves space.

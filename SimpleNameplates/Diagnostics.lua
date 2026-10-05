@@ -208,11 +208,12 @@ local function DebugPresentation(assessment, context)
     local icon = Capabilities.SafeField(castBar, "Icon", context)
     local highlight = Capabilities.SafeField(assessment.frame, "SNPInterruptibleHighlight", context)
     local overlay = Capabilities.SafeField(highlight, "frame", context)
-    local hookedIcon = Capabilities.SafeField(highlight, "hookedIcon", context)
+    local hookedIcons = Capabilities.SafeField(highlight, "hookedIcons", context)
+    local hookInstalled = icon and AccessibleBoolean(Capabilities.SafeField(hookedIcons, icon, context)) == true
     print("  Interruptible highlight: enabled "
         .. (GetInterruptibleHighlightEnabled() and "yes" or "no")
         .. "; cast icon found " .. (icon and "yes" or "no")
-        .. "; hook installed " .. (icon and hookedIcon == icon and "yes" or "no")
+        .. "; hook installed " .. (hookInstalled and "yes" or "no")
         .. "; highlight shown " .. DebugRegionValue(overlay, "IsShown", "boolean", context))
 end
 
