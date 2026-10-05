@@ -67,18 +67,18 @@ local function CreateAboutPanel()
     AddDescription(content, layout,
         "Customizes accessible Blizzard nameplates with priority colors, text styling and selectable interruptible-cast highlights.")
 
-    AddDescription(content, layout, "Version " .. VERSION .. "\nAuthor: Brandon Blackmoor\nCategory: Unit Frames\nLicense: GPL-3.0")
+    AddDescription(content, layout, "Version: " .. VERSION .. "\nAuthor: Brandon Blackmoor\nCategory: Unit Frames\nLicense: GPL-3.0")
 
-    local sourceRow = CreateFrame("Frame", nil, content)
-    sourceRow.SNPLayoutFullWidth = true
-    layout:Add(sourceRow, 24, 24, 8)
-    local sourceLabel = sourceRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    sourceLabel:SetPoint("LEFT")
-    sourceLabel:SetText("Source    ")
-    local sourceLink = W.CreateLink(sourceRow, SOURCE_URL, function()
+    AddDescription(content, layout, "Source:")
+    local sourceLink = W.CreateLink(content, SOURCE_URL, function()
         StaticPopup_Show("SNP_COPY_SOURCE", nil, nil, SOURCE_URL)
     end)
-    sourceLink:SetPoint("LEFT", sourceLabel, "RIGHT", 0, 0)
+    local sourceFrame = sourceLink:GetFrame()
+    sourceFrame.SNPLayoutFullWidth = true
+    sourceFrame.text:SetWordWrap(true)
+    sourceFrame.text:SetNonSpaceWrap(true)
+    sourceFrame.LayoutText = sourceFrame.text
+    layout:Add(sourceFrame, 24, 16, 8, true)
 
     U.AddSection(content, layout, "Commands")
     AddDescription(content, layout,
@@ -88,6 +88,7 @@ local function CreateAboutPanel()
         "/snp trp3 — TRP3 settings\n" ..
         "/snp debug — Explain the current target\n" ..
         "/snp debug mouseover — Inspect without targeting\n" ..
+        "/snp perf [start|stop|report] — Record or report performance\n" ..
         "/snp about — This page")
     U.AddSection(content, layout, "Presentation limits")
     AddDescription(content, layout,
@@ -113,4 +114,5 @@ local function CreateAboutPanel()
     return panel
 end
 ns.SettingsPanels.About = CreateAboutPanel
+
 

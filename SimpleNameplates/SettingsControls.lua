@@ -28,8 +28,13 @@ local function CreateScrollablePanel(name)
                 item.region:SetWidth(math.max(1, content:GetWidth() - item.x - 24))
             end
             if item.autoHeight then
-                item.region:SetHeight(0) -- Measure wrapped text without its previous height cap.
-                height = math.max(16, item.region:GetStringHeight() + 2)
+                local text = item.region.LayoutText or item.region
+                if item.region.LayoutText then
+                    text:SetWidth(item.region:GetWidth())
+                    text:SetJustifyH("LEFT")
+                end
+                text:SetHeight(0) -- Measure wrapped text without its previous height cap.
+                height = math.max(16, text:GetStringHeight() + 2)
             end
             if item.region then
                 item.region:SetHeight(height)
@@ -94,7 +99,7 @@ end
 local function AddInfoLink(parent, anchor, popupKey)
     local link = CreateFrame("Button", nil, parent)
     link:SetSize(24, 26)
-    link:SetPoint("LEFT", anchor, "RIGHT", 10, 0)
+    link:SetPoint("LEFT", anchor, "RIGHT", 12, 0)
     local circle = link:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     circle:SetPoint("CENTER")
     circle:SetText("O")
@@ -189,3 +194,4 @@ ns.SettingsUI = {
     RefreshNameplates = RefreshNameplates,
 }
 ns.SettingsPanels = {}
+

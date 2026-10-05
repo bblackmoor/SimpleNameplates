@@ -248,3 +248,51 @@ assert(ns.nameplateSetupPending and not styling.MyObject:GetValue(), "combat-def
 combat = false; ns.RetryNameplateSetup()
 assert(ns.GetStylingEnabled() and styling.MyObject:GetValue() and activationStatus:GetText() == "Active", "deferred completion refreshes switch/status")
 print("Profiles, TRP3 and About integration smoke: passed")
+
+
+-- About paragraphs and the copy-source link reflow when the viewport narrows.
+do
+    local linkFrame = Button(ns.SOURCE_URL)
+    assert(linkFrame.text.wordWrap and linkFrame.text.nonSpaceWrap, "source URLs wrap without spaces")
+    local content = linkFrame:GetParent()
+    local scroll = content:GetParent()
+    local panel = scroll:GetParent()
+    local paragraphs = {}
+    for _, object in ipairs(ui.objects) do
+        if object.kind == "FontString" and object:GetParent() == content then
+            local text = object:GetText() or ""
+            if text:find("Version:", 1, true) then
+                assert(text:find("Author: Brandon Blackmoor", 1, true))
+                assert(text:find("Category:", 1, true) and text:find("License: GPL-3.0", 1, true))
+            end
+            if object.SNPLayoutFullWidth then
+                paragraphs[#paragraphs + 1] = object
+                object.GetStringHeight = function(self)
+                    assert(self:GetHeight() == 0, "clear previous text height before measuring")
+                    return math.ceil(#(self:GetText() or "") * 6 / self:GetWidth()) * 12
+                end
+            end
+        end
+    end
+    linkFrame.text.GetStringHeight = function(self)
+        assert(self:GetHeight() == 0)
+        return math.ceil(#self:GetText() * 6 / self:GetWidth()) * 12
+    end
+    assert(#paragraphs >= 4, "About uses responsive paragraphs")
+    scroll:SetSize(640, 180)
+    panel:GetScript("OnShow")(panel)
+    local wideHeight = content:GetHeight()
+    scroll:SetSize(240, 180)
+    scroll:GetScript("OnSizeChanged")(scroll, 240, 180)
+    assert(content:GetHeight() > wideHeight, "narrow About expands scroll content")
+    assert(linkFrame:GetWidth() == content:GetWidth() - 48)
+    assert(linkFrame:GetHeight() > 16, "source link wraps with its clickable area")
+    scroll:SetSize(640, 180)
+    panel:GetScript("OnShow")(panel)
+    assert(content:GetHeight() == wideHeight, "About shrinks again without stale height")
+end
+local perfFound = false
+for _, object in ipairs(ui.objects) do
+    if object.kind == "FontString" and (object:GetText() or ""):find("/snp perf [start|stop|report]", 1, true) then perfFound = true end
+end
+assert(perfFound, "About documents profiling")

@@ -104,7 +104,8 @@ function methods:IsEnabled() return self.enabled ~= false end
 function methods:IsShown() return self.shown ~= false end
 function methods:GetFrameLevel() return 1 end
 function methods:SetIndentedWordWrap() end
-function methods:SetWordWrap() end
+function methods:SetWordWrap(value) self.wordWrap = value end
+function methods:SetNonSpaceWrap(value) self.nonSpaceWrap = value end
 function methods:GetPushedTexture() return self.normalTexture end
 function methods:GetHighlightTexture() return self.normalTexture end
 function methods:GetDisabledTexture() return self.normalTexture end
@@ -178,3 +179,4 @@ end
 PixelUtil={SetSize=function(o,...)o:SetSize(...)end,SetPoint=function(o,...)o:SetPoint(...)end,SetWidth=function(o,...)o:SetWidth(...)end,SetHeight=function(o,...)o:SetHeight(...)end,GetPixelToUIUnitFactor=function()return 1 end}
 
 return {objects = objects}
+
