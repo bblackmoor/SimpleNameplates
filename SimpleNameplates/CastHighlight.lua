@@ -9,6 +9,7 @@ local GetHealthBar, GetCastBar = ns.NameplateFrames.GetHealthBar, ns.NameplateFr
 
 local Glow = LibStub and LibStub("LibCustomGlow-1.0", true)
 local GLOW_KEY = "SNPInterruptible"
+local pendingFrames = setmetatable({}, {__mode = "k"})
 
 local function StopRenderer(highlight)
     local host, style = highlight.glowHost, highlight.glowStyle
@@ -74,7 +75,10 @@ local function InstallInterruptibleHighlightHook(highlight)
 
     local overlay = highlight.frame
     local ok = pcall(hooksecurefunc, icon, "SetShown", function(_, shown)
-        if not CanAccessFrame(highlight.owner, GetContext()) then return end
+        if not CanAccessFrame(highlight.owner, GetContext()) then
+            pendingFrames[highlight.owner] = true
+            return
+        end
         if highlight.owner.SNPInterruptibleHighlight ~= highlight then overlay:Hide(); return end
         -- Secure hooks cannot be removed. A replaced icon must no longer drive
         -- the current bar, even before the next addon refresh notices it.
@@ -133,8 +137,9 @@ end
 
 local function UpdateInterruptibleHighlight(frame, context, decision)
     context = context or GetContext()
-    if not CanAccessFrame(frame, context) then return end
-    if not decision or not decision.showCastBar or not GetInterruptibleHighlightEnabled() then
+    if not CanAccessFrame(frame, context) then pendingFrames[frame] = true; return end
+    pendingFrames[frame] = nil
+    if not GetStylingEnabled() or not decision or not decision.showCastBar or not GetInterruptibleHighlightEnabled() then
         if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
         return
     end
@@ -149,8 +154,18 @@ local function UpdateInterruptibleHighlight(frame, context, decision)
     if ns.AccessibleBoolean(highlight.frame:IsShown()) == true then ApplyRenderer(highlight) end
 end
 
+local function RetryPending(context)
+    for frame in pairs(pendingFrames) do
+        if CanAccessFrame(frame, context) then
+            -- Re-read current state; a missed callback may belong to a removed
+            -- or recycled plate, a retired icon, or a now-disabled category.
+            UpdateInterruptibleHighlight(frame, context, frame.SNPPresentation)
+        end
+    end
+end
 
 ns.CastHighlight = {
     EnsureInterruptibleHighlight = EnsureInterruptibleHighlight,
     UpdateInterruptibleHighlight = UpdateInterruptibleHighlight,
+    RetryPending = RetryPending,
 }

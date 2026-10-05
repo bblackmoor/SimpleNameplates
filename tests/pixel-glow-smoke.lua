@@ -90,7 +90,8 @@ local ns = {}
 assert(loadfile("SimpleNameplates/Core.lua"))("SimpleNameplates", ns)
 local style, enabled, color = "PIXEL", true, {0,1,1}
 ns.WorldContext = {Get = function() return {} end}
-ns.PresentationCapabilities = {CanAccessFrame = function() return true end}
+local blocked = false
+ns.PresentationCapabilities = {CanAccessFrame = function() return not blocked end}
 ns.GetStylingEnabled = function() return enabled end
 ns.GetInterruptibleHighlightEnabled = function() return enabled and style ~= "NONE" end
 ns.GetInterruptibleCastStyle = function() return style end
@@ -183,4 +184,27 @@ for _, effect in ipairs(effects) do
 end
 enabled = false; Update()
 assert(not h.glowStyle and not h.glowHost[key], "disable stops effect")
+-- Deferred callbacks recover the actual library effect, not stale arguments.
+enabled, style = true, "PIXEL"
+frame.castBar.GetSize = function() return 140, 20 end
+Update()
+assert(h.glowHost[key], "effect starts with readable geometry")
+blocked = true
+frame.castBar.Icon:SetShown(false)
+ns.CastHighlight.RetryPending({})
+assert(h.glowHost[key], "blocked retries defer native access")
+blocked = false
+ns.CastHighlight.RetryPending({})
+assert(not h.glowHost[key] and not h.frame:IsShown(), "retry stops stale library glow")
+blocked = true
+frame.castBar.Icon:SetShown(true)
+blocked = false
+ns.CastHighlight.RetryPending({})
+assert(h.glowHost[key], "retry starts current interruptible glow")
+blocked = true
+frame.castBar.Icon:SetShown(false)
+enabled = false
+blocked = false
+ns.CastHighlight.RetryPending({})
+assert(not h.glowHost[key], "deferred retry stops effects after disable")
 print("Cast glow integration smoke: passed")

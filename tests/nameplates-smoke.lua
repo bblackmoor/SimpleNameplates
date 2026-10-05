@@ -63,7 +63,11 @@ local ns = {
     EnsureDB = function() count("db") end,
     AccessibleNumber = function(value) return type(value) == "number" and value or nil end,
     AccessibleBoolean = function(value) if type(value) == "boolean" then return value end end,
-    AccessibleValue = function(value) return value end,
+    AccessibleValue = function(value)
+        if issecretvalue and issecretvalue(value) then return nil end
+        if canaccessvalue and not canaccessvalue(value) then return nil end
+        return value
+    end,
     GetStylingEnabled = function() return stylingEnabled end,
     GetCategoryMode = function() return categoryMode end,
     GetAppearanceSetting = function(key) return appearance[key] end,
@@ -1126,6 +1130,73 @@ for _, disableMaster in ipairs({false, true}) do
     end
 end
 stylingEnabled, categoryMode = true, "active"
+
+-- Reconciliation repairs visibility and readable text without full restyling.
+ns.RestoreAll()
+unit = {reaction = 3}
+trp3Options = {useRoleplayingName = true}
+ns.TRP3 = {GetDisplayInfo = function() return {roleplayingName = "Expected RP name"} end}
+for _, placement in ipairs({"ABOVE", "INSIDE"}) do
+    appearance.namePlacement = placement
+    ns.RefreshAll()
+    plateFrame.name:Hide()
+    events.scripts.OnUpdate(events, 0.25)
+    equal(plateFrame.name.shown, true, "native name visibility repaired")
+    plateFrame.name:SetText("Overwritten native name")
+    events.scripts.OnUpdate(events, 0.25)
+    equal(plateFrame.name.text, "Expected RP name", "native text-only drift repaired")
+    if placement == "INSIDE" then
+        plateFrame.SNPInsideName:SetText("Overwritten inside name")
+        events.scripts.OnUpdate(events, 0.25)
+        equal(plateFrame.SNPInsideName.text, "Expected RP name", "inside text-only drift repaired")
+    end
+end
+local secretName = setmetatable({}, {__tostring = function() error("secret name inspected") end})
+local previousSecretCheck = issecretvalue
+issecretvalue = function(value) return rawequal(value, secretName) end
+plateFrame.name:SetText(secretName)
+plateFrame.SNPInsideName:SetText(secretName)
+assert(not ns.NameplateText.CachedNameHasDrifted(plateFrame), "restricted text skipped")
+plateFrame.SNPNameStyle.text = secretName
+plateFrame.name:SetText("Readable replacement")
+plateFrame.SNPInsideName:SetText("Readable replacement")
+assert(not ns.NameplateText.CachedNameHasDrifted(plateFrame), "restricted expected text skipped")
+issecretvalue = previousSecretCheck
+ns.RefreshAll()
+
+-- Missed cast-icon transitions are retried after region access returns.
+ns.RestoreAll()
+plateFrame.castBar = Region()
+plateFrame.castBar.Icon = Region()
+local retryOverlay = Region()
+plateFrame.SNPInterruptibleHighlight = {owner = plateFrame, castBar = plateFrame.castBar, frame = retryOverlay}
+highlightEnabled = true
+local iconBlocked = false
+plateFrame.castBar.Icon.IsForbidden = function() return iconBlocked end
+ns.RefreshAll()
+local retryIconHook
+for _, hook in ipairs(hooks) do
+    if hook.name == plateFrame.castBar.Icon then retryIconHook = hook.callback end
+end
+assert(retryIconHook)
+for _, shown in ipairs({false, true}) do
+    iconBlocked = true
+    plateFrame.castBar.Icon:SetShown(shown)
+    retryIconHook(plateFrame.castBar.Icon, shown)
+    events.scripts.OnUpdate(events, 0.25)
+    equal(retryOverlay.shown, not shown, "restricted cast callback defers writes")
+    iconBlocked = false
+    events.scripts.OnUpdate(events, 0.25)
+    equal(retryOverlay.shown, shown, "cast retry reads current icon visibility")
+end
+iconBlocked = true
+retryIconHook(plateFrame.castBar.Icon, false)
+stylingEnabled = false
+ns.RestoreAll()
+iconBlocked = false
+events.scripts.OnUpdate(events, 0.25)
+equal(retryOverlay.shown, false, "pending cast retry cannot revive disabled styling")
+stylingEnabled = true
 
 print("Nameplates smoke: passed")
 

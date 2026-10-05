@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.174
+
+* Repairs hidden native names and readable text-only drift in both above-bar and inside-bar layouts. Compares only accessible strings; restricted current or expected names remain uninspected and are forwarded only to the text API.
+* Queues cast-highlight callbacks missed during frame/region access restrictions, then retries current visibility and presentation once access returns. Retries also run while styling is disabled and cannot revive disabled or restored effects.
+* Adds runtime regressions and real LibCustomGlow retry coverage, updates documentation, and passes all twenty smoke suites plus whitespace checks. Native WoW verification remains pending.
+
 ## 1.0.173
 
 * Preserves current native cast/channel visibility when styling is disabled or a category becomes Inactive, rather than restoring a stale idle/casting snapshot.

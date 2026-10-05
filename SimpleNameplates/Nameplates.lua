@@ -194,8 +194,9 @@ events:SetScript("OnEvent", HandleEvent)
 
 
 -- Blizzard sometimes changes name text, font, or color without calling either
--- compact unit-frame update path. Compare safe cached properties four times per
--- second and write only when something has drifted. Avoid point inspection on
+-- compact unit-frame update path. Compare readable text and safe cached
+-- properties four times per second and write only when something has drifted.
+-- Avoid point inspection on
 -- Blizzard frames; hooks handle placement changes. Classification, TRP3
 -- profile access, threat checks, and health-bar styling remain event-driven.
 local function ReconcileNames(context)
@@ -220,6 +221,7 @@ local function RuntimeUpdate(_, elapsed)
     if reconcile then
         reconcileElapsed = 0
         if Restoration.Retry(context) and GetStylingEnabled() then QueueRefreshAll() end
+        ns.CastHighlight.RetryPending(context)
         for plate in pairs(pendingPlates) do
             if not GetStylingEnabled() then
                 if Restoration.RequestPlate(plate, context) then pendingPlates[plate] = nil end
@@ -250,4 +252,3 @@ ns.QueueNameplateRefresh = QueueRefreshAll
 ns.RefreshAll = RefreshAll
 ns.RestoreAll = RestoreAll
 ns.StateForUnit = StateForUnit
-

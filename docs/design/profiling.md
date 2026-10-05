@@ -30,8 +30,8 @@ Rows appear in descending total elapsed time, with call count, total millisecond
 | Classification | Entity-fact collection and priority classification together |
 | NPC title lookup | Title resolution, including cache and tooltip paths when used |
 | Text repair | Cached-name repair attempts, including attempts that return without repairing |
-| Runtime update | The per-frame callback: context access, queued refreshes and periodic retry/reconciliation work |
-| Reconciliation | The visible-plate scan for pending title visibility and cached-name drift, normally every 0.25 seconds while styling is enabled |
+| Runtime update | The per-frame callback: context access, queued refreshes and periodic restoration, deferred cast-highlight retry and reconciliation work |
+| Reconciliation | The visible-plate scan for pending title visibility and cached-name drift (including visibility and readable text), normally every 0.25 seconds while styling is enabled |
 
 These are inclusive elapsed timings, not exclusive CPU accounting. For example, Full styling can include Classification, which can include NPC title lookup. Runtime update can include Reconciliation and Text repair. Do not add the rows together or interpret their sum as total addon CPU. The elapsed session duration measures wall time, not time spent executing addon code.
 

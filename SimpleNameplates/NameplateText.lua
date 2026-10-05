@@ -346,6 +346,13 @@ local function CacheIsCurrent(frame, expected, context)
     return true
 end
 
+local function ReadableTextHasDrifted(region, expectedText, context)
+    local actual = ns.PresentationCapabilities.ReadRegion(region, "GetText", context)
+    local expected = AccessibleValue(expectedText)
+    -- Compare only readable strings. Restricted names still pass directly to SetText.
+    return type(actual) == "string" and type(expected) == "string" and actual ~= expected
+end
+
 local function CachedNameHasDrifted(frame, context)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return false end
@@ -360,8 +367,9 @@ local function CachedNameHasDrifted(frame, context)
         end
         return false
     end
-    -- FontString text can be a secret string in Midnight. Never read or compare
-    -- it here; the secure Blizzard name-update hook and unit events repair text.
+    local shown = ns.PresentationCapabilities.ReadRegion(name, "IsShown", context)
+    if AccessibleBoolean(shown) == false then return true end
+    if ReadableTextHasDrifted(name, expected.text, context) then return true end
     local font, size, flags = name:GetFont()
     font, size, flags = AccessibleValue(font), AccessibleNumber(size), AccessibleValue(flags)
     if font == nil or size == nil or flags == nil then return false end
@@ -384,6 +392,7 @@ local function CachedNameHasDrifted(frame, context)
         if not insideName or AccessibleBoolean(insideName:IsShown()) ~= true or not NearlyEqual(name:GetAlpha(), 0) then
             return true
         end
+        if ReadableTextHasDrifted(insideName, expected.text, context) then return true end
     elseif not NearlyEqual(name:GetAlpha(), 1) then
         return true
     end
