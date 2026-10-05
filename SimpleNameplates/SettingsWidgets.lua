@@ -275,7 +275,7 @@ function Widgets.CreateLink(parent, text, onClick)
     return handle
 end
 
-function Widgets.CreateColorPicker(parent, onChanged)
+function Widgets.CreateColorPicker(parent, onChanged, getColor)
     local widget = Framework():CreateColorPickButton(Widgets.GetFrame(parent),
         nil, nil, function() end, nil, swatchTemplate)
     widget.widget:SetSize(26, 26)
@@ -297,7 +297,10 @@ function Widgets.CreateColorPicker(parent, onChanged)
     widget:SetClickFunction(function()
         if not handle.enabled then return end
         addon.SettingsUI.OpenColorEditor(handle, function()
-            local r, g, b = handle:GetColor()
+            local r, g, b
+            if getColor then r, g, b = getColor()
+            else r, g, b = handle:GetColor() end
+            handle:SetColor(r, g, b) -- Refresh stale display RGB without notifying setters.
             return {r = r, g = g, b = b}
         end, function(color)
             handle:SetColor(color.r, color.g, color.b)

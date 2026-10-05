@@ -28,7 +28,7 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
         setColor(r, g, b)
         RefreshContext(context)
         RefreshNameplates()
-    end)
+    end, getColor)
     swatch:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
     context.refreshers[#context.refreshers + 1] = function() swatch:SetColor(getColor()) end
     local frame = swatch:GetFrame()

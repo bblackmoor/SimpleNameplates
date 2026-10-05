@@ -242,3 +242,25 @@ saved = Snapshot(SimpleNameplatesDB)
 edit.swatchFunc(); edit.cancelFunc()
 assert(Snapshot(SimpleNameplatesDB) == saved, "cancel retires replaced-target callbacks permanently")
 print("PASS direct database mutation and picker target identity")
+
+-- Picker originals come from saved RGB, even if the visible swatch is stale.
+for _, case in ipairs({
+    {attacking, function() ns.SetPriorityColor("attacking", 0.11, 0.22, 0.33) end,
+        function() return ns.PriorityColorForState("attacking") end},
+    {cast, function() ns.SetEffectColor("interruptible", 0.11, 0.22, 0.33) end,
+        function() return ns.EffectColor("interruptible") end},
+}) do
+    local swatch, setSaved, getSaved = case[1], case[2], case[3]
+    swatch.MyObject:SetColor(0.8, 0.7, 0.6, 1)
+    setSaved() -- Intentionally do not refresh the page.
+    local before = refreshes
+    Click(swatch)
+    local info = ColorPickerFrame.info
+    RGBEqual({info.r, info.g, info.b}, 0.11, 0.22, 0.33)
+    RGBEqual(SwatchRGB(swatch), 0.11, 0.22, 0.33)
+    assert(refreshes == before, "opening refreshes the swatch without applying settings")
+    info.swatchFunc(); RGBEqual({getSaved()}, 0.2, 0.3, 0.4)
+    info.cancelFunc(); RGBEqual({getSaved()}, 0.11, 0.22, 0.33)
+    ColorPickerFrame:Hide() -- Simulate native Cancel hiding after its callback.
+end
+print("PASS stale swatches preserve current saved priority and effect RGB")
