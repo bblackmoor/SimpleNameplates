@@ -561,5 +561,35 @@ do
     StaticPopupDialogs, StaticPopup_Show = savedDialogs, savedPopup
 end
 
+-- Preserve both UnitFullName results when GUID-based identity is unavailable.
+do
+    local savedFullName = UnitFullName
+    local fallback = fresh()
+    character = nil
+    local realm = "RealmA"
+    UnitFullName = function() return "SameName", realm end
+    assert(fallback.CreateProfile("Realm A profile"))
+    equal(fallback.EnsureDB().profileKeys["SameName-RealmA"], "Realm A profile", "fallback retains realm")
+    realm = "RealmB"
+    equal(fallback.GetActiveProfileName(), "Default", "same name on another realm has independent selection")
+    assert(fallback.CreateProfile("Realm B profile"))
+    realm = "RealmA"
+    equal(fallback.GetActiveProfileName(), "Realm A profile", "first realm selection retained")
+    realm = "RealmB"
+    equal(fallback.GetActiveProfileName(), "Realm B profile", "second realm selection retained")
+    realm = nil
+    equal(fallback.GetActiveProfileName(), "Default", "missing realm remains a separate fallback")
+    equal(fallback.EnsureDB().profileKeys["SameName-Unknown"], "Default", "missing realm fallback preserved")
+    character = "Player-Guid"
+    equal(fallback.GetActiveProfileName(), "Default", "available GUID takes precedence")
+    assert(fallback.CreateProfile("GUID profile"))
+    realm = "RealmA"
+    equal(fallback.GetActiveProfileName(), "GUID profile", "GUID identity independent of realm fallback")
+    UnitFullName = nil
+    character = nil
+    equal(fallback.GetActiveProfileName(), "Default", "missing full-name API remains safe")
+    UnitFullName = savedFullName
+end
+
 print("Core behavior smoke: passed")
 

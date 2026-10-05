@@ -149,7 +149,8 @@ end
 local function CharacterKey()
     local guid = UnitGUID and UnitGUID("player")
     if type(guid) == "string" and guid ~= "" then return guid end
-    local name, realm = UnitFullName and UnitFullName("player")
+    local name, realm
+    if UnitFullName then name, realm = UnitFullName("player") end
     if type(name) == "string" and name ~= "" then
         return name .. "-" .. ((type(realm) == "string" and realm ~= "") and realm or "Unknown")
     end

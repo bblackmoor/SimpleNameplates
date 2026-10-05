@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.181
+
+* Preserves both name and realm from UnitFullName when the player GUID is unavailable. Same-named characters on different realms retain independent fallback profile selections; GUID identity still takes precedence.
+* Adds cross-realm, missing-realm, missing-API and GUID-precedence regressions. All twenty smoke suites and whitespace checks pass.
+
 ## 1.0.180
 
 * Fixes /snp debug cast-hook reporting to read the current icon's entry in the registered-hook table instead of the obsolete single-icon field. Replacement and missing icons report no hook until registered; returning hooked icons report correctly. Diagnostics remain read-only.
