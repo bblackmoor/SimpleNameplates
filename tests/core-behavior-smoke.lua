@@ -501,5 +501,27 @@ equal(table.concat(modules, ","),
     "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,Profiler.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsColorPicker.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfileDialogs.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
     "TOC module order")
 
+-- Removing the optional bundle persists until an explicit bundled restore.
+for _, action in ipairs({"delete", "rename"}) do
+    local lifecycle = fresh()
+    lifecycle.SetActiveProfileName("High Contrast")
+    lifecycle.SetAppearanceSetting("nameSize", 29)
+    if action == "delete" then lifecycle.DeleteActiveProfile()
+    else lifecycle.RenameActiveProfile("My contrast") end
+    equal(lifecycle.GetProfile("High Contrast"), nil, "optional bundle removed")
+    lifecycle = loadCore()
+    equal(lifecycle.GetProfile("High Contrast"), nil, "optional bundle removal survives reload")
+    if action == "rename" then
+        equal(lifecycle.GetActiveProfileName(), "My contrast", "renamed bundle remains selected")
+        equal(lifecycle.GetAppearanceSetting("nameSize"), 29, "renamed bundle values survive")
+    end
+    lifecycle.RestoreBundledProfiles()
+    lifecycle = loadCore()
+    assert(lifecycle.GetProfile("High Contrast"), "explicit restore recreates optional bundle")
+    if action == "rename" then
+        equal(lifecycle.GetAppearanceSetting("nameSize"), 29, "restoring bundles preserves renamed custom profile")
+    end
+end
+
 print("Core behavior smoke: passed")
 

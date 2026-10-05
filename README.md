@@ -69,7 +69,7 @@ Open **Options → AddOns → Simple Nameplates → Appearance**, or type `/snp`
 The six categories are evaluated from top to bottom. The first matching category wins. Every category has an Active / Inactive thumb switch; category hiding is not available:
 
 * **Active** applies its Priority Color and Simple Nameplates styling, including threat percentage when WoW supplies a displayable value.
-* **Inactive** leaves Blizzard's display unchanged for that category. Restoration of previously styled restricted frames is retried when access returns, including while styling is disabled.
+* **Inactive** leaves Blizzard's display unchanged for that category. Restoration of previously styled restricted frames is retried when access returns, including while styling is disabled. Restoration uses the current WoW unit name and preserves Blizzard's current cast/channel visibility.
 
 ## Appearance Profiles and Settings
 
@@ -87,7 +87,7 @@ Appearance and Colors each have a compact Selected profile control; management a
 
 Profiles are shared account-wide, while each character remembers its active profile. **Create** starts with factory-default appearance settings; **Copy** duplicates the complete active profile. Profiles can be renamed and deleted, except **Default**, which is the permanent fallback. Deleting a profile moves characters assigned to it back to Default.
 
-The editable bundled profiles are **Default** and **High Contrast**. High Contrast uses magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, cyan `#00FFFF`, blue `#0066FF`, and white `#FFFFFF` for Priority Colors 1–6; and green `#00FF00` for interruptible casts. **Restore bundled profiles** resets both bundles and recreates High Contrast if it was deleted or renamed. Custom profiles are left untouched.
+The editable bundled profiles are **Default** and **High Contrast**. High Contrast uses magenta `#FF00FF`, orange `#FF6600`, yellow `#FFFF00`, cyan `#00FFFF`, blue `#0066FF`, and white `#FFFFFF` for Priority Colors 1–6; and green `#00FF00` for interruptible casts. Deleting or renaming High Contrast persists across reloads. **Restore bundled profiles** resets both bundles and recreates High Contrast if it was deleted or renamed. Custom profiles are left untouched.
 
 Every ordinary Active plate uses its available health bar, in and out of combat, with its priority color. Names, threat percentages and native health labels on these plates remain white; entities without a supported health bar use a colored floating name. Inactive categories retain Blizzard presentation, and widget-only plates preserve their widgets while suppressing actor text. Unknown player combat state no longer changes this layout.
 

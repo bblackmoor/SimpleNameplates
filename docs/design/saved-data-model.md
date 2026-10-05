@@ -22,6 +22,7 @@ SimpleNameplatesDB = {
     schemaVersion = 2,
     global = { categoryModes = { ... }, trp3 = { ... },
                stylingEnabled = true, hideCritterCompanionNames = false,
+               highContrastRemoved = true, -- Optional; only after removal of the bundle.
                managedNameCVarOriginals = { ... },
                nameplateSetupOriginals = { ["Player-GUID"] = { ... } } },
     profiles = {
@@ -63,7 +64,7 @@ Do not confuse the six editable Priority Colors with fixed Blizzard-controlled l
 
 ## Bundled Profile rules
 
-Default and High Contrast are editable account-wide Profiles. Default always exists and can be restored but cannot be renamed or deleted. High Contrast can be edited and restored or recreated, and the current lifecycle permits renaming and deleting it. The Restore Bundled Profiles action restores both factory definitions. Deleting a selected Profile reassigns every affected character to Default. Creating a Profile starts with Default factory values; Copy duplicates the active Profile. Profile changes refresh visible nameplates.
+Default and High Contrast are editable account-wide Profiles. Default always exists and can be restored but cannot be renamed or deleted. High Contrast can be edited and restored or recreated, and the current lifecycle permits renaming and deleting it. A validated optional `global.highContrastRemoved` marker preserves deletion or renaming of High Contrast across reloads. Fresh databases still receive both bundles. Recreating High Contrast or restoring bundled profiles clears the marker. The Restore Bundled Profiles action restores both factory definitions. Deleting a selected Profile reassigns every affected character to Default. Creating a Profile starts with Default factory values; Copy duplicates the active Profile. Profile changes refresh visible nameplates.
 
 ## CVar safety and compatibility
 

@@ -117,7 +117,11 @@ assert(ns.GetActiveProfileName()=="Default" and ns.EnsureDB().profileKeys["Playe
 assert(not rename:IsEnabled() and not delete:IsEnabled())
 Choose("High Contrast"); Click(delete); StaticPopupDialogs[popup.key].OnAccept(nil, popup.data)
 ns.SetAppearanceSetting("nameSize", 32); ns.SetTRP3Enabled(true)
-local globals=Snapshot(ns.EnsureDB().global)
+assert(ns.EnsureDB().global.highContrastRemoved == true, "deleting optional bundle records removal")
+local expectedGlobals = {}
+for key, value in pairs(ns.EnsureDB().global) do expectedGlobals[key] = value end
+expectedGlobals.highContrastRemoved = nil -- Explicit restore clears only the lifecycle marker.
+local globals=Snapshot(expectedGlobals)
 local custom=Snapshot(ns.EnsureDB().profiles.Custom)
 Click(Button("Restore bundled profiles"))
 assert(ns.GetAppearanceSetting("nameSize")==32 and not ns.EnsureDB().profiles["High Contrast"])

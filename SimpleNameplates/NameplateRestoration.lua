@@ -6,7 +6,8 @@ local SetShownSafe = ns.NameplateFrames.SetShownSafe
 local Text = ns.NameplateText
 local pendingFrames = setmetatable({}, {__mode = "k"})
 local pendingPlates = setmetatable({}, {__mode = "k"})
-local visibilityKeys = {"name", "HealthBarsContainer", "castBar", "CastBar", "castBarAnchor",
+-- Native cast bars remain Blizzard-driven; their visibility changes during styling.
+local visibilityKeys = {"name", "HealthBarsContainer", "castBarAnchor",
     "classificationIndicator", "ClassificationFrame", "selectionHighlight"}
 
 local unpackValues = unpack or table.unpack
@@ -37,7 +38,6 @@ local function CaptureNativePresentation(frame, assessment, context)
     for _, property in ipairs(nameProperties) do
         original.name[property[2]] = ReadValues(name, property[1], context)
     end
-    original.text = ns.AccessibleValue(Cap.ReadRegion(name, "GetText", context))
     local count = ns.AccessibleNumber(Cap.ReadRegion(name, "GetNumPoints", context))
     if count then
         local points = {}
@@ -68,8 +68,6 @@ local function RestoreNativePresentation(frame, assessment, context, removedUnit
         local unit = ns.AccessibleValue(frame.unit)
         if removedUnit and unit == removedUnit then
             name:SetText("")
-        elseif unit == frame.SNPOriginalUnit and original.text ~= nil then
-            name:SetText(original.text)
         elseif type(unit) == "string" and UnitName then
             -- SetText accepts a secret name directly; do not inspect it.
             name:SetText(UnitName(unit))

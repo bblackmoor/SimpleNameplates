@@ -324,7 +324,7 @@ for _, layer in ipairs(plateFrame.SNPInsideName.SNPUnderlayers) do assert(not la
 equal(plateFrame.name.alpha, 1, "original name alpha restored")
 equal(plateFrame.healthBar.height, 20, "original bar height restored")
 equal(plateFrame.name.font, "NativeFont", "original native font restored")
-equal(plateFrame.name.text, "Native name", "original native name restored")
+equal(plateFrame.name.text, UnitName(plateFrame.unit), "current native name restored")
 equal(plateFrame.name.g, 0.4, "original native name color restored")
 equal(plateFrame.name.points[1][5], 4, "original native name anchor restored")
 equal(plateFrame.healthBar.barG, 0.5, "original native bar color restored")
@@ -1097,5 +1097,35 @@ for _, label in ipairs({"Full styling", "Classification", "NPC title lookup", "T
     for _, line in ipairs(perfOutput) do if line:find(label .. ":", 1, true) then found = true end end
     assert(found, "runtime instrumentation missing: " .. label)
 end
+-- Restoration preserves native dynamic state rather than the initial snapshot.
+ns.RestoreAll()
+plateFrame.unit = "nameplate1"
+plateFrame.IsProtected = nil
+trp3Options = {}
+for _, disableMaster in ipairs({false, true}) do
+    for _, initiallyCasting in ipairs({false, true}) do
+        stylingEnabled, categoryMode = true, "active"
+        unit = {reaction = 3, names = {nameplate1 = "Before rename"}}
+        plateFrame.name:SetText("Before rename")
+        plateFrame.castBar = Region()
+        plateFrame.castBar:SetShown(initiallyCasting)
+        C_NamePlate.GetNamePlateForUnit = function() return plate end
+        C_NamePlate.GetNamePlates = function() return {plate} end
+        ns.RefreshAll()
+        unit.names.nameplate1 = "After rename"
+        events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", "nameplate1")
+        events.scripts.OnUpdate(events, 0.01)
+        equal(plateFrame.name.text, "After rename", "name event updates styled name")
+        plateFrame.castBar:SetShown(not initiallyCasting)
+        if disableMaster then stylingEnabled = false; ns.RestoreAll()
+        else categoryMode = "inactive"; ns.RefreshAll() end
+        equal(plateFrame.castBar.shown, not initiallyCasting, "disable preserves current cast visibility")
+        equal(plateFrame.name.text, "After rename", "disable restores current native unit name")
+        events.scripts.OnUpdate(events, 0.25)
+        equal(plateFrame.castBar.shown, not initiallyCasting, "cast state survives reconciliation")
+    end
+end
+stylingEnabled, categoryMode = true, "active"
+
 print("Nameplates smoke: passed")
 

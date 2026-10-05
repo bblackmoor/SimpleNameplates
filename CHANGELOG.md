@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.173
+
+* Preserves current native cast/channel visibility when styling is disabled or a category becomes Inactive, rather than restoring a stale idle/casting snapshot.
+* Restores the current WoW unit name after name changes instead of the initial captured text; keeps removed-unit cleanup and secret-safe SetText behavior.
+* Persists deletion and renaming of High Contrast across reloads with an optional validated removal marker. Fresh databases still receive both bundles; explicit recreation or Restore bundled profiles clears the marker. Renamed custom profiles retain their settings.
+* Adds regressions for both disable paths, cast start/end, name updates, profile reload and explicit restoration. All twenty smoke suites and whitespace checks pass; native WoW verification remains pending.
+
 ## 1.0.163
 
 * Adds session-only, off-by-default `/snp perf start`, `stop` and `report` commands. Measures full styling, classification, NPC-title lookup, cached text repair, runtime updates and reconciliation without changing refresh behavior or saved settings.

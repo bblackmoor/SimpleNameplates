@@ -170,11 +170,12 @@ end
 
 local function ValidateProfiles(db, savedProfiles)
     db.profiles[DEFAULT_PROFILE_NAME] = ValidatedProfile(savedProfiles[DEFAULT_PROFILE_NAME])
-    if savedProfiles[HIGH_CONTRAST_PROFILE_NAME] == nil then
-        db.profiles[HIGH_CONTRAST_PROFILE_NAME] = NewProfile("highContrast")
-    else
+    if savedProfiles[HIGH_CONTRAST_PROFILE_NAME] ~= nil then
         db.profiles[HIGH_CONTRAST_PROFILE_NAME] = ValidatedProfile(
             savedProfiles[HIGH_CONTRAST_PROFILE_NAME], "highContrast")
+        db.global.highContrastRemoved = nil
+    elseif not db.global.highContrastRemoved then
+        db.profiles[HIGH_CONTRAST_PROFILE_NAME] = NewProfile("highContrast")
     end
 
     local knownProfileNames = {
@@ -234,6 +235,8 @@ local function ValidatedDB(saved)
     local savedProfiles = type(saved.profiles) == "table" and saved.profiles or {}
     local db = CreateValidatedDB()
 
+    -- Optional bundle removals are intentional, unlike a missing fresh default.
+    if savedGlobal.highContrastRemoved == true then db.global.highContrastRemoved = true end
     ValidateProfiles(db, savedProfiles)
     ValidateProfileKeys(db, saved.profileKeys)
     ValidateCategoryModes(db, savedGlobal)
@@ -338,6 +341,7 @@ local function CreateProfile(name)
     if not validName then return false, errorMessage end
     CancelProfileEdits()
     EnsureDB().profiles[validName] = NewProfile()
+    if validName == HIGH_CONTRAST_PROFILE_NAME then EnsureDB().global.highContrastRemoved = nil end
     EnsureDB().profileKeys[CharacterKey()] = validName
     return true
 end
@@ -347,6 +351,7 @@ local function CopyActiveProfile(name)
     if not validName then return false, errorMessage end
     CancelProfileEdits()
     EnsureDB().profiles[validName] = CopyProfile(ActiveProfile())
+    if validName == HIGH_CONTRAST_PROFILE_NAME then EnsureDB().global.highContrastRemoved = nil end
     EnsureDB().profileKeys[CharacterKey()] = validName
     return true
 end
@@ -361,6 +366,8 @@ local function RenameActiveProfile(name)
     CancelProfileEdits()
     db.profiles[validName] = db.profiles[oldName]
     db.profiles[oldName] = nil
+    if oldName == HIGH_CONTRAST_PROFILE_NAME then db.global.highContrastRemoved = true end
+    if validName == HIGH_CONTRAST_PROFILE_NAME then db.global.highContrastRemoved = nil end
     for character, assignedName in pairs(db.profileKeys) do
         if assignedName == oldName then db.profileKeys[character] = validName end
     end
@@ -373,6 +380,7 @@ local function DeleteActiveProfile()
     if name == DEFAULT_PROFILE_NAME then return false, "Default cannot be deleted." end
     CancelProfileEdits()
     db.profiles[name] = nil
+    if name == HIGH_CONTRAST_PROFILE_NAME then db.global.highContrastRemoved = true end
     for character, assignedName in pairs(db.profileKeys) do
         if assignedName == name then db.profileKeys[character] = DEFAULT_PROFILE_NAME end
     end
@@ -384,6 +392,7 @@ local function RestoreBundledProfiles()
     CancelProfileEdits()
     db.profiles[DEFAULT_PROFILE_NAME] = NewProfile()
     db.profiles[HIGH_CONTRAST_PROFILE_NAME] = NewProfile("highContrast")
+    db.global.highContrastRemoved = nil
 end
 
 local function GetTRP3Enabled()
