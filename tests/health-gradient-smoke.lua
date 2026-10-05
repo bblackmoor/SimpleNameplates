@@ -46,19 +46,19 @@ bar:SetStatusBarTexture("native")
 local fill = bar:GetStatusBarTexture()
 ns.HealthGradient.Apply(bar, fill, {})
 local tint, mask = bar.SNPHealthGradient, bar.SNPHealthGradientMask
-assert(tint.width == 160, "fixed fade occupies eighty percent")
+assert(tint.width == 200, "fixed fade occupies the full bar width")
 assert(tint.gradient[1] == "HORIZONTAL" and tint.gradient[2].a == 0.9 and tint.gradient[3].a == 0)
 assert(tint.mask == mask and mask.allPoints == fill, "clip follows native remaining fill geometry")
 for _, remainingWidth in ipairs({200, 160, 100, 20}) do
     fill:SetWidth(remainingWidth)
-    assert(tint.width == 160 and mask.allPoints == fill, "native health loss cannot rescale gradient")
+    assert(tint.width == 200 and mask.allPoints == fill, "native health loss cannot rescale gradient")
 end
 local replacement = bar:CreateTexture()
 ns.HealthGradient.Apply(bar, replacement, {})
 assert(mask.allPoints == replacement and bar.SNPHealthGradient == tint, "replacement fill reuses/reanchors tint")
 bar:SetWidth(250)
 ns.HealthGradient.Apply(bar, replacement, {})
-assert(tint.width == 200, "configured width scales full gradient")
+assert(tint.width == 250, "configured width scales full gradient")
 enabled = false
 ns.HealthGradient.Apply(bar, replacement, {})
 assert(not tint:IsShown() and ns.HealthGradient.ThreatLayers("nameplate1") == nil)

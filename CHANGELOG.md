@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.184
+
+* Extends the fixed health gradient across the full bar: 90% black at the far left, fading linearly to 0% at the far right. The full-health settings preview uses the same fade.
+* Preserves threat underlayers at health >=80% and removes them below 80%; the threshold is independent of gradient width.
+* Updates gradient geometry and preview checks while retaining threshold and secret-alpha coverage.
+
 ## 1.0.183
 
 * Adds a per-profile Gradients toggle above Priority colors and a full-health preview with a white sample name and 255% threat. Gradients default off; Reset all colors turns them off.

@@ -1,6 +1,6 @@
 -- Fixed-position health tint, clipped by native fill geometry; no health arithmetic.
 local _, ns = ...
-local FADE_END = 0.8
+local THREAT_LAYER_THRESHOLD = 0.8
 local threatCurve
 
 local function Enabled()
@@ -21,7 +21,7 @@ local function Apply(bar, fill, context)
     if not width or width <= 0 then Hide(bar); return end
     if not bar.SNPHealthGradient then
         -- Native fill anchors resolve in the renderer even with secret health.
-        -- The tint spans a fixed 80% of total width; the mask alone shrinks.
+        -- The tint spans the full bar width; the mask alone shrinks.
         local mask = bar:CreateMaskTexture(nil, "ARTWORK")
         mask:SetTexture("Interface\\Buttons\\WHITE8X8", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         local tint = bar:CreateTexture(nil, "ARTWORK", nil, 3)
@@ -34,7 +34,7 @@ local function Apply(bar, fill, context)
     end
     bar.SNPHealthGradientMask:ClearAllPoints()
     bar.SNPHealthGradientMask:SetAllPoints(fill)
-    bar.SNPHealthGradient:SetWidth(width * FADE_END)
+    bar.SNPHealthGradient:SetWidth(width)
     bar.SNPHealthGradient:Show()
 end
 
@@ -48,7 +48,7 @@ local function ThreatLayers(unit)
         threatCurve = C_CurveUtil.CreateCurve()
         threatCurve:SetType(Enum.LuaCurveType.Step)
         threatCurve:AddPoint(0, 0)
-        threatCurve:AddPoint(FADE_END, 1)
+        threatCurve:AddPoint(THREAT_LAYER_THRESHOLD, 1)
         threatCurve:AddPoint(1, 1)
     end
     local ok, alpha = pcall(UnitHealthPercent, unit, false, threatCurve)
