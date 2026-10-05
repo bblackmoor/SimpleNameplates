@@ -55,11 +55,13 @@ local cases = {
 }
 for _, case in ipairs(cases) do
     local state, row = case[1], Row(case[2])
-    local swatch, toggle, reset = Control(row, "color"), Control(row, "switch"), Control(row, "button")
+    local swatch, toggle = Control(row, "color"), Control(row, "switch")
+    for _, object in ipairs(ui.objects) do
+        assert(not (object:GetParent() == row and object.MyObject and object.MyObject.type == "button" and not object.MyObject.__iscolorpicker), "no individual reset button")
+    end
     assert(swatch:GetWidth() == 26 and swatch:GetHeight() == 26)
-    assert(reset:GetWidth() == 54 and reset:GetHeight() == 22)
     assert(toggle.MyObject.is_toggle and toggle:GetWidth() == 44)
-    assert(swatch.point[4] == 340 and toggle.point[2] == swatch and toggle.point[4] == 8)
+    assert(swatch.point[4] == 340 and toggle.point[2]:GetText() == "Health Bar" and toggle.point[4] == 8)
     assert(swatch.MyObject.color_texture.points.TOPLEFT[4] == 3)
     assert(swatch.MyObject.color_texture.points.BOTTOMRIGHT[5] == 3)
     swatch:GetScript("OnEnter")(swatch)
@@ -67,7 +69,7 @@ for _, case in ipairs(cases) do
     swatch:GetScript("OnLeave")(swatch)
     local before = refreshes
     toggle:GetScript("OnClick")(toggle, "LeftButton")
-    assert(ns.GetCategoryMode(state) == "inactive" and refreshes == before + 1)
+    assert(ns.GetHealthBarEnabled(state) == false and refreshes == before + 1)
     local oldR, oldG, oldB = ns.PriorityColorForState(state)
     Click(swatch)
     local picker = ColorPickerFrame.info
@@ -79,12 +81,7 @@ for _, case in ipairs(cases) do
     picker.cancelFunc()
     RGBEqual(SwatchRGB(swatch), oldR, oldG, oldB)
     RGBEqual({ns.PriorityColorForState(state)}, oldR, oldG, oldB)
-    ns.SetPriorityColor(state, 0.8, 0.7, 0.6)
-    Click(reset)
-    local default = ns.Defaults.priorityColors[state]
-    RGBEqual(SwatchRGB(swatch), default.r, default.g, default.b)
-    assert(ns.GetCategoryMode(state) == "inactive", "individual reset preserves global mode")
-    assert(refreshes == before + 4, "each user edit refreshes plates once; redraws are silent")
+    assert(refreshes == before + 3, "each user edit refreshes plates once; redraws are silent")
 end
 
 local effect = Control(Row("Effect"), "dropdown")
@@ -100,14 +97,13 @@ for i, option in ipairs(effect.MyObject.func()) do
     assert(refreshes == before + 1)
 end
 local castRow = Row("Interruptible cast highlight")
-local cast, castReset = Control(castRow, "color"), Control(castRow, "button")
+local cast = Control(castRow, "color")
 Click(cast)
 local picker = ColorPickerFrame.info
 picker.swatchFunc()
 RGBEqual({ns.EffectColor("interruptible")}, 0.2, 0.3, 0.4)
 picker.cancelFunc()
 RGBEqual({ns.EffectColor("interruptible")}, 0, 1, 1)
-Click(castReset)
 assert(ns.GetInterruptibleCastStyle() == "PROC", "cast-color reset preserves chosen effect")
 
 -- Adapted profile selector stays shared; switching refreshes DF controls silently.
@@ -141,7 +137,7 @@ assert(ns.GetActiveProfileName() == "High Contrast")
 for _, case in ipairs(cases) do
     local default = highContrast.priorityColors[case[1]]
     RGBEqual(SwatchRGB(Control(Row(case[2]), "color")), default.r, default.g, default.b)
-    assert(ns.GetCategoryMode(case[1]) == "active")
+    assert(ns.GetHealthBarEnabled(case[1]) == true)
 end
 RGBEqual(SwatchRGB(cast), 0, 1, 0)
 initial, before = Snapshot(SimpleNameplatesDB), refreshes
@@ -175,8 +171,7 @@ RGBEqual({ns.EnsureDB().profiles["High Contrast"].priorityColors.attacking.r,
 oldPicker.cancelFunc(); oldPicker.swatchFunc()
 assert(Snapshot(ns.EnsureDB().profiles.Default) == target)
 Click(attacking); oldPicker = ColorPickerFrame.info; oldPicker.swatchFunc()
-local reset = Control(Row("1. Attacking me"), "button")
-Click(reset); oldPicker.cancelFunc()
+Click(resetAll); oldPicker.cancelFunc()
 RGBEqual({ns.PriorityColorForState("attacking")}, 1, 0, 0)
 Click(attacking); oldPicker = ColorPickerFrame.info; oldPicker.swatchFunc()
 panel:GetScript("OnHide")(panel); oldPicker.swatchFunc()

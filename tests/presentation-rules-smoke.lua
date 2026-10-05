@@ -21,7 +21,7 @@ for _, state in ipairs({"attacking", "hostile", "neutral", "friendly", "useful",
     equal(missing.showHealthBar, false, "no bar support: " .. state)
     equal(missing.nameOnly, true, "missing bar uses colored name: " .. state)
     equal(missing.showFullTitle, true, "missing bar permits title: " .. state)
-    equal(Resolve({inCombat = true}, {}, state, cap, true, "inactive").action, "restore", "inactive: " .. state)
+    equal(Resolve({inCombat = true}, {}, state, cap, true, "inactive").action, "style", "retired inactive mode ignored: " .. state)
 end
 local facts = {isPlayer = true, oppositeFaction = true, eligiblePvPOpponent = false}
 local sanctuary = Resolve({sanctuary = true, inCombat = false}, facts, "friendly", cap, true, "active")

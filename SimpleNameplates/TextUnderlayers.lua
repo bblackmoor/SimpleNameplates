@@ -39,11 +39,16 @@ end
 
 local function Update(text, parent)
     if not text then return end
+    -- Use the glyph source's actual parent; native labels may belong to a
+    -- different frame than the health bar. Draw layers only order siblings.
+    local actualParent = Read(text, "GetParent")
+    if actualParent then parent = actualParent end
+    if ns.PresentationCapabilities.ObjectStatus(parent, ns.WorldContext.Get()) ~= "accessible" then return end
     if not text.SNPUnderlayers then
         local layers = {}
         for index, offset in ipairs(offsets) do
-            local layer = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-            layer:SetDrawLayer("OVERLAY", index + 4)
+            local layer = parent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+            layer:SetDrawLayer("ARTWORK", index)
             layer:SetPoint("TOPLEFT", text, "TOPLEFT", offset[1], offset[2])
             layer:SetPoint("BOTTOMRIGHT", text, "BOTTOMRIGHT", offset[1], offset[2])
             layer:SetTextColor(0, 0, 0, 1)

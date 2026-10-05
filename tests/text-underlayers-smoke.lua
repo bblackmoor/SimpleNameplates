@@ -52,7 +52,7 @@ for index, expected in ipairs({{1, -2}, {2, -1}}) do
     local layer = source.SNPUnderlayers[index]
     assert(layer.color[1] == 0 and layer.color[2] == 0 and layer.color[3] == 0 and layer.color[4] == 1)
     assert(layer.text == "White label" and layer.flags == "" and layer.shadow[4] == 0)
-    assert(layer.sublevel < source.sublevel and layer.justify == "RIGHT")
+    assert(layer.layer == "ARTWORK" and source.layer == "OVERLAY" and layer.justify == "RIGHT")
     for _, point in ipairs(layer.points) do
         assert(point[2] == source and point[4] == expected[1] and point[5] == expected[2])
     end
@@ -81,4 +81,11 @@ ns.TextUnderlayers.Hide(source)
 source:SetText("Native label")
 source:Show()
 for _, layer in ipairs(source.SNPUnderlayers) do assert(not layer.shown, "disabled layers cannot revive") end
+local nativeParent = {CreateFontString = function() return Text() end}
+local native = Text()
+function native:GetParent() return nativeParent end
+local wrongParent = {CreateFontString = function() error("wrong parent places black copies above native text") end}
+ns.TextUnderlayers.Update(native, wrongParent)
+assert(native.layer == "OVERLAY")
+for _, layer in ipairs(native.SNPUnderlayers) do assert(layer.layer == "ARTWORK") end
 print("Text underlayers smoke: passed")

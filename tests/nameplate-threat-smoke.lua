@@ -17,7 +17,7 @@ local slug = false
 local function Bar()
     local bar = {}
     function bar:CreateFontString(_, layer, template)
-        equal(layer, "OVERLAY", "threat uses overlay")
+        assert(layer == "OVERLAY" or layer == "ARTWORK", "foreground overlay or black artwork")
         equal(template, "GameFontNormal", "threat starts with valid font")
         local text = {bar = self}
         function text:GetFont() return self.font, self.size, self.flags end

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.182
+
+* Places black glyph copies on ARTWORK under white OVERLAY text, using each source label's actual parent so frame ordering cannot reverse them.
+* Replaces the six category Active controls with per-profile Health Bar switches and removes individual color reset buttons. Retired Active values no longer suppress styling. Reset all colors restores this profile's bars to On.
+* Bar-off entities show colored names and titles with a one-unit gap; inaccessible Blizzard plates retain native presentation. Casts still replace titles.
+* Defaults name size to 18 and sets long titles to name size minus two; preserves saved name sizes.
+* Adds bar-toggle, title spacing/sizing, native reshow repair, profile copy/reload/reset, and differing-parent text-layer regressions.
+
 ## 1.0.181
 
 * Preserves both name and realm from UnitFullName when the player GUID is unavailable. Same-named characters on different realms retain independent fallback profile selections; GUID identity still takes precedence.

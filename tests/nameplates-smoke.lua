@@ -68,7 +68,8 @@ local ns = {
         if canaccessvalue and not canaccessvalue(value) then return nil end
         return value
     end,
-    GetStylingEnabled = function() return stylingEnabled end,
+    GetStylingEnabled = function() return stylingEnabled and categoryMode ~= "inactive" end,
+    GetHealthBarEnabled = function() return true end,
     GetCategoryMode = function() return categoryMode end,
     GetAppearanceSetting = function(key) return appearance[key] end,
     GetTRP3Setting = function(key) return trp3Options[key] or false end,
@@ -98,6 +99,11 @@ local ns = {
 }
 for _, file in ipairs({ "Profiler.lua", "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "FontRendering.lua", "TextUnderlayers.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
     assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", ns)
+end
+-- Retired category-disable fixtures exercise the global restoration path.
+local runtimeRefresh = ns.RefreshAll
+ns.RefreshAll = function()
+    if categoryMode == "inactive" then ns.RestoreAll() else runtimeRefresh() end
 end
 equal(#frames, 1, "one event frame")
 local events = frames[1]
@@ -876,7 +882,7 @@ ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "NPC service title independent of TRP3")
 equal(plateFrame.SNPFullTitleText.shown, true, "NPC service title shown below floating name")
-equal(plateFrame.SNPFullTitleText.size, 10, "NPC title uses rounded eighty-percent size")
+equal(plateFrame.SNPFullTitleText.size, 10, "NPC title uses name size minus two")
 equal(plateFrame.SNPFullTitleText.g, 211 / 255, "NPC title uses sanctuary useful color")
 appearance.matchSanctuaryFont = true
 SystemFont_World = {GetFont = function() return "Fonts\\WorldLocalized.ttf" end}
@@ -1435,6 +1441,40 @@ healthLabels.LeftText.IsShown = function() return opaqueHealth end
 ns.RefreshAll()
 equal(plateFrame.SNPInsideName.points[2][2], healthLabels.LeftText, "unknown health visibility conservatively reserves name space")
 healthLabels.LeftText.IsShown, issecretvalue = oldShown, oldSecretCheck
+ns.RestoreAll()
+
+-- Each category's disabled bar compacts the title under the floating name.
+categoryMode, stylingEnabled = "active", true
+unit = {reaction = 3, canAttack = true}
+ns.TRP3 = {GetDisplayInfo = function() return {fullTitle = "Compact title"} end}
+trp3Options.showFullTitle = true
+local showBar = false
+ns.GetHealthBarEnabled = function() return showBar end
+local cast = ns.NameplateFrames.GetCastBar(plateFrame)
+if cast then cast:Hide() end
+for _, placement in ipairs({"ABOVE", "INSIDE"}) do
+    for _, size in ipairs({8, 18, 31}) do
+        appearance.namePlacement, appearance.nameSize = placement, size
+        showBar = false
+        ns.RefreshAll()
+        equal(plateFrame.healthBar.shown, false, "bar off hides native health bar")
+        equal(plateFrame.name.alpha, 1, "bar off keeps floating name visible")
+        equal(plateFrame.SNPPresentation.nameOnly, true, "bar off uses colored floating name")
+        equal(plateFrame.SNPInsideName.shown, false, "bar off removes inside copy")
+        equal(plateFrame.SNPFullTitleText.points[1][2], plateFrame.name, "title directly below name")
+        equal(plateFrame.SNPFullTitleText.points[1][5], -1, "one-unit title gap")
+        equal(plateFrame.SNPFullTitleText.size, size - 2, "title exactly two smaller")
+        equal(plateFrame.SNPFullTitleText.shown, true, "bar off displays title")
+        equal(plateFrame.SNPThreatText.shown, false, "bar off hides threat")
+        plateFrame.healthBar:Show()
+        events.scripts.OnUpdate(events, 0.25)
+        equal(plateFrame.healthBar.shown, false, "reconciliation repairs native reshow")
+        showBar = true
+        ns.RefreshAll()
+        equal(plateFrame.healthBar.shown, true, "bar on restores health")
+        equal(plateFrame.SNPFullTitleText.points[1][2], plateFrame.healthBar, "bar on restores title anchor")
+    end
+end
 ns.RestoreAll()
 
 print("Nameplates smoke: passed")

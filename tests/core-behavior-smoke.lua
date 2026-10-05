@@ -126,7 +126,7 @@ ns.ResetAppearance()
 ns.SetAppearanceSetting("matchSanctuaryFont", "false")
 equal(ns.GetAppearanceSetting("matchSanctuaryFont"), true, "invalid setter ignored")
 equal(ns.GetAppearanceSetting("nameFont"), "FRIZQT", "name font default")
-equal(ns.GetAppearanceSetting("nameSize"), 21, "name size default")
+equal(ns.GetAppearanceSetting("nameSize"), 18, "name size default")
 equal(ns.GetAppearanceSetting("namePlacement"), "ABOVE", "placement default")
 equal(ns.PriorityColorForState("attacking"), 1, "default red component")
 for _, case in ipairs({
@@ -201,7 +201,7 @@ equal(ns.GetActiveProfileName(), "High Contrast", "first character selection ret
 
 -- Profile lifecycle, independent copies, name validation, and reassignment.
 equal(ns.CreateProfile("Test"), true, "create")
-equal(ns.GetAppearanceSetting("nameSize"), 21, "create factory values")
+equal(ns.GetAppearanceSetting("nameSize"), 18, "create factory values")
 ns.SetAppearanceSetting("nameSize", 17)
 ns.SetPriorityColor("attacking", 0.1, 0.2, 0.3)
 equal(ns.CopyActiveProfile("Copy"), true, "copy")
@@ -589,6 +589,27 @@ do
     character = nil
     equal(fallback.GetActiveProfileName(), "Default", "missing full-name API remains safe")
     UnitFullName = savedFullName
+end
+
+do
+    local bars = fresh()
+    equal(bars.GetAppearanceSetting("nameSize"), 18, "new default font size")
+    for state in pairs(bars.Defaults.priorityColors) do
+        equal(bars.GetHealthBarEnabled(state), true, "old profiles gain enabled bars")
+        bars.SetHealthBarEnabled(state, false)
+    end
+    assert(bars.CopyActiveProfile("Bars copy"))
+    equal(bars.GetHealthBarEnabled("friendly"), false, "copy retains bar preference")
+    bars.ResetAppearance()
+    equal(bars.GetHealthBarEnabled("friendly"), false, "appearance reset preserves bars")
+    bars.ResetAllColors()
+    equal(bars.GetHealthBarEnabled("friendly"), true, "colors reset restores bars")
+    bars.SetActiveProfileName("Default")
+    equal(bars.GetHealthBarEnabled("friendly"), false, "other profile remains independent")
+    local reloaded = loadCore()
+    equal(reloaded.GetHealthBarEnabled("friendly"), false, "reload preserves false")
+    reloaded.SetHealthBarEnabled("friendly", "bad")
+    equal(reloaded.GetHealthBarEnabled("friendly"), false, "setter rejects invalid boolean")
 end
 
 print("Core behavior smoke: passed")

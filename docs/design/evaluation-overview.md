@@ -54,7 +54,7 @@ Faction, sanctuary, PvP flags, and desired War Mode are separate observations. A
 
 ## Context and presentation
 
-Classification answers what the entity is doing. Priority determines color; all ordinary Active plates use a uniform bar policy. Frame access determines whether anything can actually be changed.
+Classification answers what the entity is doing. Priority determines color; each category has a profile Health Bar preference. Frame access determines whether anything can actually be changed.
 
 `PresentationRules.Resolve` retains the priority color and uses this order:
 
@@ -62,11 +62,11 @@ Classification answers what the entity is doing. Priority determines color; all 
 flowchart TD
     A{"Accessible nameplate?"}
     A -->|No| L["Skip styling; leave native presentation"]
-    A -->|Yes| B{"Styling enabled and category Active?"}
+    A -->|Yes| B{"Styling enabled?"}
     B -->|No| R["Restore Blizzard presentation"]
     B -->|Yes| W{"Widget-only plate?"}
     W -->|Yes| S["Suppress actor text; preserve widgets"]
-    W -->|No| P["Show available health bar; keep native cast lifecycle"]
+    W -->|No| P["Apply category Health Bar preference; keep native casts"]
 ```
 
 | Context | Color after classification |
@@ -80,7 +80,7 @@ flowchart TD
 
 After the presentation decision, `NameplateText` chooses the effective name/title font. In sanctuary with the profile's `matchSanctuaryFont` enabled, it reads the localized `SystemFont_World` face (Friz Quadrata fallback); otherwise it uses the selected profile Name font. The same face reaches floating names, inside-bar names, and NPC/TRP3 titles. Only the face changes. Cached style repair checks that the effective face still matches before reusing a cached decision.
 
-For ordinary Active plates, show available health bars in every category and combat state. Color the bar by priority and keep its name white; a missing health bar uses a colored floating name. NPC service subtitles and optional TRP3 long titles sit below the health bar, or below the name when no bar exists. An active native cast/channel hides that title; native cast OnShow/OnHide hooks update visibility immediately, and unreadable transitions retry during reconciliation. Inactive/disabled styling restores native presentation. No health values are fabricated.
+For ordinary plates, show available health bars only when the category's profile Health Bar preference is on, in every combat state. Color the bar by priority and keep its name white; a disabled or missing health bar uses a colored floating name. NPC service subtitles and optional TRP3 long titles sit below the health bar, or directly below the name with a one-unit gap when the bar is off or unavailable. An active native cast/channel hides that title; native cast OnShow/OnHide hooks update visibility immediately, and unreadable transitions retry during reconciliation. Disabled styling restores native presentation. No health values are fabricated.
 
 Startup setting compatibility is checked before enabling styling; it is a prerequisite, not another entity category. The [known presentation limits in the README](../../README.md#known-presentation-limits) and in-game About notes record entity types and world contexts where classification succeeds but no matching accessible frame is supplied. Individual character names are irrelevant to these limits. Missing frames must never be reported as a solved settings problem.
 

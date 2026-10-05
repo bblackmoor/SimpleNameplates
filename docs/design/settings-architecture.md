@@ -11,12 +11,12 @@ The pages are About, Profiles, Appearance, Colors and TRP3, in that order. All u
 | About | Metadata, source link, commands, known presentation limits and read-only native-label swatches |
 | Profiles | Account-wide profile management and the global styling Active switch |
 | Appearance | Profile fonts, Slug rendering, name size/placement, health-bar width and threat display; global critter/companion hiding |
-| Colors | Six profile priority colors, profile cast color/effect and six global Active/Inactive category switches |
+| Colors | Six profile priority colors, profile cast color/effect and six profile Health Bar switches |
 | TRP3 | Global integration and RP-name/title/OOC preferences |
 
 Visible pages refresh their selected-profile controls immediately; hidden pages reread on show. Profile switching cancels active previews before changing selection and refreshes plates. Native profile dialogs capture name and object identity at opening and reject acceptance after selection changes or same-name replacement. Database mutations cancel affected drafts before switching or replacing their targets.
 
-Reset settings on Appearance restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors and cast effect None, and all six global category modes Active. Individual color resets affect only that color. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
+Reset settings on Appearance restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors, cast effect None, and all six Health Bar preferences to On. There are no individual color reset buttons. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
 
 ## Current source ownership
 
@@ -57,7 +57,7 @@ Factories live in SettingsPanels; RegisterSettingsPanels uses explicit pageOrder
 
 ## Runtime contracts
 
-Classification determines priority color. Every ordinary Active accessible plate shows its available health bar in and out of combat; missing-bar plates use colored floating names. Inactive/disabled styling restores native presentation. Widget-only plates keep widgets while actor text is suppressed. Blizzard controls cast/channel lifecycle; a visible cast replaces the NPC/TRP3 long title below the health bar. No unknown health value is fabricated. See the [runtime evaluation](evaluation-overview.md) for the complete order.
+Classification determines priority color. Every ordinary accessible plate shows its available health bar when its category Health Bar preference is on in and out of combat; disabled/missing-bar plates use colored floating names with titles directly underneath. Disabled styling restores native presentation. Widget-only plates keep widgets while actor text is suppressed. Blizzard controls cast/channel lifecycle; a visible cast replaces the NPC/TRP3 long title below the health bar. No unknown health value is fabricated. See the [runtime evaluation](evaluation-overview.md) for the complete order.
 
 WorldContext reads game APIs only on refresh events; its Get operation returns the cache. Presentation and repair paths assess frame access before inspecting or writing regions. Unknown and secret observations remain distinct from false. Threat percentages use the supported text formatter without addon arithmetic on secret values.
 

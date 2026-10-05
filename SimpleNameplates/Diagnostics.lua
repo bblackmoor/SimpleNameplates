@@ -7,7 +7,7 @@ local Resolve = ns.PresentationRules.Resolve
 local Capabilities = ns.PresentationCapabilities
 local GetContext = ns.WorldContext.Get
 local GetStylingEnabled = ns.GetStylingEnabled
-local PriorityColorForState, GetCategoryMode = ns.PriorityColorForState, ns.GetCategoryMode
+local PriorityColorForState = ns.PriorityColorForState
 local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
 
 local function DebugBoolean(value)
@@ -141,8 +141,8 @@ end
 
 local function DebugClassification(state, rule, assessment, context, facts)
     local hasNameplate = assessment.canAccess
-    local decision = Resolve(context, facts, state, assessment, GetStylingEnabled(), GetCategoryMode(state))
-    local enabled, mode = GetStylingEnabled(), GetCategoryMode(state)
+    local decision = Resolve(context, facts, state, assessment, GetStylingEnabled(), ns.GetHealthBarEnabled(state))
+    local enabled = GetStylingEnabled()
     local display, colorHex
     if not hasNameplate then
         display, colorHex = "no accessible nameplate; world-name display unknown", "unavailable"
@@ -155,7 +155,7 @@ local function DebugClassification(state, rule, assessment, context, facts)
         display = decision.nameOnly and "colored name only" or "white name with colored health bar"
     end
     print("  Styling enabled: " .. (enabled and "yes" or "no")
-        .. "; detected state: " .. state .. "; winning rule: " .. rule .. "; mode: " .. mode
+        .. "; detected state: " .. state .. "; winning rule: " .. rule .. "; Health Bar: " .. DebugBoolean(ns.GetHealthBarEnabled(state))
         .. "; configured display: " .. display .. "; configured color: " .. colorHex)
     print("  Presentation rule: " .. decision.ruleID .. "; action: " .. decision.action
         .. "; reason: " .. decision.reason .. "; health bar requested: " .. DebugBoolean(decision.showHealthBar)

@@ -111,13 +111,13 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
     end
 
     fullTitle = EnsureFullTitleText(frame)
-    local titleSize = math.max(6, math.floor(baseNameSize * 0.8 + 0.5))
+    local titleSize = math.max(6, baseNameSize - 2)
     fullTitle:SetFont(NameFontPath(context), titleSize, ns.FontFlags(true))
     fullTitle:SetText(text)
     fullTitle:SetShadowColor(0, 0, 0, 0)
     fullTitle:SetShadowOffset(0, 0)
     fullTitle:ClearAllPoints()
-    fullTitle:SetPoint("TOP", bar or frame.name, "BOTTOM", 0, -1)
+    fullTitle:SetPoint("TOP", decision.showHealthBar and bar or frame.name, "BOTTOM", 0, -1)
     fullTitle:SetJustifyH("CENTER")
     fullTitle:SetTextColor(PriorityColorForState(decision.colorState or state))
     InstallTitleCastHooks(frame, GetCastBar(frame, context))

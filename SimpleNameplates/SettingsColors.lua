@@ -1,11 +1,10 @@
--- Simple Nameplates: profile colors and global category activation.
+-- Simple Nameplates: profile colors and category health-bar preferences.
 local _, addon = ...
 local UI = addon.SettingsUI
 local AddSection, AddDescription, RunRefreshers, RefreshNameplates =
     UI.AddSection, UI.AddDescription, UI.RunRefreshers, UI.RefreshNameplates
-local PriorityColorForState, SetPriorityColor, ResetPriorityColor =
-    addon.PriorityColorForState, addon.SetPriorityColor, addon.ResetPriorityColor
-local EffectColor, SetEffectColor, ResetEffectColor = addon.EffectColor, addon.SetEffectColor, addon.ResetEffectColor
+local PriorityColorForState, SetPriorityColor = addon.PriorityColorForState, addon.SetPriorityColor
+local EffectColor, SetEffectColor = addon.EffectColor, addon.SetEffectColor
 
 local Widgets = addon.SettingsWidgets
 
@@ -13,16 +12,22 @@ local function RefreshContext(context)
     RunRefreshers(context.refreshers)
 end
 
-local function AddActivation(context, row, swatch, activation)
-    local _, status = UI.AddSwitchStatus(row, swatch, context.refreshers, activation.get, function(checked)
-        activation.set(checked)
+local function AddHealthBarSwitch(context, row, swatch, state)
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    label:SetText("Health Bar")
+    label:SetPoint("LEFT", swatch:GetFrame(), "RIGHT", 12, 0)
+    local toggle = Widgets.CreateSwitch(row, function(checked)
+        addon.SetHealthBarEnabled(state, checked)
         RefreshContext(context)
         RefreshNameplates()
     end)
-    return status
+    toggle:SetPoint("LEFT", label, "RIGHT", 8, 0)
+    context.refreshers[#context.refreshers + 1] = function()
+        toggle:SetChecked(addon.GetHealthBarEnabled(state))
+    end
 end
 
-local function CreateColorRow(context, text, displayText, getColor, setColor, resetColor, activation)
+local function CreateColorRow(context, text, displayText, getColor, setColor, state)
     local row = UI.CreateSettingRow(context.content, context.layout, text)
     local swatch = Widgets.CreateColorPicker(row, function(r, g, b)
         setColor(r, g, b)
@@ -39,14 +44,7 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
         GameTooltip:Show()
     end)
     frame:HookScript("OnLeave", function() GameTooltip:Hide() end)
-    local resetAnchor = activation and AddActivation(context, row, swatch, activation) or frame
-    local reset = Widgets.CreateButton(row, "Reset", function()
-        UI.CancelColorEdit()
-        resetColor()
-        RefreshContext(context)
-        RefreshNameplates()
-    end, 54, 22)
-    reset:SetPoint("LEFT", resetAnchor, "RIGHT", 8, 0)
+    if state then AddHealthBarSwitch(context, row, swatch, state) end
     if displayText then AddDescription(context.content, context.layout, displayText) end
 end
 
@@ -54,16 +52,13 @@ local function CreatePriorityColorRow(context, text, state, displayText)
     CreateColorRow(context, text, displayText,
         function() return PriorityColorForState(state) end,
         function(r, g, b) SetPriorityColor(state, r, g, b) end,
-        function() ResetPriorityColor(state) end, {
-            get = function() return addon.GetCategoryMode(state) == "active" end,
-            set = function(checked) addon.SetCategoryMode(state, checked and "active" or "inactive") end,
-        })
+        state)
 end
 
 local function AddPriorityColorControls(context)
     AddSection(context.content, context.layout, "Priority colors")
     AddDescription(context.content, context.layout,
-        "First matching category wins. These switches apply globally; Inactive keeps Blizzard's display.")
+        "First matching category wins. Health Bar switches apply to the selected profile. Off shows the name and title together, without a health bar. Blizzard-controlled plates may be unchangeable.")
     CreatePriorityColorRow(context, "1. Attacking me", "attacking",
         "Includes attacks on your controlled units.")
     CreatePriorityColorRow(context, "2. Will attack me — Hostile", "hostile",
@@ -109,14 +104,13 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Resets global priority switches to Active and this profile's cast highlight to None.")
+        "Restores this profile's Health Bar switches to On and cast highlight to None.")
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
     CreateColorRow(context, "Interruptible cast highlight",
         "Highlights interruptible casts and channels. Applies to the selected profile.",
         function() return EffectColor("interruptible") end,
-        function(r, g, b) SetEffectColor("interruptible", r, g, b) end,
-        function() ResetEffectColor("interruptible") end)
+        function(r, g, b) SetEffectColor("interruptible", r, g, b) end)
     AddCastEffectSelector(context)
     panel.Refresh = Refresh
     panel:SetScript("OnShow", panel.Refresh)

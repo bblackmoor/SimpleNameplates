@@ -45,7 +45,7 @@ local function ApplyStyle(frame, context)
         if not assessment.canAccess then return end
     end
     local state, _, facts = Classify(unit, context)
-    local decision = Resolve(context, facts, state, assessment, ns.GetStylingEnabled(), ns.GetCategoryMode(state))
+    local decision = Resolve(context, facts, state, assessment, ns.GetStylingEnabled(), ns.GetHealthBarEnabled(state))
     if decision.action ~= "style" then Restore.Request(frame, context); return end
     local previous = frame.SNPPresentation
     if previous and (previous.suppressText == true) ~= (decision.suppressText == true) then

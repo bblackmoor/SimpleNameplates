@@ -27,7 +27,9 @@ SimpleNameplatesDB = {
                nameplateSetupOriginals = { ["Player-GUID"] = { ... } } },
     profiles = {
         Default = { priorityColors = { ... }, effectColors = { ... },
-                    appearance = { ... }, showThreat = true,
+                    appearance = { ... }, healthBars = { attacking = true, hostile = true,
+                        neutral = true, friendly = true, useful = true, useless = true },
+                    showThreat = true,
                     interruptibleCastStyle = "NONE" },
         ["High Contrast"] = { ... },
     },
@@ -50,7 +52,8 @@ Profiling introduced in 1.0.163 is session-only. It adds no fields to `SimpleNam
 | Setting | Owner | Reason |
 | --- | --- | --- |
 | `stylingEnabled` | Global | Master addon behavior |
-| Six `categoryModes` (attacking/hostile/neutral/friendly/useful/useless; active/inactive) | Global | Per-category nameplate styling behavior |
+| Six `healthBars` booleans | Profile | Per-category health-bar visibility; all on by default |
+| Legacy `categoryModes` | Global | Retained for compatibility; ignored by rendering |
 | `hideCritterCompanionNames` | Global | Blizzard name management |
 | `trp3.enabled`, `useRoleplayingName`, `showShortTitle`, `showFullTitle`, `showOOC` | Global | TRP3 integration and display policy |
 | Six `priorityColors`, `effectColors.interruptible` | Profile | Appearance colors |
@@ -78,3 +81,5 @@ Both Global category modes and Profile priority colors recognize only `attacking
 
 `replaceBlizzardOverheadNames` is no longer a recognized field and is silently discarded. No preference is converted. Valid `managedNameCVarOriginals` entries for its former Blizzard settings remain restoration records: normal managed-settings processing restores them without capturing or applying new replacement values, retains them after failed writes, and defers restricted restoration until combat ends. Only the independent critter/companion control makes ordinary-name CVar claims now; friendly class-color CVars are read-only.
 
+
+`healthBars` accepts boolean values only. Copies and reloads retain false; missing or invalid values default to true. Reset all colors turns all six bars on in the selected profile. Reset Appearance preserves these choices. Names default to size 18; saved sizes are preserved, and long titles use the chosen name size minus two.

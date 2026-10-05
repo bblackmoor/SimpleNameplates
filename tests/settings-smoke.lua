@@ -128,12 +128,14 @@ local ns = {
         if npcColors[state] then npcColors[state] = {0.7, 0.7, 0.7} end
     end,
     EffectColor = function() return 0, 1, 1 end,
-    GetCategoryMode = function(key) return modes[key] or "active" end,
+    GetHealthBarEnabled = function(key) return modes[key] ~= false end,
+    SetHealthBarEnabled = function(key, value) modes[key] = value end,
+    GetCategoryMode = function(key) return "active" end,
     SetCategoryMode = function(key, value) modes[key] = value end,
     GetAppearanceSetting = function(key) return profile[key] end,
     SetAppearanceSetting = function(key, value) profile[key] = value end,
     ResetAppearance = function()
-        profile.nameSize, profile.nameFont, profile.threatFont = 21, "FRIZQT", "ARIALN"
+        profile.nameSize, profile.nameFont, profile.threatFont = 18, "FRIZQT", "ARIALN"
         profile.healthBarWidth = 100
         profile.namePlacement, profile.matchSanctuaryFont = "ABOVE", true
     end,
@@ -365,7 +367,8 @@ local function colorRow(labelText)
     for _, item in ipairs(frames) do
         if item == swatch.MyObject.color_texture then fill = item; break end
     end
-    return assert(swatch), assert(reset), assert(fill)
+    assert(not reset, "no per-color reset")
+    return assert(swatch), nil, assert(fill)
 end
 for _, case in ipairs({
     {"friendly", "4. Player - Friendly", 0.2},
@@ -379,8 +382,6 @@ for _, case in ipairs({
     equal(fill.color[1], 0.4, "swatch updates")
     ColorPickerFrame.options.cancelFunc()
     equal(fill.color[1], case[3], "cancel restores category swatch")
-    reset:Click()
-    equal(fill.color[1], 0.7, "reset repaints category swatch")
 end
 
 -- Cross-page selectors reread one selected profile, with management on Profiles only.
@@ -454,7 +455,7 @@ profile.nameSize, profile.matchSanctuaryFont = 31, false
 profile.nameFont, profile.threatFont, profile.namePlacement = "SKURRI", "MORPHEUS", "INSIDE"
 hideCritters = true
 button("Reset settings"):Click()
-equal(profile.nameSize, 21, "text reset restores size")
+equal(profile.nameSize, 18, "text reset restores size")
 equal(profile.healthBarWidth, 100, "page reset restores width")
 equal(profile.matchSanctuaryFont, true, "text reset restores sanctuary switch")
 equal(profile.nameFont, "FRIZQT", "page reset restores name font")
@@ -478,10 +479,10 @@ for _, case in ipairs({
     {modeSwitch("4. Player - Friendly"), "friendly"},
 }) do
     case[1]:Click()
-    equal(modes[case[2]], "inactive", "switch stores global inactive mode")
+    equal(modes[case[2]], false, "switch disables category health bar")
     equal(case[1]:GetChecked(), false, "switch reflects inactive mode")
     case[1]:Click()
-    equal(modes[case[2]], "active", "switch restores global active mode")
+    equal(modes[case[2]], true, "switch enables category health bar")
 end
 for _, labelText in ipairs({"1. Attacking me", "2. Will attack me — Hostile", "3. Can attack me — Neutral"}) do
     local toggle = modeSwitch(labelText)

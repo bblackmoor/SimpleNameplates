@@ -64,6 +64,7 @@ local function NewProfile(presetName)
     local profile = {
         priorityColors = {},
         effectColors = {},
+        healthBars = {},
         appearance = {},
         showThreat = DEFAULT_SHOW_THREAT,
         interruptibleCastStyle = defaults.interruptibleCastStyle,
@@ -71,6 +72,7 @@ local function NewProfile(presetName)
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
         local color = preset and preset.priorityColors and preset.priorityColors[key] or default
         profile.priorityColors[key] = CopyColor(color)
+        profile.healthBars[key] = true
     end
     for key, default in pairs(DEFAULT_EFFECT_COLORS) do
         local color = preset and preset.effectColors and preset.effectColors[key] or default
@@ -122,6 +124,10 @@ end
 local CAST_STYLES = {NONE = true, PIXEL = true, AUTOCAST = true, BUTTON = true, PROC = true}
 
 local function ValidateProfileToggles(profile, saved)
+    local savedBars = type(saved.healthBars) == "table" and saved.healthBars or {}
+    for key in pairs(DEFAULT_PRIORITY_COLORS) do
+        profile.healthBars[key] = SavedBoolean(savedBars[key], true)
+    end
     profile.showThreat = SavedBoolean(saved.showThreat, profile.showThreat)
     -- Older profiles used a separate activation switch and custom Pulse.
     if saved.interruptibleHighlight == false then
@@ -447,6 +453,16 @@ local function PriorityColorForState(state)
     return color.r, color.g, color.b
 end
 
+local function GetHealthBarEnabled(state)
+    return ActiveProfile().healthBars[state] ~= false
+end
+
+local function SetHealthBarEnabled(state, enabled)
+    if DEFAULT_PRIORITY_COLORS[state] and type(enabled) == "boolean" then
+        ActiveProfile().healthBars[state] = enabled
+    end
+end
+
 local function GetCategoryMode(state)
     return EnsureDB().global.categoryModes[state] or "active"
 end
@@ -497,6 +513,7 @@ local function ResetAllColors()
     local defaults = ActiveProfileDefaults()
     for key, default in pairs(defaults.priorityColors) do
         profile.priorityColors[key] = CopyColor(default)
+        profile.healthBars[key] = true
     end
     for key, default in pairs(defaults.effectColors) do
         profile.effectColors[key] = CopyColor(default)
@@ -559,6 +576,9 @@ ns.RenameActiveProfile = RenameActiveProfile
 ns.DeleteActiveProfile = DeleteActiveProfile
 ns.RestoreBundledProfiles = RestoreBundledProfiles
 ns.PriorityColorForState = PriorityColorForState
+ns.GetHealthBarEnabled = GetHealthBarEnabled
+ns.SetHealthBarEnabled = SetHealthBarEnabled
+-- Legacy category modes are retained for saved-data compatibility only.
 ns.GetCategoryMode = GetCategoryMode
 ns.SetCategoryMode = SetCategoryMode
 ns.SetPriorityColor = SetPriorityColor
