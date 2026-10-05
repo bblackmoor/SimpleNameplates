@@ -246,4 +246,31 @@ frame.castBar.IsInterruptable = nil
 Update()
 assert(not h.frame:IsShown(), "missing native decision cannot fall back to ambiguous icon visibility")
 
+-- Resolve a native nested cast through real capabilities/accessors and Glow.
+assert(loadfile("SimpleNameplates/PresentationCapabilities.lua"))("SimpleNameplates", ns)
+assert(loadfile("SimpleNameplates/TextUnderlayers.lua"))("SimpleNameplates", ns)
+assert(loadfile("SimpleNameplates/NameplateFrames.lua"))("SimpleNameplates", ns)
+assert(loadfile("SimpleNameplates/CastHighlight.lua"))("SimpleNameplates", ns)
+local nestedFrame = {name = Region(), healthBar = Region(), CastBarsContainer = Region(),
+    SNPPresentation = {showCastBar = true}}
+local nestedBar = Region(nestedFrame.CastBarsContainer)
+nestedFrame.CastBarsContainer.castBar = nestedBar
+nestedBar.Icon, nestedBar.Border = Region(nestedBar), Region(nestedBar)
+nestedBar.Border:SetAlpha(0.7)
+ns.CastHighlight.UpdateInterruptibleHighlight(nestedFrame, {}, nestedFrame.SNPPresentation)
+local nestedHighlight = assert(nestedFrame.SNPInterruptibleHighlight, "native nested cast creates highlight")
+assert(nestedHighlight.castBar == nestedBar and nestedHighlight.glowHost[key], "native nested cast starts real library glow")
+local assessment = ns.PresentationCapabilities.InspectFrame(nestedFrame, {})
+ns.NameplateFrames.ApplyBarArtwork(nestedFrame, assessment, {})
+assert(nestedBar.Border:GetAlpha() == 0, "nested cast artwork styled")
+ns.NameplateFrames.RestoreBarArtwork(nestedFrame, {})
+assert(nestedBar.Border:GetAlpha() == 0.7, "nested cast original artwork restored")
+local containerBlocked = true
+nestedFrame.CastBarsContainer.IsForbidden = function() return containerBlocked end
+nestedBar.Icon:SetShown(false)
+assert(nestedHighlight.glowHost[key], "forbidden nested container defers callback")
+containerBlocked = false
+ns.CastHighlight.RetryPending({})
+assert(not nestedHighlight.glowHost[key], "nested access recovery retries current native interruptibility")
+
 print("Cast glow integration smoke: passed")

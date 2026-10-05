@@ -1304,5 +1304,32 @@ for _, disableMaster in ipairs({false, true}) do
 end
 stylingEnabled, categoryMode = true, "active"
 
+-- Use the native nested layout for title transitions and cast decisions.
+ns.RestoreAll()
+stylingEnabled, categoryMode, highlightEnabled = true, "active", true
+unit = {player = true, faction = "Alliance", reaction = 5}
+trp3Options = {showFullTitle = true}
+ns.TRP3 = {GetDisplayInfo = function() return {fullTitle = "Visible RP title"} end}
+local nestedCast = plateFrame.castBar
+nestedCast.Icon:SetShown(true)
+plateFrame.CastBarsContainer = Region()
+plateFrame.CastBarsContainer.castBar = nestedCast
+plateFrame.castBar, plateFrame.CastBar = nil, nil
+nestedCast:Show()
+ns.RefreshAll()
+equal(plateFrame.SNPPresentation.showCastBar, true, "native nested cast included in presentation")
+equal(plateFrame.SNPFullTitleText.shown, false, "native nested cast hides long title")
+equal(plateFrame.SNPInterruptibleHighlight.castBar, nestedCast, "highlight uses native nested cast")
+equal(plateFrame.SNPInterruptibleHighlight.frame.shown, true, "nested interruptible cast permits highlight")
+nestedCast:Hide()
+equal(plateFrame.SNPFullTitleText.shown, true, "nested cast end restores title without restyling")
+nestedCast:Show()
+equal(plateFrame.SNPFullTitleText.shown, false, "nested channel start hides title")
+stylingEnabled = false; ns.RestoreAll()
+equal(nestedCast.shown, true, "disable preserves native nested cast visibility")
+equal(plateFrame.SNPInterruptibleHighlight.frame.shown, false, "disable hides nested cast effect")
+nestedCast:Hide()
+equal(plateFrame.SNPFullTitleText.shown, false, "nested cast end cannot revive disabled title")
+
 print("Nameplates smoke: passed")
 

@@ -66,10 +66,17 @@ local function InspectFrame(frame, context)
         result.status, result.reason = containerStatus, "health-bar container"
         return result
     end
+    local castContainer = InspectField(frame, "CastBarsContainer")
+    local castContainerStatus = ObjectStatus(castContainer, context)
+    if castContainerStatus ~= "missing" and castContainerStatus ~= "accessible" then
+        result.status, result.reason = castContainerStatus, "cast-bar container"
+        return result
+    end
     local regions = {
         name = InspectField(frame, "name"),
         healthBar = InspectField(frame, "healthBar") or InspectField(container, "healthBar"),
-        castBar = InspectField(frame, "castBar") or InspectField(frame, "CastBar"),
+        castBar = InspectField(frame, "castBar") or InspectField(frame, "CastBar")
+            or InspectField(castContainer, "castBar"),
     }
     for key, region in pairs(regions) do
         local status = ObjectStatus(region, context)

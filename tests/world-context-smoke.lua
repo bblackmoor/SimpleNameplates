@@ -103,4 +103,37 @@ C_NamePlate = { GetNamePlateForUnit = function() return nil end }
 equal(cap.InspectUnit("target", safe).status, "missing", "missing plate")
 C_NamePlate.GetNamePlateForUnit = function() return forbidden end
 equal(cap.InspectUnit("target", safe).status, "forbidden", "forbidden base plate")
+-- Current Retail templates nest casts inside CastBarsContainer.
+local nestedBar = {Icon = {}}
+local nestedFrame = {name = {}, CastBarsContainer = {castBar = nestedBar}}
+equal(cap.InspectFrame(nestedFrame, safe).castBar, nestedBar, "native nested cast bar found")
+equal(cap.InspectFrame(nestedFrame, safe).hasCastBar, true, "native nested cast capability")
+equal(ns.NameplateFrames.GetCastBar(nestedFrame, safe), nestedBar, "shared accessor returns nested cast")
+local legacyBar = {}
+nestedFrame.castBar = legacyBar
+equal(cap.InspectFrame(nestedFrame, safe).castBar, legacyBar, "legacy direct cast alias retains precedence")
+nestedFrame.castBar, nestedFrame.CastBar = nil, legacyBar
+equal(cap.InspectFrame(nestedFrame, safe).castBar, legacyBar, "capitalized cast alias retained")
+nestedFrame.CastBar = nil
+nestedFrame.CastBarsContainer = forbidden
+equal(cap.InspectFrame(nestedFrame, safe).status, "forbidden", "forbidden cast container not inspected")
+nestedFrame.CastBarsContainer = secret
+equal(cap.InspectFrame(nestedFrame, safe).status, "unknown", "secret cast container rejected")
+nestedFrame.CastBarsContainer = {IsProtected = function() return true end, castBar = nestedBar}
+equal(cap.InspectFrame(nestedFrame, {combatLockdown = true}).status, "restricted", "cast container protected during combat")
+equal(cap.InspectFrame(nestedFrame, safe).castBar, nestedBar, "cast container accessible after combat")
+nestedFrame.CastBarsContainer = {castBar = forbidden}
+equal(cap.InspectFrame(nestedFrame, safe).status, "forbidden", "nested forbidden bar rejected")
+nestedFrame.CastBarsContainer = {castBar = secret}
+equal(cap.InspectFrame(nestedFrame, safe).status, "unknown", "secret nested bar rejected")
+nestedFrame.CastBarsContainer = setmetatable({}, {__index = function(_, key)
+    if key == "castBar" then error("cast field unavailable") end
+end})
+equal(cap.InspectFrame(nestedFrame, safe).canAccess, false, "failed nested field read cannot masquerade as missing bar")
+nestedFrame.CastBarsContainer = {castBar = nestedBar}
+nestedBar.Icon = forbidden
+equal(cap.InspectFrame(nestedFrame, safe).canAccess, false, "nested forbidden icon rejected")
+nestedBar.Icon = {}
+equal(cap.InspectFrame(nestedFrame, safe).canAccess, true, "nested cast access recovers")
+
 print("World context and capabilities smoke: passed")

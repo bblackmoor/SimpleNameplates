@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.178
+
+* Resolves Retail's native CastBarsContainer.castBar alongside legacy direct cast fields. Checks container access before reading the nested bar and retains conservative checks for restricted bars and icons. Titles now follow native cast/channel visibility, and nested cast bars receive artwork styling and interruptibility effects.
+* Adds native-layout capability/access tests, runtime title and disable transitions, real LibCustomGlow integration, artwork restoration and deferred-access retry coverage. Updates documentation; all twenty smoke suites and whitespace checks pass. Native WoW verification remains pending.
+
 ## 1.0.177
 
 * Keeps classification badges under Blizzard control during styling, repairs and restoration. Hidden retained elite/rare artwork cannot be exposed on reused plates, and native rarity-display and raid-marker rules remain effective.
