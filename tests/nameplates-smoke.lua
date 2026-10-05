@@ -290,7 +290,7 @@ equal(plateFrame.SNPInsideName.text, "Roleplay Name", "inside name retained")
 equal(plateFrame.name.alpha, 0, "original inside name concealed")
 equal(plateFrame.healthBar.height, 20, "inside padding retained")
 equal(plateFrame.SNPInsideName.size, 12, "inside name retains selected size")
-equal(plateFrame.SNPInsideName.flags, "", "inside name has no outline")
+equal(plateFrame.SNPInsideName.flags, "OUTLINE", "inside name has thin outline")
 threatEnabled, threatPercent = true, nil
 ns.RefreshAll()
 equal(plateFrame.SNPInsideName.points[2][2], plateFrame.healthBar, "blank threat uses full bar width")
@@ -304,7 +304,7 @@ equal(plateFrame.SNPInsideName.points[2][2], plateFrame.SNPThreatText, "cached r
 threatEnabled, threatPercent = false, nil
 ns.RefreshAll()
 
-equal(plateFrame.name.flags, "", "hidden native inside name has no outline")
+equal(plateFrame.name.flags, "OUTLINE", "hidden native inside name has thin outline")
 appearance.nameSize = 36
 ns.RefreshAll()
 equal(plateFrame.SNPInsideName.size, 36, "large inside name retains full size")
@@ -1073,7 +1073,7 @@ for index = 1, 3 do
     categoryMode, fontWrites = "active", 0
     ns.RefreshAll()
     equal(fontWrites, 1, "hostile toggle applies font once despite native callback")
-    equal(plateFrame.SNPInsideName.flags, "", "hostile toggle retains shadow rendering")
+    equal(plateFrame.SNPInsideName.flags, "OUTLINE", "hostile toggle retains shadow rendering")
 end
 plateFrame.name.SetFont = function() error("simulated font write failure") end
 local ok = pcall(ns.RefreshAll)
@@ -1086,11 +1086,11 @@ local nativeFlags = plateFrame.SNPOriginalPresentation.name.SetFont[3] or ""
 appearance.useSlugRendering = true
 equal(ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get()), false, "ordinary font cache cannot undo Slug selection")
 ns.RefreshAll()
-equal(plateFrame.SNPInsideName.flags, "SLUG", "inside name uses Slug without outline")
-for _, layer in ipairs(plateFrame.SNPInsideName.SNPUnderlayers) do equal(layer.flags, "SLUG", "inside name underlayers use Slug") end
+equal(plateFrame.SNPInsideName.flags, "SLUG,OUTLINE", "inside name uses Slug with thin outline")
+for _, layer in ipairs(plateFrame.SNPInsideName.SNPUnderlayers) do equal(layer.flags, "SLUG,OUTLINE", "inside name underlayers use Slug") end
 plateFrame.name:SetFont("drifted", 10, "")
 ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
-equal(plateFrame.name.flags, "SLUG", "cached repair preserves Slug")
+equal(plateFrame.name.flags, "SLUG,OUTLINE", "cached repair preserves Slug")
 appearance.namePlacement = "ABOVE"; ns.RefreshAll()
 equal(plateFrame.name.flags, "SLUG,OUTLINE", "above-bar name uses thin Slug outline")
 unit = {reaction = 5, interactable = true}; ns.RefreshAll()

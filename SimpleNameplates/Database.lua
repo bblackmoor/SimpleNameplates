@@ -3,6 +3,8 @@ local _, ns = ...
 local defaults = ns.Defaults
 local DEFAULT_PRIORITY_COLORS = defaults.priorityColors
 local DEFAULT_CATEGORY_MODES = defaults.categoryModes
+local DEFAULT_HEALTH_BARS = defaults.healthBars
+local DEFAULT_DIM_BACKGROUND_NAMES = defaults.dimBackgroundNames
 local DEFAULT_EFFECT_COLORS = defaults.effectColors
 local COLOR_PRESETS = defaults.colorPresets
 local IsSavedFontSelection = ns.IsSavedFontSelection
@@ -68,13 +70,13 @@ local function NewProfile(presetName)
         appearance = {},
         showThreat = DEFAULT_SHOW_THREAT,
         gradients = false,
-        dimBackgroundNames = false,
+        dimBackgroundNames = DEFAULT_DIM_BACKGROUND_NAMES,
         interruptibleCastStyle = defaults.interruptibleCastStyle,
     }
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
         local color = preset and preset.priorityColors and preset.priorityColors[key] or default
         profile.priorityColors[key] = CopyColor(color)
-        profile.healthBars[key] = true
+        profile.healthBars[key] = DEFAULT_HEALTH_BARS[key]
     end
     for key, default in pairs(DEFAULT_EFFECT_COLORS) do
         local color = preset and preset.effectColors and preset.effectColors[key] or default
@@ -128,10 +130,10 @@ local CAST_STYLES = {NONE = true, PIXEL = true, AUTOCAST = true, BUTTON = true, 
 local function ValidateProfileToggles(profile, saved)
     local savedBars = type(saved.healthBars) == "table" and saved.healthBars or {}
     for key in pairs(DEFAULT_PRIORITY_COLORS) do
-        profile.healthBars[key] = SavedBoolean(savedBars[key], true)
+        profile.healthBars[key] = SavedBoolean(savedBars[key], DEFAULT_HEALTH_BARS[key])
     end
     profile.gradients = SavedBoolean(saved.gradients, false)
-    profile.dimBackgroundNames = SavedBoolean(saved.dimBackgroundNames, false)
+    profile.dimBackgroundNames = SavedBoolean(saved.dimBackgroundNames, DEFAULT_DIM_BACKGROUND_NAMES)
     profile.showThreat = SavedBoolean(saved.showThreat, profile.showThreat)
     -- Older profiles used a separate activation switch and custom Pulse.
     if saved.interruptibleHighlight == false then
@@ -533,14 +535,14 @@ local function ResetAllColors()
     local defaults = ActiveProfileDefaults()
     for key, default in pairs(defaults.priorityColors) do
         profile.priorityColors[key] = CopyColor(default)
-        profile.healthBars[key] = true
+        profile.healthBars[key] = DEFAULT_HEALTH_BARS[key]
     end
     for key, default in pairs(defaults.effectColors) do
         profile.effectColors[key] = CopyColor(default)
     end
     profile.interruptibleCastStyle = defaults.interruptibleCastStyle
     profile.gradients = false
-    profile.dimBackgroundNames = false
+    profile.dimBackgroundNames = DEFAULT_DIM_BACKGROUND_NAMES
     local modes = EnsureDB().global.categoryModes
     for key, default in pairs(DEFAULT_CATEGORY_MODES) do modes[key] = default end
     if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end

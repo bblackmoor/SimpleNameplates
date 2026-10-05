@@ -58,7 +58,7 @@ Settings cannot open through these commands during combat. Diagnostic and `/snp 
 | Cast color/style | Profile; cyan and None | RGB-only color; None, Moving dashes, Autocast Shine, Action Button Glow, Proc Glow; no Pulse or separate cast switch |
 | Name font | Profile, `FRIZQT` | Six existing built-in IDs remain valid; shared `LSM:` selections survive missing providers and reloads |
 | Threat font | Profile, `ARIALN` | Independent font choice; same dynamic shared registry and missing-font fallback |
-| Slug font rendering | Profile, true | Appearance toggle near fonts; shared rendering flags, thin outlines outside health bars and two unoutlined black underlayers inside |
+| Slug font rendering | Profile, true | Appearance toggle near fonts; shared rendering flags, thin outlines on all styled text and two black underlayers inside |
 | Sanctuary font matching | Profile, true | Changes name/title face only; selected name font applies when disabled |
 | Name size | Profile, 21 | 8–36 points in steps of 1; also controls threat size; titles use 80% |
 | Health bar width | Profile, 100% | 80–150% in steps of 5; preserve existing rounding/clamping |
@@ -69,7 +69,7 @@ Settings cannot open through these commands during combat. Diagnostic and `/snp 
 | TRP3 name, short title, full title, OOC preferences | Global, all true | Preserve refresh/cache handling, WoW-name fallback; long titles below health bars or names, hidden during native casts/channels |
 
 Default priority RGB values are red `#FF0000`, orange `#FF6600`, yellow
-`#FFCC00`, green `#33CC33`, light grey `#D3D3D3`, grey `#999999`.
+`#FFCC00`, blue `#0000FF`, green `#00FF00`, grey `#999999`.
 High Contrast uses `#FF00FF`, `#FF6600`, `#FFFF00`, `#00FFFF`, `#0066FF`,
 `#FFFFFF`, and a green cast color `#00FF00`. Colors are canonical across zones
 and combat; do not reintroduce separate sanctuary color controls.

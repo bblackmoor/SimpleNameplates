@@ -1,9 +1,6 @@
--- Simple Nameplates: one rendering policy for all styled plate text.
+-- Simple Nameplates: thin outlines on all styled plate text.
 local _, ns = ...
 
-function ns.FontFlags(outlined)
-    if ns.GetAppearanceSetting("useSlugRendering") == true then
-        return outlined and "SLUG,OUTLINE" or "SLUG"
-    end
-    return outlined and "OUTLINE" or ""
+function ns.FontFlags()
+    return ns.GetAppearanceSetting("useSlugRendering") == true and "SLUG,OUTLINE" or "OUTLINE"
 end

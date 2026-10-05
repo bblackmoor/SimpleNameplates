@@ -72,7 +72,7 @@ local assessment = ns.PresentationCapabilities.InspectFrame(frame, context)
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
 for _, key in ipairs({"Text", "RightText", "LeftText"}) do
     assert(health[key].r == 1 and health[key].g == 1 and health[key].b == 1, "bright bar native text white")
-    assert(health[key].flags == "", "native health text has no outline")
+    assert(health[key].flags == "OUTLINE", "native health text has thin outline")
     assert(health[key].shadow[4] == 0 and #health[key].SNPUnderlayers == 2, "native health text uses black offset copy")
     assert(health[key].vr == 1, "native text tint neutral")
 end
@@ -92,12 +92,12 @@ slug = true
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
 assert(cast.Text.flags == "SLUG,OUTLINE", "cast text uses outlined Slug")
 for _, key in ipairs({"Text", "RightText", "LeftText"}) do
-    assert(health[key].flags == "SLUG", "native health text uses unoutlined Slug")
-    for _, layer in ipairs(health[key].SNPUnderlayers) do assert(layer.flags == "SLUG", "native underlayers use Slug") end
+    assert(health[key].flags == "SLUG,OUTLINE", "native health text uses outlined Slug")
+    for _, layer in ipairs(health[key].SNPUnderlayers) do assert(layer.flags == "SLUG,OUTLINE", "native underlayers use Slug") end
 end
 slug = false
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
-assert(cast.Text.flags == "OUTLINE" and health.Text.flags == "", "toggle off restores ordinary rendering")
+assert(cast.Text.flags == "OUTLINE" and health.Text.flags == "OUTLINE", "toggle off restores ordinary rendering")
 assert(health.barTexture.texture == "Interface\\Buttons\\WHITE8X8")
 assert(health.SNPPlainBackground.bar == health and health.SNPPlainBackground.shown)
 cast.barTexture:SetAtlas("changed-for-new-cast")

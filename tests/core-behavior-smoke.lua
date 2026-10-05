@@ -91,13 +91,13 @@ end
 
 -- Background dimming validation and persistence.
 local dim = fresh()
-equal(dim.GetDimBackgroundNames(), false, "dim defaults off")
-dim.SetDimBackgroundNames(true)
+equal(dim.GetDimBackgroundNames(), true, "dim defaults on")
+dim.SetDimBackgroundNames(false)
 dim = loadCore()
-equal(dim.GetDimBackgroundNames(), true, "dim survives reload")
+equal(dim.GetDimBackgroundNames(), false, "saved dim Off survives reload")
 dim.EnsureDB().profiles.Default.dimBackgroundNames = "invalid"
 dim = loadCore()
-equal(dim.GetDimBackgroundNames(), false, "invalid dim uses default")
+equal(dim.GetDimBackgroundNames(), true, "invalid dim uses default")
 
 -- Fresh defaults and independent character selection.
 local ns = fresh()
@@ -140,8 +140,8 @@ equal(ns.GetAppearanceSetting("nameSize"), 18, "name size default")
 equal(ns.GetAppearanceSetting("namePlacement"), "ABOVE", "placement default")
 equal(ns.PriorityColorForState("attacking"), 1, "default red component")
 for _, case in ipairs({
-    {"friendly", 51, 204, 51},
-    {"useful", 211, 211, 211},
+    {"friendly", 0, 0, 255},
+    {"useful", 0, 255, 0},
     {"useless", 153, 153, 153},
 }) do
     local r, g, b = ns.PriorityColorForState(case[1])
@@ -457,7 +457,7 @@ for _, key in ipairs({"friendlyPC", "unfriendlyPC", "unfriendlyNPC", "other", "s
     equal(db.global.categoryModes[key], nil, "obsolete mode discarded: " .. key)
     equal(db.profiles.Default.priorityColors[key], nil, "obsolete color discarded: " .. key)
 end
-equal(ns.PriorityColorForState("friendly"), 51 / 255, "old player color not converted")
+equal(ns.PriorityColorForState("friendly"), 0, "old player color not converted")
 equal(db.profiles.Default.priorityColors.sanctuaryFriendly, nil, "no separate sanctuary player color")
 local categoryCount = 0
 for _ in pairs(db.global.categoryModes) do categoryCount = categoryCount + 1 end
@@ -605,7 +605,7 @@ do
     local bars = fresh()
     equal(bars.GetAppearanceSetting("nameSize"), 18, "new default font size")
     for state in pairs(bars.Defaults.priorityColors) do
-        equal(bars.GetHealthBarEnabled(state), true, "old profiles gain enabled bars")
+        equal(bars.GetHealthBarEnabled(state), state ~= "useless", "missing bar settings use category defaults")
         bars.SetHealthBarEnabled(state, false)
     end
     assert(bars.CopyActiveProfile("Bars copy"))
@@ -614,6 +614,10 @@ do
     equal(bars.GetHealthBarEnabled("friendly"), false, "appearance reset preserves bars")
     bars.ResetAllColors()
     equal(bars.GetHealthBarEnabled("friendly"), true, "colors reset restores bars")
+    equal(bars.GetHealthBarEnabled("useless"), false, "colors reset disables background bars")
+    bars.SetHealthBarEnabled("useless", true)
+    bars = loadCore()
+    equal(bars.GetHealthBarEnabled("useless"), true, "saved background bar On survives reload")
     bars.SetActiveProfileName("Default")
     equal(bars.GetHealthBarEnabled("friendly"), false, "other profile remains independent")
     local reloaded = loadCore()

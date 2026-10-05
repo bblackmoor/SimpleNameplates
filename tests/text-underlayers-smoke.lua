@@ -51,7 +51,7 @@ assert(created == 2 and source.sublevel == 7)
 for index, expected in ipairs({{1, -2}, {2, -1}}) do
     local layer = source.SNPUnderlayers[index]
     assert(layer.color[1] == 0 and layer.color[2] == 0 and layer.color[3] == 0 and layer.color[4] == 1)
-    assert(layer.text == "White label" and layer.flags == "" and layer.shadow[4] == 0)
+    assert(layer.text == "White label" and layer.flags == "OUTLINE" and layer.shadow[4] == 0)
     assert(layer.layer == "ARTWORK" and source.layer == "OVERLAY" and layer.justify == "RIGHT")
     for _, point in ipairs(layer.points) do
         assert(point[2] == source and point[4] == expected[1] and point[5] == expected[2])
@@ -73,10 +73,10 @@ ns.TextUnderlayers.Update(source, parent)
 assert(created == 2, "repeated refresh reuses exactly two layers")
 slug = true
 ns.TextUnderlayers.Update(source, parent)
-for _, layer in ipairs(source.SNPUnderlayers) do assert(layer.flags == "SLUG", "underlayers share Slug rendering") end
+for _, layer in ipairs(source.SNPUnderlayers) do assert(layer.flags == "SLUG,OUTLINE", "underlayers share Slug rendering") end
 slug = false
 ns.TextUnderlayers.Update(source, parent)
-for _, layer in ipairs(source.SNPUnderlayers) do assert(layer.flags == "", "ordinary rendering returns without new layers") end
+for _, layer in ipairs(source.SNPUnderlayers) do assert(layer.flags == "OUTLINE", "ordinary rendering returns without new layers") end
 ns.TextUnderlayers.Hide(source)
 source:SetText("Native label")
 source:Show()

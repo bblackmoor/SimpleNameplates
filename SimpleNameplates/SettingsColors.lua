@@ -129,8 +129,7 @@ local function AddPriorityColorControls(context)
     CreatePriorityColorRow(context, "3. Can attack me — Neutral", "neutral")
     CreatePriorityColorRow(context, "4. Player - Friendly", "friendly")
     CreatePriorityColorRow(context, "5. NPC - Interactive", "useful")
-    CreatePriorityColorRow(context, "6. NPC - Background", "useless",
-        "Fallback for unmatched entities.")
+    CreatePriorityColorRow(context, "6. NPC - Background", "useless")
     AddBackgroundNameControl(context)
 end
 
@@ -168,7 +167,7 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Restores this profile's Health Bar switches to On, gradients and background-name dimming to Off, and cast highlight to None.")
+        "Restores health bars to On except NPC - Background, background-name dimming to On, gradients to Off, and cast highlight to None.")
     AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")

@@ -72,7 +72,7 @@ for _, case in ipairs(cases) do
     swatch:GetScript("OnLeave")(swatch)
     local before = refreshes
     toggle:GetScript("OnClick")(toggle, "LeftButton")
-    assert(ns.GetHealthBarEnabled(state) == false and refreshes == before + 1)
+    assert(ns.GetHealthBarEnabled(state) == (state == "useless") and refreshes == before + 1)
     local oldR, oldG, oldB = ns.PriorityColorForState(state)
     Click(swatch)
     local picker = ColorPickerFrame.info
@@ -88,20 +88,20 @@ for _, case in ipairs(cases) do
 end
 
 local dimToggle = Control(Row("Dim background NPC names"), "switch")
-assert(not ns.GetDimBackgroundNames(), "background dimming defaults off")
+assert(ns.GetDimBackgroundNames(), "background dimming defaults on")
 assert(Row("Dim background NPC names").point[5] < Row("6. NPC - Background").point[5], "dimming follows background category")
 local dimRefreshes = refreshes
 dimToggle:GetScript("OnClick")(dimToggle, "LeftButton")
-assert(ns.GetDimBackgroundNames() and refreshes == dimRefreshes + 1)
-assert(ns.CopyActiveProfile("Dim copy") and ns.GetDimBackgroundNames())
-ns.SetDimBackgroundNames(false)
-assert(ns.SetActiveProfileName("Default") and ns.GetDimBackgroundNames(), "dimming is profile scoped")
+assert(not ns.GetDimBackgroundNames() and refreshes == dimRefreshes + 1)
+assert(ns.CopyActiveProfile("Dim copy") and not ns.GetDimBackgroundNames())
+ns.SetDimBackgroundNames(true)
+assert(ns.SetActiveProfileName("Default") and not ns.GetDimBackgroundNames(), "dimming is profile scoped")
 ns.ResetAppearance()
-assert(ns.GetDimBackgroundNames(), "Appearance reset preserves dimming")
+assert(not ns.GetDimBackgroundNames(), "Appearance reset preserves dimming")
 ns.SetDimBackgroundNames("invalid")
-assert(ns.GetDimBackgroundNames(), "invalid setter ignored")
+assert(not ns.GetDimBackgroundNames(), "invalid setter ignored")
 ns.ResetAllColors(); panel.Refresh()
-assert(not ns.GetDimBackgroundNames() and not dimToggle.MyObject:GetValue(), "Colors reset disables dimming")
+assert(ns.GetDimBackgroundNames() and dimToggle.MyObject:GetValue(), "Colors reset enables dimming")
 
 local gradientToggle = Control(Row("Gradients"), "switch")
 local preview
@@ -117,6 +117,7 @@ for _, object in ipairs(ui.objects) do
     end
 end
 assert(sample and threat and sample.textColor[1] == 1 and threat.textColor[1] == 1)
+assert(sample.flags == "SLUG,OUTLINE" and threat.flags == "SLUG,OUTLINE", "preview text always outlined")
 assert(Row("Gradients").point[5] > Row("1. Attacking me").point[5], "gradient row above colors")
 local beforeGradient = refreshes
 gradientToggle:GetScript("OnClick")(gradientToggle, "LeftButton")
@@ -190,7 +191,7 @@ assert(ns.GetActiveProfileName() == "High Contrast")
 for _, case in ipairs(cases) do
     local default = highContrast.priorityColors[case[1]]
     RGBEqual(SwatchRGB(Control(Row(case[2]), "color")), default.r, default.g, default.b)
-    assert(ns.GetHealthBarEnabled(case[1]) == true)
+    assert(ns.GetHealthBarEnabled(case[1]) == (case[1] ~= "useless"))
 end
 RGBEqual(SwatchRGB(cast), 0, 1, 0)
 initial, before = Snapshot(SimpleNameplatesDB), refreshes

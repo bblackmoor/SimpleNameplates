@@ -39,9 +39,9 @@ SimpleNameplatesDB = {
 
 A valid version-2 saved database separates behavior from look and feel. The structural refactor kept this shape and version. Validation reconstructs settings from defaults, discards invalid and unknown fields, and retains recognized valid settings regardless of the saved schema marker. No one-off migration or import/export facility is needed.
 
-Useful and Useless each have one `priorityColors` entry per profile, used in all world and combat contexts. Player - Friendly uses one `friendly` entry in all world and combat contexts, with green (`#33CC33`) as the default. The former `sanctuaryFriendly`, `sanctuaryUseful`, and `sanctuaryUseless` fields are unknown settings and are discarded during validation; valid `useful` and `useless` values are retained without conversion.
+Useful and Useless each have one `priorityColors` entry per profile, used in all world and combat contexts. Player - Friendly uses one `friendly` entry in all world and combat contexts, with blue (`#0000FF`) as the default. The former `sanctuaryFriendly`, `sanctuaryUseful`, and `sanctuaryUseless` fields are unknown settings and are discarded during validation; valid `useful` and `useless` values are retained without conversion.
 
-`appearance.useSlugRendering` is a per-profile boolean, on by default. It selects Slug rendering for styled plate text, with thin outlines outside health bars and unoutlined glyphs/underlayers inside. Copies and reloads retain it; Reset Appearance enables it. Missing or invalid values use the default. Schema remains 2.
+`appearance.useSlugRendering` is a per-profile boolean, on by default. It selects Slug rendering for styled plate text, with thin black outlines on all styled text, including inside health bars. Copies and reloads retain it; Reset Appearance enables it. Missing or invalid values use the default. Schema remains 2.
 
 `appearance.matchSanctuaryFont` is a per-profile boolean, enabled by default. It selects Blizzard's localized world-name font face in sanctuaries without replacing the saved `nameFont`. Profile copies retain it and Reset Appearance restores the default; invalid or missing values use the default.
 
@@ -85,3 +85,5 @@ Both Global category modes and Profile priority colors recognize only `attacking
 `healthBars` accepts boolean values only. Copies and reloads retain false; missing or invalid values default to true. Reset all colors turns all six bars on in the selected profile. Reset Appearance preserves these choices. Names default to size 18; saved sizes are preserved, and long titles use the chosen name size minus two.
 
 `gradients` is a per-profile boolean, on by default. Copies/reloads retain it; invalid or missing values default off. Colors reset disables it; Appearance reset preserves it. It controls fixed-position health fill tinting and inside-bar text underlayers, not cast fill or health values.
+
+Health bars default On for the first five categories and Off for NPC - Background. `dimBackgroundNames` is a per-profile boolean, default On: background names use #999999 when enabled and #FFFFFF when disabled. Colors reset restores both defaults; Appearance reset preserves them. Valid saved choices remain authoritative.

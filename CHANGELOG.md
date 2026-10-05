@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.189
+
+* Matches the requested Default palette: red #FF0000, orange #FF6600, yellow #FFCC00, blue #0000FF, green #00FF00, grey #999999. Health bars default On except NPC - Background; background-name dimming defaults On. Existing saved choices are preserved; missing/invalid values and Colors reset use the new defaults. High Contrast retains its separate palette.
+* Removes the background-category fallback note. Applies a thin black outline to all styled plate text, including inside-bar names, threat percentages, native health labels and preview text, with Slug either On or Off. Existing gradient/underlayer visibility rules are preserved.
+
 ## 1.0.188
 
 * Adds the per-profile Dim background NPC names toggle below NPC - Background on Colors, off by default. Background NPC names use #999999 when On and #FFFFFF when Off, above or inside bars and when their bar is disabled. Titles, threat text and bar colors are unchanged.

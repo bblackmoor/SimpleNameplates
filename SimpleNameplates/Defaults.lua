@@ -9,8 +9,8 @@ local DEFAULT_PRIORITY_COLORS = {
     attacking = RGB8(255, 0, 0),
     hostile = RGB8(255, 102, 0),
     neutral = RGB8(255, 204, 0),
-    friendly = RGB8(51, 204, 51),
-    useful = RGB8(211, 211, 211),
+    friendly = RGB8(0, 0, 255),
+    useful = RGB8(0, 255, 0),
     useless = RGB8(153, 153, 153),
 }
 local DEFAULT_CATEGORY_MODES = {
@@ -86,6 +86,8 @@ ns.MAX_HEALTH_BAR_WIDTH = 150
 ns.Defaults = {
     priorityColors = DEFAULT_PRIORITY_COLORS,
     categoryModes = DEFAULT_CATEGORY_MODES,
+    healthBars = {attacking = true, hostile = true, neutral = true, friendly = true, useful = true, useless = false},
+    dimBackgroundNames = true,
     effectColors = DEFAULT_EFFECT_COLORS,
     colorPresets = COLOR_PRESETS,
     fontByValue = FONT_BY_VALUE,
