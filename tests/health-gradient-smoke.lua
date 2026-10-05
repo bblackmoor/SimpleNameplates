@@ -46,22 +46,30 @@ bar:SetStatusBarTexture("native")
 local fill = bar:GetStatusBarTexture()
 ns.HealthGradient.Apply(bar, fill, {})
 local tint, mask = bar.SNPHealthGradient, bar.SNPHealthGradientMask
-assert(tint.width == 200, "fixed fade occupies the full bar width")
-assert(tint.gradient[1] == "HORIZONTAL" and tint.gradient[2].a == 0.9 and tint.gradient[3].a == 0)
+local tail = bar.SNPHealthGradientTail
+assert(tint.width == 160 and math.abs(tail.width - 40) < 0.00001, "continuous fades span full width")
+assert(mask.textureSampling[1] == "CLAMPTOBLACKADDITIVE"
+    and mask.textureSampling[2] == "CLAMPTOBLACKADDITIVE"
+    and mask.textureSampling[3] == "NEAREST", "hard clip cannot blend with transparent outside texels")
+assert(tint.color[1] == 1 and tint.color[2] == 1 and tint.color[3] == 1
+    and tint.color[4] == 1, "solid tint base has no texture-edge shading")
+assert(tint.gradient[1] == "HORIZONTAL" and tint.gradient[2].a == 0.9 and tint.gradient[3].a == 0.55)
+assert(tail.gradient[2].a == 0.55 and tail.gradient[3].a == 0, "shade stays stronger until final fifth")
+assert(tail.mask == mask, "both fades share native clipping")
 assert(tint.mask == mask and mask.allPoints == fill, "clip follows native remaining fill geometry")
 for _, remainingWidth in ipairs({200, 160, 100, 20}) do
     fill:SetWidth(remainingWidth)
-    assert(tint.width == 200 and mask.allPoints == fill, "native health loss cannot rescale gradient")
+    assert(tint.width == 160 and math.abs(tail.width - 40) < 0.00001 and mask.allPoints == fill, "native health loss cannot rescale gradient")
 end
 local replacement = bar:CreateTexture()
 ns.HealthGradient.Apply(bar, replacement, {})
 assert(mask.allPoints == replacement and bar.SNPHealthGradient == tint, "replacement fill reuses/reanchors tint")
 bar:SetWidth(250)
 ns.HealthGradient.Apply(bar, replacement, {})
-assert(tint.width == 250, "configured width scales full gradient")
+assert(tint.width == 200 and math.abs(tail.width - 50) < 0.00001, "configured width scales both fades")
 enabled = false
 ns.HealthGradient.Apply(bar, replacement, {})
-assert(not tint:IsShown() and ns.HealthGradient.ThreatLayers("nameplate1") == nil)
+assert(not tail:IsShown() and not tint:IsShown() and ns.HealthGradient.ThreatLayers("nameplate1") == nil)
 enabled = true
 ns.HealthGradient.Apply(bar, replacement, {})
 assert(tint:IsShown())
@@ -93,5 +101,5 @@ enabled = false
 ns.TextUnderlayers.Update(text, bar, ns.HealthGradient.ThreatLayers("nameplate1"))
 for _, layer in ipairs(text.SNPUnderlayers) do assert(layer.alpha == 1) end
 ns.HealthGradient.Hide(bar)
-assert(not tint:IsShown(), "restoration hides tint")
+assert(not tail:IsShown() and not tint:IsShown(), "restoration hides tint")
 print("Health gradient smoke: passed")

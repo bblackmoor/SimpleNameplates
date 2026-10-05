@@ -105,7 +105,8 @@ assert(Row("Gradients").point[5] > Row("1. Attacking me").point[5], "gradient ro
 local beforeGradient = refreshes
 gradientToggle:GetScript("OnClick")(gradientToggle, "LeftButton")
 assert(ns.GetGradientEnabled() and refreshes == beforeGradient + 1)
-assert(preview.SNPHealthGradient:IsShown() and preview.SNPHealthGradient.width == 190)
+assert(preview.SNPHealthGradient:IsShown() and preview.SNPHealthGradient.width == 190 * 0.8
+    and math.abs(preview.SNPHealthGradientTail.width - 190 * 0.2) < 0.00001)
 for _, layer in ipairs(sample.SNPUnderlayers) do assert(not layer:IsShown()) end
 for _, layer in ipairs(threat.SNPUnderlayers) do assert(layer:IsShown() and layer.alpha == 1) end
 assert(ns.CopyActiveProfile("Gradient copy"))

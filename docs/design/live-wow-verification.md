@@ -112,3 +112,10 @@ Test Silvermoon Shared and Silvermoon Horde separately, including transitions be
 - [ ] Verify long titles appear below health bars and disappear during active casts/channels, including friendly combat bars and missing-bar cases. Diagnose unavailable shown state explicitly.
 - [ ] Disable styling during lockdown on a previously styled frame; after combat, confirm original visibility and bar/container heights return while styling stays disabled. Repeat with temporarily forbidden base plates and Inactive categories becoming accessible without a context event.
 - [ ] Remove/recycle plates while restricted and verify deferred cleanup does not clear another entity's name or leave stale overlays. Confirm the uniform presentation rule in diagnostics; normal refreshes must not make new nameplate-visibility CVar claims.
+
+
+## Gradient edge verification (1.0.185)
+
+- [ ] With gradients on, verify full-health bars and the Colors preview have a dark left edge, a smooth fade to the original color at the right, and no bright left strip or faint rim. Repeat at different UI scales and bar widths.
+- [ ] Damage and heal through 80%: the fixed gradient clips at the remaining health edge; threat underlayers still appear at 80% and above and disappear below. Verify no tint extends into depleted health.
+- [ ] Disable gradients and styling in turn; confirm normal flat fills and Blizzard restoration.

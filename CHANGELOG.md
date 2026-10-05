@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.185
+
+* Uses nearest filtering for the rectangular gradient mask to avoid blending with transparent outside pixels, which can expose a bright left strip and faint rim when stretched over the bar. Uses a solid-color texture beneath the smooth gradient.
+* Keeps the bar darker toward the right: fades from 90% black at the left to 55% black at 80% width, then to clear at the far right. Both continuous segments share native health clipping. The 80% threat-underlayer threshold is unchanged.
+* Verifies mask sampling and tint configuration alongside the existing geometry, health-threshold, secret-alpha and restoration checks. In-game verification of the reported strip and border remains necessary.
+
 ## 1.0.184
 
 * Extends the fixed health gradient across the full bar: 90% black at the far left, fading linearly to 0% at the far right. The full-health settings preview uses the same fade.

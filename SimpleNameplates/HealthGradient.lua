@@ -1,6 +1,8 @@
 -- Fixed-position health tint, clipped by native fill geometry; no health arithmetic.
 local _, ns = ...
 local THREAT_LAYER_THRESHOLD = 0.8
+local SHADE_KNEE = 0.8
+local SHADE_AT_KNEE = 0.55
 local threatCurve
 
 local function Enabled()
@@ -8,7 +10,10 @@ local function Enabled()
 end
 
 local function Hide(bar)
-    if bar and bar.SNPHealthGradient then bar.SNPHealthGradient:Hide() end
+    if bar and bar.SNPHealthGradient then
+        bar.SNPHealthGradient:Hide()
+        bar.SNPHealthGradientTail:Hide()
+    end
 end
 
 local function Apply(bar, fill, context)
@@ -21,21 +26,33 @@ local function Apply(bar, fill, context)
     if not width or width <= 0 then Hide(bar); return end
     if not bar.SNPHealthGradient then
         -- Native fill anchors resolve in the renderer even with secret health.
-        -- The tint spans the full bar width; the mask alone shrinks.
+        -- Two continuous fades span the full bar; only the mask shrinks.
         local mask = bar:CreateMaskTexture(nil, "ARTWORK")
-        mask:SetTexture("Interface\\Buttons\\WHITE8X8", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        -- Linear sampling blends the white mask with transparent outside pixels,
+        -- exposing a bright rim (especially wide when an 8px mask is stretched).
+        -- Nearest sampling keeps the clip opaque inside and clear outside.
+        mask:SetTexture("Interface\\Buttons\\WHITE8X8", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "NEAREST")
         local tint = bar:CreateTexture(nil, "ARTWORK", nil, 3)
-        tint:SetTexture("Interface\\Buttons\\WHITE8X8")
-        tint:SetGradient("HORIZONTAL", CreateColor(0, 0, 0, 0.9), CreateColor(0, 0, 0, 0))
+        tint:SetColorTexture(1, 1, 1, 1)
+        tint:SetGradient("HORIZONTAL", CreateColor(0, 0, 0, 0.9), CreateColor(0, 0, 0, SHADE_AT_KNEE))
         tint:AddMaskTexture(mask)
         tint:SetPoint("TOPLEFT", bar, "TOPLEFT")
         tint:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT")
+        local tail = bar:CreateTexture(nil, "ARTWORK", nil, 3)
+        tail:SetColorTexture(1, 1, 1, 1)
+        tail:SetGradient("HORIZONTAL", CreateColor(0, 0, 0, SHADE_AT_KNEE), CreateColor(0, 0, 0, 0))
+        tail:AddMaskTexture(mask)
+        tail:SetPoint("TOPLEFT", tint, "TOPRIGHT")
+        tail:SetPoint("BOTTOMLEFT", tint, "BOTTOMRIGHT")
         bar.SNPHealthGradient, bar.SNPHealthGradientMask = tint, mask
+        bar.SNPHealthGradientTail = tail
     end
     bar.SNPHealthGradientMask:ClearAllPoints()
     bar.SNPHealthGradientMask:SetAllPoints(fill)
-    bar.SNPHealthGradient:SetWidth(width)
+    bar.SNPHealthGradient:SetWidth(width * SHADE_KNEE)
+    bar.SNPHealthGradientTail:SetWidth(width * (1 - SHADE_KNEE))
     bar.SNPHealthGradient:Show()
+    bar.SNPHealthGradientTail:Show()
 end
 
 local function ThreatLayers(unit)

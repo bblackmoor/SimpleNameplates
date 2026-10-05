@@ -137,7 +137,10 @@ end
 function methods:SetBackdrop(value) self.backdrop=value end
 function methods:SetBackdropColor(...) self.backdropColor={...} end
 function methods:SetBackdropBorderColor(...) self.backdropBorderColor={...} end
-function methods:SetTexture(value) self.texture=value end
+function methods:SetTexture(value, wrapHorizontal, wrapVertical, filter)
+    self.texture=value
+    self.textureSampling={wrapHorizontal, wrapVertical, filter}
+end
 function methods:SetColorTexture(...) self.color={...} end
 function methods:SetVertexColor(...) self.color={...} end
 function methods:SetAlpha(value) self.alpha=value end
