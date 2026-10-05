@@ -67,6 +67,7 @@ local function NewProfile(presetName)
         healthBars = {},
         appearance = {},
         showThreat = DEFAULT_SHOW_THREAT,
+        gradients = false,
         interruptibleCastStyle = defaults.interruptibleCastStyle,
     }
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
@@ -128,6 +129,7 @@ local function ValidateProfileToggles(profile, saved)
     for key in pairs(DEFAULT_PRIORITY_COLORS) do
         profile.healthBars[key] = SavedBoolean(savedBars[key], true)
     end
+    profile.gradients = SavedBoolean(saved.gradients, false)
     profile.showThreat = SavedBoolean(saved.showThreat, profile.showThreat)
     -- Older profiles used a separate activation switch and custom Pulse.
     if saved.interruptibleHighlight == false then
@@ -453,6 +455,14 @@ local function PriorityColorForState(state)
     return color.r, color.g, color.b
 end
 
+local function GetGradientEnabled()
+    return ActiveProfile().gradients
+end
+
+local function SetGradientEnabled(enabled)
+    if type(enabled) == "boolean" then ActiveProfile().gradients = enabled end
+end
+
 local function GetHealthBarEnabled(state)
     return ActiveProfile().healthBars[state] ~= false
 end
@@ -519,6 +529,7 @@ local function ResetAllColors()
         profile.effectColors[key] = CopyColor(default)
     end
     profile.interruptibleCastStyle = defaults.interruptibleCastStyle
+    profile.gradients = false
     local modes = EnsureDB().global.categoryModes
     for key, default in pairs(DEFAULT_CATEGORY_MODES) do modes[key] = default end
     if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
@@ -576,6 +587,8 @@ ns.RenameActiveProfile = RenameActiveProfile
 ns.DeleteActiveProfile = DeleteActiveProfile
 ns.RestoreBundledProfiles = RestoreBundledProfiles
 ns.PriorityColorForState = PriorityColorForState
+ns.GetGradientEnabled = GetGradientEnabled
+ns.SetGradientEnabled = SetGradientEnabled
 ns.GetHealthBarEnabled = GetHealthBarEnabled
 ns.SetHealthBarEnabled = SetHealthBarEnabled
 -- Legacy category modes are retained for saved-data compatibility only.

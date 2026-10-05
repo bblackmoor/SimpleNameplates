@@ -58,7 +58,16 @@ local function UpdateThreatText(frame, state, context, decision)
     elseif RenderPercent(text, scaled) then frame.SNPThreatStatus = "displayed scaled percentage"
     else ClearThreatText(frame, "no displayable threat percentage"); return end
     text:Show()
-    ns.TextUnderlayers.Update(text, bar)
+    local options = ns.HealthGradient and ns.HealthGradient.ThreatLayers(frame.unit)
+    ns.TextUnderlayers.Update(text, bar, options)
 end
 
-ns.NameplateThreat = { UpdateThreatText = UpdateThreatText }
+local function UpdateLayerAlpha(frame, context)
+    if not CanAccessFrame(frame, context) or frame.SNPRestoring then return end
+    local text = frame.SNPThreatText
+    if not text or not text.SNPUnderlayersActive then return end
+    local options = ns.HealthGradient and ns.HealthGradient.ThreatLayers(frame.unit)
+    ns.TextUnderlayers.Update(text, frame.SNPThreatTextBar, options)
+end
+
+ns.NameplateThreat = {UpdateThreatText = UpdateThreatText, UpdateLayerAlpha = UpdateLayerAlpha}

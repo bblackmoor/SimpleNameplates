@@ -163,6 +163,23 @@ function methods:GetRegions()
     end
     return unpack(regions)
 end
+function methods:SetStatusBarTexture(path)
+    if not self.statusTexture then self.statusTexture = self:CreateTexture(nil) end
+    self.statusTexture:SetTexture(path)
+end
+function methods:GetStatusBarTexture() return self.statusTexture end
+function methods:SetStatusBarColor(...) self.statusColor = {...} end
+function methods:SetMaxLines(value) self.maxLines = value end
+function methods:SetGradient(...) self.gradient = {...} end
+function methods:AddMaskTexture(mask) self.mask = mask end
+function methods:SetAllPoints(relative) self.allPoints = relative end
+function methods:SetDrawLayer(layer, level) self.layer, self.sublevel = layer, level end
+function methods:SetFont(font, size, flags) self.font, self.fontSize, self.flags = font, size, flags end
+function methods:GetFont() return self.font, self.fontSize, self.flags end
+function methods:GetAlpha() return self.alpha or 1 end
+function methods:GetJustifyH() return "LEFT" end
+function methods:GetJustifyV() return "MIDDLE" end
+function CreateColor(r, g, b, a) return {r = r, g = g, b = b, a = a} end
 UIParent=object('UIParent'); GameTooltip=object('GameTooltip'); ColorPickerFrame=object('ColorPickerFrame')
 for _,k in ipairs({'GameFontNormal','GameFontHighlight','GameFontNormalSmall','GameFontHighlightSmall','GameFontNormalLarge','GameFontHighlightLarge','NumberFontNormal','NumberFontNormalSmall'}) do _G[k]=object(k,nil,'Font') end
 function ColorPickerFrame:SetupColorPickerAndShow(info)
@@ -179,4 +196,3 @@ end
 PixelUtil={SetSize=function(o,...)o:SetSize(...)end,SetPoint=function(o,...)o:SetPoint(...)end,SetWidth=function(o,...)o:SetWidth(...)end,SetHeight=function(o,...)o:SetHeight(...)end,GetPixelToUIUnitFactor=function()return 1 end}
 
 return {objects = objects}
-

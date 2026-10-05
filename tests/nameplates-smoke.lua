@@ -112,7 +112,7 @@ equal(hooks[1].name, "CompactUnitFrame_UpdateHealthColor", "health hook")
 equal(hooks[2].name, "CompactUnitFrame_UpdateName", "name hook")
 local countEvents = 0
 for _, registered in pairs(events.registered) do countEvents = countEvents + registered end
-equal(countEvents, 23, "one registration for each event")
+equal(countEvents, 25, "one registration for each event")
 assert(events.scripts.OnEvent and events.scripts.OnUpdate, "event/update scripts installed")
 events.scripts.OnEvent(events, "ADDON_LOADED", "AnotherAddon")
 equal(calls.db, nil, "other addon ignored")
@@ -1476,6 +1476,55 @@ for _, placement in ipairs({"ABOVE", "INSIDE"}) do
     end
 end
 ns.RestoreAll()
+
+-- Exercise the gradient through presentation, health events, repair and restoration.
+assert(loadfile("SimpleNameplates/HealthGradient.lua"))("SimpleNameplates", ns)
+local gradients = true
+ns.GetGradientEnabled = function() return gradients end
+function CreateColor(r, g, b, a) return {r=r, g=g, b=b, a=a} end
+local function GradientTexture()
+    local texture = Region()
+    function texture:SetColorTexture(...) self.color = {...} end
+    function texture:SetTexture(value) self.texture = value end
+    function texture:GetTexture() return self.texture end
+    function texture:SetTexCoord() end
+    function texture:SetAllPoints(other) self.allPoints = other end
+    function texture:SetGradient(...) self.gradient = {...} end
+    function texture:AddMaskTexture(mask) self.mask = mask end
+    return texture
+end
+local bar = ns.NameplateFrames.GetHealthBar(plateFrame)
+bar.barTexture = GradientTexture()
+bar.barTexture:SetTexture("native-fill")
+function bar:CreateTexture() return GradientTexture() end
+function bar:CreateMaskTexture() return GradientTexture() end
+local layerAlpha = 1
+Enum = {LuaCurveType = {Step = 1}}
+C_CurveUtil = {CreateCurve = function() return {SetType=function() end, AddPoint=function() end} end}
+function UnitHealthPercent() return layerAlpha end
+appearance.namePlacement, threatEnabled, threatPercent = "INSIDE", true, 255
+ns.RefreshAll()
+assert(bar.SNPHealthGradient.shown)
+for _, layer in ipairs(plateFrame.SNPInsideName.SNPUnderlayers) do assert(not layer.shown) end
+for _, layer in ipairs(plateFrame.SNPThreatText.SNPUnderlayers) do assert(layer.alpha == 1) end
+layerAlpha = 0
+events.scripts.OnEvent(events, "UNIT_HEALTH", "nameplate1")
+for _, layer in ipairs(plateFrame.SNPThreatText.SNPUnderlayers) do assert(layer.alpha == 0) end
+layerAlpha = 1
+events.scripts.OnEvent(events, "UNIT_MAXHEALTH", "nameplate1")
+for _, layer in ipairs(plateFrame.SNPThreatText.SNPUnderlayers) do assert(layer.alpha == 1) end
+layerAlpha = 0
+events.scripts.OnUpdate(events, 0.25)
+for _, layer in ipairs(plateFrame.SNPThreatText.SNPUnderlayers) do assert(layer.alpha == 0) end
+gradients = false
+ns.RefreshAll()
+assert(not bar.SNPHealthGradient.shown)
+for _, layer in ipairs(plateFrame.SNPInsideName.SNPUnderlayers) do assert(layer.shown) end
+for _, layer in ipairs(plateFrame.SNPThreatText.SNPUnderlayers) do assert(layer.alpha == 1) end
+gradients = true
+ns.RefreshAll()
+ns.RestoreAll()
+assert(not bar.SNPHealthGradient.shown, "global restoration removes gradient")
 
 print("Nameplates smoke: passed")
 

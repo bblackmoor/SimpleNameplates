@@ -128,6 +128,9 @@ local ns = {
         if npcColors[state] then npcColors[state] = {0.7, 0.7, 0.7} end
     end,
     EffectColor = function() return 0, 1, 1 end,
+    FontPath = function() return "Fonts\\FRIZQT__.TTF" end,
+    GetGradientEnabled = function() return profile.gradients == true end,
+    SetGradientEnabled = function(value) profile.gradients = value end,
     GetHealthBarEnabled = function(key) return modes[key] ~= false end,
     SetHealthBarEnabled = function(key, value) modes[key] = value end,
     GetCategoryMode = function(key) return "active" end,

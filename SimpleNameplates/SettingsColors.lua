@@ -55,6 +55,56 @@ local function CreatePriorityColorRow(context, text, state, displayText)
         state)
 end
 
+local function AddGradientControl(context)
+    local row = UI.CreateSettingRow(context.content, context.layout, "Gradients")
+    -- Reserve room for a preview even at the maximum configured font size.
+    context.layout.items[#context.layout.items].height = 50
+    local toggle = Widgets.CreateSwitch(row, function(checked)
+        addon.SetGradientEnabled(checked)
+        RefreshContext(context)
+        RefreshNameplates()
+    end)
+    toggle:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
+    context.refreshers[#context.refreshers + 1] = function()
+        toggle:SetChecked(addon.GetGradientEnabled())
+    end
+    local preview = CreateFrame("StatusBar", nil, row)
+    preview:SetPoint("LEFT", toggle:GetFrame(), "RIGHT", 12, 0)
+    preview:SetWidth(190)
+    preview:SetMinMaxValues(0, 100)
+    preview:SetValue(100)
+    preview:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    local name = preview:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local threat = preview:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    name:SetPoint("LEFT", preview, "LEFT", 3, -0.5)
+    name:SetPoint("RIGHT", threat, "LEFT", -3, 0)
+    name:SetJustifyH("LEFT")
+    name:SetText("Sample")
+    threat:SetPoint("RIGHT", preview, "RIGHT", -3, -0.5)
+    threat:SetJustifyH("RIGHT")
+    threat:SetText("255%")
+    for _, text in ipairs({name, threat}) do
+        text:SetTextColor(1, 1, 1, 1)
+        text:SetWordWrap(false)
+        text:SetMaxLines(1)
+    end
+    context.refreshers[#context.refreshers + 1] = function()
+        local size = addon.GetAppearanceSetting("nameSize")
+        local flags = addon.FontFlags and addon.FontFlags(false) or ""
+        preview:SetHeight(size + 7)
+        preview:SetStatusBarColor(PriorityColorForState("hostile"))
+        name:SetFont(addon.FontPath(addon.GetAppearanceSetting("nameFont")), size, flags)
+        threat:SetFont(addon.FontPath(addon.GetAppearanceSetting("threatFont")), size, flags)
+        if addon.HealthGradient then
+            addon.HealthGradient.Apply(preview, preview:GetStatusBarTexture(), addon.WorldContext.Get())
+            if addon.HealthGradient.Enabled() then addon.TextUnderlayers.Hide(name)
+            else addon.TextUnderlayers.Update(name, preview) end
+            -- Full health always retains the threat glyph copies.
+            addon.TextUnderlayers.Update(threat, preview)
+        end
+    end
+end
+
 local function AddPriorityColorControls(context)
     AddSection(context.content, context.layout, "Priority colors")
     AddDescription(context.content, context.layout,
@@ -104,7 +154,8 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Restores this profile's Health Bar switches to On and cast highlight to None.")
+        "Restores this profile's Health Bar switches to On, gradients to Off, and cast highlight to None.")
+    AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
     CreateColorRow(context, "Interruptible cast highlight",

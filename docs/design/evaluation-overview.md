@@ -87,3 +87,7 @@ Startup setting compatibility is checked before enabling styling; it is a prereq
 ## Optional profiling
 
 `Profiler.lua` wraps full styling, fact collection/classification, NPC-title lookup, cached text repair, the per-frame callback and its reconciliation scan. `/snp perf start`, `stop` and `report` control session-only collection; profiling is off by default and changes no refresh cadence or saved values. Rows are inclusive and overlap. See the [profiling guide](profiling.md) for command behavior and memory/timing limits.
+
+## Fixed health gradients
+
+`HealthGradient.lua` places a black alpha-gradient across the first 80% of the health bar width (90% to 0% black). A white mask anchored to the native fill clips the overlay; shrinking health never rescales the tint. The final 20% retains the category color. Names/native health labels suppress their two underlayers while enabled. A cached Step curve maps native health below 0.8 to alpha 0 and health at/above 0.8 to alpha 1 for threat underlayers. Curve results may be secret and are passed straight to SetAlpha. UNIT_HEALTH/UNIT_MAXHEALTH update alpha without full styling; reconciliation retries transitions. Restoration hides all owned gradients, including retired bars. No native health value is read for arithmetic.

@@ -232,7 +232,11 @@ local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, righ
     insideName:SetPoint("RIGHT", rightRegion or bar, rightRegion and "LEFT" or "RIGHT", rightInset, rightRegion and 0 or -0.5)
     insideName:SetJustifyH("LEFT")
     insideName:Show()
-    ns.TextUnderlayers.Update(insideName, bar)
+    if ns.HealthGradient and ns.HealthGradient.Enabled() then
+        ns.TextUnderlayers.Hide(insideName)
+    else
+        ns.TextUnderlayers.Update(insideName, bar)
+    end
     -- Leave Blizzard's name shown for its health-text visibility logic, but
     -- avoid drawing a second copy behind the bar.
     frame.name:SetAlpha(0)

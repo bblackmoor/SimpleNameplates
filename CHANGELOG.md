@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.183
+
+* Adds a per-profile Gradients toggle above Priority colors and a full-health preview with a white sample name and 255% threat. Gradients default off; Reset all colors turns them off.
+* Tints health fills from 90% black at the left to clear at 80% width, leaving the last 20% at its category color. A mask follows native fill geometry so health loss crops the fixed gradient without health arithmetic.
+* Removes name/native health-label black copies with gradients enabled. Threat copies remain at health >=80%, disappear below 80%, and return on healing, using a secret-safe cached display curve. Health events and reconciliation update layer alpha independently of threat changes.
+* Verifies profile persistence/reset scopes, preview behavior, fixed geometry, replacement-fill reuse, restoration, threshold boundaries, secret alpha forwarding and runtime health events. All 21 smoke suites and whitespace checks pass; native rendering still requires in-game verification.
+
 ## 1.0.182
 
 * Places black glyph copies on ARTWORK under white OVERLAY text, using each source label's actual parent so frame ordering cannot reverse them.

@@ -151,7 +151,12 @@ local function StyleHealthText(frame, region, context, bar)
         original.textColor = ReadValues(region, "GetTextColor", context)
         original.vertexColor = ReadValues(region, "GetVertexColor", context)
     end
-    ns.TextUnderlayers.Update(region, bar)
+    if ns.HealthGradient and ns.HealthGradient.Enabled() then
+        region:SetDrawLayer("OVERLAY", 7)
+        ns.TextUnderlayers.Hide(region)
+    else
+        ns.TextUnderlayers.Update(region, bar)
+    end
     if original.textColor then
         region:SetTextColor(1, 1, 1, 1)
         if original.vertexColor then region:SetVertexColor(1, 1, 1, 1) end
@@ -243,6 +248,15 @@ local function ApplyArtwork(frame, assessment, context)
     InstallArtworkHooks(frame, healthBar, context)
     InstallArtworkHooks(frame, castBar, context)
     FlattenBar(frame, healthBar, "bgTexture", context)
+    if ns.HealthGradient then
+        local fill = Capabilities.SafeField(healthBar, "barTexture", context)
+            or Capabilities.ReadRegion(healthBar, "GetStatusBarTexture", context)
+        ns.HealthGradient.Apply(healthBar, fill, context)
+        if healthBar then
+            frame.SNPGradientBars = frame.SNPGradientBars or {}
+            frame.SNPGradientBars[healthBar] = true
+        end
+    end
     for _, key in ipairs({"Text", "RightText", "LeftText"}) do
         StyleHealthText(frame, Capabilities.SafeField(healthBar, key, context), context, healthBar)
     end
@@ -300,6 +314,13 @@ local function RestoreBarArtwork(frame, context)
         end
         region:Hide()
     end
+    for bar in pairs(frame.SNPGradientBars or {}) do
+        if Capabilities.ObjectStatus(bar, context) ~= "accessible" then
+            error("Gradient restoration is temporarily inaccessible")
+        end
+        ns.HealthGradient.Hide(bar)
+    end
+    frame.SNPGradientBars = nil
     frame.SNPOriginalArtwork, frame.SNPPlainBackgrounds = nil, nil
 end
 

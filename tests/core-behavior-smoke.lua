@@ -498,7 +498,7 @@ for line in toc:lines() do
 end
 toc:close()
 equal(table.concat(modules, ","),
-    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,Profiler.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsColorPicker.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfileDialogs.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
+    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,Profiler.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,HealthGradient.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsColorPicker.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfileDialogs.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
     "TOC module order")
 
 -- Removing the optional bundle persists until an explicit bundled restore.
@@ -610,6 +610,28 @@ do
     equal(reloaded.GetHealthBarEnabled("friendly"), false, "reload preserves false")
     reloaded.SetHealthBarEnabled("friendly", "bad")
     equal(reloaded.GetHealthBarEnabled("friendly"), false, "setter rejects invalid boolean")
+end
+
+do
+    local gradients = fresh()
+    equal(gradients.GetGradientEnabled(), false, "gradients default off")
+    gradients.SetGradientEnabled(true)
+    assert(gradients.CopyActiveProfile("Gradient copy"))
+    equal(gradients.GetGradientEnabled(), true, "copy gradient enabled")
+    gradients.SetGradientEnabled(false)
+    gradients.SetActiveProfileName("Default")
+    equal(gradients.GetGradientEnabled(), true, "gradient copy independent")
+    gradients.ResetAppearance()
+    equal(gradients.GetGradientEnabled(), true, "appearance reset preserves gradient")
+    gradients = loadCore()
+    equal(gradients.GetGradientEnabled(), true, "reload preserves gradient")
+    gradients.SetGradientEnabled("bad")
+    equal(gradients.GetGradientEnabled(), true, "invalid gradient setter rejected")
+    gradients.ResetAllColors()
+    equal(gradients.GetGradientEnabled(), false, "Colors reset disables gradient")
+    SimpleNameplatesDB.profiles.Default.gradients = "bad"
+    gradients = loadCore()
+    equal(gradients.GetGradientEnabled(), false, "invalid saved gradient defaults off")
 end
 
 print("Core behavior smoke: passed")

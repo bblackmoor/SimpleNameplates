@@ -8,10 +8,13 @@ function GameTooltip:SetOwner(frame) self.owner = frame end
 function GameTooltip:AddLine() end
 local ns, refreshes = {}, 0
 for _, file in ipairs({"Defaults", "FontMedia", "Core", "ManagedNames", "Database",
-    "SettingsControls", "SettingsColorPicker", "SettingsWidgets", "SettingsProfileDialogs", "SettingsProfiles", "SettingsColors"}) do
+    "HealthGradient", "FontRendering", "TextUnderlayers", "SettingsControls", "SettingsColorPicker", "SettingsWidgets", "SettingsProfileDialogs", "SettingsProfiles", "SettingsColors"}) do
     assert(loadfile("SimpleNameplates/" .. file .. ".lua"))("SimpleNameplates", ns)
 end
 ns.RefreshAll = function() refreshes = refreshes + 1 end
+ns.WorldContext = {Get = function() return {} end}
+ns.PresentationCapabilities = {ObjectStatus = function() return "accessible" end,
+    ReadRegion = function(object, method) return object[method](object) end}
 ns.EnsureDB()
 ns.GetActiveProfileName() -- Resolve the normal character assignment before testing UI refresh.
 local function Snapshot(value)
@@ -83,6 +86,39 @@ for _, case in ipairs(cases) do
     RGBEqual({ns.PriorityColorForState(state)}, oldR, oldG, oldB)
     assert(refreshes == before + 3, "each user edit refreshes plates once; redraws are silent")
 end
+
+local gradientToggle = Control(Row("Gradients"), "switch")
+local preview
+for _, object in ipairs(ui.objects) do
+    if object:GetParent() == Row("Gradients") and object.kind == "StatusBar" then preview = object end
+end
+assert(preview and preview:GetValue() == 100 and preview:GetMinMaxValues() == 0)
+local sample, threat
+for _, object in ipairs(ui.objects) do
+    if object:GetParent() == preview and object.kind == "FontString" and object.textColor[1] == 1 then
+        if object:GetText() == "Sample" then sample = object end
+        if object:GetText() == "255%" then threat = object end
+    end
+end
+assert(sample and threat and sample.textColor[1] == 1 and threat.textColor[1] == 1)
+assert(Row("Gradients").point[5] > Row("1. Attacking me").point[5], "gradient row above colors")
+local beforeGradient = refreshes
+gradientToggle:GetScript("OnClick")(gradientToggle, "LeftButton")
+assert(ns.GetGradientEnabled() and refreshes == beforeGradient + 1)
+assert(preview.SNPHealthGradient:IsShown() and preview.SNPHealthGradient.width == 190 * 0.8)
+for _, layer in ipairs(sample.SNPUnderlayers) do assert(not layer:IsShown()) end
+for _, layer in ipairs(threat.SNPUnderlayers) do assert(layer:IsShown() and layer.alpha == 1) end
+assert(ns.CopyActiveProfile("Gradient copy"))
+assert(ns.GetGradientEnabled(), "profile copy retains gradient")
+ns.SetGradientEnabled(false)
+assert(ns.SetActiveProfileName("Default"))
+assert(ns.GetGradientEnabled(), "copy has independent toggle")
+ns.ResetAppearance()
+assert(ns.GetGradientEnabled(), "Appearance reset preserves Colors toggle")
+ns.ResetAllColors()
+panel.Refresh()
+assert(not ns.GetGradientEnabled() and not preview.SNPHealthGradient:IsShown())
+for _, layer in ipairs(sample.SNPUnderlayers) do assert(layer:IsShown()) end
 
 local effect = Control(Row("Effect"), "dropdown")
 assert(effect.point[4] == 340 and effect:GetWidth() == 190)

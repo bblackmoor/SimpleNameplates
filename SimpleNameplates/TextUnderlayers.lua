@@ -12,6 +12,7 @@ end
 local function Hide(text)
     if not text then return end
     text.SNPUnderlayersActive = nil
+    text.SNPUnderlayerOptions = nil
     for _, layer in ipairs(text.SNPUnderlayers or {}) do layer:Hide() end
 end
 
@@ -24,6 +25,7 @@ local function Sync(text)
     if not font or not size then return end
     local shown = ns.AccessibleBoolean(Read(text, "IsShown"))
     local alpha = ns.AccessibleNumber(Read(text, "GetAlpha")) or 1
+    if text.SNPUnderlayerOptions then alpha = text.SNPUnderlayerOptions.alpha end
     local justify = ns.AccessibleValue(Read(text, "GetJustifyH")) or "LEFT"
     local justifyV = ns.AccessibleValue(Read(text, "GetJustifyV")) or "MIDDLE"
     local value = Read(text, "GetText")
@@ -37,7 +39,7 @@ local function Sync(text)
     end
 end
 
-local function Update(text, parent)
+local function Update(text, parent, options)
     if not text then return end
     -- Use the glyph source's actual parent; native labels may belong to a
     -- different frame than the health bar. Draw layers only order siblings.
@@ -68,6 +70,7 @@ local function Update(text, parent)
             end
         end
     end
+    text.SNPUnderlayerOptions = options
     text.SNPUnderlayersActive = true
     text:SetDrawLayer("OVERLAY", 7)
     text:SetShadowColor(0, 0, 0, 0)

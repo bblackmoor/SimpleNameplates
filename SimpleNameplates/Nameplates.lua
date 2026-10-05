@@ -63,7 +63,7 @@ if hooksecurefunc and CompactUnitFrame_UpdateName then
 end
 
 local events = CreateFrame("Frame")
-for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_REGEN_ENABLED","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","CVAR_UPDATE","PLAYER_ENTERING_WORLD","ZONE_CHANGED","ZONE_CHANGED_INDOORS","ZONE_CHANGED_NEW_AREA","WAR_MODE_STATUS_UPDATE","PLAYER_FLAGS_CHANGED","PVP_TIMER_UPDATE","PLAYER_REGEN_DISABLED","PLAYER_SOFT_INTERACT_CHANGED","UPDATE_MOUSEOVER_UNIT"}) do
+for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_REGEN_ENABLED","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","UNIT_HEALTH","UNIT_MAXHEALTH","CVAR_UPDATE","PLAYER_ENTERING_WORLD","ZONE_CHANGED","ZONE_CHANGED_INDOORS","ZONE_CHANGED_NEW_AREA","WAR_MODE_STATUS_UPDATE","PLAYER_FLAGS_CHANGED","PVP_TIMER_UPDATE","PLAYER_REGEN_DISABLED","PLAYER_SOFT_INTERACT_CHANGED","UPDATE_MOUSEOVER_UNIT"}) do
     events:RegisterEvent(event)
 end
 
@@ -183,6 +183,14 @@ local function HandleEvent(_, event, unit)
     if event == "CVAR_UPDATE" then HandleCVarUpdate(unit); return end
     if event == "NAME_PLATE_UNIT_REMOVED" then CleanupRemovedNameplate(unit); return end
     if not GetStylingEnabled() then return end
+    if event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" then
+        unit = ns.AccessibleValue(unit)
+        if not ns.HealthGradient or not ns.HealthGradient.Enabled()
+            or type(unit) ~= "string" or not unit:match("^nameplate%d+$") then return end
+        local frame = GetUnitFrame(unit, WorldContext.Get())
+        if frame then ns.NameplateThreat.UpdateLayerAlpha(frame, WorldContext.Get()) end
+        return
+    end
     if HandleNameplateEvent(event, unit) then return end
     if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_SOFT_INTERACT_CHANGED"
         or event == "UPDATE_MOUSEOVER_UNIT" then QueueRefreshAll(); return end
@@ -203,6 +211,9 @@ local function ReconcileNames(context)
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
         local frame = GetFrameFromPlate(plate, context)
+        if frame and ns.HealthGradient and ns.HealthGradient.Enabled() then
+            ns.NameplateThreat.UpdateLayerAlpha(frame, context)
+        end
         if frame and frame.SNPTitleVisibilityPending then
             ns.NameplateText.SyncFullTitleVisibility(frame, context)
         end
