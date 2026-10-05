@@ -89,6 +89,16 @@ for _, legacy in ipairs({{true, "PULSE", "PIXEL"}, {true, "PIXEL", "PIXEL"}, {fa
     equal(effectNS.EnsureDB().profiles.Default.interruptibleHighlight, nil, "legacy switch removed")
 end
 
+-- Background dimming validation and persistence.
+local dim = fresh()
+equal(dim.GetDimBackgroundNames(), false, "dim defaults off")
+dim.SetDimBackgroundNames(true)
+dim = loadCore()
+equal(dim.GetDimBackgroundNames(), true, "dim survives reload")
+dim.EnsureDB().profiles.Default.dimBackgroundNames = "invalid"
+dim = loadCore()
+equal(dim.GetDimBackgroundNames(), false, "invalid dim uses default")
+
 -- Fresh defaults and independent character selection.
 local ns = fresh()
 local db = ns.EnsureDB()

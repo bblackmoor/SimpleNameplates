@@ -105,6 +105,19 @@ local function AddGradientControl(context)
     end
 end
 
+local function AddBackgroundNameControl(context)
+    local row = UI.CreateSettingRow(context.content, context.layout, "Dim background NPC names")
+    local toggle = Widgets.CreateSwitch(row, function(checked)
+        addon.SetDimBackgroundNames(checked)
+        RefreshContext(context)
+        RefreshNameplates()
+    end)
+    toggle:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
+    context.refreshers[#context.refreshers + 1] = function()
+        toggle:SetChecked(addon.GetDimBackgroundNames())
+    end
+end
+
 local function AddPriorityColorControls(context)
     AddSection(context.content, context.layout, "Priority colors")
     AddDescription(context.content, context.layout,
@@ -118,6 +131,7 @@ local function AddPriorityColorControls(context)
     CreatePriorityColorRow(context, "5. NPC - Interactive", "useful")
     CreatePriorityColorRow(context, "6. NPC - Background", "useless",
         "Fallback for unmatched entities.")
+    AddBackgroundNameControl(context)
 end
 
 local function AddCastEffectSelector(context)
@@ -154,7 +168,7 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Restores this profile's Health Bar switches to On, gradients to Off, and cast highlight to None.")
+        "Restores this profile's Health Bar switches to On, gradients and background-name dimming to Off, and cast highlight to None.")
     AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")

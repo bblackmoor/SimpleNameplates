@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.188
+
+* Adds the per-profile Dim background NPC names toggle below NPC - Background on Colors, off by default. Background NPC names use #999999 when On and #FFFFFF when Off, above or inside bars and when their bar is disabled. Titles, threat text and bar colors are unchanged.
+* Persists and copies the setting; Reset all colors disables it while Reset Appearance preserves it. Verifies settings refresh/reset, persistence/validation, name placement and cached repair.
+
 ## 1.0.187
 
 * Renders TRP3 long titles and NPC subtitles in white with a thin black outline, independently of category color. Slug follows the selected profile.

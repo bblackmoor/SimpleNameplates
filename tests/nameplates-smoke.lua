@@ -1530,5 +1530,37 @@ ns.RefreshAll()
 ns.RestoreAll()
 assert(not bar.SNPHealthGradient.shown, "global restoration removes gradient")
 
+-- Use fresh interaction/title observations, independent of earlier cache fixtures.
+UnitIsInteractable = function() return unit.interactable or false end
+ns.NPCTitles.GetTitle = function() return nil end
+local dimBackground = false
+ns.GetDimBackgroundNames = function() return dimBackground end
+gradients = false
+unit = {reaction = 5}
+for _, barEnabled in ipairs({true, false}) do
+    showBar = barEnabled
+    for _, placement in ipairs({"ABOVE", "INSIDE"}) do
+        appearance.namePlacement = placement
+        for _, enabled in ipairs({false, true}) do
+            dimBackground = enabled
+            ns.RefreshAll()
+            equal(plateFrame.SNPState, "useless", "background classification")
+            local expected = enabled and 153 / 255 or 1
+            equal(plateFrame.name.r, expected, "background native name shade")
+            equal(plateFrame.name.g, expected, "background native name green")
+            equal(plateFrame.name.b, expected, "background native name blue")
+            if barEnabled and placement == "INSIDE" then
+                equal(plateFrame.SNPInsideName.r, expected, "background inside name shade")
+            end
+            plateFrame.name:SetTextColor(0, 0, 0)
+            ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
+            equal(plateFrame.name.r, expected, "cached repair preserves dimming")
+        end
+    end
+end
+showBar = true; unit = {reaction = 5, interactable = true}
+ns.RefreshAll()
+equal(plateFrame.name.r, 1, "interactive NPC name stays white")
+
 print("Nameplates smoke: passed")
 

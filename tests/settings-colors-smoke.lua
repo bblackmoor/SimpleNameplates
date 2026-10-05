@@ -87,6 +87,22 @@ for _, case in ipairs(cases) do
     assert(refreshes == before + 3, "each user edit refreshes plates once; redraws are silent")
 end
 
+local dimToggle = Control(Row("Dim background NPC names"), "switch")
+assert(not ns.GetDimBackgroundNames(), "background dimming defaults off")
+assert(Row("Dim background NPC names").point[5] < Row("6. NPC - Background").point[5], "dimming follows background category")
+local dimRefreshes = refreshes
+dimToggle:GetScript("OnClick")(dimToggle, "LeftButton")
+assert(ns.GetDimBackgroundNames() and refreshes == dimRefreshes + 1)
+assert(ns.CopyActiveProfile("Dim copy") and ns.GetDimBackgroundNames())
+ns.SetDimBackgroundNames(false)
+assert(ns.SetActiveProfileName("Default") and ns.GetDimBackgroundNames(), "dimming is profile scoped")
+ns.ResetAppearance()
+assert(ns.GetDimBackgroundNames(), "Appearance reset preserves dimming")
+ns.SetDimBackgroundNames("invalid")
+assert(ns.GetDimBackgroundNames(), "invalid setter ignored")
+ns.ResetAllColors(); panel.Refresh()
+assert(not ns.GetDimBackgroundNames() and not dimToggle.MyObject:GetValue(), "Colors reset disables dimming")
+
 local gradientToggle = Control(Row("Gradients"), "switch")
 local preview
 for _, object in ipairs(ui.objects) do

@@ -129,6 +129,8 @@ local ns = {
     end,
     EffectColor = function() return 0, 1, 1 end,
     FontPath = function() return "Fonts\\FRIZQT__.TTF" end,
+    GetDimBackgroundNames = function() return profile.dimBackgroundNames == true end,
+    SetDimBackgroundNames = function(value) profile.dimBackgroundNames = value end,
     GetGradientEnabled = function() return profile.gradients == true end,
     SetGradientEnabled = function(value) profile.gradients = value end,
     GetHealthBarEnabled = function(key) return modes[key] ~= false end,

@@ -303,6 +303,10 @@ local function StyleName(frame, state, context, decision)
     local nameR, nameG, nameB = 1, 1, 1
     if nameOnly then nameR, nameG, nameB = PriorityColorForState(decision.colorState or state)
     end
+    if state == "useless" then
+        local shade = ns.GetDimBackgroundNames and ns.GetDimBackgroundNames() and 153 / 255 or 1
+        nameR, nameG, nameB = shade, shade, shade
+    end
     -- Blizzard also tints nameplate text with UnitSelectionColor through the
     -- FontString's vertex color. Keep that tint neutral so the configured
     -- Simple Nameplates color is displayed exactly.
