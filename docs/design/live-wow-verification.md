@@ -1,7 +1,7 @@
 # Live WoW integration verification
 
 Status: pending. Details Framework phases 1–6 repository work and follow-up fixes
-are complete through 1.0.162, with all 17 local smoke suites passing. These checks
+are complete through 1.0.163, with all 18 local smoke suites passing. These checks
 require a World of Warcraft client; local Lua stubs do not establish actual frame
 behavior, secure CVar behavior, or Midnight secret-value safety. Record the client
 build, addon version, date, and observed result when running them. Leave a check
@@ -73,6 +73,14 @@ open until it is observed in game.
 - [ ] With TRP3 enabled/absent, verify long titles and NPC service subtitles below health bars; missing-bar titles stay below the name. Observe cast and channel start/end/interruption: the native cast bar replaces the title and the title returns afterward. Verify no idle cast bar is forced visible.
 - [ ] Repeat with plate/bar reuse, temporary forbidden/restricted access, unknown cast visibility, title toggles and disabling styling. Confirm no stale title revival, duplicate cast bars, lost shields, or taint/secret-value errors.
 
+## Opt-in profiling (1.0.163)
+
+- [ ] After login/reload, confirm profiling is off and `/snp perf report` reports no session. Start a short session in a representative crowded scene, stop and report; record client build, addon version, approximate plate count, combat state and other enabled nameplate addons.
+- [ ] Check call counts and total/average/longest timings for paths exercised in that scene; rows not called may be absent. Verify the report labels inclusive overlap and measurement overhead. Do not sum rows as total CPU or treat session elapsed time as CPU usage.
+- [ ] Report while running without stopping, try a duplicate start, then stop and repeat reports. Confirm running reports use only start memory, duplicate starts preserve the session and stopped results remain fixed. Starting after stop replaces old results; reload clears them.
+- [ ] Repeat start/stop/report during combat, with no target and with styling disabled. Observe names, casts, titles and restoration for behavior changes, errors or taint; no settings page should open from performance commands.
+- [ ] Compare similar scenes with profiling off/on and repeat across external library embedders. Treat start/end memory as aggregate accounting affected by shared libraries, profiler storage and garbage collection; negative changes are valid. Record unavailable timer/memory messages if observed, without assuming stub coverage proves native safety.
+
 ## Nameplate presentation and integration
 
 - [ ] After 1.0.160, repeat cast-effect checks through plate/bar/icon reuse and temporary access loss. Confirm old icons do not restart or stop the current effect, and floating, above-bar and inside-bar name placement survives cached repair.
@@ -97,10 +105,10 @@ Test Silvermoon Shared and Silvermoon Horde separately, including transitions be
 - [ ] After phases 2–4, check context changes and the same entity's presentation across boundaries, including accessible and restricted frames.
 - [ ] After phase 4, in combat show health bars for all Active entities where supported; out of combat also show available bars for every Active category. Inactive categories keep Blizzard presentation. Refresh when entering/leaving combat; place long titles below health bars, hiding them during casts/channels.
 
-## Runtime phase 4 (1.0.106)
+## Runtime phase 4 follow-up (current uniform policy, 1.0.162)
 
 - [ ] Verify every Active category gains a supported bar during player combat, including same/opposite-faction players, interactive NPCs, unmatched NPCs, and minions. On combat exit, every Active category retains its supported health bar. Inactive categories retain Blizzard presentation and missing-bar entities keep colored names.
 - [ ] Verify above/inside layout, full selected name size, four-unit top/three-unit bottom bar padding, white inside-bar text with two black underlayers, white above-bar names, category colors, threat text, and cast effects through repeated combat entry/exit and Blizzard name/health repair hooks. Old cached text must not undo a transition.
 - [ ] Verify long titles appear below health bars and disappear during active casts/channels, including friendly combat bars and missing-bar cases. Diagnose unavailable shown state explicitly.
 - [ ] Disable styling during lockdown on a previously styled frame; after combat, confirm original visibility and bar/container heights return while styling stays disabled. Repeat with temporarily forbidden base plates and Inactive categories becoming accessible without a context event.
-- [ ] Remove/recycle plates while restricted and verify deferred cleanup does not clear another entity's name or leave stale overlays. Confirm scoped sanctuary/PvP rule identifiers in diagnostics, with no nameplate-visibility CVar writes.
+- [ ] Remove/recycle plates while restricted and verify deferred cleanup does not clear another entity's name or leave stale overlays. Confirm the uniform presentation rule in diagnostics; normal refreshes must not make new nameplate-visibility CVar claims.

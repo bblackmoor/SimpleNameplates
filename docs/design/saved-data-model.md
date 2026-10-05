@@ -42,6 +42,8 @@ Useful and Useless each have one `priorityColors` entry per profile, used in all
 
 `appearance.matchSanctuaryFont` is a per-profile boolean, enabled by default. It selects Blizzard's localized world-name font face in sanctuaries without replacing the saved `nameFont`. Profile copies retain it and Reset Appearance restores the default; invalid or missing values use the default.
 
+Profiling introduced in 1.0.163 is session-only. It adds no fields to `SimpleNameplatesDB`, does not follow profile selection and starts disabled after every UI reload. Stopped results are retained only in memory until a new session or reload.
+
 ## Ownership inventory
 
 | Setting | Owner | Reason |

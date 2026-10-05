@@ -1,6 +1,6 @@
 # Onscreen entity evaluation
 
-Updated 2026-10-04 for 1.0.162. This document describes the actual runtime order. It does not propose a different tree or change classification behavior.
+Updated 2026-10-05 for 1.0.163. This document describes the actual runtime order. It does not propose a different tree or change classification behavior.
 
 ## Runtime entry and frame checks
 
@@ -15,7 +15,7 @@ Startup checks setting compatibility before normal styling. Events, queued refre
 7. Capture original values and save the selected state/decision. A widget-only decision suppresses actor text and returns.
 8. Apply ordinary bar/indicator visibility, name/title styling, supported health-bar color, threat text, and cast highlighting, in that order.
 
-`RefreshUnit` looks up a supplied plate before this pass; missing frames are queued for later retry. The half-second reconciliation can repair current cached name styling without recollecting/classifying every entity. If cache repair cannot handle drift, it invokes a full styling pass. `/snp debug` separately collects target facts even when no plate exists, explaining why it can report Friendly for an entity that cannot be styled.
+`RefreshUnit` looks up a supplied plate before this pass; missing frames are queued for later retry. The 0.25-second reconciliation can repair current cached name styling without recollecting/classifying every entity. If cache repair cannot handle drift, it invokes a full styling pass. `/snp debug` separately collects target facts even when no plate exists, explaining why it can report Friendly for an entity that cannot be styled.
 
 ## Facts and classification
 
@@ -83,3 +83,7 @@ After the presentation decision, `NameplateText` chooses the effective name/titl
 For ordinary Active plates, show available health bars in every category and combat state. Color the bar by priority and keep its name white; a missing health bar uses a colored floating name. NPC service subtitles and optional TRP3 long titles sit below the health bar, or below the name when no bar exists. An active native cast/channel hides that title; native cast OnShow/OnHide hooks update visibility immediately, and unreadable transitions retry during reconciliation. Inactive/disabled styling restores native presentation. No health values are fabricated.
 
 Startup setting compatibility is checked before enabling styling; it is a prerequisite, not another entity category. The [known presentation limits in the README](../../README.md#known-presentation-limits) and in-game About notes record entity types and world contexts where classification succeeds but no matching accessible frame is supplied. Individual character names are irrelevant to these limits. Missing frames must never be reported as a solved settings problem.
+
+## Optional profiling
+
+`Profiler.lua` wraps full styling, fact collection/classification, NPC-title lookup, cached text repair, the per-frame callback and its reconciliation scan. `/snp perf start`, `stop` and `report` control session-only collection; profiling is off by default and changes no refresh cadence or saved values. Rows are inclusive and overlap. See the [profiling guide](profiling.md) for command behavior and memory/timing limits.

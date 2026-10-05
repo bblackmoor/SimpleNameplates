@@ -2,6 +2,8 @@
 
 Status: phases 1–4 implemented through 1.0.106; experimental replacement removed in 1.0.105; phase 5 client verification pending. This follows the completed original settings refactor and is a separate five-phase sequence.
 
+Current behavior supersedes the historical combat-dependent bar/title rules below: since 1.0.162 all ordinary Active accessible plates show available health bars in both combat states, and native casts/channels replace titles below the bar. Profiling added in 1.0.163 is optional and session-only. See [runtime evaluation](evaluation-overview.md) and [profiling](profiling.md) for current contracts.
+
 ## Baseline and accepted rules
 
 Preserve the 1.0.101 baseline during phase 1: current six categories with Active/Inactive only, no dedicated minion-name hide switch, critter/companion hiding and experimental overhead replacement retained, and individual saved-field validation without aliases or conversion. Valid settings and CVar restoration records remain usable regardless of the schema marker.

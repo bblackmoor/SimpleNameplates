@@ -1,6 +1,6 @@
 # Details Framework settings conversion
 
-Current status (1.0.162): phases 1–6 repository work is complete; all 17 smoke
+Current status (1.0.163): phases 1–6 repository work is complete; all 18 smoke
 suites pass. Final in-game verification remains pending. The baseline and earlier
 phase notes below describe their recorded releases, not the current widget inventory.
 
@@ -45,7 +45,7 @@ found in the workspace during this baseline inspection.
 Page order is About, Profiles, Appearance, Colors, TRP3. `/snp` and
 `/snp appearance` open Appearance; `/snp profiles`, `/snp colors`, `/snp trp3`,
 `/snp about`, and diagnostic routes remain. There is no Behavior page/route.
-Settings cannot open through these commands during combat.
+Settings cannot open through these commands during combat. Diagnostic and `/snp perf start|stop|report` commands remain available; profiling is session-only and has no settings widget.
 
 ## Behavior to preserve
 
@@ -58,6 +58,7 @@ Settings cannot open through these commands during combat.
 | Cast color/style | Profile; cyan and None | RGB-only color; None, Moving dashes, Autocast Shine, Action Button Glow, Proc Glow; no Pulse or separate cast switch |
 | Name font | Profile, `FRIZQT` | Six existing built-in IDs remain valid; shared `LSM:` selections survive missing providers and reloads |
 | Threat font | Profile, `ARIALN` | Independent font choice; same dynamic shared registry and missing-font fallback |
+| Slug font rendering | Profile, false | Appearance toggle near fonts; shared rendering flags, thin outlines outside health bars and two unoutlined black underlayers inside |
 | Sanctuary font matching | Profile, true | Changes name/title face only; selected name font applies when disabled |
 | Name size | Profile, 21 | 8–36 points in steps of 1; also controls threat size; titles use 80% |
 | Health bar width | Profile, 100% | 80–150% in steps of 5; preserve existing rounding/clamping |
@@ -65,7 +66,7 @@ Settings cannot open through these commands during combat.
 | Threat display | Profile, true | Preserve available/secret-safe percentage rendering |
 | Hide critter/companion names | Global, false | Appearance, noncombat units only; preserve captured originals/restoration |
 | TRP3 integration | Global, false | Dependent switches disabled/dimmed when off; detected/absent status remains |
-| TRP3 name, short title, full title, OOC preferences | Global, all true | Preserve refresh/cache handling, WoW-name fallback and full-title suppression while bars show |
+| TRP3 name, short title, full title, OOC preferences | Global, all true | Preserve refresh/cache handling, WoW-name fallback; long titles below health bars or names, hidden during native casts/channels |
 
 Default priority RGB values are red `#FF0000`, orange `#FF6600`, yellow
 `#FFCC00`, green `#33CC33`, light grey `#D3D3D3`, grey `#999999`.
