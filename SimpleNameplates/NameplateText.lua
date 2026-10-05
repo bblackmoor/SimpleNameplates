@@ -119,7 +119,8 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
     fullTitle:ClearAllPoints()
     fullTitle:SetPoint("TOP", decision.showHealthBar and bar or frame.name, "BOTTOM", 0, -1)
     fullTitle:SetJustifyH("CENTER")
-    fullTitle:SetTextColor(PriorityColorForState(decision.colorState or state))
+    fullTitle:SetVertexColor(1, 1, 1, 1)
+    fullTitle:SetTextColor(1, 1, 1, 1)
     InstallTitleCastHooks(frame, GetCastBar(frame, context))
     SyncFullTitleVisibility(frame, context)
 end

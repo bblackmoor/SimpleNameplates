@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.187
+
+* Renders TRP3 long titles and NPC subtitles in white with a thin black outline, independently of category color. Slug follows the selected profile.
+* Preserves title size, position, and cast-driven visibility; verifies white titles across categories and NPC tooltip sources.
+
 ## 1.0.186
 
 * Defaults Slug rendering to On for new profiles, missing/invalid settings, and Appearance reset. Existing saved On/Off choices remain authoritative.

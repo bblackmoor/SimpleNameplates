@@ -815,7 +815,9 @@ for _, case in ipairs({
     ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
     ns.RefreshAll()
     equal(plateFrame.name.g, 1, "sanctuary uniform bar name")
-    equal(plateFrame.SNPFullTitleText.g, case.green, "sanctuary title")
+    equal(plateFrame.SNPFullTitleText.r, 1, "TRP3 title remains white across categories: red")
+    equal(plateFrame.SNPFullTitleText.g, 1, "TRP3 title remains white across categories: green")
+    equal(plateFrame.SNPFullTitleText.b, 1, "TRP3 title remains white across categories: blue")
     plateFrame.name:SetTextColor(0, 0, 0)
     hooks[2].callback(plateFrame)
     equal(plateFrame.name.g, 1, "sanctuary uniform name repair")
@@ -883,7 +885,9 @@ ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "NPC service title independent of TRP3")
 equal(plateFrame.SNPFullTitleText.shown, true, "NPC service title shown below floating name")
 equal(plateFrame.SNPFullTitleText.size, 10, "NPC title uses name size minus two")
-equal(plateFrame.SNPFullTitleText.g, 211 / 255, "NPC title uses sanctuary useful color")
+equal(plateFrame.SNPFullTitleText.r, 1, "NPC title white red channel")
+equal(plateFrame.SNPFullTitleText.g, 1, "NPC title white green channel")
+equal(plateFrame.SNPFullTitleText.b, 1, "NPC title white blue channel")
 appearance.matchSanctuaryFont = true
 SystemFont_World = {GetFont = function() return "Fonts\\WorldLocalized.ttf" end}
 ns.RefreshAll()
@@ -924,7 +928,7 @@ ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "sparse plate resolves target subtitle")
 equal(plateFrame.SNPFullTitleText.shown, true, "resolved service title visible")
 equal(plateFrame.name.g, 1, "verified useful NPC bar name white")
-equal(plateFrame.SNPFullTitleText.g, 211 / 255, "verified useful NPC title light grey")
+equal(plateFrame.SNPFullTitleText.g, 1, "verified useful NPC title white")
 currentGUID = "Creature-Orin-Plate"
 ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "unmatched readable GUID resolves by NPC name")
@@ -938,7 +942,7 @@ ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.shown, false, "token reuse clears service title")
 equal(plateFrame.name.g, 1, "token reuse retains white bar name")
 
--- Hyperlink titles preserve the useful coloring from the fuller target.
+-- Hyperlink titles retain white text while the category colors the bar.
 unit.names = {nameplate1 = "Orin Straylight", target = "Orin Straylight"}
 C_TooltipInfo.GetHyperlink = function() return {lines = {
     {type = 2, leftText = "Orin Straylight"},
@@ -948,7 +952,7 @@ ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.text, "<Voidforge Steward>", "hyperlink title displayed")
 equal(plateFrame.SNPEntityFacts.npcTitleSource, "GUID hyperlink tooltip", "hyperlink presentation source")
 equal(plateFrame.name.g, 1, "hyperlink retains white bar name")
-equal(plateFrame.SNPFullTitleText.g, 211 / 255, "hyperlink retains useful title color")
+equal(plateFrame.SNPFullTitleText.g, 1, "hyperlink title remains white")
 local oldIsUnit, oldWidgetsOnly, oldCVar = UnitIsUnit, UnitNameplateShowsWidgetsOnly, C_CVar
 UnitIsUnit = function(token, other) return token == "nameplate1" and other == "softinteract" end
 UnitNameplateShowsWidgetsOnly = function(token) return token == "nameplate1" end
