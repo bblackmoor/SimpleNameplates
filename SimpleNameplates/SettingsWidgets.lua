@@ -275,48 +275,6 @@ function Widgets.CreateLink(parent, text, onClick)
     return handle
 end
 
--- Blizzard has one shared picker. Each opening gets a token so old callbacks
--- cannot affect a later edit, reset, or another addon's picker.
-local colorEdit, pickerHooked
-local function OwnsColorPicker(edit)
-    return edit and ColorPickerFrame:GetExtraInfo() == edit
-end
-local function ApplyColor(edit, r, g, b)
-    edit.handle:SetColor(r, g, b)
-    Notify(edit.handle, r, g, b)
-end
-local function FinishColorEdit(edit, cancel)
-    if not edit or colorEdit ~= edit then return false end
-    colorEdit = nil -- Retire before rollback callbacks or native OnHide can reenter.
-    if not OwnsColorPicker(edit) then return false end
-    if cancel then ApplyColor(edit, edit.r, edit.g, edit.b) end
-    return true
-end
-function Widgets.CancelColorEdit()
-    if FinishColorEdit(colorEdit, true) then ColorPickerFrame:Hide() end
-end
-local function OpenColorEditor(handle)
-    Widgets.CancelColorEdit()
-    local r, g, b = handle:GetColor()
-    local edit = {handle = handle, r = r, g = g, b = b, opening = true}
-    colorEdit = edit
-    if not pickerHooked then
-        pickerHooked = true
-        -- Okay commits the live preview; hiding retires its callbacks.
-        ColorPickerFrame:HookScript("OnHide", function() FinishColorEdit(colorEdit, false) end)
-    end
-    ColorPickerFrame:SetupColorPickerAndShow({r = r, g = g, b = b,
-        hasOpacity = false, extraInfo = edit,
-        swatchFunc = function()
-            if colorEdit == edit and OwnsColorPicker(edit) and not edit.opening then
-                ApplyColor(edit, ColorPickerFrame:GetColorRGB())
-            end
-        end,
-        cancelFunc = function() FinishColorEdit(edit, true) end,
-    })
-    edit.opening = false -- Native setup can synchronously emit OnColorSelect.
-end
-
 function Widgets.CreateColorPicker(parent, onChanged)
     local widget = Framework():CreateColorPickButton(Widgets.GetFrame(parent),
         nil, nil, function() end, nil, swatchTemplate)
@@ -332,11 +290,20 @@ function Widgets.CreateColorPicker(parent, onChanged)
         return r, g, b
     end
     function handle:CancelEdit()
-        if colorEdit and colorEdit.handle == self then Widgets.CancelColorEdit() end
+        addon.SettingsUI.CancelColorEdit(self)
     end
     widget.widget:HookScript("OnHide", function() handle:CancelEdit() end)
     -- Keep the DF swatch with Blizzard's RGB-only contract and scoped rollback.
-    widget:SetClickFunction(function() if handle.enabled then OpenColorEditor(handle) end end)
+    widget:SetClickFunction(function()
+        if not handle.enabled then return end
+        addon.SettingsUI.OpenColorEditor(handle, function()
+            local r, g, b = handle:GetColor()
+            return {r = r, g = g, b = b}
+        end, function(color)
+            handle:SetColor(color.r, color.g, color.b)
+            Notify(handle, color.r, color.g, color.b)
+        end)
+    end)
     return handle
 end
 

@@ -3,69 +3,10 @@ local _, addon = ...
 local UI, Widgets = addon.SettingsUI, addon.SettingsWidgets
 local AddDescription, RefreshNameplates = UI.AddDescription, UI.RefreshNameplates
 
-local function CancelProfileEdits()
-    Widgets.CancelColorEdit()
-    if addon.CancelAppearanceEdits then addon.CancelAppearanceEdits(true) end
-end
-
-local function DialogProfileIsCurrent(data)
-    if not data.profileName or data.profileName == addon.GetActiveProfileName() then return true end
-    print("|cff0cd29fSimple Nameplates:|r Selected profile changed. Reopen the profile dialog to continue.")
-    return false
-end
-
-local function RegisterProfileDialogs()
-    StaticPopupDialogs["SNP_PROFILE_NAME"] = {
-        text = "Enter a profile name.", button1 = ACCEPT or "Accept",
-        button2 = CANCEL or "Cancel", hasEditBox = true, maxLetters = 64,
-        editBoxWidth = 260,
-        OnShow = function(self, data)
-            local editBox = self.GetEditBox and self:GetEditBox() or self.editBox
-            editBox:SetText(data and data.initial or "")
-            editBox:SetFocus()
-            editBox:HighlightText()
-        end,
-        OnAccept = function(self, data)
-            if not DialogProfileIsCurrent(data) then return end
-            local editBox = self.GetEditBox and self:GetEditBox() or self.editBox
-            local ok, message = data.action(editBox:GetText())
-            if not ok and message then print("|cff0cd29fSimple Nameplates:|r " .. message) end
-            if ok then data.onChanged() end
-        end,
-        EditBoxOnEnterPressed = function(self)
-            local dialog = self:GetParent()
-            local button = dialog.GetButton1 and dialog:GetButton1() or dialog.button1
-            if button and button:IsEnabled() then button:Click() end
-        end,
-        EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
-        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
-    }
-    StaticPopupDialogs["SNP_DELETE_PROFILE"] = {
-        text = "Delete the profile |cffffffff%s|r? Characters using it will switch to Default.",
-        button1 = DELETE or "Delete", button2 = CANCEL or "Cancel",
-        OnAccept = function(_, data)
-            if not DialogProfileIsCurrent(data) then return end
-            local ok, message = addon.DeleteActiveProfile()
-            if not ok and message then print("|cff0cd29fSimple Nameplates:|r " .. message) end
-            if ok then data.onChanged() end
-        end,
-        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
-    }
-    StaticPopupDialogs["SNP_RESTORE_BUNDLED_PROFILES"] = {
-        text = "Restore factory settings for Default and High Contrast? Their changes will be lost; missing bundled profiles will be recreated.",
-        button1 = "Restore", button2 = CANCEL or "Cancel",
-        OnAccept = function(_, data)
-            addon.RestoreBundledProfiles()
-            data.onChanged()
-        end,
-        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
-    }
-end
-
 local function CreateProfileButtons(content, layout, changed)
     local function OpenNameDialog(action, initial, profileName)
         StaticPopup_Show("SNP_PROFILE_NAME", nil, nil,
-            {action = action, initial = initial, profileName = profileName, onChanged = changed})
+            {action = action, initial = initial, target = profileName and UI.CaptureProfileDialogTarget(profileName), onChanged = changed})
     end
     local function OpenActiveNameDialog(action, suffix)
         local name = addon.GetActiveProfileName()
@@ -77,7 +18,7 @@ local function CreateProfileButtons(content, layout, changed)
         {"Rename", function() OpenActiveNameDialog(addon.RenameActiveProfile, "") end},
         {"Delete", function()
             StaticPopup_Show("SNP_DELETE_PROFILE", addon.GetActiveProfileName(), nil,
-                {profileName = addon.GetActiveProfileName(), onChanged = changed})
+                {target = UI.CaptureProfileDialogTarget(addon.GetActiveProfileName()), onChanged = changed})
         end},
     }
     local row = CreateFrame("Frame", nil, content)
@@ -108,7 +49,6 @@ local function AddProfileSelector(content, layout, refreshers, onChanged, contro
         end
         return options
     end, function(name)
-        CancelProfileEdits()
         addon.SetActiveProfileName(name)
         Refresh()
         if onChanged then onChanged() end
@@ -121,7 +61,7 @@ end
 addon.AddProfileSelector = AddProfileSelector
 
 local function CreateProfilesPanel()
-    RegisterProfileDialogs()
+    UI.RegisterProfileDialogs()
     local panel, content, layout = UI.CreateScrollablePanel("Profiles")
     UI.AddTitle(content, layout, "Profiles")
     AddDescription(content, layout,
@@ -145,7 +85,7 @@ local function CreateProfilesPanel()
     AddDescription(content, layout,
         "Resets Default and High Contrast, recreating High Contrast if missing. Custom profiles are unchanged.")
     UI.AddPageAction(content, layout, "Restore bundled profiles", function()
-        StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil, {onChanged = Changed})
+        StaticPopup_Show("SNP_RESTORE_BUNDLED_PROFILES", nil, nil, {targets = UI.CaptureBundledProfileDialogTargets(), onChanged = Changed})
     end, 210)
     panel.Refresh = Refresh
     panel:SetScript("OnShow", panel.Refresh)

@@ -10,7 +10,7 @@ C_CVar.GetCVar = function(name) return cvars[name] or "1" end
 C_CVar.SetCVar = function(name, value) cvars[name] = tostring(value) end
 local ns, refreshes, queued = {}, 0, 0
 for _, file in ipairs({"Defaults", "FontMedia", "Core", "ManagedNames", "Database",
-    "SettingsControls", "SettingsWidgets", "SettingsProfiles", "SettingsAppearance"}) do
+    "SettingsControls", "SettingsColorPicker", "SettingsWidgets", "SettingsProfileDialogs", "SettingsProfiles", "SettingsAppearance"}) do
     assert(loadfile("SimpleNameplates/" .. file .. ".lua"))("SimpleNameplates", ns)
 end
 ns.RefreshAll = function() refreshes = refreshes + 1 end
@@ -169,3 +169,33 @@ panel:GetScript("OnShow")(panel)
 panel:GetScript("OnShow")(panel)
 assert(Snapshot(SimpleNameplatesDB) == before and refreshes == prior, "show/reflow is read-only")
 print("Appearance settings integration smoke: passed")
+
+
+-- Database callers receive the same draft-cancellation protection as selectors.
+local serial = 0
+for _, mutate in ipairs({
+    function() assert(ns.SetActiveProfileName("Default")) end,
+    function() assert(ns.CreateProfile("Appearance created")) end,
+    function() assert(ns.CopyActiveProfile("Appearance copied")) end,
+    function() assert(ns.RenameActiveProfile("Appearance renamed")) end,
+    function() assert(ns.DeleteActiveProfile()) end,
+    function() ns.RestoreBundledProfiles() end,
+    function() ns.ResetAppearance() end,
+}) do
+    serial = serial + 1
+    assert(ns.CreateProfile("Appearance direct " .. serial))
+    ns.SetAppearanceSetting("nameSize", 23)
+    panel.Refresh()
+    local original = ns.GetProfile(ns.GetActiveProfileName())
+    local pending = Editor(size)
+    pending:SetText("32")
+    assert(original.appearance.nameSize == 32)
+    mutate()
+    assert(not pending:IsShown(), "database mutation cancels appearance editor")
+    if serial ~= 7 then assert(original.appearance.nameSize == 23, "rollback precedes mutation") end
+    local saved = Snapshot(SimpleNameplatesDB)
+    pending:SetText("35")
+    pending:GetScript("OnEscapePressed")()
+    assert(Snapshot(SimpleNameplatesDB) == saved, "retired appearance editor cannot change later selection")
+end
+print("PASS direct database mutation and appearance draft cancellation")

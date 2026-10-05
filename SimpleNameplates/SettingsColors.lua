@@ -41,7 +41,7 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, re
     frame:HookScript("OnLeave", function() GameTooltip:Hide() end)
     local resetAnchor = activation and AddActivation(context, row, swatch, activation) or frame
     local reset = Widgets.CreateButton(row, "Reset", function()
-        Widgets.CancelColorEdit()
+        UI.CancelColorEdit()
         resetColor()
         RefreshContext(context)
         RefreshNameplates()
@@ -102,7 +102,7 @@ local function CreateColorsPanel()
     end
     addon.AddProfileSelector(content, layout, context.refreshers, Refresh)
     UI.AddPageAction(content, layout, "Reset all colors", function()
-        Widgets.CancelColorEdit()
+        UI.CancelColorEdit()
         addon.ResetAllColors()
         Refresh()
         RefreshNameplates()
@@ -120,7 +120,7 @@ local function CreateColorsPanel()
     AddCastEffectSelector(context)
     panel.Refresh = Refresh
     panel:SetScript("OnShow", panel.Refresh)
-    panel:SetScript("OnHide", Widgets.CancelColorEdit)
+    panel:SetScript("OnHide", function() UI.CancelColorEdit() end)
     Refresh()
     layout:Finish()
     return panel

@@ -12,7 +12,7 @@ function GameTooltip:SetOwner(frame) self.owner=frame end
 function GameTooltip:AddLine() end
 local ns, refreshes, integrations, setup, restored = {}, 0, 0, 0, 0
 for _, file in ipairs({"Defaults", "FontMedia", "Core", "ManagedNames", "NameplateSetup", "Database",
-    "SettingsControls", "SettingsWidgets", "SettingsBehavior", "SettingsProfiles", "SettingsTRP3", "SettingsAbout"}) do
+    "SettingsControls", "SettingsColorPicker", "SettingsWidgets", "SettingsBehavior", "SettingsProfileDialogs", "SettingsProfiles", "SettingsTRP3", "SettingsAbout"}) do
     assert(loadfile("SimpleNameplates/" .. file .. ".lua"))("SimpleNameplates", ns)
 end
 ns.RefreshAll = function() refreshes=refreshes+1 end
@@ -296,3 +296,30 @@ for _, object in ipairs(ui.objects) do
     if object.kind == "FontString" and (object:GetText() or ""):find("/snp perf [start|stop|report]", 1, true) then perfFound = true end
 end
 assert(perfFound, "About documents profiling")
+
+-- Same-name factory replacement invalidates profile lifecycle confirmations.
+for _, action in ipairs({"Copy", "Rename", "Delete"}) do
+    Choose("High Contrast"); Click(Button(action))
+    local pending = popup
+    ns.RestoreBundledProfiles()
+    local saved = Snapshot(SimpleNameplatesDB)
+    popup = pending
+    if action == "Delete" then StaticPopupDialogs.SNP_DELETE_PROFILE.OnAccept(nil, pending.data)
+    else AcceptName("Replaced target " .. action) end
+    assert(Snapshot(SimpleNameplatesDB) == saved, "same-name replacement invalidates " .. action)
+end
+Choose("Default"); Click(Button("Restore bundled profiles"))
+local pending = popup
+ns.RestoreBundledProfiles()
+ns.SetAppearanceSetting("nameSize", 29)
+local saved = Snapshot(SimpleNameplatesDB)
+StaticPopupDialogs.SNP_RESTORE_BUNDLED_PROFILES.OnAccept(nil, pending.data)
+assert(Snapshot(SimpleNameplatesDB) == saved, "stale bundled restore cannot overwrite a replacement")
+Choose("High Contrast"); assert(ns.DeleteActiveProfile())
+Show(panels[1]); Click(Button("Restore bundled profiles")); pending = popup
+assert(ns.CopyActiveProfile("High Contrast"))
+ns.SetAppearanceSetting("nameSize", 30)
+saved = Snapshot(SimpleNameplatesDB)
+StaticPopupDialogs.SNP_RESTORE_BUNDLED_PROFILES.OnAccept(nil, pending.data)
+assert(Snapshot(SimpleNameplatesDB) == saved, "new object under a previously missing bundled name is protected")
+print("PASS profile dialog replacement identity and missing-target guards")

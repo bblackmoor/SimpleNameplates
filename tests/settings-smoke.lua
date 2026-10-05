@@ -116,7 +116,8 @@ local ns = {
         return ""
     end,
     MIN_NAME_SIZE = 8, MIN_HEALTH_BAR_WIDTH = 80, MAX_HEALTH_BAR_WIDTH = 150, MAX_NAME_SIZE = 36,
-    DEFAULT_PROFILE_NAME = "Default",
+    DEFAULT_PROFILE_NAME = "Default", HIGH_CONTRAST_PROFILE_NAME = "High Contrast",
+    GetProfile = function() return profile end,
     PriorityColorForState = function(state) return unpack(npcColors[state] or attacking) end,
     SetPriorityColor = function(state, r, g, b)
         if npcColors[state] then npcColors[state] = {r, g, b}

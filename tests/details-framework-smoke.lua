@@ -14,6 +14,11 @@ assert(loadfile(root .. "SettingsWidgets.lua"))("SimpleNameplates", ns)
 local widgets = ns.SettingsWidgets
 assert(not ns.SettingsUI and not ns.SettingsPanels, "adapter does not register or replace legacy pages")
 assert(SimpleNameplatesDB == nil, "loading must not initialize saved settings")
+local profile = {}
+ns.GetActiveProfileName = function() return "Test" end
+ns.GetProfile = function(name) if name == "Test" then return profile end end
+assert(loadfile(root .. "SettingsControls.lua"))("SimpleNameplates", ns)
+assert(loadfile(root .. "SettingsColorPicker.lua"))("SimpleNameplates", ns)
 assert(widgets.GetFramework() == df)
 
 local changes, selected, rgb = 0
@@ -164,7 +169,7 @@ local accepted = ColorPickerFrame.info
 accepted.swatchFunc()
 ColorPickerFrame:Hide() -- Native Okay hides after applying its final swatch callback.
 count = changes
-widgets.CancelColorEdit(); accepted.cancelFunc()
+ns.SettingsUI.CancelColorEdit(); accepted.cancelFunc()
 assert(changes == count and other:GetColor() == 0.8, "accepted previews stay committed")
 other:SetColor(0.1, 0.2, 0.3)
 Click(other.frame)
@@ -180,7 +185,7 @@ local displaced = ColorPickerFrame.info
 displaced.swatchFunc()
 ColorPickerFrame:SetupColorPickerAndShow({extraInfo = {}, swatchFunc = function() end})
 count = changes
-widgets.CancelColorEdit(); displaced.cancelFunc(); displaced.swatchFunc()
+ns.SettingsUI.CancelColorEdit(); displaced.cancelFunc(); displaced.swatchFunc()
 assert(changes == count and ColorPickerFrame:IsShown(), "another addon's picker is left open")
 ColorPickerFrame:Hide()
 
@@ -220,3 +225,4 @@ assert(widgets.GetFramework() == nil, "missing library fails only at adapter con
 LibStub = originalStub
 assert(SimpleNameplatesDB == nil, "adapter behavior never writes saved settings")
 print("Details Framework smoke: passed")
+

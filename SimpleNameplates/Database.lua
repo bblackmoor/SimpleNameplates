@@ -315,9 +315,20 @@ local function ValidProfileName(name, currentName)
     return name
 end
 
+-- Cancel while the original selection and object identity still exist.
+local function CancelProfileEdits()
+    if ns.SettingsUI and ns.SettingsUI.CancelColorEdit then ns.SettingsUI.CancelColorEdit() end
+    if ns.CancelAppearanceEdits then ns.CancelAppearanceEdits(true) end
+end
+
+local function CancelColorEdit()
+    if ns.SettingsUI and ns.SettingsUI.CancelColorEdit then ns.SettingsUI.CancelColorEdit() end
+end
+
 local function SetActiveProfileName(name)
     local exactName = FindProfileName(name)
     if not exactName then return false, "Profile not found." end
+    CancelProfileEdits()
     EnsureDB().profileKeys[CharacterKey()] = exactName
     return true
 end
@@ -325,16 +336,18 @@ end
 local function CreateProfile(name)
     local validName, errorMessage = ValidProfileName(name)
     if not validName then return false, errorMessage end
+    CancelProfileEdits()
     EnsureDB().profiles[validName] = NewProfile()
-    SetActiveProfileName(validName)
+    EnsureDB().profileKeys[CharacterKey()] = validName
     return true
 end
 
 local function CopyActiveProfile(name)
     local validName, errorMessage = ValidProfileName(name)
     if not validName then return false, errorMessage end
+    CancelProfileEdits()
     EnsureDB().profiles[validName] = CopyProfile(ActiveProfile())
-    SetActiveProfileName(validName)
+    EnsureDB().profileKeys[CharacterKey()] = validName
     return true
 end
 
@@ -345,6 +358,7 @@ local function RenameActiveProfile(name)
     local validName, errorMessage = ValidProfileName(name, oldName)
     if not validName then return false, errorMessage end
     if validName == oldName then return true end
+    CancelProfileEdits()
     db.profiles[validName] = db.profiles[oldName]
     db.profiles[oldName] = nil
     for character, assignedName in pairs(db.profileKeys) do
@@ -357,6 +371,7 @@ local function DeleteActiveProfile()
     local db = EnsureDB()
     local name = GetActiveProfileName()
     if name == DEFAULT_PROFILE_NAME then return false, "Default cannot be deleted." end
+    CancelProfileEdits()
     db.profiles[name] = nil
     for character, assignedName in pairs(db.profileKeys) do
         if assignedName == name then db.profileKeys[character] = DEFAULT_PROFILE_NAME end
@@ -366,6 +381,7 @@ end
 
 local function RestoreBundledProfiles()
     local db = EnsureDB()
+    CancelProfileEdits()
     db.profiles[DEFAULT_PROFILE_NAME] = NewProfile()
     db.profiles[HIGH_CONTRAST_PROFILE_NAME] = NewProfile("highContrast")
 end
@@ -409,6 +425,7 @@ local function SetAppearanceSetting(key, value)
 end
 
 local function ResetAppearance()
+    CancelProfileEdits()
     local appearance = ActiveProfile().appearance
     for key, value in pairs(DEFAULT_APPEARANCE) do appearance[key] = value end
 end
@@ -438,6 +455,7 @@ local function SetPriorityColor(state, r, g, b)
 end
 
 local function ResetPriorityColor(state)
+    CancelColorEdit()
     local default = ActiveProfileDefaults().priorityColors[state]
     if not default then return end
     ActiveProfile().priorityColors[state] = CopyColor(default)
@@ -457,12 +475,14 @@ local function SetEffectColor(effect, r, g, b)
 end
 
 local function ResetEffectColor(effect)
+    CancelColorEdit()
     local default = ActiveProfileDefaults().effectColors[effect]
     if not default then return end
     ActiveProfile().effectColors[effect] = CopyColor(default)
 end
 
 local function ResetAllColors()
+    CancelColorEdit()
     local profile = ActiveProfile()
     local defaults = ActiveProfileDefaults()
     for key, default in pairs(defaults.priorityColors) do
@@ -516,6 +536,7 @@ local function SetThreatEnabled(enabled)
 end
 
 
+ns.GetProfile = function(name) return EnsureDB().profiles[name] end
 ns.EnsureDB = EnsureDB
 ns.DEFAULT_PROFILE_NAME = DEFAULT_PROFILE_NAME
 ns.HIGH_CONTRAST_PROFILE_NAME = HIGH_CONTRAST_PROFILE_NAME
@@ -551,3 +572,4 @@ ns.GetTRP3Enabled = GetTRP3Enabled
 ns.SetTRP3Enabled = SetTRP3Enabled
 ns.GetTRP3Setting = GetTRP3Setting
 ns.SetTRP3Setting = SetTRP3Setting
+

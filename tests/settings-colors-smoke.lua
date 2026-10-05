@@ -8,7 +8,7 @@ function GameTooltip:SetOwner(frame) self.owner = frame end
 function GameTooltip:AddLine() end
 local ns, refreshes = {}, 0
 for _, file in ipairs({"Defaults", "FontMedia", "Core", "ManagedNames", "Database",
-    "SettingsControls", "SettingsWidgets", "SettingsProfiles", "SettingsColors"}) do
+    "SettingsControls", "SettingsColorPicker", "SettingsWidgets", "SettingsProfileDialogs", "SettingsProfiles", "SettingsColors"}) do
     assert(loadfile("SimpleNameplates/" .. file .. ".lua"))("SimpleNameplates", ns)
 end
 ns.RefreshAll = function() refreshes = refreshes + 1 end
@@ -182,3 +182,63 @@ Click(attacking); oldPicker = ColorPickerFrame.info; oldPicker.swatchFunc()
 panel:GetScript("OnHide")(panel); oldPicker.swatchFunc()
 RGBEqual({ns.PriorityColorForState("attacking")}, 1, 0, 0)
 print("Colors settings integration smoke: passed")
+
+
+-- Direct database mutations retire edits before changing their captured target.
+local function OpenPreview()
+    ns.SetPriorityColor("attacking", 0.7, 0.8, 0.9)
+    panel.Refresh()
+    Click(attacking)
+    local edit = ColorPickerFrame.info
+    assert(edit.extraInfo.owner and edit.extraInfo.target.name == ns.GetActiveProfileName())
+    assert(edit.extraInfo.target.object == ns.GetProfile(ns.GetActiveProfileName()))
+    edit.swatchFunc()
+    RGBEqual({ns.PriorityColorForState("attacking")}, 0.2, 0.3, 0.4)
+    return edit
+end
+local serial = 0
+for _, mutate in ipairs({
+    function() assert(ns.SetActiveProfileName("Default")) end,
+    function() assert(ns.CreateProfile("Created directly")) end,
+    function() assert(ns.CopyActiveProfile("Copied directly")) end,
+    function() assert(ns.RenameActiveProfile("Renamed directly")) end,
+    function() assert(ns.DeleteActiveProfile()) end,
+    function() ns.RestoreBundledProfiles() end,
+    function() ns.ResetPriorityColor("attacking") end,
+    function() ns.ResetEffectColor("interruptible") end,
+    function() ns.ResetAllColors() end,
+    function() ns.ResetAppearance() end,
+}) do
+    serial = serial + 1
+    assert(ns.CreateProfile("Direct mutation " .. serial))
+    local edit = OpenPreview()
+    local original = edit.extraInfo.target.object
+    mutate()
+    assert(not ColorPickerFrame:IsShown(), "database mutation closes its picker")
+    local saved = Snapshot(SimpleNameplatesDB)
+    edit.cancelFunc(); edit.swatchFunc()
+    assert(Snapshot(SimpleNameplatesDB) == saved, "database mutations retire picker callbacks")
+    if serial <= 6 then
+        RGBEqual({original.priorityColors.attacking.r, original.priorityColors.attacking.g,
+            original.priorityColors.attacking.b}, 0.7, 0.8, 0.9)
+    end
+end
+-- Invalid mutations leave the current edit intact.
+local edit = OpenPreview()
+assert(not ns.SetActiveProfileName("Missing"))
+assert(not ns.CreateProfile(""))
+assert(ColorPickerFrame:IsShown())
+edit.cancelFunc()
+RGBEqual({ns.PriorityColorForState("attacking")}, 0.7, 0.8, 0.9)
+-- Same-name replacement is rejected even if a caller bypasses database mutations.
+edit = OpenPreview()
+local name, original = ns.GetActiveProfileName(), ns.GetProfile(ns.GetActiveProfileName())
+ns.EnsureDB().profiles[name] = ns.GetProfile("High Contrast")
+local saved = Snapshot(SimpleNameplatesDB)
+edit.swatchFunc(); edit.cancelFunc()
+assert(Snapshot(SimpleNameplatesDB) == saved, "replacement identity cannot receive old preview or rollback")
+ns.EnsureDB().profiles[name] = original
+saved = Snapshot(SimpleNameplatesDB)
+edit.swatchFunc(); edit.cancelFunc()
+assert(Snapshot(SimpleNameplatesDB) == saved, "cancel retires replaced-target callbacks permanently")
+print("PASS direct database mutation and picker target identity")
