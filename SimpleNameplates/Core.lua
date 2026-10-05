@@ -13,12 +13,14 @@ local function AddOnEnabled(name)
     local isLoaded = C_AddOns and C_AddOns.IsAddOnLoaded or IsAddOnLoaded
     if isLoaded and isLoaded(name) then return true end
 
-    local getEnableState = C_AddOns and C_AddOns.GetAddOnEnableState or GetAddOnEnableState
-    if getEnableState then
-        local state = getEnableState(UnitName("player"), name)
-        return type(state) == "number" and state > 0
+    local state
+    if C_AddOns and C_AddOns.GetAddOnEnableState then
+        state = C_AddOns.GetAddOnEnableState(name, UnitName("player"))
+    elseif GetAddOnEnableState then
+        -- The legacy global uses the opposite argument order.
+        state = GetAddOnEnableState(UnitName("player"), name)
     end
-    return false
+    return type(state) == "number" and state > 0
 end
 
 local function PlainTitle(title)

@@ -523,5 +523,43 @@ for _, action in ipairs({"delete", "rename"}) do
     end
 end
 
+-- Modern and legacy enable-state APIs have different argument orders.
+do
+    local savedAddOns, savedUnitName = C_AddOns, UnitName
+    local savedEnableState = GetAddOnEnableState
+    local savedDialogs, savedPopup = StaticPopupDialogs, StaticPopup_Show
+    local shown, enableCalls = {}, 0
+    local installed = {"EnabledPlate", "DisabledPlate", "LoadedPlate", "Blizzard_Plate", "SimpleNameplates"}
+    UnitName = function(token) equal(token, "player", "enable-state character token"); return "Tester" end
+    StaticPopupDialogs = {}
+    StaticPopup_Show = function(_, text) shown[#shown + 1] = text end
+    local function checkState(name, character)
+        equal(character, "Tester", "enable-state character")
+        assert(name == "EnabledPlate" or name == "DisabledPlate", "unexpected enable-state addon")
+        enableCalls = enableCalls + 1
+        return name == "EnabledPlate" and 2 or 0
+    end
+    C_AddOns = {
+        GetAddOnMetadata = function() return "test" end,
+        GetNumAddOns = function() return #installed end,
+        GetAddOnInfo = function(index) return installed[index], installed[index] end,
+        IsAddOnLoaded = function(name) return name == "LoadedPlate" end,
+        GetAddOnEnableState = checkState,
+    }
+    GetAddOnEnableState = function() error("modern API must take precedence") end
+    local conflictNS = {}
+    assert(loadfile("SimpleNameplates/Core.lua"))("SimpleNameplates", conflictNS)
+    conflictNS.ShowNameplateConflictWarning()
+    equal(enableCalls, 2, "modern API checks only unloaded third-party plate addons")
+    equal(shown[1], "EnabledPlate\nLoadedPlate", "modern warning excludes disabled/self/Blizzard addons")
+    C_AddOns.GetAddOnEnableState = nil
+    GetAddOnEnableState = function(character, name) return checkState(name, character) end
+    conflictNS.ShowNameplateConflictWarning()
+    equal(enableCalls, 4, "legacy enable-state path exercised")
+    equal(shown[2], shown[1], "legacy warning matches modern warning")
+    C_AddOns, UnitName, GetAddOnEnableState = savedAddOns, savedUnitName, savedEnableState
+    StaticPopupDialogs, StaticPopup_Show = savedDialogs, savedPopup
+end
+
 print("Core behavior smoke: passed")
 

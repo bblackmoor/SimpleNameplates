@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.176
+
+* Calls the modern addon enable-state API with addon name before character, retaining the reversed argument order for the legacy global. Unloaded enabled nameplate addons are included in the conflict warning; disabled addons are excluded.
+* Leaves selection-highlight visibility to Blizzard during styling, repairs and restoration, preserving current target/mouseover state rather than forcing every Active plate to appear selected or restoring a stale snapshot.
+* Adds modern/legacy conflict-scan and live-selection regressions for both disable paths. All twenty smoke suites and whitespace checks pass; native WoW verification remains pending.
+
 ## 1.0.175
 
 * Binds captured health-bar and container presentation to the native regions being styled. Restores retired regions before capturing replacement baselines, including container-only changes detected during reconciliation. Replacement bars retain their own dimensions, visibility and colors on disable; inaccessible retired regions defer work until access returns.

@@ -1253,5 +1253,29 @@ equal(accessibleNewBar.width, 270, "replacement styled when retired bar accessib
 ns.RestoreAll()
 equal(accessibleNewBar.width, 180, "replacement width restores after access retry")
 
+-- Target/mouseover highlights remain native through repairs and both disable paths.
+for _, disableMaster in ipairs({false, true}) do
+    for _, initiallyShown in ipairs({false, true}) do
+        ns.RestoreAll()
+        stylingEnabled, categoryMode = true, "active"
+        unit = {reaction = 3}
+        plateFrame.selectionHighlight = Region()
+        plateFrame.selectionHighlight:SetShown(initiallyShown)
+        ns.RefreshAll()
+        equal(plateFrame.selectionHighlight.shown, initiallyShown, "styling preserves native selection highlight")
+        ns.NameplatePresentation.RepairHealthColor(plateFrame)
+        ns.NameplatePresentation.RepairName(plateFrame)
+        equal(plateFrame.selectionHighlight.shown, initiallyShown, "repairs preserve native selection highlight")
+        plateFrame.selectionHighlight:SetShown(not initiallyShown)
+        ns.NameplatePresentation.RepairHealthColor(plateFrame)
+        ns.NameplatePresentation.RepairName(plateFrame)
+        equal(plateFrame.selectionHighlight.shown, not initiallyShown, "repairs preserve changed native selection")
+        if disableMaster then stylingEnabled = false; ns.RestoreAll()
+        else categoryMode = "inactive"; ns.RefreshAll() end
+        equal(plateFrame.selectionHighlight.shown, not initiallyShown, "disable preserves live selection visibility")
+    end
+end
+stylingEnabled, categoryMode = true, "active"
+
 print("Nameplates smoke: passed")
 

@@ -14,7 +14,8 @@ local function ApplyVisibility(frame, decision, assessment, context)
     SetShownSafe(frame.HealthBarsContainer, true, context)
     -- Blizzard shows casts/channels and hides idle cast bars. Do not force an
     -- idle bar visible: the space below health belongs to the long title.
-    for _, key in ipairs({"castBarAnchor", "classificationIndicator", "ClassificationFrame", "selectionHighlight"}) do
+    -- Selection highlighting remains driven by Blizzard's target/mouseover rules.
+    for _, key in ipairs({"castBarAnchor", "classificationIndicator", "ClassificationFrame"}) do
         SetShownSafe(frame[key], decision.showCombatIndicators, context)
     end
 end
