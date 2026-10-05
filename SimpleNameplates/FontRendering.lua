@@ -5,5 +5,5 @@ function ns.FontFlags(outlined)
     if ns.GetAppearanceSetting("useSlugRendering") == true then
         return outlined and "SLUG,OUTLINE" or "SLUG"
     end
-    return outlined and "THICKOUTLINE" or ""
+    return outlined and "OUTLINE" or ""
 end

@@ -58,7 +58,7 @@ Settings cannot open through these commands during combat. Diagnostic and `/snp 
 | Cast color/style | Profile; cyan and None | RGB-only color; None, Moving dashes, Autocast Shine, Action Button Glow, Proc Glow; no Pulse or separate cast switch |
 | Name font | Profile, `FRIZQT` | Six existing built-in IDs remain valid; shared `LSM:` selections survive missing providers and reloads |
 | Threat font | Profile, `ARIALN` | Independent font choice; same dynamic shared registry and missing-font fallback |
-| Slug font rendering | Profile, false | Appearance toggle near fonts; shared rendering flags, thin outlines outside health bars and two unoutlined black underlayers inside |
+| Slug font rendering | Profile, true | Appearance toggle near fonts; shared rendering flags, thin outlines outside health bars and two unoutlined black underlayers inside |
 | Sanctuary font matching | Profile, true | Changes name/title face only; selected name font applies when disabled |
 | Name size | Profile, 21 | 8–36 points in steps of 1; also controls threat size; titles use 80% |
 | Health bar width | Profile, 100% | 80–150% in steps of 5; preserve existing rounding/clamping |

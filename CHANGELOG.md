@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.186
+
+* Defaults Slug rendering to On for new profiles, missing/invalid settings, and Appearance reset. Existing saved On/Off choices remain authoritative.
+* Uses thin outlines for outside-bar names, titles and cast labels with Slug either On or Off. Inside-bar text, gradients and threat underlayers keep their existing behavior.
+* Updates profile/default/reset and rendering checks and documentation.
+
 ## 1.0.185
 
 * Uses nearest filtering for the rectangular gradient mask to avoid blending with transparent outside pixels, which can expose a bright left strip and faint rim when stretched over the bar. Uses a solid-color texture beneath the smooth gradient.

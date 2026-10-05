@@ -86,7 +86,7 @@ assert(health.Text.r == 1, "native health text stays white on dark bars")
 assert(health.bgTexture.alpha == 0 and health.selectedBorder.alpha == 0)
 assert(health.deselectedOverlay.alpha == 0 and cast.Border.alpha == 0)
 assert(cast.DropShadow.alpha == 0 and cast.BorderShield.alpha == 1, "shield stays intact")
-assert(cast.Text.flags == "THICKOUTLINE" and cast.Text.shadow[4] == 0 and cast.Text.offset[1] == 0)
+assert(cast.Text.flags == "OUTLINE" and cast.Text.shadow[4] == 0 and cast.Text.offset[1] == 0)
 assert(cast.Text.font == "font" and cast.Text.size == 10, "cast face/size preserved")
 slug = true
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
@@ -97,7 +97,7 @@ for _, key in ipairs({"Text", "RightText", "LeftText"}) do
 end
 slug = false
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
-assert(cast.Text.flags == "THICKOUTLINE" and health.Text.flags == "", "toggle off restores ordinary rendering")
+assert(cast.Text.flags == "OUTLINE" and health.Text.flags == "", "toggle off restores ordinary rendering")
 assert(health.barTexture.texture == "Interface\\Buttons\\WHITE8X8")
 assert(health.SNPPlainBackground.bar == health and health.SNPPlainBackground.shown)
 cast.barTexture:SetAtlas("changed-for-new-cast")
