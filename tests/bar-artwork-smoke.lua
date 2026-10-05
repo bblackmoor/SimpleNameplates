@@ -76,10 +76,12 @@ for _, key in ipairs({"Text", "RightText", "LeftText"}) do
     assert(health[key].shadow[4] == 0 and #health[key].SNPUnderlayers == 2, "native health text uses black offset copy")
     assert(health[key].vr == 1, "native text tint neutral")
 end
-assert(health.Text.points[1][5] == -0.5, "native health label padding moves down")
+assert(health.LeftText.points[1][5] == -0.5, "rightmost native health label padding moves down")
+assert(health.RightText.points[1][2] == health.LeftText and health.RightText.points[1][3] == "LEFT", "native value follows percentage")
+assert(health.Text.points[1][2] == health.RightText and health.Text.points[1][3] == "LEFT", "single native label cannot overlap other shown labels")
 barRGB = {0, 0, 1}
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
-assert(health.Text.points[1][5] == -0.5, "native text padding does not accumulate")
+assert(health.LeftText.points[1][5] == -0.5 and health.Text.points[1][5] == 0, "native text padding does not accumulate")
 assert(health.Text.r == 1, "native health text stays white on dark bars")
 assert(health.bgTexture.alpha == 0 and health.selectedBorder.alpha == 0)
 assert(health.deselectedOverlay.alpha == 0 and cast.Border.alpha == 0)

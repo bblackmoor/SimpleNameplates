@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.179
+
+* Coordinates native health labels, addon threat and inside-bar names. Threat stays at the right edge; displayed health labels form a chain to its left, and names reserve the whole group. Region anchors track changing text widths without inspecting restricted health values. Unknown health visibility conservatively reserves space.
+* Reconciles native label visibility changes, including hidden middle labels, and restores original native anchors when styling ends. Inaccessible native health text defers styling/restoration until access returns.
+* Adds layout combinations for both name placements, native percentages/values and threat; visibility-change, restoration, restricted-value and access-retry regressions. Updates documentation; all twenty smoke suites and whitespace checks pass. Native WoW verification remains pending.
+
 ## 1.0.178
 
 * Resolves Retail's native CastBarsContainer.castBar alongside legacy direct cast fields. Checks container access before reading the nested bar and retains conservative checks for restricted bars and icons. Titles now follow native cast/channel visibility, and nested cast bars receive artwork styling and interruptibility effects.

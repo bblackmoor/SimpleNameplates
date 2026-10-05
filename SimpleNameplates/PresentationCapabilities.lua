@@ -86,6 +86,13 @@ local function InspectFrame(frame, context)
         end
         result[key] = region
     end
+    for _, key in ipairs({"Text", "RightText", "LeftText"}) do
+        local status = ObjectStatus(InspectField(regions.healthBar, key), context)
+        if status ~= "missing" and status ~= "accessible" then
+            result.status, result.reason = status, "native health text: " .. key
+            return result
+        end
+    end
     -- Remaining regions are touched by visibility, restoration, or drift repair.
     for _, key in ipairs({ "CastBar", "castBarAnchor", "classificationIndicator", "ClassificationFrame",
         "selectionHighlight", "SNPInsideName", "SNPFullTitleText", "SNPThreatText",

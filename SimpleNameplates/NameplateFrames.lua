@@ -158,6 +158,49 @@ local function StyleHealthText(frame, region, context, bar)
     end
 end
 
+-- Right-to-left order matches Blizzard's percentage/value/single-text labels.
+-- Anchors follow label regions, so secret or changing text widths need no reads.
+local function HealthTextLayoutState(frame, bar, context)
+    local labels, signature = {}, ""
+    local threat
+    if bar and frame.SNPThreatTextBar == bar and (frame.SNPThreatStatus == "displayed raw percentage"
+        or frame.SNPThreatStatus == "displayed scaled percentage") then
+        threat = frame.SNPThreatText
+    end
+    signature = threat and "T" or "-"
+    for _, key in ipairs({"LeftText", "RightText", "Text"}) do
+        local region = Capabilities.SafeField(bar, key, context)
+        if Capabilities.ObjectStatus(region, context) ~= "accessible" then region = nil end
+        local original = frame.SNPOriginalArtwork and frame.SNPOriginalArtwork[region]
+        local shown = ns.AccessibleBoolean(Capabilities.ReadRegion(region, "IsShown", context))
+        -- Preserve space for unknown visibility; do not inspect restricted text.
+        local included = region and original and original.points and shown ~= false
+        signature = signature .. (included and "1" or "0")
+        if included then labels[#labels + 1] = region end
+    end
+    return labels, threat, signature
+end
+
+local function GetHealthTextInsetRegion(frame, bar, context)
+    local labels, threat, signature = HealthTextLayoutState(frame, bar, context)
+    return labels[#labels] or threat, signature
+end
+
+local function LayoutHealthText(frame, bar, context)
+    local labels, threat = HealthTextLayoutState(frame, bar, context)
+    local previous = threat
+    if threat then
+        threat:ClearAllPoints()
+        threat:SetPoint("RIGHT", bar, "RIGHT", -3, -0.5)
+    end
+    for _, region in ipairs(labels) do
+        region:ClearAllPoints()
+        region:SetPoint("RIGHT", previous or bar, previous and "LEFT" or "RIGHT", -3, previous and 0 or -0.5)
+        previous = region
+    end
+    return GetHealthTextInsetRegion(frame, bar, context)
+end
+
 local function FlattenBar(frame, bar, backgroundKey, context)
     if Capabilities.ObjectStatus(bar, context) ~= "accessible" then return end
     RemoveArtworkEdge(frame, Capabilities.SafeField(bar, backgroundKey, context), context)
@@ -213,6 +256,7 @@ local function ApplyArtwork(frame, assessment, context)
     for _, key in ipairs({"Text", "CastTargetNameText"}) do
         StyleNativeTextOutline(frame, Capabilities.SafeField(castBar, key, context), context)
     end
+    LayoutHealthText(frame, healthBar, context)
 end
 
 -- Artwork hooks can also fire while a bar or its labels are being changed.
@@ -261,6 +305,7 @@ end
 
 ns.NameplateFrames = {
     ApplyBarWidth = ApplyBarWidth, RestoreBarWidth = RestoreBarWidth,
+    LayoutHealthText = LayoutHealthText, GetHealthTextInsetRegion = GetHealthTextInsetRegion,
     ApplyBarArtwork = ApplyBarArtwork, RestoreBarArtwork = RestoreBarArtwork,
     GetUnitFrame = GetUnitFrame, GetFrameFromPlate = GetFrameFromPlate,
     GetHealthBar = GetHealthBar, GetCastBar = GetCastBar, SetShownSafe = SetShownSafe,

@@ -1331,5 +1331,85 @@ equal(plateFrame.SNPInterruptibleHighlight.frame.shown, false, "disable hides ne
 nestedCast:Hide()
 equal(plateFrame.SNPFullTitleText.shown, false, "nested cast end cannot revive disabled title")
 
+-- Coordinate every displayed health label with threat and the inside name.
+ns.RestoreAll()
+stylingEnabled, categoryMode = true, "active"
+unit, ns.TRP3 = {reaction = 3}, nil
+local healthLabels = {}
+for _, key in ipairs({"LeftText", "RightText", "Text"}) do
+    local label = Region()
+    label:SetFont("NativeHealthFont", 14, "")
+    label:SetText(key == "LeftText" and "75%" or "123k")
+    label:SetPoint("RIGHT", plateFrame.healthBar, "RIGHT", -4, 0)
+    healthLabels[key], plateFrame.healthBar[key] = label, label
+end
+for _, placement in ipairs({"INSIDE", "ABOVE"}) do
+    for _, showThreat in ipairs({false, true}) do
+        for _, visible in ipairs({{}, {"Text"}, {"LeftText"}, {"RightText"}, {"LeftText", "RightText"}}) do
+            ns.RestoreAll()
+            local selected = {}
+            for _, key in ipairs(visible) do selected[key] = true end
+            for key, label in pairs(healthLabels) do label:SetShown(selected[key] == true) end
+            appearance.namePlacement, threatEnabled, threatPercent = placement, showThreat, 100
+            ns.RefreshAll()
+            local preceding = showThreat and plateFrame.SNPThreatText or plateFrame.healthBar
+            if showThreat then
+                equal(preceding.points[1][2], plateFrame.healthBar, "threat keeps bar right edge")
+                equal(preceding.points[1][4], -3, "threat keeps right padding")
+            end
+            for _, key in ipairs({"LeftText", "RightText", "Text"}) do
+                local label = healthLabels[key]
+                if selected[key] then
+                    equal(label.points[1][2], preceding, "health labels form a nonoverlapping chain")
+                    equal(label.points[1][3], preceding == plateFrame.healthBar and "RIGHT" or "LEFT", "health labels anchor to preceding left edge")
+                    equal(label.points[1][4], -3, "health labels leave three-unit gaps")
+                    equal(label.points[1][5], preceding == plateFrame.healthBar and -0.5 or 0, "health labels share baseline")
+                    preceding = label
+                end
+                equal(label.shown, selected[key] == true, "native health visibility preserved")
+            end
+            if placement == "INSIDE" then
+                equal(plateFrame.SNPInsideName.points[2][2], preceding, "name reserves all health and threat text")
+            end
+            ns.RestoreAll()
+            for _, label in pairs(healthLabels) do
+                equal(label.points[1][2], plateFrame.healthBar, "native health anchor restored")
+                equal(label.points[1][4], -4, "native health horizontal offset restored")
+                equal(label.points[1][5], 0, "native health vertical offset restored")
+            end
+        end
+    end
+end
+-- A health-value visibility change can leave the same leftmost label in place.
+for _, label in pairs(healthLabels) do label:Show() end
+appearance.namePlacement, threatEnabled = "INSIDE", true
+ns.RefreshAll()
+healthLabels.RightText:Hide()
+events.scripts.OnUpdate(events, 0.25)
+equal(healthLabels.Text.points[1][2], healthLabels.LeftText, "reconciliation removes hidden middle label")
+healthLabels.RightText:Show()
+events.scripts.OnUpdate(events, 0.25)
+equal(healthLabels.Text.points[1][2], healthLabels.RightText, "reconciliation reserves newly shown middle label")
+local nativeLabelBlocked = true
+healthLabels.RightText.IsForbidden = function() return nativeLabelBlocked end
+stylingEnabled = false; ns.RestoreAll()
+assert(ns.NameplateRestoration.IsPending(plateFrame), "inaccessible health label defers restoration")
+nativeLabelBlocked = false
+events.scripts.OnUpdate(events, 0.25)
+equal(healthLabels.RightText.points[1][4], -4, "health-label restoration retries after access returns")
+
+-- Unknown native visibility reserves space without inspecting opaque health text.
+stylingEnabled = true
+for _, label in pairs(healthLabels) do label:Hide() end
+local opaqueHealth = setmetatable({}, {__tostring = function() error("opaque health inspected") end})
+local oldSecretCheck, oldShown = issecretvalue, healthLabels.LeftText.IsShown
+issecretvalue = function(value) return rawequal(value, opaqueHealth) end
+healthLabels.LeftText:SetText(opaqueHealth)
+healthLabels.LeftText.IsShown = function() return opaqueHealth end
+ns.RefreshAll()
+equal(plateFrame.SNPInsideName.points[2][2], healthLabels.LeftText, "unknown health visibility conservatively reserves name space")
+healthLabels.LeftText.IsShown, issecretvalue = oldShown, oldSecretCheck
+ns.RestoreAll()
+
 print("Nameplates smoke: passed")
 

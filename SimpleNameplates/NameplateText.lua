@@ -7,7 +7,6 @@ local UnitName = UnitName
 local AccessibleNumber, AccessibleValue = ns.AccessibleNumber, ns.AccessibleValue
 local PriorityColorForState, FontPath = ns.PriorityColorForState, ns.FontPath
 local GetAppearanceSetting, GetTRP3Setting = ns.GetAppearanceSetting, ns.GetTRP3Setting
-local GetThreatEnabled = ns.GetThreatEnabled
 local GetHealthBar = ns.NameplateFrames.GetHealthBar
 local GetCastBar = ns.NameplateFrames.GetCastBar
 
@@ -291,13 +290,6 @@ local function StyleName(frame, state, context, decision)
     local nameOnly = decision.nameOnly
     local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize, context, decision)
     local rightInset = -3
-    local rightRegion
-    if GetThreatEnabled() and frame.SNPThreatTextBar == bar
-        and (frame.SNPThreatStatus == "displayed raw percentage"
-            or frame.SNPThreatStatus == "displayed scaled percentage") then
-        rightRegion = frame.SNPThreatText
-    end
-    PositionName(frame, name, bar, nameOnly, inside, rightInset, rightRegion)
 
     local fontPath = NameFontPath(context)
     name:SetFont(fontPath, size, ns.FontFlags(not inside))
@@ -312,6 +304,9 @@ local function StyleName(frame, state, context, decision)
     name:SetVertexColor(1, 1, 1, 1)
     name:SetTextColor(nameR, nameG, nameB, 1)
     name:Show()
+    -- Showing the native name can itself change native health-text visibility.
+    local rightRegion, healthTextSignature = ns.NameplateFrames.LayoutHealthText(frame, bar, context)
+    PositionName(frame, name, bar, nameOnly, inside, rightInset, rightRegion)
     if inside then
         ShowInsideName(frame, bar, displayName, fontPath, size, rightInset, rightRegion, nameR)
     else
@@ -321,6 +316,7 @@ local function StyleName(frame, state, context, decision)
     CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
         nameOnly, inside, rightInset, bar, rightRegion)
     frame.SNPNameStyle.presentation = decision
+    frame.SNPNameStyle.healthTextSignature = healthTextSignature
 end
 
 local function NearlyEqual(a, b)
@@ -342,6 +338,8 @@ local function CacheIsCurrent(frame, expected, context)
     if expected.font ~= NameFontPath(context) then return false end
     local bar = GetHealthBar(frame, context)
     if expected.bar ~= bar then return false end
+    local inset, signature = ns.NameplateFrames.GetHealthTextInsetRegion(frame, bar, context)
+    if inset ~= expected.rightRegion or signature ~= expected.healthTextSignature then return false end
     if frame.SNPOriginalVisibility
         and frame.SNPOriginalHealthBarsContainer ~= frame.HealthBarsContainer then return false end
     local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(bar, "IsShown", context))
