@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.177
+
+* Keeps classification badges under Blizzard control during styling, repairs and restoration. Hidden retained elite/rare artwork cannot be exposed on reused plates, and native rarity-display and raid-marker rules remain effective.
+* Forwards the native cast-bar interruptibility decision directly to the glow visibility API, without inspecting restricted values. Icon updates remain change notifications; visible Classic-style icons no longer cause uninterruptible casts to glow. Unavailable decisions hide the effect.
+* Adds classification lifecycle, Classic-style interruptibility, deferred retry and restricted-result regressions, and updates documentation. All twenty smoke suites and whitespace checks pass; native WoW verification remains pending.
+
 ## 1.0.176
 
 * Calls the modern addon enable-state API with addon name before character, retaining the reversed argument order for the legacy global. Unloaded enabled nameplate addons are included in the conflict warning; disabled addons are excluded.

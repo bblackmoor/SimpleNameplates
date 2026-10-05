@@ -67,6 +67,17 @@ local function SetInterruptibleHighlightShown(overlay, shown)
     if not ok then overlay:Hide() end
 end
 
+-- Blizzard wraps this result in spell-cast secrecy when needed. Forward it
+-- directly to SetShown; never branch on or invert the interruptibility value.
+local function SyncInterruptibleHighlight(highlight)
+    local bar = highlight.castBar
+    local method = bar and bar.IsInterruptable
+    if type(method) ~= "function" then highlight.frame:Hide(); return end
+    local ok, shown = pcall(method, bar)
+    if ok then SetInterruptibleHighlightShown(highlight.frame, shown)
+    else highlight.frame:Hide() end
+end
+
 local function InstallInterruptibleHighlightHook(highlight)
     local icon = highlight and highlight.castBar and highlight.castBar.Icon
     if not icon then return false end
@@ -74,7 +85,7 @@ local function InstallInterruptibleHighlightHook(highlight)
     if highlight.hookedIcons[icon] then return true end
 
     local overlay = highlight.frame
-    local ok = pcall(hooksecurefunc, icon, "SetShown", function(_, shown)
+    local ok = pcall(hooksecurefunc, icon, "SetShown", function()
         if not CanAccessFrame(highlight.owner, GetContext()) then
             pendingFrames[highlight.owner] = true
             return
@@ -86,7 +97,7 @@ local function InstallInterruptibleHighlightHook(highlight)
         local decision = highlight.owner.SNPPresentation
         if GetStylingEnabled() and GetInterruptibleHighlightEnabled()
             and decision and decision.showCastBar then
-            SetInterruptibleHighlightShown(overlay, shown)
+            SyncInterruptibleHighlight(highlight)
         else
             overlay:Hide()
         end
@@ -127,9 +138,9 @@ local function EnsureInterruptibleHighlight(frame, context)
     end)
     frame.SNPInterruptibleHighlight = highlight
 
-    -- Blizzard already makes the secret-safe interruptibility decision and
-    -- shows the ordinary spell icon only for interruptible modern nameplate
-    -- casts. Mirror that resulting visibility without inspecting the secret.
+    -- Icon updates notify us of cast/interruptibility changes in every native
+    -- style. Read Blizzard's decision rather than inferring it from the icon:
+    -- Classic keeps its spell icon visible for uninterruptible casts too.
     InstallInterruptibleHighlightHook(highlight)
 
     return highlight
@@ -148,9 +159,7 @@ local function UpdateInterruptibleHighlight(frame, context, decision)
 
     local icon = highlight.castBar and highlight.castBar.Icon
     if not icon then highlight.frame:Hide(); return end
-    local ok, shown = pcall(icon.IsShown, icon)
-    if ok then SetInterruptibleHighlightShown(highlight.frame, shown)
-    else highlight.frame:Hide() end
+    SyncInterruptibleHighlight(highlight)
     if ns.AccessibleBoolean(highlight.frame:IsShown()) == true then ApplyRenderer(highlight) end
 end
 

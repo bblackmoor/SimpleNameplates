@@ -19,6 +19,7 @@ local function Region(parent)
     function r:GetFrameLevel() return self.level end
     function r:SetScript(key, callback) self.scripts[key] = callback end
     function r:IsShown() return self.shown end
+    function r:IsInterruptable() return self.Icon and self.Icon:IsShown() or false end
     function r:IsVisible() return self.shown and (not self.parent or self.parent:IsVisible()) end
     function r:GetAlpha() return self.alpha or 1 end
     function r:SetShown(value)
@@ -207,4 +208,42 @@ enabled = false
 blocked = false
 ns.CastHighlight.RetryPending({})
 assert(not h.glowHost[key], "deferred retry stops effects after disable")
+-- Classic style leaves the icon visible regardless of interruptibility.
+enabled, style = true, "PIXEL"
+frame.castBar.HideIconWhenNotInterruptible = false
+local interruptible = false
+frame.castBar.IsInterruptable = function() return interruptible end
+frame.castBar.Icon:SetShown(true)
+Update()
+assert(not h.frame:IsShown() and not h.glowHost[key], "Classic uninterruptible cast cannot glow despite visible icon")
+interruptible = true
+frame.castBar.Icon:SetShown(true)
+assert(h.frame:IsShown() and h.glowHost[key], "Classic interruptible channel starts glow without icon visibility change")
+interruptible = false
+frame.castBar.Icon:SetShown(true)
+assert(not h.frame:IsShown() and not h.glowHost[key], "Classic interruptibility change stops glow with icon still shown")
+blocked = true
+interruptible = true
+frame.castBar.Icon:SetShown(true)
+blocked = false
+ns.CastHighlight.RetryPending({})
+assert(h.glowHost[key], "Classic deferred retry reads the current native decision")
+
+-- Model SetShown consuming an opaque false value without Lua inspecting it.
+local nativeSetShown, received = h.frame.SetShown, nil
+h.frame.SetShown = function(self, value)
+    received = value
+    nativeSetShown(self, false)
+end
+frame.castBar.IsInterruptable = function() return secret end
+Update()
+assert(received == secret and not h.glowHost[key], "restricted decision forwarded unchanged to the visibility API")
+h.frame.SetShown = nativeSetShown
+frame.castBar.IsInterruptable = function() error("native decision unavailable") end
+Update()
+assert(not h.frame:IsShown(), "unavailable native decision safely hides glow")
+frame.castBar.IsInterruptable = nil
+Update()
+assert(not h.frame:IsShown(), "missing native decision cannot fall back to ambiguous icon visibility")
+
 print("Cast glow integration smoke: passed")

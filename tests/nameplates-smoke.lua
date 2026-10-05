@@ -158,6 +158,7 @@ local function Region()
     function region:Show() self:SetShown(true) end
     function region:Hide() self:SetShown(false) end
     function region:IsShown() return self.shown end
+    function region:IsInterruptable() return self.Icon and self.Icon:IsShown() or false end
     function region:IsVisible() return self.shown end
     function region:SetAlpha(value) self.alpha = value end
     function region:GetAlpha() return self.alpha end
@@ -1274,6 +1275,32 @@ for _, disableMaster in ipairs({false, true}) do
         else categoryMode = "inactive"; ns.RefreshAll() end
         equal(plateFrame.selectionHighlight.shown, not initiallyShown, "disable preserves live selection visibility")
     end
+end
+stylingEnabled, categoryMode = true, "active"
+
+-- Native classification can hide a retained atlas after reuse or raid marking.
+for _, disableMaster in ipairs({false, true}) do
+    ns.RestoreAll()
+    stylingEnabled, categoryMode = true, "active"
+    unit = {reaction = 3}
+    plateFrame.ClassificationFrame, plateFrame.classificationIndicator = Region(), Region()
+    plateFrame.ClassificationFrame.classificationIndicator = plateFrame.classificationIndicator
+    plateFrame.ClassificationFrame.classificationAtlasElement = nil
+    plateFrame.classificationIndicator.atlas = "nameplates-icon-elite-gold"
+    plateFrame.ClassificationFrame:Hide()
+    ns.RefreshAll()
+    ns.NameplatePresentation.RepairHealthColor(plateFrame)
+    ns.NameplatePresentation.RepairName(plateFrame)
+    equal(plateFrame.ClassificationFrame.shown, false, "styling cannot expose retained classification atlas")
+    plateFrame.ClassificationFrame:Show()
+    plateFrame.classificationIndicator:Hide()
+    ns.NameplatePresentation.RepairName(plateFrame)
+    equal(plateFrame.ClassificationFrame.shown, true, "native classification show preserved")
+    equal(plateFrame.classificationIndicator.shown, false, "native classification icon hide preserved")
+    if disableMaster then stylingEnabled = false; ns.RestoreAll()
+    else categoryMode = "inactive"; ns.RefreshAll() end
+    equal(plateFrame.ClassificationFrame.shown, true, "disable preserves changed native classification")
+    equal(plateFrame.classificationIndicator.shown, false, "disable preserves changed native icon visibility")
 end
 stylingEnabled, categoryMode = true, "active"
 

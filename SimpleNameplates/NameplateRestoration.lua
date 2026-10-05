@@ -6,9 +6,8 @@ local SetShownSafe = ns.NameplateFrames.SetShownSafe
 local Text = ns.NameplateText
 local pendingFrames = setmetatable({}, {__mode = "k"})
 local pendingPlates = setmetatable({}, {__mode = "k"})
--- Native cast bars and selection highlights stay live while styling is active.
-local visibilityKeys = {"name", "HealthBarsContainer", "castBarAnchor",
-    "classificationIndicator", "ClassificationFrame"}
+-- Cast bars, selection highlights and classification badges stay Blizzard-driven.
+local visibilityKeys = {"name", "HealthBarsContainer", "castBarAnchor"}
 
 local unpackValues = unpack or table.unpack
 local nameProperties = {
