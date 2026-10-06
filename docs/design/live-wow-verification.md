@@ -64,7 +64,7 @@ open until it is observed in game.
 
 ## Slug font rendering (1.0.161)
 
-- [ ] Compare Slug off/on with built-in and SharedMedia fonts at several UI scales. Check floating, above-bar and inside-bar names, titles, threat, native health text and cast labels; confirm smoothness, thin outlines, both black underlayers and unchanged padding.
+- [ ] Compare Slug off/on with built-in and SharedMedia fonts at several UI scales. Check floating, above-bar and inside-bar names, titles, threat, native health text and cast labels; confirm smoothness, thin solid outlines, no black glyph copies and unchanged padding.
 - [ ] Switch/copy profiles, reload, reset Appearance and disable styling. Verify the toggle follows profiles, old caches do not undo the chosen rendering, and native font flags restore without taint or secret-value errors.
 
 ## Uniform presentation and cast/title transitions (1.0.162)
@@ -108,7 +108,7 @@ Test Silvermoon Shared and Silvermoon Horde separately, including transitions be
 ## Runtime phase 4 follow-up (current uniform policy, 1.0.162)
 
 - [ ] Verify every Active category gains a supported bar during player combat, including same/opposite-faction players, interactive NPCs, unmatched NPCs, and minions. On combat exit, every Active category retains its supported health bar. Inactive categories retain Blizzard presentation and missing-bar entities keep colored names.
-- [ ] Verify above/inside layout, full selected name size, four-unit top/three-unit bottom bar padding, white inside-bar text with two black underlayers, white above-bar names, category colors, threat text, and cast effects through repeated combat entry/exit and Blizzard name/health repair hooks. Old cached text must not undo a transition.
+- [ ] Verify above/inside layout, full selected name size, four-unit top/three-unit bottom bar padding, white inside-bar text with thin solid black outlines, white above-bar names, category colors, threat text, and cast effects through repeated combat entry/exit and Blizzard name/health repair hooks. Old cached text must not undo a transition.
 - [ ] Verify long titles appear below health bars and disappear during active casts/channels, including friendly combat bars and missing-bar cases. Diagnose unavailable shown state explicitly.
 - [ ] Disable styling during lockdown on a previously styled frame; after combat, confirm original visibility and bar/container heights return while styling stays disabled. Repeat with temporarily forbidden base plates and Inactive categories becoming accessible without a context event.
 - [ ] Remove/recycle plates while restricted and verify deferred cleanup does not clear another entity's name or leave stale overlays. Confirm the uniform presentation rule in diagnostics; normal refreshes must not make new nameplate-visibility CVar claims.
@@ -117,5 +117,14 @@ Test Silvermoon Shared and Silvermoon Horde separately, including transitions be
 ## Gradient edge verification (1.0.185)
 
 - [ ] With gradients on, verify full-health bars and the Colors preview have a dark left edge, a smooth fade to the original color at the right, and no bright left strip or faint rim. Repeat at different UI scales and bar widths.
-- [ ] Damage and heal through 80%: the fixed gradient clips at the remaining health edge; threat underlayers still appear at 80% and above and disappear below. Verify no tint extends into depleted health.
+- [ ] Damage and heal through 80%: the fixed gradient clips at the remaining health edge; threat text retains the same thin solid outline at every health level. Verify no tint extends into depleted health.
 - [ ] Disable gradients and styling in turn; confirm normal flat fills and Blizzard restoration.
+
+
+## Performance phase 1 acceptance
+
+- [ ] Compare gradient off/on and Slug off/on: names, NPC/TRP3 titles, threat, native health labels and cast labels retain thin solid outlines without extra glyph copies. Confirm the settings preview matches and disabling styling restores native text.
+- [ ] Repeat the crowded baseline with similar duration, plate count, settings and activity. Capture all `/snp perf report` timing and reason rows, approximate FPS, addon version and combat state; also compare profiling off/on.
+- [ ] Verify the report identifies both Blizzard repair hooks, queued events, name-drift reasons and cached/fallback repairs when exercised. Check fresh sessions clear counters and stopped reports remain frozen.
+
+See [the four-phase performance plan](performance-plan.md). Phase 1 is implemented; these native checks remain open.

@@ -18,13 +18,13 @@ local pendingPlates = setmetatable({}, {__mode = "k"})
 local CachedNameHasDrifted, RepairCachedName =
     ns.NameplateText.CachedNameHasDrifted, ns.NameplateText.RepairCachedName
 
-local function RefreshUnit(unit)
+local function RefreshUnit(unit, reason)
     if removedUnits[unit] then return end
     local context = WorldContext.Get()
     local frame = GetUnitFrame(unit, context)
     if frame then
         knownFrames[unit], pendingUnits[unit] = frame, nil
-        ApplySimpleStyle(frame, context)
+        ApplySimpleStyle(frame, context, reason or "unit refresh")
     else pendingUnits[unit] = true end
 end
 
@@ -38,7 +38,7 @@ local function RefreshAll()
             local unit = ns.AccessibleValue(frame.unit)
             if type(unit) == "string" then knownFrames[unit], removedUnits[unit] = frame, nil end
             pendingPlates[plate] = nil
-            ApplySimpleStyle(frame, context)
+            ApplySimpleStyle(frame, context, "refresh all")
         else pendingPlates[plate] = true end
     end
 end
@@ -63,18 +63,22 @@ if hooksecurefunc and CompactUnitFrame_UpdateName then
 end
 
 local events = CreateFrame("Frame")
-for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_REGEN_ENABLED","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_SPELLCAST_START","UNIT_SPELLCAST_STOP","UNIT_SPELLCAST_FAILED","UNIT_SPELLCAST_INTERRUPTED","UNIT_SPELLCAST_CHANNEL_START","UNIT_SPELLCAST_CHANNEL_STOP","UNIT_SPELLCAST_EMPOWER_START","UNIT_SPELLCAST_EMPOWER_STOP","UNIT_SPELLCAST_INTERRUPTIBLE","UNIT_SPELLCAST_NOT_INTERRUPTIBLE","CVAR_UPDATE","PLAYER_ENTERING_WORLD","ZONE_CHANGED","ZONE_CHANGED_INDOORS","ZONE_CHANGED_NEW_AREA","WAR_MODE_STATUS_UPDATE","PLAYER_FLAGS_CHANGED","PVP_TIMER_UPDATE","PLAYER_REGEN_DISABLED","PLAYER_SOFT_INTERACT_CHANGED","UPDATE_MOUSEOVER_UNIT"}) do
+for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_REGEN_ENABLED","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","UNIT_SPELLCAST_START","UNIT_SPELLCAST_STOP","UNIT_SPELLCAST_FAILED","UNIT_SPELLCAST_INTERRUPTED","UNIT_SPELLCAST_CHANNEL_START","UNIT_SPELLCAST_CHANNEL_STOP","UNIT_SPELLCAST_EMPOWER_START","UNIT_SPELLCAST_EMPOWER_STOP","UNIT_SPELLCAST_INTERRUPTIBLE","UNIT_SPELLCAST_NOT_INTERRUPTIBLE","CVAR_UPDATE","PLAYER_ENTERING_WORLD","ZONE_CHANGED","ZONE_CHANGED_INDOORS","ZONE_CHANGED_NEW_AREA","WAR_MODE_STATUS_UPDATE","PLAYER_FLAGS_CHANGED","PVP_TIMER_UPDATE","PLAYER_REGEN_DISABLED","PLAYER_SOFT_INTERACT_CHANGED","UPDATE_MOUSEOVER_UNIT"}) do
     events:RegisterEvent(event)
 end
 
 local dirtyUnits = {}
 local refreshAllQueued = false
 
-local function QueueUnitRefresh(unit)
-    if unit and tostring(unit):match("^nameplate%d+$") then dirtyUnits[unit] = true end
+local function QueueUnitRefresh(unit, event)
+    if unit and tostring(unit):match("^nameplate%d+$") then
+        dirtyUnits[unit] = true
+        ns.Profiler.Count("Queued unit events", event or "unspecified")
+    end
 end
 
-local function QueueRefreshAll()
+local function QueueRefreshAll(reason)
+    ns.Profiler.Count("Queued full refresh", reason or "settings or callback")
     refreshAllQueued = true
 end
 
@@ -117,7 +121,7 @@ local function HandleCVarUpdate(cvarName)
     if type(cvarName) == "string"
         and ns.MANAGED_NAME_CVAR_SET[string.lower(cvarName)] then
         if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
-        QueueRefreshAll()
+        QueueRefreshAll("CVAR_UPDATE")
         return
     end
     if ns.GetHideCritterCompanionNames() then
@@ -131,7 +135,7 @@ local function HandleCVarUpdate(cvarName)
     if not GetStylingEnabled() then return end
     for _, cvar in ipairs(ns.FRIENDLY_COLOR_CVARS) do
         if cvarName == cvar then
-            QueueRefreshAll()
+            QueueRefreshAll("CVAR_UPDATE")
             return
         end
     end
@@ -148,10 +152,10 @@ end
 local function HandleNameplateEvent(event, unit)
     if event == "NAME_PLATE_UNIT_ADDED" then
         removedUnits[unit] = nil
-        RefreshUnit(unit)
+        RefreshUnit(unit, "initial plate")
         -- One delayed pass covers late nameplate initialization; the Blizzard
         -- hooks and cached drift check handle subsequent changes.
-        C_Timer.After(0.50, function() RefreshUnit(unit) end)
+        C_Timer.After(0.50, function() RefreshUnit(unit, "late plate") end)
         return true
     end
     if event == "NAME_PLATE_UNIT_REMOVED" then
@@ -165,7 +169,7 @@ local function HandleEvent(_, event, unit)
     if WorldContext.HandlesEvent(event, unit) then
         local _, changed = WorldContext.Refresh(event)
         if changed or event == "PLAYER_ENTERING_WORLD"
-            or event == "UNIT_FLAGS" or event == "UNIT_FACTION" then QueueRefreshAll() end
+            or event == "UNIT_FLAGS" or event == "UNIT_FACTION" then QueueRefreshAll(event) end
     end
     if event == "ADDON_LOADED" then
         if unit ~= addon then return end
@@ -178,7 +182,7 @@ local function HandleEvent(_, event, unit)
     if event == "PLAYER_REGEN_ENABLED" then
         if ns.ApplyPendingManagedNameSettings then ns.ApplyPendingManagedNameSettings() end
         if ns.RetryNameplateSetup then ns.RetryNameplateSetup() end
-        QueueRefreshAll()
+        QueueRefreshAll(event)
         return
     end
     if event == "CVAR_UPDATE" then HandleCVarUpdate(unit); return end
@@ -188,19 +192,11 @@ local function HandleEvent(_, event, unit)
         ns.CastHighlight.RecordSpellcastEvent(event, readableUnit)
     end
     if not GetStylingEnabled() then return end
-    if event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" then
-        unit = ns.AccessibleValue(unit)
-        if not ns.HealthGradient or not ns.HealthGradient.Enabled()
-            or type(unit) ~= "string" or not unit:match("^nameplate%d+$") then return end
-        local frame = GetUnitFrame(unit, WorldContext.Get())
-        if frame then ns.NameplateThreat.UpdateLayerAlpha(frame, WorldContext.Get()) end
-        return
-    end
     if HandleNameplateEvent(event, unit) then return end
     if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_SOFT_INTERACT_CHANGED"
-        or event == "UPDATE_MOUSEOVER_UNIT" then QueueRefreshAll(); return end
-    if unit and tostring(unit):match("^nameplate%d+$") then QueueUnitRefresh(unit)
-    elseif event == "UNIT_THREAT_SITUATION_UPDATE" or event == "UNIT_THREAT_LIST_UPDATE" then QueueRefreshAll() end
+        or event == "UPDATE_MOUSEOVER_UNIT" then QueueRefreshAll(event); return end
+    if unit and tostring(unit):match("^nameplate%d+$") then QueueUnitRefresh(unit, event)
+    elseif event == "UNIT_THREAT_SITUATION_UPDATE" or event == "UNIT_THREAT_LIST_UPDATE" then QueueRefreshAll(event) end
 end
 
 events:SetScript("OnEvent", HandleEvent)
@@ -216,14 +212,19 @@ local function ReconcileNames(context)
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
         local frame = GetFrameFromPlate(plate, context)
-        if frame and ns.HealthGradient and ns.HealthGradient.Enabled() then
-            ns.NameplateThreat.UpdateLayerAlpha(frame, context)
-        end
         if frame and frame.SNPTitleVisibilityPending then
             ns.NameplateText.SyncFullTitleVisibility(frame, context)
         end
-        if frame and frame.SNPState and CachedNameHasDrifted(frame, context) then
-            if not RepairCachedName(frame, context) then ApplySimpleStyle(frame, context) end
+        local drifted, reason
+        if frame and frame.SNPState then drifted, reason = CachedNameHasDrifted(frame, context) end
+        if drifted then
+            ns.Profiler.Count("Name drift", reason or "unknown")
+            if RepairCachedName(frame, context) then
+                ns.Profiler.Count("Reconciliation repairs", "cached repair")
+            else
+                ns.Profiler.Count("Reconciliation repairs", "full-style fallback")
+                ApplySimpleStyle(frame, context, "reconciliation fallback")
+            end
         end
     end
 end
@@ -236,7 +237,7 @@ local function RuntimeUpdate(_, elapsed)
     local context = WorldContext.Get()
     if reconcile then
         reconcileElapsed = 0
-        if Restoration.Retry(context) and GetStylingEnabled() then QueueRefreshAll() end
+        if Restoration.Retry(context) and GetStylingEnabled() then QueueRefreshAll("restoration retry") end
         ns.CastHighlight.RetryPending(context)
         for plate in pairs(pendingPlates) do
             if not GetStylingEnabled() then
@@ -247,12 +248,12 @@ local function RuntimeUpdate(_, elapsed)
                     pendingPlates[plate] = nil
                     local unit = ns.AccessibleValue(frame.unit)
                     if type(unit) == "string" then knownFrames[unit], removedUnits[unit] = frame, nil end
-                    ApplySimpleStyle(frame, context)
+                    ApplySimpleStyle(frame, context, "pending plate")
                 end
             end
         end
         if GetStylingEnabled() then
-            for unit in pairs(pendingUnits) do RefreshUnit(unit) end
+            for unit in pairs(pendingUnits) do RefreshUnit(unit, "pending unit") end
         end
     end
     if not GetStylingEnabled() then return end
@@ -268,3 +269,4 @@ ns.QueueNameplateRefresh = QueueRefreshAll
 ns.RefreshAll = RefreshAll
 ns.RestoreAll = RestoreAll
 ns.StateForUnit = StateForUnit
+

@@ -95,7 +95,6 @@ end
 local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     frame.SNPThreatStatus = nil
     if frame.SNPThreatText then
-        ns.TextUnderlayers.Hide(frame.SNPThreatText)
         frame.SNPThreatText:SetText("")
         frame.SNPThreatText:Hide()
     end
@@ -184,3 +183,4 @@ ns.NameplateRestoration = {
     Cancel = function(frame) pendingFrames[frame] = nil end,
     IsPending = function(frame) return pendingFrames[frame] ~= nil end,
 }
+

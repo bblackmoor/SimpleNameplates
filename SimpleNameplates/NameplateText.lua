@@ -130,7 +130,7 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
 
     fullTitle = EnsureFullTitleText(frame)
     local titleSize = math.max(6, baseNameSize - 2)
-    fullTitle:SetFont(NameFontPath(context), titleSize, ns.FontFlags(true))
+    fullTitle:SetFont(NameFontPath(context), titleSize, ns.FontFlags())
     -- Native single-line layout truncates overflow using the actual font.
     -- Keep the source string intact so widening the bar restores more text.
     ConstrainFullTitle(frame, context)
@@ -233,7 +233,7 @@ end
 local function GetInsideName(frame, bar)
     local insideName = frame.SNPInsideName
     if insideName and frame.SNPInsideNameBar == bar then return insideName end
-    if insideName then ns.TextUnderlayers.Hide(insideName); insideName:Hide() end
+    if insideName then insideName:Hide() end
     insideName = bar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     insideName:SetDrawLayer("OVERLAY", 7)
     insideName:SetWordWrap(false)
@@ -246,7 +246,7 @@ end
 local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, rightRegion, textColor)
     local insideName = GetInsideName(frame, bar)
     insideName:SetText(text)
-    insideName:SetFont(fontPath, size, ns.FontFlags(false))
+    insideName:SetFont(fontPath, size, ns.FontFlags())
     insideName:SetShadowColor(0, 0, 0, 0)
     insideName:SetShadowOffset(0, 0)
     insideName:SetTextColor(textColor, textColor, textColor, 1)
@@ -255,11 +255,6 @@ local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, righ
     insideName:SetPoint("RIGHT", rightRegion or bar, rightRegion and "LEFT" or "RIGHT", rightInset, rightRegion and 0 or -0.5)
     insideName:SetJustifyH("LEFT")
     insideName:Show()
-    if ns.HealthGradient and ns.HealthGradient.Enabled() then
-        ns.TextUnderlayers.Hide(insideName)
-    else
-        ns.TextUnderlayers.Update(insideName, bar)
-    end
     -- Leave Blizzard's name shown for its health-text visibility logic, but
     -- avoid drawing a second copy behind the bar.
     frame.name:SetAlpha(0)
@@ -268,7 +263,7 @@ end
 local function RestoreNameDisplay(frame, context)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return end
-    if frame.SNPInsideName then ns.TextUnderlayers.Hide(frame.SNPInsideName); frame.SNPInsideName:Hide() end
+    if frame.SNPInsideName then frame.SNPInsideName:Hide() end
     if frame.name then frame.name:SetAlpha(1) end
 end
 
@@ -279,7 +274,7 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.text = displayName
     expected.font = fontPath
     expected.size = size
-    expected.flags = ns.FontFlags(not inside)
+    expected.flags = ns.FontFlags()
     expected.r, expected.g, expected.b = nameR, nameG, nameB
     expected.nameOnly = nameOnly
     expected.inside = inside == true
@@ -295,7 +290,6 @@ local function SuppressText(frame, context)
     -- Do not hide/reparent the unit frame or touch widget containers.
     if frame.name then frame.name:SetAlpha(0) end
     for _, key in ipairs({"SNPInsideName", "SNPFullTitleText", "SNPThreatText"}) do
-        ns.TextUnderlayers.Hide(frame[key])
         ns.NameplateFrames.SetShownSafe(frame[key], false, context)
     end
 end
@@ -319,7 +313,7 @@ local function StyleName(frame, state, context, decision)
     local rightInset = -3
 
     local fontPath = NameFontPath(context)
-    name:SetFont(fontPath, size, ns.FontFlags(not inside))
+    name:SetFont(fontPath, size, ns.FontFlags())
     name:SetShadowColor(0, 0, 0, 0)
     name:SetShadowOffset(0, 0)
     local nameR, nameG, nameB = 1, 1, 1
@@ -357,24 +351,24 @@ end
 
 local function CacheIsCurrent(frame, expected, context)
     local decision = frame.SNPPresentation
-    if not decision or expected.presentation ~= decision or decision.contextRevision ~= context.revision then return false end
+    if not decision or expected.presentation ~= decision or decision.contextRevision ~= context.revision then return false, "presentation revision" end
     if type(UnitNameplateShowsWidgetsOnly) == "function" then
         local ok, value = pcall(UnitNameplateShowsWidgetsOnly, frame.unit)
         local widgetsOnly
         if ok then widgetsOnly = AccessibleBoolean(value) end
-        if type(widgetsOnly) == "boolean" and widgetsOnly ~= (decision.suppressText == true) then return false end
+        if type(widgetsOnly) == "boolean" and widgetsOnly ~= (decision.suppressText == true) then return false, "widget mode" end
     end
     if expected.suppressed then return true end
-    if expected.flags ~= ns.FontFlags(expected.inside ~= true) then return false end
-    if expected.font ~= NameFontPath(context) then return false end
+    if expected.flags ~= ns.FontFlags() then return false, "font flags setting" end
+    if expected.font ~= NameFontPath(context) then return false, "font setting" end
     local bar = GetHealthBar(frame, context)
-    if expected.bar ~= bar then return false end
+    if expected.bar ~= bar then return false, "health bar replaced" end
     local inset, signature = ns.NameplateFrames.GetHealthTextInsetRegion(frame, bar, context)
-    if inset ~= expected.rightRegion or signature ~= expected.healthTextSignature then return false end
+    if inset ~= expected.rightRegion or signature ~= expected.healthTextSignature then return false, "health label layout" end
     if frame.SNPOriginalVisibility
-        and frame.SNPOriginalHealthBarsContainer ~= frame.HealthBarsContainer then return false end
+        and frame.SNPOriginalHealthBarsContainer ~= frame.HealthBarsContainer then return false, "container replaced" end
     local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(bar, "IsShown", context))
-    if shown ~= nil and shown ~= decision.showHealthBar then return false end
+    if shown ~= nil and shown ~= decision.showHealthBar then return false, "bar visibility" end
     return true
 end
 
@@ -390,51 +384,52 @@ local function CachedNameHasDrifted(frame, context)
     if not CanAccessFrame(frame, context) then return false end
     local name, expected = frame and frame.name, frame and frame.SNPNameStyle
     if not name or not expected then return false end
-    if not CacheIsCurrent(frame, expected, context) then return true end
+    local current, reason = CacheIsCurrent(frame, expected, context)
+    if not current then return true, reason end
     if expected.suppressed then
-        if not NearlyEqual(name:GetAlpha(), 0) then return true end
+        if not NearlyEqual(name:GetAlpha(), 0) then return true, "suppressed alpha" end
         for _, key in ipairs({"SNPInsideName", "SNPFullTitleText", "SNPThreatText"}) do
             local shown = ns.PresentationCapabilities.ReadRegion(frame[key], "IsShown", context)
-            if AccessibleBoolean(shown) == true then return true end
+            if AccessibleBoolean(shown) == true then return true, "suppressed text visible" end
         end
         return false
     end
     local shown = ns.PresentationCapabilities.ReadRegion(name, "IsShown", context)
-    if AccessibleBoolean(shown) == false then return true end
-    if ReadableTextHasDrifted(name, expected.text, context) then return true end
+    if AccessibleBoolean(shown) == false then return true, "name hidden" end
+    if ReadableTextHasDrifted(name, expected.text, context) then return true, "native name text" end
     local font, size, flags = name:GetFont()
     font, size, flags = AccessibleValue(font), AccessibleNumber(size), AccessibleValue(flags)
     if font == nil or size == nil or flags == nil then return false end
     if font ~= expected.font or not NearlyEqual(size, expected.size) or flags ~= expected.flags then
-        return true
+        return true, "native font"
     end
     if expected.barHeight and expected.bar
         and not NearlyEqual(expected.bar:GetHeight(), expected.barHeight) then
-        return true
+        return true, "bar height"
     end
     if expected.barHeight and frame.HealthBarsContainer
         and not NearlyEqual(frame.HealthBarsContainer:GetHeight(), expected.barHeight) then
-        return true
+        return true, "container height"
     end
-    if expected.barWidth and not NearlyEqual(expected.bar:GetWidth(), expected.barWidth) then return true end
+    if expected.barWidth and not NearlyEqual(expected.bar:GetWidth(), expected.barWidth) then return true, "bar width" end
     if expected.containerWidth and frame.HealthBarsContainer
-        and not NearlyEqual(frame.HealthBarsContainer:GetWidth(), expected.containerWidth) then return true end
+        and not NearlyEqual(frame.HealthBarsContainer:GetWidth(), expected.containerWidth) then return true, "container width" end
     if frame.SNPFullTitleAvailable and frame.SNPFullTitleText
         and not NearlyEqual(ns.PresentationCapabilities.ReadRegion(frame.SNPFullTitleText, "GetWidth", context),
-            FullTitleWidth(frame, context)) then return true end
+            FullTitleWidth(frame, context)) then return true, "title width" end
     if expected.inside then
         local insideName = frame.SNPInsideName
         if not insideName or AccessibleBoolean(insideName:IsShown()) ~= true or not NearlyEqual(name:GetAlpha(), 0) then
-            return true
+            return true, "inside name visibility"
         end
-        if ReadableTextHasDrifted(insideName, expected.text, context) then return true end
+        if ReadableTextHasDrifted(insideName, expected.text, context) then return true, "inside name text" end
     elseif not NearlyEqual(name:GetAlpha(), 1) then
-        return true
+        return true, "native name alpha"
     end
 
     local r, g, b = name:GetTextColor()
     if not NearlyEqual(r, expected.r) or not NearlyEqual(g, expected.g) or not NearlyEqual(b, expected.b) then
-        return true
+        return true, "text color"
     end
 
     local rawVertexR, rawVertexG, rawVertexB, rawVertexA = name:GetVertexColor()
@@ -444,7 +439,7 @@ local function CachedNameHasDrifted(frame, context)
     local vertexA = AccessibleNumber(rawVertexA)
     if not NearlyEqual(vertexR, 1) or not NearlyEqual(vertexG, 1)
         or not NearlyEqual(vertexB, 1) or not NearlyEqual(vertexA, 1) then
-        return true
+        return true, "vertex color"
     end
 
     return false
@@ -482,6 +477,8 @@ local function RepairCachedName(frame, context)
 end
 
 
+StyleName = ns.Profiler.Wrap("Name/title styling", StyleName)
+CachedNameHasDrifted = ns.Profiler.Wrap("Name drift check", CachedNameHasDrifted)
 RepairCachedName = ns.Profiler.Wrap("Text repair", RepairCachedName)
 
 ns.NameplateText = {
@@ -493,3 +490,4 @@ ns.NameplateText = {
     CachedNameHasDrifted = CachedNameHasDrifted,
     RepairCachedName = RepairCachedName,
 }
+

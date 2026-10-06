@@ -17,7 +17,7 @@ local slug = false
 local function Bar()
     local bar = {}
     function bar:CreateFontString(_, layer, template)
-        assert(layer == "OVERLAY" or layer == "ARTWORK", "foreground overlay or black artwork")
+        assert(layer == "OVERLAY", "one outlined threat label")
         equal(template, "GameFontNormal", "threat starts with valid font")
         local text = {bar = self}
         function text:GetFont() return self.font, self.size, self.flags end
@@ -67,7 +67,6 @@ ns.GetAppearanceSetting = function(key)
     if key == "useSlugRendering" then return slug end
     return getAppearance(key)
 end
-assert(loadfile("SimpleNameplates/TextUnderlayers.lua"))("SimpleNameplates", ns)
 assert(loadfile("SimpleNameplates/NameplateThreat.lua"))("SimpleNameplates", ns)
 local function Update(showBar)
     ns.NameplateThreat.UpdateThreatText(frame, "hostile", {}, {showHealthBar = showBar})
@@ -79,13 +78,14 @@ equal(frame.SNPThreatText.drawLevel, 7, "percentage drawn above bar artwork")
 equal(frame.SNPThreatText.r, 1, "threat stays white")
 equal(frame.SNPThreatText.size, 21, "threat matches default name size")
 equal(frame.SNPThreatText.flags, "OUTLINE", "threat has thin outline")
+assert(frame.SNPThreatText.SNPUnderlayers == nil, "threat never creates glyph copies")
+assert(ns.NameplateThreat.UpdateLayerAlpha == nil, "no health-dependent threat-layer updates")
 equal(frame.SNPThreatText.shadowAlpha, 0, "native threat shadow disabled")
 equal(frame.SNPThreatText.shadowX, 0, "native shadow x cleared")
 equal(frame.SNPThreatText.shadowY, 0, "native shadow y cleared")
 equal(frame.SNPThreatText.font, "Fonts\\ARIALN.TTF", "separate threat font retained")
 slug = true; Update(true)
 equal(frame.SNPThreatText.flags, "SLUG,OUTLINE", "threat uses outlined Slug")
-for _, layer in ipairs(frame.SNPThreatText.SNPUnderlayers) do equal(layer.flags, "SLUG,OUTLINE", "threat underlayer matches") end
 slug = false; Update(true)
 equal(frame.SNPThreatText.flags, "OUTLINE", "threat returns to ordinary rendering")
 nameSize = 36
@@ -107,7 +107,6 @@ raw, scaled = nil, nil
 Update(true)
 equal(frame.SNPThreatText.text, "", "absent threat never fabricated")
 equal(frame.SNPThreatText.shown, false, "absent threat hidden")
-for _, layer in ipairs(frame.SNPThreatText.SNPUnderlayers) do assert(not layer.shown, "absent threat underlayers hidden") end
 raw, scaled = 255, 100
 enabled = false
 Update(true)
@@ -128,4 +127,5 @@ equal(frame.SNPThreatText.shown, false, "failed API clears stale percentage")
 accessible = false
 ns.NameplateThreat.UpdateThreatText({}, "hostile", {}, {showHealthBar = true})
 print("Nameplate threat smoke: passed")
+
 

@@ -56,7 +56,7 @@ local function ApplyStyle(frame, context)
     frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = state, decision, facts
     if decision.suppressText then
         Text.StyleName(frame, state, context, decision)
-        return
+        return "text suppressed"
     end
     ns.NameplateFrames.ApplyBarWidth(frame, assessment, context)
     ApplyVisibility(frame, decision, assessment, context)
@@ -66,23 +66,35 @@ local function ApplyStyle(frame, context)
     Text.StyleName(frame, state, context, decision)
     if decision.showHealthBar then assessment.healthBar:SetStatusBarColor(ns.PriorityColorForState(decision.colorState)) end
     ns.CastHighlight.UpdateInterruptibleHighlight(frame, context, decision)
+    return "styled"
 end
 -- Native UI writes can invoke the repair hooks synchronously. Keep one
 -- styling pass per frame and release the guard even if a write fails.
-local function ApplySimpleStyle(frame, context)
+local function ApplySimpleStyle(frame, context, reason)
     context = context or GetContext()
-    if not Cap.CanAccessFrame(frame, context) then return end
-    if frame.SNPRestoring or frame.SNPApplyingStyle or frame.SNPApplyingArtwork then return end
+    ns.Profiler.Count("Styling requests", reason or "unspecified")
+    if not Cap.CanAccessFrame(frame, context) then
+        ns.Profiler.Count("Styling outcomes", "inaccessible"); return
+    end
+    if frame.SNPRestoring or frame.SNPApplyingStyle or frame.SNPApplyingArtwork then
+        ns.Profiler.Count("Styling outcomes", "guarded"); return
+    end
     frame.SNPApplyingStyle = true
-    local ok, err = pcall(ApplyStyle, frame, context)
+    local ok, result = pcall(ApplyStyle, frame, context)
     frame.SNPApplyingStyle = nil
-    if not ok then error(err, 0) end
+    if not ok then
+        ns.Profiler.Count("Styling outcomes", "failed")
+        error(result, 0)
+    end
+    ns.Profiler.Count("Styling outcomes", result or "deferred or native")
 end
 
 ApplySimpleStyle = ns.Profiler.Wrap("Full styling", ApplySimpleStyle)
 
 ns.NameplatePresentation = {
     ApplySimpleStyle = ApplySimpleStyle,
-    RepairHealthColor = ApplySimpleStyle, RepairName = ApplySimpleStyle,
+    RepairHealthColor = function(frame, context) return ApplySimpleStyle(frame, context, "health-color hook") end,
+    RepairName = function(frame, context) return ApplySimpleStyle(frame, context, "name hook") end,
     RestoreFrame = Restore.Request,
 }
+

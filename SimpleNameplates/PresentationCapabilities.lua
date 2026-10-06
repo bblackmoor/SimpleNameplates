@@ -155,8 +155,11 @@ local function ReadRegion(region, methodName, context)
     if ok then return AccessibleValue(value) end
 end
 
+InspectFrame = ns.Profiler.Wrap("Access assessment", InspectFrame)
+
 ns.PresentationCapabilities = {
     InspectFrame = InspectFrame, InspectUnit = InspectUnit,
     CanAccessFrame = CanAccessFrame, ObjectStatus = ObjectStatus,
     SafeField = SafeField, ReadRegion = ReadRegion,
 }
+

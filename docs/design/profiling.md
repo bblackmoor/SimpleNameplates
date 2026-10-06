@@ -32,12 +32,34 @@ Rows appear in descending total elapsed time, with call count, total millisecond
 | Text repair | Cached-name repair attempts, including attempts that return without repairing |
 | Runtime update | The per-frame callback: context access, queued refreshes and periodic restoration, deferred cast-highlight retry and reconciliation work |
 | Reconciliation | The visible-plate scan for pending title visibility and cached-name drift (including visibility and readable text), normally every 0.25 seconds while styling is enabled |
+| Access assessment | Complete frame/region capability assessment, including repeated assessments within one operation |
+| Bar artwork | Guarded application of flat fills, gradient, native text outlines and decorative edge removal |
+| Health text layout | Native health-label/threat anchoring; can run multiple times within styling |
+| Name/title styling | Name content, fonts, dimensions, layout and full-title presentation |
+| Name drift check | Existing cached presentation and property checks, including checks with no drift |
 
 These are inclusive elapsed timings, not exclusive CPU accounting. For example, Full styling can include Classification, which can include NPC title lookup. Runtime update can include Reconciliation and Text repair. Do not add the rows together or interpret their sum as total addon CPU. The elapsed session duration measures wall time, not time spent executing addon code.
 
 Call counts include early-return and failed attempts. High call counts alone do not prove a bottleneck: compare total time, average and longest call. Frequent low-cost updates and rare long tooltip lookups can have very different implications. The report covers selected entry points, not every addon or library function.
 
 Profiling itself adds clock reads, protected calls and temporary return-value storage. Nested timings include some of that overhead. Compare sessions with similar duration, plate counts, settings and activity; differences between unrelated scenes cannot establish an optimization's effect.
+
+## Read the reason counters
+
+After the timing rows, the same chat report prints one short row for each observed reason. Counters are session-only, reset on a fresh start, freeze on stop and create no records or clock reads when profiling is disabled. Labels contain no unit names, GUIDs or secret native values. Group names are sorted; reasons within each group are sorted by descending count, then alphabetically.
+
+| Group | Meaning |
+| --- | --- |
+| Styling requests | Every full-styling entry, including name/health-color hooks, all/unit refreshes, new/late/pending plates and reconciliation fallbacks |
+| Styling outcomes | Styled, text suppressed, inaccessible, guarded, deferred/native, or failed; one outcome per request that reaches the guarded styling entry |
+| Queued unit events | Event requests before per-unit coalescing |
+| Queued full refresh | Context/target/mouseover/CVar/restoration requests before full-refresh coalescing; unspecified external requests are labeled settings or callback |
+| Name drift | First failing existing check for a plate in each reconciliation pass; multiple simultaneous mismatches are not enumerated |
+| Reconciliation repairs | Successful cached repair versus a full-style fallback request; a fallback request does not establish that full styling succeeded |
+
+Reason counters explain call volume, not elapsed time or unique plate counts. Queued requests can merge, hook requests can return under a guard, and checks can return unknown or early. A drift label reports the current check's decision, not proof of a readable native mismatch: phase 3 will refine unknown-property handling. Phase 1 preserves these decisions so the next live report identifies recurring repair causes.
+
+The additional wrappers increase profiling overhead. Compare the simplified phase 1 build in matching scenes, with profiling both off and on. Do not treat timing changes across different instrumentation versions as an exact performance gain.
 
 ## Read the memory figures
 
@@ -47,6 +69,7 @@ These are aggregate addon readings, not allocations by function. They can includ
 
 ## Implementation and verification
 
-`Profiler.lua` loads after `Core.lua` and before the runtime consumers. Wrappers preserve return values, including nil positions, and propagate the original error object. With profiling disabled they only check the active session and call the original function; they read no clock or memory API and allocate no measurement records. Calls spanning stop/restart cannot modify stopped results or a new session.
+`Profiler.lua` loads after `Core.lua` and before the runtime consumers. Wrappers preserve return values, including nil positions, and propagate the original error object. With profiling disabled they only check the active session and call the original function; they read no clock or memory API and allocate no measurement records. Reason counters only check whether a session is active while disabled. Calls spanning stop/restart cannot modify stopped results or a new session.
 
-`tests/profiler-smoke.lua` checks deterministic nested timings, lifecycle, disabled measurement work, return/error preservation, missing timer and failed memory APIs. Runtime and settings smoke suites check the actual hooks and combat command routing. Native timing, rendering and secret-value/taint checks remain on the [live WoW checklist](live-wow-verification.md).
+`tests/profiler-smoke.lua` checks deterministic nested timings, lifecycle, disabled measurement work, return/error preservation, missing timer and failed memory APIs, counter reset/freeze and the disabled counter path. Runtime and settings smoke suites check the actual hooks and combat command routing. Native timing, rendering and secret-value/taint checks remain on the [live WoW checklist](live-wow-verification.md).
+

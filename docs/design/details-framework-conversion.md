@@ -58,7 +58,7 @@ Settings cannot open through these commands during combat. Diagnostic and `/snp 
 | Cast color/style | Profile; cyan and None | RGB-only color; None, Moving dashes, Autocast Shine, Action Button Glow, Proc Glow; no Pulse or separate cast switch |
 | Name font | Profile, `FRIZQT` | Six existing built-in IDs remain valid; shared `LSM:` selections survive missing providers and reloads |
 | Threat font | Profile, `ARIALN` | Independent font choice; same dynamic shared registry and missing-font fallback |
-| Slug font rendering | Profile, true | Appearance toggle near fonts; shared rendering flags, thin outlines on all styled text and two black underlayers inside |
+| Slug font rendering | Profile, true | Appearance toggle near fonts; shared rendering flags, thin solid outlines on all styled text |
 | Sanctuary font matching | Profile, true | Changes name/title face only; selected name font applies when disabled |
 | Name size | Profile, 21 | 8–36 points in steps of 1; also controls threat size; titles use 80% |
 | Health bar width | Profile, 100% | 80–150% in steps of 5; preserve existing rounding/clamping |
@@ -398,7 +398,7 @@ accept button. The contract was checked against the [Blizzard dialog source mirr
 
 README and live-checklist text still described an outline/no-shadow presentation,
 three-unit top padding and luminance-based text colors. Those descriptions now
-match the current white inside-bar glyphs, two black underlayers, and four/three
+match the white inside-bar glyphs and four/three
 padding; the rendering code itself is unchanged. All 17 suites pass. Actual
 keyboard/rendering/security observations remain pending in the live checklist.
 
@@ -421,3 +421,6 @@ boolean, includes sanctuary matching and bar-width ownership, documents the
 character-specific setup ledger, and removes the obsolete class-color backup
 claim. These are documentation corrections, not a schema or data migration.
 Native client timing/security verification remains pending.
+
+
+Phase 1 of the [performance plan](performance-plan.md) subsequently removed the glyph underlayers and their dedicated smoke suite; all styled text now uses thin solid outlines. Earlier test-run records above describe their original revisions.

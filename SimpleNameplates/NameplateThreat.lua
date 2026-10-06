@@ -10,7 +10,6 @@ local GetHealthBar = ns.NameplateFrames.GetHealthBar
 local function ClearThreatText(frame, reason)
     frame.SNPThreatStatus = reason
     if frame.SNPThreatText then
-        ns.TextUnderlayers.Hide(frame.SNPThreatText)
         frame.SNPThreatText:SetText("")
         frame.SNPThreatText:Hide()
     end
@@ -18,7 +17,7 @@ end
 
 local function EnsureThreatText(frame, bar)
     if frame.SNPThreatText and frame.SNPThreatTextBar == bar then return frame.SNPThreatText end
-    if frame.SNPThreatText then ns.TextUnderlayers.Hide(frame.SNPThreatText); frame.SNPThreatText:Hide() end
+    if frame.SNPThreatText then frame.SNPThreatText:Hide() end
     local text = bar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetDrawLayer("OVERLAY", 7)
     text:SetPoint("RIGHT", bar, "RIGHT", -3, -0.5)
@@ -49,7 +48,7 @@ local function UpdateThreatText(frame, state, context, decision)
     end
     local text = EnsureThreatText(frame, bar)
     text:SetTextColor(1, 1, 1, 1)
-    text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, ns.FontFlags(false))
+    text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, ns.FontFlags())
     text:SetShadowColor(0, 0, 0, 0)
     text:SetShadowOffset(0, 0)
     local ok, _, _, scaled = pcall(UnitDetailedThreatSituation, "player", frame.unit)
@@ -59,16 +58,6 @@ local function UpdateThreatText(frame, state, context, decision)
     if RenderPercent(text, scaled) then frame.SNPThreatStatus = "displayed scaled percentage"
     else ClearThreatText(frame, "no displayable threat percentage"); return end
     text:Show()
-    local options = ns.HealthGradient and ns.HealthGradient.ThreatLayers(frame.unit)
-    ns.TextUnderlayers.Update(text, bar, options)
 end
 
-local function UpdateLayerAlpha(frame, context)
-    if not CanAccessFrame(frame, context) or frame.SNPRestoring then return end
-    local text = frame.SNPThreatText
-    if not text or not text.SNPUnderlayersActive then return end
-    local options = ns.HealthGradient and ns.HealthGradient.ThreatLayers(frame.unit)
-    ns.TextUnderlayers.Update(text, frame.SNPThreatTextBar, options)
-end
-
-ns.NameplateThreat = {UpdateThreatText = UpdateThreatText, UpdateLayerAlpha = UpdateLayerAlpha}
+ns.NameplateThreat = {UpdateThreatText = UpdateThreatText}

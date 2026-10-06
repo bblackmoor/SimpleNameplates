@@ -1,9 +1,7 @@
 -- Fixed-position health tint, clipped by native fill geometry; no health arithmetic.
 local _, ns = ...
-local THREAT_LAYER_THRESHOLD = 0.8
 local SHADE_KNEE = 0.95
 local SHADE_AT_KNEE = 0
-local threatCurve
 
 local function Enabled()
     return ns.GetGradientEnabled and ns.GetGradientEnabled() == true
@@ -55,27 +53,4 @@ local function Apply(bar, fill, context)
     bar.SNPHealthGradientTail:Show()
 end
 
-local function ThreatLayers(unit)
-    if not Enabled() then return nil end
-    -- Failure leaves the threat outline on, so text remains readable.
-    if not UnitHealthPercent or not C_CurveUtil or not Enum or not Enum.LuaCurveType then
-        return {alpha = 1}
-    end
-    if not threatCurve then
-        threatCurve = C_CurveUtil.CreateCurve()
-        threatCurve:SetType(Enum.LuaCurveType.Step)
-        threatCurve:AddPoint(0, 0)
-        threatCurve:AddPoint(THREAT_LAYER_THRESHOLD, 1)
-        threatCurve:AddPoint(1, 1)
-    end
-    local ok, alpha = pcall(UnitHealthPercent, unit, false, threatCurve)
-    if not ok then return {alpha = 1} end
-    if not (issecretvalue and issecretvalue(alpha)) and ns.AccessibleNumber(alpha) == nil then
-        return {alpha = 1}
-    end
-    -- Never inspect, compare, or calculate with the potentially secret result.
-    return {alpha = alpha}
-end
-
-ns.HealthGradient = {Enabled = Enabled, Apply = Apply, Hide = Hide, ThreatLayers = ThreatLayers}
-
+ns.HealthGradient = {Enabled = Enabled, Apply = Apply, Hide = Hide}

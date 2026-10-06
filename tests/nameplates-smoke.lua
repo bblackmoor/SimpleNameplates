@@ -97,7 +97,7 @@ local ns = {
     BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
     FRIENDLY_COLOR_CVARS = {},
 }
-for _, file in ipairs({ "Profiler.lua", "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "FontRendering.lua", "TextUnderlayers.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
+for _, file in ipairs({ "Profiler.lua", "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "FontRendering.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
     assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", ns)
 end
 -- Retired category-disable fixtures exercise the global restoration path.
@@ -112,8 +112,9 @@ equal(hooks[1].name, "CompactUnitFrame_UpdateHealthColor", "health hook")
 equal(hooks[2].name, "CompactUnitFrame_UpdateName", "name hook")
 local countEvents = 0
 for _, registered in pairs(events.registered) do countEvents = countEvents + registered end
-equal(countEvents, 35, "one registration for each event")
+equal(countEvents, 33, "one registration for each event")
 assert(events.scripts.OnEvent and events.scripts.OnUpdate, "event/update scripts installed")
+assert(not events.registered.UNIT_HEALTH and not events.registered.UNIT_MAXHEALTH, "no events for retired threat-layer threshold")
 events.scripts.OnEvent(events, "ADDON_LOADED", "AnotherAddon")
 equal(calls.db, nil, "other addon ignored")
 events.scripts.OnEvent(events, "ADDON_LOADED", "SimpleNameplates")
@@ -360,7 +361,6 @@ categoryMode = "inactive"
 ns.RefreshAll()
 equal(plateFrame.SNPState, nil, "inactive restores category presentation")
 equal(plateFrame.SNPInsideName.shown, false, "inside overlay restored")
-for _, layer in ipairs(plateFrame.SNPInsideName.SNPUnderlayers) do assert(not layer.shown, "inside underlayers hidden on disable") end
 equal(plateFrame.name.alpha, 1, "original name alpha restored")
 equal(plateFrame.healthBar.height, 20, "original bar height restored")
 equal(plateFrame.name.font, "NativeFont", "original native font restored")
@@ -1115,7 +1115,7 @@ appearance.useSlugRendering = true
 equal(ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get()), false, "ordinary font cache cannot undo Slug selection")
 ns.RefreshAll()
 equal(plateFrame.SNPInsideName.flags, "SLUG,OUTLINE", "inside name uses Slug with thin outline")
-for _, layer in ipairs(plateFrame.SNPInsideName.SNPUnderlayers) do equal(layer.flags, "SLUG,OUTLINE", "inside name underlayers use Slug") end
+assert(plateFrame.SNPInsideName.SNPUnderlayers == nil, "inside name has no glyph copies")
 plateFrame.name:SetFont("drifted", 10, "")
 ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
 equal(plateFrame.name.flags, "SLUG,OUTLINE", "cached repair preserves Slug")
@@ -1155,16 +1155,36 @@ local timer = 0
 GetTimePreciseSec = function() timer = timer + 0.001; return timer end
 ns.Profiler.Command("start")
 ns.RefreshAll()
+hooks[1].callback(plateFrame)
+hooks[2].callback(plateFrame)
 plateFrame.name.text = "Drifted"
 events.scripts.OnUpdate(events, 0.25)
+-- An invalid layout cache forces the reconciliation fallback, preserving the
+-- distinction between a successful cached repair and a full styling request.
+plateFrame.SNPNameStyle.healthTextSignature = "stale"
+events.scripts.OnUpdate(events, 0.25)
 ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
+events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", "nameplate1")
+events.scripts.OnUpdate(events, 0.01)
+events.scripts.OnEvent(events, "PLAYER_TARGET_CHANGED")
+events.scripts.OnUpdate(events, 0.01)
 ns.Profiler.Command("stop")
 ns.Profiler.Command("report")
 print = originalPrint
-for _, label in ipairs({"Full styling", "Classification", "NPC title lookup", "Text repair", "Runtime update", "Reconciliation"}) do
+for _, label in ipairs({"Full styling", "Classification", "NPC title lookup", "Text repair", "Runtime update", "Reconciliation",
+    "Access assessment", "Health text layout", "Bar artwork", "Name/title styling", "Name drift check"}) do
     local found
     for _, line in ipairs(perfOutput) do if line:find(label .. ":", 1, true) then found = true end end
     assert(found, "runtime instrumentation missing: " .. label)
+end
+for _, expected in ipairs({"Styling requests: health-color hook =", "Styling requests: name hook =",
+    "Styling requests: reconciliation fallback =", "Styling outcomes: styled =",
+    "Name drift: native name text =", "Name drift: health label layout =",
+    "Reconciliation repairs: cached repair =", "Reconciliation repairs: full-style fallback =",
+    "Queued unit events: UNIT_NAME_UPDATE =", "Queued full refresh: PLAYER_TARGET_CHANGED ="}) do
+    local found
+    for _, line in ipairs(perfOutput) do if line:find(expected, 1, true) then found = true end end
+    assert(found, "runtime reason counter missing: " .. expected)
 end
 -- Restoration preserves native dynamic state rather than the initial snapshot.
 ns.RestoreAll()
@@ -1515,7 +1535,7 @@ for _, placement in ipairs({"ABOVE", "INSIDE"}) do
 end
 ns.RestoreAll()
 
--- Exercise the gradient through presentation, health events, repair and restoration.
+-- Gradient toggles preserve one outlined label, without health-dependent text work.
 assert(loadfile("SimpleNameplates/HealthGradient.lua"))("SimpleNameplates", ns)
 local gradients = true
 ns.GetGradientEnabled = function() return gradients end
@@ -1536,29 +1556,16 @@ bar.barTexture = GradientTexture()
 bar.barTexture:SetTexture("native-fill")
 function bar:CreateTexture() return GradientTexture() end
 function bar:CreateMaskTexture() return GradientTexture() end
-local layerAlpha = 1
-Enum = {LuaCurveType = {Step = 1}}
-C_CurveUtil = {CreateCurve = function() return {SetType=function() end, AddPoint=function() end} end}
-function UnitHealthPercent() return layerAlpha end
+function UnitHealthPercent() error("retired health threshold must not be queried") end
 appearance.namePlacement, threatEnabled, threatPercent = "INSIDE", true, 255
 ns.RefreshAll()
 assert(bar.SNPHealthGradient.shown)
-for _, layer in ipairs(plateFrame.SNPInsideName.SNPUnderlayers) do assert(not layer.shown) end
-for _, layer in ipairs(plateFrame.SNPThreatText.SNPUnderlayers) do assert(layer.alpha == 1) end
-layerAlpha = 0
-events.scripts.OnEvent(events, "UNIT_HEALTH", "nameplate1")
-for _, layer in ipairs(plateFrame.SNPThreatText.SNPUnderlayers) do assert(layer.alpha == 0) end
-layerAlpha = 1
-events.scripts.OnEvent(events, "UNIT_MAXHEALTH", "nameplate1")
-for _, layer in ipairs(plateFrame.SNPThreatText.SNPUnderlayers) do assert(layer.alpha == 1) end
-layerAlpha = 0
+assert(plateFrame.SNPInsideName.flags == "OUTLINE" and plateFrame.SNPInsideName.SNPUnderlayers == nil)
 events.scripts.OnUpdate(events, 0.25)
-for _, layer in ipairs(plateFrame.SNPThreatText.SNPUnderlayers) do assert(layer.alpha == 0) end
 gradients = false
 ns.RefreshAll()
 assert(not bar.SNPHealthGradient.shown)
-for _, layer in ipairs(plateFrame.SNPInsideName.SNPUnderlayers) do assert(layer.shown) end
-for _, layer in ipairs(plateFrame.SNPThreatText.SNPUnderlayers) do assert(layer.alpha == 1) end
+assert(plateFrame.SNPInsideName.flags == "OUTLINE" and plateFrame.SNPInsideName.SNPUnderlayers == nil)
 gradients = true
 ns.RefreshAll()
 ns.RestoreAll()

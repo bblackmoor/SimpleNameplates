@@ -83,7 +83,7 @@ local function AddControls(context)
         function() return addon.GetAppearanceSetting("useSlugRendering") end,
         function(value) addon.SetAppearanceSetting("useSlugRendering", value) end, UI.RefreshNameplates)
     UI.AddDescription(content, layout,
-        "Applies to names, titles, health, threat and cast text. Uses thin outlines outside health bars; keeps the two black underlayers inside.")
+        "Applies to names, titles, health, threat and cast text. Uses thin solid outlines on all styled text.")
     AddToggle(context, "Match Blizzard font in sanctuaries",
         function() return addon.GetAppearanceSetting("matchSanctuaryFont") end,
         function(value) addon.SetAppearanceSetting("matchSanctuaryFont", value) end, UI.RefreshNameplates)
@@ -141,4 +141,5 @@ local function CreateAppearancePanel()
     return panel
 end
 addon.SettingsPanels.Appearance = CreateAppearancePanel
+
 

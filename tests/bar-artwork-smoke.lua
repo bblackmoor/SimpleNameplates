@@ -8,8 +8,8 @@ ns.PriorityColorForState = function() return barRGB[1], barRGB[2], barRGB[3] end
 local unpackValues = unpack or table.unpack
 assert(loadfile("SimpleNameplates/Core.lua"))("SimpleNameplates", ns)
 ns.WorldContext = {Get = function() return {combatLockdown = false} end}
+assert(loadfile("SimpleNameplates/Profiler.lua"))("SimpleNameplates", ns)
 assert(loadfile("SimpleNameplates/PresentationCapabilities.lua"))("SimpleNameplates", ns)
-assert(loadfile("SimpleNameplates/TextUnderlayers.lua"))("SimpleNameplates", ns)
 assert(loadfile("SimpleNameplates/NameplateFrames.lua"))("SimpleNameplates", ns)
 local function Region()
     local r = {alpha = 1, shown = true, texture = "original", coords = {0.1, 0.9, 0.2, 0.8},
@@ -69,6 +69,8 @@ health.overAbsorbGlow.alpha = 0.7
 health.overHealAbsorbGlow = Region()
 cast.Border, cast.DropShadow, cast.Text = Region(), Region(), Region()
 cast.BorderShield = Region()
+health.Text.flags = "THICKOUTLINE"
+cast.Text.flags = "MONOCHROME"
 local frame = {healthBar = health, castBar = cast, overAbsorbGlow = Region()}
 local context = ns.WorldContext.Get()
 local assessment = ns.PresentationCapabilities.InspectFrame(frame, context)
@@ -76,7 +78,7 @@ ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
 for _, key in ipairs({"Text", "RightText", "LeftText"}) do
     assert(health[key].r == 1 and health[key].g == 1 and health[key].b == 1, "bright bar native text white")
     assert(health[key].flags == "OUTLINE", "native health text has thin outline")
-    assert(health[key].shadow[4] == 0 and #health[key].SNPUnderlayers == 2, "native health text uses black offset copy")
+    assert(health[key].shadow[4] == 0 and health[key].SNPUnderlayers == nil, "native health text has no shadow or copies")
     assert(health[key].vr == 1, "native text tint neutral")
 end
 assert(health.LeftText.points[1][5] == -0.5, "rightmost native health label padding moves down")
@@ -102,7 +104,6 @@ ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
 assert(cast.Text.flags == "SLUG,OUTLINE", "cast text uses outlined Slug")
 for _, key in ipairs({"Text", "RightText", "LeftText"}) do
     assert(health[key].flags == "SLUG,OUTLINE", "native health text uses outlined Slug")
-    for _, layer in ipairs(health[key].SNPUnderlayers) do assert(layer.flags == "SLUG,OUTLINE", "native underlayers use Slug") end
 end
 slug = false
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
@@ -135,15 +136,16 @@ health.bgTexture.IsForbidden = nil
 ns.NameplateFrames.RestoreBarArtwork(frame, context)
 assert(health.Text.points[1][5] == 0, "native text anchor restored")
 assert(health.Text.layer == "ARTWORK" and health.Text.level == 0, "native draw layer restored")
-for _, layer in ipairs(health.Text.SNPUnderlayers) do assert(not layer.shown, "native underlayers hidden after restoration") end
 assert(health.Text.r == 0.7 and health.Text.g == 0.8 and health.Text.vr == 0.5, "native health text restored")
 assert(health.bgTexture.alpha == 1 and health.selectedBorder.alpha == 1)
 assert(health.overAbsorbGlow.alpha == 0.7 and frame.overAbsorbGlow.alpha == 1, "original overflow glow alpha restored")
 assert(cast.Border.alpha == 1 and cast.DropShadow.alpha == 1)
 assert(health.barTexture.atlas == "native-fill" and health.barTexture.coords[1] == 0.1)
-assert(cast.Text.flags == "OUTLINE" and cast.Text.shadow[4] == 1 and cast.Text.offset[1] == 1)
+assert(health.Text.flags == "THICKOUTLINE", "original health outline restored")
+assert(cast.Text.flags == "MONOCHROME" and cast.Text.shadow[4] == 1 and cast.Text.offset[1] == 1)
 assert(not health.SNPPlainBackground.shown and not frame.SNPOriginalArtwork)
 cast.barTexture:SetAtlas("restored-native-update")
 cast.onShow()
 assert(cast.barTexture.atlas == "restored-native-update", "inactive hooks leave Blizzard alone")
 print("Bar artwork smoke: passed")
+

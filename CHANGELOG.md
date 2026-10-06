@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.202
+
+* Implements performance phase 1 of 4: all styled names, titles, threat, native health and cast labels use thin solid outlines. Removes black glyph copies, their synchronization hooks, the threat health-threshold curve, and its health-event/reconciliation updates. Gradient geometry remains unchanged.
+* Adds optional timings for access assessment, artwork, name/title styling, health-text layout and drift checks. Chat-only reason counters identify styling triggers/outcomes, queued events, first-observed drift and cached/full-style reconciliation repairs. Disabled profiling allocates no measurement records.
+* Updates outline/restoration, preview, gradient, profiler lifecycle and runtime diagnostics checks and records the remaining performance phases.
+
 ## 1.0.201
 
 * Extends the linear health gradient from 80% black at the left edge to clear at 95% bar width; the final 5% stays clear. The settings preview matches. Threat percentages retain their existing 80% health threshold for black glyph copies.
@@ -835,3 +841,4 @@
 * Fresh standalone release with no previous-version or legacy-settings handling.
 * Warns at login when another enabled third-party “plate” addon may conflict.
 * Uses `/snp` for settings and About commands.
+

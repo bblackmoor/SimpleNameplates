@@ -100,23 +100,20 @@ local function AddGradientControl(context)
     threat:SetJustifyH("RIGHT")
     threat:SetText("255%")
     for _, text in ipairs({name, threat}) do
+        text:SetDrawLayer("OVERLAY", 7)
         text:SetTextColor(1, 1, 1, 1)
         text:SetWordWrap(false)
         text:SetMaxLines(1)
     end
     context.refreshers[#context.refreshers + 1] = function()
         local size = addon.GetAppearanceSetting("nameSize")
-        local flags = addon.FontFlags and addon.FontFlags(false) or ""
+        local flags = addon.FontFlags and addon.FontFlags() or ""
         preview:SetHeight(size + 7)
         preview:SetStatusBarColor(PriorityColorForState("hostile"))
         name:SetFont(addon.FontPath(addon.GetAppearanceSetting("nameFont")), size, flags)
         threat:SetFont(addon.FontPath(addon.GetAppearanceSetting("threatFont")), size, flags)
         if addon.HealthGradient then
             addon.HealthGradient.Apply(preview, preview:GetStatusBarTexture(), addon.WorldContext.Get())
-            if addon.HealthGradient.Enabled() then addon.TextUnderlayers.Hide(name)
-            else addon.TextUnderlayers.Update(name, preview) end
-            -- Full health always retains the threat glyph copies.
-            addon.TextUnderlayers.Update(threat, preview)
         end
     end
 end
@@ -182,5 +179,6 @@ local function CreateColorsPanel()
     return panel
 end
 addon.SettingsPanels.Colors = CreateColorsPanel
+
 
 

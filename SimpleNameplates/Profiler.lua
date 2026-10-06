@@ -19,6 +19,14 @@ local function Memory()
     if read then return Finite(value) end
 end
 local function Say(message) print("|cff0cd29fSimple Nameplates:|r " .. message) end
+-- Call sites supply bounded, readable labels, never unit identities or secret values.
+-- No counter tables are created outside a profiling session.
+local function Count(group, reason)
+    if not active then return end
+    local counters = active.counters[group]
+    if not counters then counters = {}; active.counters[group] = counters end
+    counters[reason] = (counters[reason] or 0) + 1
+end
 local function Wrap(label, callback)
     return function(...)
         local session = active
@@ -47,7 +55,7 @@ local function Start()
     local memory = Memory()
     local started = Clock()
     if not started then Say("Profiling requires a readable precise timer."); return end
-    active = {started = started, memoryStart = memory, stats = {}}
+    active = {started = started, memoryStart = memory, stats = {}, counters = {}}
     last = active
     Say("Profiling started. Use /snp perf stop, then /snp perf report.")
 end
@@ -78,6 +86,21 @@ local function Report()
         Say(("%s: %d calls; %.3f ms total; %.3f ms average; %.3f ms longest.")
             :format(label, row.calls, row.total, row.total / row.calls, row.maximum))
     end
+    local groups = {}
+    for group in pairs(last.counters) do groups[#groups + 1] = group end
+    table.sort(groups)
+    for _, group in ipairs(groups) do
+        local reasons, counters = {}, last.counters[group]
+        for reason in pairs(counters) do reasons[#reasons + 1] = reason end
+        table.sort(reasons, function(a, b)
+            if counters[a] == counters[b] then return a < b end
+            return counters[a] > counters[b]
+        end)
+        -- Keep each row short enough for chat and screenshot collection.
+        for _, reason in ipairs(reasons) do
+            Say(("%s: %s = %d"):format(group, reason, counters[reason]))
+        end
+    end
     if last.memoryStart and last.memoryEnd then
         Say(("Addon memory: %.1f -> %.1f KiB (%+.1f KiB).")
             :format(last.memoryStart, last.memoryEnd, last.memoryEnd - last.memoryStart))
@@ -92,4 +115,4 @@ local function Command(argument)
     elseif argument == "report" or argument == "" then Report()
     else Say("/snp perf start | stop | report") end
 end
-ns.Profiler = {Wrap = Wrap, Command = Command}
+ns.Profiler = {Wrap = Wrap, Count = Count, Command = Command}

@@ -33,7 +33,7 @@ Reset settings on Appearance restores profile appearance and threat display plus
 | `TRP3.lua` | Optional cached RP integration with normal-name fallback |
 | `EntityFacts.lua` / `NameplateClassification.lua` | Safe observations and six-category first-match priority |
 | `PresentationCapabilities.lua` / `PresentationRules.lua` | Frame access and uniform Active presentation policy |
-| `FontRendering.lua` / `TextUnderlayers.lua` | Shared font flags and two black glyph underlayers for inside-bar text |
+| `FontRendering.lua` | Shared thin solid outline flags for all styled plate text |
 | `NameplateFrames.lua` | Region access, original bar artwork/width and flat-fill styling |
 | `NPCTitles.lua` | Safe structured-tooltip subtitle resolution and bounded session caches |
 | `NameplateText.lua` | Names/titles, placement, bar-height padding, cast/title visibility and cached repair |
@@ -74,4 +74,5 @@ Critter hiding claims only its supported world-name CVar. Legacy managed-name re
 Run all 21 smoke suites and whitespace checks using the commands in the [README](../../README.md#development). They cover real bundled libraries under UI stubs, saved-field validation, profile/reset scopes, previews/dialogs, context/access gates, uniform presentation, cast/title transitions, restoration, secret-safe formatting, lifecycle and reachable upvalue limits. Profiling has deterministic timing and actual runtime/slash coverage.
 
 Local tests cannot establish native rendering, client frame permissions or secret-value safety. Record observations in the [live WoW checklist](live-wow-verification.md); client items remain open until observed.
+
 

@@ -118,7 +118,7 @@ local function StyleNativeTextOutline(frame, region, context, inside)
         original.shadowOffset = ReadValues(region, "GetShadowOffset", context)
         if inside then original.drawLayer = ReadValues(region, "GetDrawLayer", context) end
     end
-    region:SetFont(original.font[1], original.font[2], ns.FontFlags(not inside))
+    region:SetFont(original.font[1], original.font[2], ns.FontFlags())
     region:SetShadowColor(0, 0, 0, 0)
     region:SetShadowOffset(0, 0)
 end
@@ -151,12 +151,7 @@ local function StyleHealthText(frame, region, context, bar)
         original.textColor = ReadValues(region, "GetTextColor", context)
         original.vertexColor = ReadValues(region, "GetVertexColor", context)
     end
-    if ns.HealthGradient and ns.HealthGradient.Enabled() then
-        region:SetDrawLayer("OVERLAY", 7)
-        ns.TextUnderlayers.Hide(region)
-    else
-        ns.TextUnderlayers.Update(region, bar)
-    end
+    region:SetDrawLayer("OVERLAY", 7)
     if original.textColor then
         region:SetTextColor(1, 1, 1, 1)
         if original.vertexColor then region:SetVertexColor(1, 1, 1, 1) end
@@ -293,7 +288,6 @@ local function RestoreBarArtwork(frame, context)
         if Capabilities.ObjectStatus(region, context) ~= "accessible" then
             error("Bar artwork restoration is temporarily inaccessible")
         end
-        ns.TextUnderlayers.Hide(region)
         if original.drawLayer then region:SetDrawLayer(unpackValues(original.drawLayer)) end
         if original.alpha ~= nil then region:SetAlpha(original.alpha) end
         if original.fill then
@@ -329,6 +323,9 @@ local function RestoreBarArtwork(frame, context)
     frame.SNPOriginalArtwork, frame.SNPPlainBackgrounds = nil, nil
 end
 
+LayoutHealthText = ns.Profiler.Wrap("Health text layout", LayoutHealthText)
+ApplyBarArtwork = ns.Profiler.Wrap("Bar artwork", ApplyBarArtwork)
+
 ns.NameplateFrames = {
     ApplyBarWidth = ApplyBarWidth, RestoreBarWidth = RestoreBarWidth,
     LayoutHealthText = LayoutHealthText, GetHealthTextInsetRegion = GetHealthTextInsetRegion,
@@ -336,3 +333,4 @@ ns.NameplateFrames = {
     GetUnitFrame = GetUnitFrame, GetFrameFromPlate = GetFrameFromPlate,
     GetHealthBar = GetHealthBar, GetCastBar = GetCastBar, SetShownSafe = SetShownSafe,
 }
+
