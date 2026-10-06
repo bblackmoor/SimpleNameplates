@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.196
+
+* Displays only WoW's scaled threat percentage instead of preferring raw threat percentage, preventing the label from sticking at the raw 255% cap while the player is tanking.
+* Removes the cast highlight's call to Midnight's secrecy-wrapped `IsInterruptable()`. Spellcast interruptibility/start/stop events now trigger nameplate refreshes; the initial state comes from Blizzard's already-rendered cast icon/shield, with explicit interruptibility events retained as a fallback when native visual state is unreadable.
+* Keeps the geometry-independent pulsing border and its existing Active/color settings; adds coverage for interruptible/not-interruptible events, Modern icon state, Classic shield state, restricted native state, and geometry independence.
+
+
 ## 1.0.195
 
 * Places the interruptible-cast **Active** label and switch on the same row as its color swatch, using the same label and toggle spacing as the Priority Color health-bar controls.
