@@ -71,7 +71,7 @@ local function NewProfile(presetName)
         showThreat = DEFAULT_SHOW_THREAT,
         gradients = SavedBoolean(preset and preset.gradients, defaults.gradients),
         dimBackgroundNames = DEFAULT_DIM_BACKGROUND_NAMES,
-        interruptibleCastStyle = defaults.interruptibleCastStyle,
+        interruptibleHighlight = defaults.interruptibleHighlight,
     }
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
         local color = preset and preset.priorityColors and preset.priorityColors[key] or default
@@ -127,8 +127,6 @@ local function ValidateProfileAppearance(profile, saved)
     end
 end
 
-local CAST_STYLES = {NONE = true, PIXEL = true, AUTOCAST = true, BUTTON = true, PROC = true}
-
 local function ValidateProfileToggles(profile, saved)
     local savedBars = type(saved.healthBars) == "table" and saved.healthBars or {}
     for key in pairs(DEFAULT_PRIORITY_COLORS) do
@@ -137,13 +135,11 @@ local function ValidateProfileToggles(profile, saved)
     profile.gradients = SavedBoolean(saved.gradients, profile.gradients)
     profile.dimBackgroundNames = SavedBoolean(saved.dimBackgroundNames, DEFAULT_DIM_BACKGROUND_NAMES)
     profile.showThreat = SavedBoolean(saved.showThreat, profile.showThreat)
-    -- Older profiles used a separate activation switch and custom Pulse.
-    if saved.interruptibleHighlight == false then
-        profile.interruptibleCastStyle = "NONE"
-    elseif CAST_STYLES[saved.interruptibleCastStyle] then
-        profile.interruptibleCastStyle = saved.interruptibleCastStyle
-    elseif saved.interruptibleHighlight == true then
-        profile.interruptibleCastStyle = "PIXEL"
+    if type(saved.interruptibleHighlight) == "boolean" then
+        profile.interruptibleHighlight = saved.interruptibleHighlight
+    elseif type(saved.interruptibleCastStyle) == "string" then
+        -- Preserve whether the retired glow selector was enabled.
+        profile.interruptibleHighlight = saved.interruptibleCastStyle ~= "NONE"
     end
 end
 
@@ -542,7 +538,7 @@ local function ResetAllColors()
     for key, default in pairs(defaults.effectColors) do
         profile.effectColors[key] = CopyColor(default)
     end
-    profile.interruptibleCastStyle = defaults.interruptibleCastStyle
+    profile.interruptibleHighlight = defaults.interruptibleHighlight
     profile.gradients = defaults.gradients
     profile.dimBackgroundNames = DEFAULT_DIM_BACKGROUND_NAMES
     local modes = EnsureDB().global.categoryModes
@@ -551,24 +547,11 @@ local function ResetAllColors()
 end
 
 local function GetInterruptibleHighlightEnabled()
-    return ActiveProfile().interruptibleCastStyle ~= "NONE"
+    return ActiveProfile().interruptibleHighlight == true
 end
 
 local function SetInterruptibleHighlightEnabled(enabled)
-    local profile = ActiveProfile()
-    if enabled == true then
-        if profile.interruptibleCastStyle == "NONE" then profile.interruptibleCastStyle = "PIXEL" end
-    else
-        profile.interruptibleCastStyle = "NONE"
-    end
-end
-
-local function GetInterruptibleCastStyle()
-    return ActiveProfile().interruptibleCastStyle
-end
-
-local function SetInterruptibleCastStyle(style)
-    if CAST_STYLES[style] then ActiveProfile().interruptibleCastStyle = style end
+    ActiveProfile().interruptibleHighlight = enabled == true
 end
 
 local function GetStylingEnabled()
@@ -617,8 +600,6 @@ ns.EffectColor = EffectColor
 ns.SetEffectColor = SetEffectColor
 ns.ResetEffectColor = ResetEffectColor
 ns.ResetAllColors = ResetAllColors
-ns.GetInterruptibleCastStyle = GetInterruptibleCastStyle
-ns.SetInterruptibleCastStyle = SetInterruptibleCastStyle
 ns.GetInterruptibleHighlightEnabled = GetInterruptibleHighlightEnabled
 ns.SetInterruptibleHighlightEnabled = SetInterruptibleHighlightEnabled
 ns.GetStylingEnabled = GetStylingEnabled
