@@ -128,7 +128,9 @@ local function InstallRegionHook(highlight, region, registry)
         end
         if highlight.owner.SNPInterruptibleHighlight ~= highlight then overlay:Hide(); return end
         local bar = highlight.castBar
-        if region ~= bar.Icon and region ~= bar.BorderShield then return end
+        local icon = Capabilities.SafeField(bar, "Icon", context)
+        local shield = Capabilities.SafeField(bar, "BorderShield", context)
+        if region ~= icon and region ~= shield then return end
         RefreshHighlight(highlight, context, highlight.owner.SNPPresentation)
     end)
     if ok then highlight[registry][region] = true end
