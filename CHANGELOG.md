@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.200
+
+* Fades the health gradient linearly from 80% black at the left edge to clear at 80% bar width; the final 20% stays clear. Applies to health bars and the settings preview while preserving native health clipping and threat-underlayer behavior.
+
 ## 1.0.199
 
 * Lightens the health gradient’s darkest left edge from 90% black to 80% black, including the settings preview. Preserves the fade to 55% black at 80% width and to clear at the right edge.
