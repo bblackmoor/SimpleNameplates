@@ -144,7 +144,7 @@ slug:GetScript("OnClick")(slug, "LeftButton")
 assert(ns.EnsureDB().profiles.Default.appearance.nameSize == 28, "rollback remains in previous profile")
 assert(ns.GetAppearanceSetting("nameSize") == 18, "new profile is not overwritten by cancellation")
 ns.SetPriorityColor("attacking", 0.2, 0.3, 0.4)
-ns.SetInterruptibleCastStyle("PROC")
+ns.SetInterruptibleHighlightEnabled(true)
 ns.SetTRP3Enabled(true)
 Control("Hide critter and companion names"):GetScript("OnClick")(Control("Hide critter and companion names"), "LeftButton")
 assert(ns.GetHideCritterCompanionNames())
@@ -159,7 +159,7 @@ assert(ns.GetAppearanceSetting("useSlugRendering") and slug.MyObject:GetValue(),
 assert(ns.GetAppearanceSetting("nameFont") == "FRIZQT" and ns.GetAppearanceSetting("threatFont") == "ARIALN")
 assert(ns.GetAppearanceSetting("namePlacement") == "ABOVE" and ns.GetAppearanceSetting("matchSanctuaryFont"), "High Contrast reset places names above")
 assert(not ns.GetHideCritterCompanionNames() and ns.GetTRP3Enabled() and ns.GetStylingEnabled())
-assert(ns.GetInterruptibleCastStyle() == "PROC" and ns.PriorityColorForState("attacking") == 0.2)
+assert(ns.GetInterruptibleHighlightEnabled() and ns.PriorityColorForState("attacking") == 0.2)
 editor:GetScript("OnEscapePressed")()
 assert(ns.GetAppearanceSetting("nameSize") == 18, "stale Escape cannot undo reset")
 Editor(size):SetText("30")
@@ -200,3 +200,4 @@ for _, mutate in ipairs({
     assert(Snapshot(SimpleNameplatesDB) == saved, "retired appearance editor cannot change later selection")
 end
 print("PASS direct database mutation and appearance draft cancellation")
+

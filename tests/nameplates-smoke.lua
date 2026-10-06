@@ -159,6 +159,8 @@ local function Region()
     function region:SetShown(shown)
         if self.shown == shown then return end
         self.shown = shown
+        local callback = self.scripts and self.scripts[shown and "OnShow" or "OnHide"]
+        if callback then callback(self) end
         for _, callback in ipairs(self.scriptHooks and self.scriptHooks[shown and "OnShow" or "OnHide"] or {}) do callback(self) end
     end
     function region:Show() self:SetShown(true) end
@@ -188,6 +190,26 @@ local function Region()
     function region:ClearAllPoints() self.points = {} end
     function region:SetPoint(...) self.points = self.points or {}; self.points[#self.points + 1] = {...} end
     function region:CreateFontString() return Region() end
+    function region:CreateTexture() return Region() end
+    function region:SetAllPoints() end
+    function region:SetColorTexture(...) self.color = {...} end
+    function region:GetFrameLevel() return self.level or 1 end
+    function region:SetFrameLevel(level) self.level = level end
+    function region:SetScript(event, callback)
+        self.scripts = self.scripts or {}
+        self.scripts[event] = callback
+    end
+    function region:CreateAnimationGroup()
+        local group = {playing = false}
+        function group:Play() self.playing = true end
+        function group:Stop() self.playing = false end
+        function group:IsPlaying() return self.playing end
+        function group:SetLooping(value) self.looping = value end
+        function group:CreateAnimation()
+            return setmetatable({}, {__index = function() return function() end end})
+        end
+        return group
+    end
     function region:SetShadowColor(...) self.shadow = {...} end
     function region:SetShadowOffset(x,y) self.shadowX, self.shadowY = x,y end
     function region:SetWordWrap(value) self.wordWrap = value end
@@ -195,6 +217,11 @@ local function Region()
     for _, method in ipairs({ "SetJustifyH", "SetJustifyV",
         "SetDrawLayer" }) do region[method] = function() end end
     return region
+end
+local createEventFrame = CreateFrame
+function CreateFrame(kind, name, parent)
+    if parent then return Region() end
+    return createEventFrame(kind)
 end
 local plateFrame = Region()
 plateFrame.unit, plateFrame.name = "nameplate1", Region()
@@ -395,17 +422,16 @@ unit = { player = true, faction = "Alliance", reaction = 5 }
 plateFrame.castBar = Region()
 plateFrame.castBar:Hide()
 plateFrame.castBar.Icon = Region()
-local castOverlay = Region()
-function castOverlay:SetShown(shown) self.shown = shown end
-plateFrame.SNPInterruptibleHighlight = {
-    owner = plateFrame, castBar = plateFrame.castBar, frame = castOverlay, border = {},
-}
+plateFrame.SNPInterruptibleHighlight = nil
+local castHighlight = ns.CastHighlight.EnsureInterruptibleHighlight(plateFrame)
+local castOverlay = castHighlight.frame
 highlightEnabled = true
 plateFrame.castBar:Hide()
 ns.RefreshAll() -- Capture the native idle cast bar before simulating a cast.
 plateFrame.castBar:Show()
 ns.RefreshAll()
 equal(castOverlay.shown, true, "uniform friendly cast effect permitted")
+equal(castHighlight.pulse:IsPlaying(), true, "visible cast highlight starts pulse")
 equal(plateFrame.SNPFullTitleText.shown, false, "active cast replaces title")
 plateFrame.castBar:Hide()
 equal(plateFrame.SNPFullTitleText.shown, true, "cast end restores title without a styling pass")
@@ -629,7 +655,7 @@ equal(plateFrame.SNPInterruptibleHighlight, nil, "diagnostic creates no overlay"
 -- Diagnose the actual current icon's registered hook without installing one.
 local diagnosticIcon = Region()
 plateFrame.castBar.Icon = diagnosticIcon
-plateFrame.SNPInterruptibleHighlight = {owner = plateFrame, castBar = plateFrame.castBar, frame = Region()}
+plateFrame.SNPInterruptibleHighlight = nil
 ns.CastHighlight.EnsureInterruptibleHighlight(plateFrame)
 assert(plateFrame.SNPInterruptibleHighlight.hookedIcons[diagnosticIcon], "diagnostic fixture installs real cast hook")
 local diagnosticFrames, diagnosticHooks = #frames, #hooks
@@ -1207,8 +1233,8 @@ ns.RefreshAll()
 ns.RestoreAll()
 plateFrame.castBar = Region()
 plateFrame.castBar.Icon = Region()
-local retryOverlay = Region()
-plateFrame.SNPInterruptibleHighlight = {owner = plateFrame, castBar = plateFrame.castBar, frame = retryOverlay}
+plateFrame.SNPInterruptibleHighlight = nil
+local retryOverlay = ns.CastHighlight.EnsureInterruptibleHighlight(plateFrame).frame
 highlightEnabled = true
 local iconBlocked = false
 plateFrame.castBar.Icon.IsForbidden = function() return iconBlocked end
@@ -1605,4 +1631,3 @@ ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
 equal(title.width, 73, "native bar resizing updates title without full restyling")
 
 print("Nameplates smoke: passed")
-

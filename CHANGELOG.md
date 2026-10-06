@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.198
+
+* Repairs cast-highlight test fixtures by creating the real pulsing border with animation-capable UI stubs. Updates profile, settings, and loader checks for the Active switch and removal of the four library effects.
+* Fixes pulse-test native visibility restoration and resets its cast-stop state before testing another cast. Supplies scaled threat in the replacement-label fixture instead of leaving only raw threat available.
+* All 21 local smoke suites pass, including title dimming and cast pulse integration. No production behavior changes beyond the version metadata.
+
 ## 1.0.197
 
 * Makes subtitles beneath dimmed background NPC names use the same grey as the name. Turning dimming off restores white titles; other categories retain white titles.

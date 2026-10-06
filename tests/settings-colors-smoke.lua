@@ -152,27 +152,23 @@ for _, layer in ipairs(sample.SNPUnderlayers) do assert(layer:IsShown()) end
 assert(ns.SetActiveProfileName("Default"))
 panel.Refresh()
 
-local effect = Control(Row("Effect"), "dropdown")
-assert(effect.point[4] == 340 and effect:GetWidth() == 190)
-local expected = {"NONE", "PIXEL", "AUTOCAST", "BUTTON", "PROC"}
-for i, option in ipairs(effect.MyObject.func()) do
-    assert(option.value == expected[i])
-    local item = CreateFrame("Button", nil, effect.dropdownframe:GetScrollChild())
-    item.object, item.table = effect.MyObject, option
-    local before = refreshes
-    DetailsFrameworkDropDownOptionClick(item)
-    assert(ns.GetInterruptibleCastStyle() == expected[i] and effect.MyObject.myvalue == expected[i])
-    assert(refreshes == before + 1)
-end
 local castRow = Row("Interruptible cast highlight")
 local cast = Control(castRow, "color")
+local castToggle = Control(castRow, "switch")
+assert(castToggle.point[2]:GetText() == "Active" and castToggle.point[4] == 8)
+for _, enabled in ipairs({true, false, true}) do
+    local before = refreshes
+    castToggle:GetScript("OnClick")(castToggle, "LeftButton")
+    assert(ns.GetInterruptibleHighlightEnabled() == enabled and castToggle.MyObject:GetValue() == enabled)
+    assert(refreshes == before + 1)
+end
 Click(cast)
 local picker = ColorPickerFrame.info
 picker.swatchFunc()
 RGBEqual({ns.EffectColor("interruptible")}, 0.2, 0.3, 0.4)
 picker.cancelFunc()
 RGBEqual({ns.EffectColor("interruptible")}, 0, 1, 1)
-assert(ns.GetInterruptibleCastStyle() == "PROC", "cast-color reset preserves chosen effect")
+assert(ns.GetInterruptibleHighlightEnabled(), "cast-color cancellation preserves activation")
 
 -- Adapted profile selector stays shared; switching refreshes DF controls silently.
 local selector
@@ -189,7 +185,7 @@ local highContrast = ns.Defaults.colorPresets.highContrast
 RGBEqual(SwatchRGB(Control(Row(cases[1][2]), "color")), 1, 0, 1)
 ns.SetPriorityColor("attacking", 0.1, 0.2, 0.3)
 ns.SetEffectColor("interruptible", 0.4, 0.5, 0.6)
-ns.SetInterruptibleCastStyle("PIXEL")
+ns.SetInterruptibleHighlightEnabled(true)
 ns.SetTRP3Enabled(true)
 local resetAll
 for _, object in ipairs(ui.objects) do
@@ -199,7 +195,7 @@ assert(resetAll:GetWidth() == 190 and resetAll:GetHeight() == 24)
 assert(resetAll.point[5] > castRow.point[5], "whole-page reset remains above controls")
 local before = refreshes
 Click(resetAll)
-assert(refreshes == before + 1 and ns.GetInterruptibleCastStyle() == "NONE")
+assert(refreshes == before + 1 and not ns.GetInterruptibleHighlightEnabled())
 assert(ns.GetTRP3Enabled() and Snapshot(ns.EnsureDB().profiles.Default) == preservedDefault)
 assert(ns.GetActiveProfileName() == "High Contrast")
 for _, case in ipairs(cases) do
@@ -327,3 +323,4 @@ for _, case in ipairs({
     ColorPickerFrame:Hide() -- Simulate native Cancel hiding after its callback.
 end
 print("PASS stale swatches preserve current saved priority and effect RGB")
+

@@ -104,7 +104,6 @@ local setupAllowed, setupChecks = true, 0
 local attacking = { 1, 0, 0 }
 local npcColors = { friendly = {0.2, 0.8, 0.2}, useful = {0.8, 0.8, 0.8}, useless = {0.6, 0.6, 0.6} }
 local modes = { friendly = "active" }
-local castStyle = "NONE"
 local profile = { matchSanctuaryFont = true, nameFont = "ARIALN", nameSize = 12, threatFont = "ARIALN", namePlacement = "ABOVE", healthBarWidth = 100 }
 local fontOptions = { {value = "ARIALN", label = "Arial Narrow"} }
 local ns = {
@@ -156,13 +155,11 @@ local ns = {
     SetStylingEnabled = function(value) styling = value end,
     GetThreatEnabled = function() return threatEnabled end,
     SetThreatEnabled = function(value) threatEnabled = value end,
-    GetInterruptibleCastStyle = function() return castStyle end,
-    SetInterruptibleCastStyle = function(value) castStyle = value; castEnabled = value ~= "NONE" end,
     GetInterruptibleHighlightEnabled = function() return castEnabled end,
     SetInterruptibleHighlightEnabled = function(value) castEnabled = value end,
     ResetAllColors = function()
         allColorResets = allColorResets + 1
-        castEnabled, castStyle = false, "NONE"
+        castEnabled = false
         for _, state in ipairs({"attacking", "hostile", "neutral", "friendly", "useful", "useless"}) do modes[state] = "active" end
     end,
     GetTRP3Enabled = function() return trp3Enabled end,
@@ -427,25 +424,17 @@ assert(belongsTo(effectFill, categories[4].panel), "cast color belongs to Colors
 assert(not switchFor("Highlight interruptible casts and channels"), "redundant Appearance cast toggle removed")
 assert(not button("Reset priority colors"), "priority reset button removed")
 assert(not button("Reset all profile colors"), "old bottom reset removed")
-local effectSelector
-for _, item in ipairs(frames) do
-    if item.MyObject and item.MyObject.type == "dropdown" and belongsTo(item, categories[4].panel) then effectSelector = item end
-end
-assert(effectSelector and belongsTo(effectSelector, categories[4].panel), "cast effect selector on Colors")
-menuOptions = effectSelector.MyObject.func()
-equal(#menuOptions, 5, "selector has None and four library effects")
-local expected = {"NONE", "PIXEL", "AUTOCAST", "BUTTON", "PROC"}
-for i, option in ipairs(menuOptions) do
-    equal(option.value, expected[i], "effect choice order")
-    option.onclick(effectSelector.MyObject, nil, option.value)
-    equal(castStyle, expected[i], "effect selector changes profile effect")
-    equal(effectSelector.MyObject.myvalue, expected[i], "effect selection refreshes immediately")
-    equal(castEnabled, expected[i] ~= "NONE", "None controls activation")
+local castToggle = assert(switchFor("Interruptible cast highlight"))
+assert(belongsTo(castToggle, categories[4].panel), "cast Active switch on Colors")
+for _, enabled in ipairs({true, false, true}) do
+    castToggle:GetScript("OnClick")(castToggle, "LeftButton")
+    equal(castEnabled, enabled, "cast Active switch changes activation")
+    equal(castToggle.MyObject:GetValue(), enabled, "activation refreshes immediately")
 end
 button("Reset all colors"):Click()
 equal(allColorResets, 1, "complete page reset available")
-equal(castStyle, "NONE", "Colors reset includes effect")
-equal(effectSelector.MyObject.myvalue, "NONE", "effect selector refreshes after reset")
+equal(castEnabled, false, "Colors reset disables highlight")
+equal(castToggle.MyObject:GetValue(), false, "cast Active switch refreshes after reset")
 assert(button("Reset all colors").points.TOPLEFT[4] > effectFill.parent.parent.points.TOPLEFT[4], "reset precedes cast controls")
 castEnabled, threatEnabled = true, false
 local widthSlider
@@ -540,11 +529,11 @@ stylingSwitch:Click()
 equal(stylingSwitch:GetChecked(), false, "setup rejection keeps switch off")
 equal(activationStatus.text, "Inactive", "setup rejection updates status")
 
--- The effect selector replaces the separate cast activation switch.
-assert(not switchFor("Interruptible cast highlight"), "cast activation switch removed")
+-- Cast activation and color share the same row.
+assert(switchFor("Interruptible cast highlight") == castToggle, "cast Active switch retained")
 assert(colorRow("Interruptible cast highlight"), "cast color remains available")
 button("Reset all colors"):Click()
-equal(effectSelector.MyObject.myvalue, "NONE", "Colors reset selects None")
+equal(castToggle.MyObject:GetValue(), false, "Colors reset clears Active")
 equal(castEnabled, false, "Colors reset disables highlighting")
 for _, labelText in ipairs({"1. Attacking me", "6. NPC - Background"}) do
     local swatch = colorRow(labelText)
@@ -589,5 +578,6 @@ print("Settings smoke: passed")
 for _, item in ipairs(frames) do
     assert(item.text ~= "Replace Blizzard overhead names (experimental)", "replacement UI removed")
 end
+
 
 

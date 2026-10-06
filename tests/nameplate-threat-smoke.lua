@@ -108,7 +108,7 @@ Update(true)
 equal(frame.SNPThreatText.text, "", "absent threat never fabricated")
 equal(frame.SNPThreatText.shown, false, "absent threat hidden")
 for _, layer in ipairs(frame.SNPThreatText.SNPUnderlayers) do assert(not layer.shown, "absent threat underlayers hidden") end
-raw = 100
+raw, scaled = 255, 100
 enabled = false
 Update(true)
 equal(frame.SNPThreatStatus, "disabled", "disabled preference honored")
@@ -128,3 +128,4 @@ equal(frame.SNPThreatText.shown, false, "failed API clears stale percentage")
 accessible = false
 ns.NameplateThreat.UpdateThreatText({}, "hostile", {}, {showHealthBar = true})
 print("Nameplate threat smoke: passed")
+

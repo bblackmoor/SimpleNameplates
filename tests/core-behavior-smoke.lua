@@ -59,34 +59,27 @@ equal(widthNS.GetAppearanceSetting("healthBarWidth"), 125, "copied width survive
 widthNS.ResetAppearance()
 equal(widthNS.GetAppearanceSetting("healthBarWidth"), 120, "Appearance reset restores wider default")
 
--- Cast renderer is profile-specific, survives reload, and resets with Colors.
+-- Cast activation is profile-specific, survives reload, and resets with Colors.
 local effectNS = fresh()
-equal(effectNS.GetInterruptibleCastStyle(), "NONE", "highlight defaults off")
-for _, style in ipairs({"PIXEL", "AUTOCAST", "BUTTON", "PROC"}) do
-    effectNS.SetInterruptibleCastStyle(style)
-    equal(effectNS.GetInterruptibleHighlightEnabled(), true, "selected effect enables highlighting")
-    equal(effectNS.GetInterruptibleCastStyle(), style, "library style accepted")
-end
-effectNS.CopyActiveProfile("Proc cast bars")
+equal(effectNS.GetInterruptibleHighlightEnabled(), false, "highlight defaults off")
+effectNS.SetInterruptibleHighlightEnabled(true)
+effectNS.CopyActiveProfile("Pulse cast bars")
 effectNS = loadCore()
-equal(effectNS.GetInterruptibleCastStyle(), "PROC", "copied cast effect survives reload")
-effectNS.SetInterruptibleCastStyle("PULSE")
-equal(effectNS.GetInterruptibleCastStyle(), "PROC", "removed Pulse ignored")
-effectNS.SetInterruptibleCastStyle("invalid")
-equal(effectNS.GetInterruptibleCastStyle(), "PROC", "invalid effect ignored")
+equal(effectNS.GetInterruptibleHighlightEnabled(), true, "copied activation survives reload")
 effectNS.ResetAppearance()
-equal(effectNS.GetInterruptibleCastStyle(), "PROC", "Appearance reset preserves cast effect")
+equal(effectNS.GetInterruptibleHighlightEnabled(), true, "Appearance reset preserves activation")
 effectNS.ResetAllColors()
-equal(effectNS.GetInterruptibleCastStyle(), "NONE", "Colors reset disables highlight")
-equal(effectNS.GetInterruptibleHighlightEnabled(), false, "None disables highlighting")
--- Preserve activation when migrating the former switch and Pulse style.
-for _, legacy in ipairs({{true, "PULSE", "PIXEL"}, {true, "PIXEL", "PIXEL"}, {false, "PIXEL", "NONE"}}) do
+equal(effectNS.GetInterruptibleHighlightEnabled(), false, "Colors reset disables highlight")
+-- Retired style settings supply activation only when the current switch is absent.
+for _, legacy in ipairs({{true, "PIXEL", true}, {false, "PROC", false},
+    {nil, "NONE", false}, {nil, "PIXEL", true}, {nil, "AUTOCAST", true},
+    {nil, "BUTTON", true}, {nil, "PROC", true}}) do
     effectNS = fresh()
     local profile = effectNS.EnsureDB().profiles.Default
     profile.interruptibleHighlight, profile.interruptibleCastStyle = legacy[1], legacy[2]
     effectNS = loadCore()
-    equal(effectNS.GetInterruptibleCastStyle(), legacy[3], "legacy activation preserved")
-    equal(effectNS.EnsureDB().profiles.Default.interruptibleHighlight, nil, "legacy switch removed")
+    equal(effectNS.GetInterruptibleHighlightEnabled(), legacy[3], "legacy activation preserved")
+    equal(effectNS.EnsureDB().profiles.Default.interruptibleCastStyle, nil, "retired style removed")
 end
 
 -- Background dimming validation and persistence.
@@ -508,7 +501,7 @@ for line in toc:lines() do
 end
 toc:close()
 equal(table.concat(modules, ","),
-    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/LibCustomGlow-1.0/LibCustomGlow-1.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,Profiler.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,HealthGradient.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsColorPicker.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfileDialogs.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
+    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,Profiler.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,HealthGradient.lua,TextUnderlayers.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsColorPicker.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfileDialogs.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
     "TOC module order")
 
 -- Removing the optional bundle persists until an explicit bundled restore.
@@ -699,4 +692,5 @@ do
 end
 
 print("Core behavior smoke: passed")
+
 

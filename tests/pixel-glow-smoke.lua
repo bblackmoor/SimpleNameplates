@@ -140,10 +140,11 @@ frame.castBar.BorderShield.IsShown = function() return nil end
 Update()
 equal(highlight.frame.shown, false, "cast end event hides stale pulse")
 
--- No geometry read is needed.
+-- A new cast clears the preceding stop event; no geometry read is needed.
+ns.CastHighlight.RecordSpellcastEvent("UNIT_SPELLCAST_START", "nameplate1")
 frame.castBar.GetSize = function() error("cast geometry must not be read") end
-frame.castBar.Icon.IsShown = Region.IsShown
-frame.castBar.BorderShield.IsShown = Region.IsShown
+frame.castBar.Icon.IsShown = NativeIsShown
+frame.castBar.BorderShield.IsShown = NativeIsShown
 frame.castBar.HideIconWhenNotInterruptible = true
 frame.castBar.Icon.shown = true
 frame.castBar.BorderShield.shown = false
@@ -164,3 +165,4 @@ assert(not highlight.pulse:IsPlaying(), "disable stops pulse")
 
 ns.CastHighlight.ClearUnit("nameplate1")
 print("Cast pulse integration smoke: passed")
+
