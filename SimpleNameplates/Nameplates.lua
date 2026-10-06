@@ -63,7 +63,7 @@ if hooksecurefunc and CompactUnitFrame_UpdateName then
 end
 
 local events = CreateFrame("Frame")
-for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_REGEN_ENABLED","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","UNIT_HEALTH","UNIT_MAXHEALTH","CVAR_UPDATE","PLAYER_ENTERING_WORLD","ZONE_CHANGED","ZONE_CHANGED_INDOORS","ZONE_CHANGED_NEW_AREA","WAR_MODE_STATUS_UPDATE","PLAYER_FLAGS_CHANGED","PVP_TIMER_UPDATE","PLAYER_REGEN_DISABLED","PLAYER_SOFT_INTERACT_CHANGED","UPDATE_MOUSEOVER_UNIT"}) do
+for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_REGEN_ENABLED","NAME_PLATE_UNIT_ADDED","NAME_PLATE_UNIT_REMOVED","PLAYER_TARGET_CHANGED","UNIT_FACTION","UNIT_FLAGS","UNIT_NAME_UPDATE","UNIT_TARGET","UNIT_THREAT_LIST_UPDATE","UNIT_THREAT_SITUATION_UPDATE","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_SPELLCAST_START","UNIT_SPELLCAST_STOP","UNIT_SPELLCAST_FAILED","UNIT_SPELLCAST_INTERRUPTED","UNIT_SPELLCAST_CHANNEL_START","UNIT_SPELLCAST_CHANNEL_STOP","UNIT_SPELLCAST_EMPOWER_START","UNIT_SPELLCAST_EMPOWER_STOP","UNIT_SPELLCAST_INTERRUPTIBLE","UNIT_SPELLCAST_NOT_INTERRUPTIBLE","CVAR_UPDATE","PLAYER_ENTERING_WORLD","ZONE_CHANGED","ZONE_CHANGED_INDOORS","ZONE_CHANGED_NEW_AREA","WAR_MODE_STATUS_UPDATE","PLAYER_FLAGS_CHANGED","PVP_TIMER_UPDATE","PLAYER_REGEN_DISABLED","PLAYER_SOFT_INTERACT_CHANGED","UPDATE_MOUSEOVER_UNIT"}) do
     events:RegisterEvent(event)
 end
 
@@ -138,6 +138,7 @@ local function HandleCVarUpdate(cvarName)
 end
 
 local function CleanupRemovedNameplate(unit)
+    if ns.CastHighlight and ns.CastHighlight.ClearUnit then ns.CastHighlight.ClearUnit(unit) end
     local frame = knownFrames[unit] or GetUnitFrame(unit, WorldContext.Get())
     Restoration.Request(frame, WorldContext.Get(), unit)
     knownFrames[unit], dirtyUnits[unit], pendingUnits[unit] = nil, nil, nil
@@ -182,6 +183,10 @@ local function HandleEvent(_, event, unit)
     end
     if event == "CVAR_UPDATE" then HandleCVarUpdate(unit); return end
     if event == "NAME_PLATE_UNIT_REMOVED" then CleanupRemovedNameplate(unit); return end
+    local readableUnit = ns.AccessibleValue(unit)
+    if ns.CastHighlight and ns.CastHighlight.RecordSpellcastEvent then
+        ns.CastHighlight.RecordSpellcastEvent(event, readableUnit)
+    end
     if not GetStylingEnabled() then return end
     if event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" then
         unit = ns.AccessibleValue(unit)
