@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.193
+
+* Hides Blizzard’s bright right-edge absorb overflow glow on styled health bars, supporting native bar-owned and legacy frame-owned regions. Preserves absorb fill, healing predictions, and threat/gradient behavior; restores the original glow alpha when styling ends.
+
 ## 1.0.192
 
 * Defaults health-bar name placement to Inside for Default and new custom profiles, Above for High Contrast. Missing/invalid placement and Appearance reset use the active profile’s default. Existing saved choices and profile copies are preserved.

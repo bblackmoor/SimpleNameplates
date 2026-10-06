@@ -260,6 +260,11 @@ local function ApplyArtwork(frame, assessment, context)
     for _, key in ipairs({"Text", "RightText", "LeftText"}) do
         StyleHealthText(frame, Capabilities.SafeField(healthBar, key, context), context, healthBar)
     end
+    -- Blizzard keeps absorb fill/prediction visible; suppress only its bright
+    -- right-edge overflow marker. Retail owns it on the bar; legacy frames
+    -- may expose the region directly.
+    RemoveArtworkEdge(frame, Capabilities.SafeField(healthBar, "overAbsorbGlow", context), context)
+    RemoveArtworkEdge(frame, Capabilities.SafeField(frame, "overAbsorbGlow", context), context)
     for _, key in ipairs({"selectedBorder", "deselectedOverlay"}) do
         RemoveArtworkEdge(frame, Capabilities.SafeField(healthBar, key, context), context)
     end
