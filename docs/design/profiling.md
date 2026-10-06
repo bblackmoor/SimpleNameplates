@@ -26,7 +26,7 @@ Rows appear in descending total elapsed time, with call count, total millisecond
 
 | Report row | Measured path |
 | --- | --- |
-| Full styling | Shared presentation entry used by refreshes and Blizzard name/health repair hooks |
+| Full styling | Complete presentation setup used by initialization, settings/context refreshes, changed structure and invalid-cache fallbacks |
 | Classification | Entity-fact collection and priority classification together |
 | NPC title lookup | Title resolution, including cache and tooltip paths when used |
 | Text repair | Cached-name repair attempts, including attempts that return without repairing |
@@ -37,6 +37,10 @@ Rows appear in descending total elapsed time, with call count, total millisecond
 | Health text layout | Native health-label/threat anchoring; can run multiple times within styling |
 | Name/title styling | Name content, fonts, dimensions, layout and full-title presentation |
 | Name drift check | Existing cached presentation and property checks, including checks with no drift |
+| Name hook repair | Focused native-name repair; includes content updates or full fallback if needed |
+| Health-color repair | Focused category bar-color/visibility repair; includes full fallback if needed |
+| Data update | Coalesced classification, name/title, threat, cast and layout work for one current plate |
+| Name layout update | Existing name/title geometry updated for changed native-label/threat presence, without content/font work |
 
 These are inclusive elapsed timings, not exclusive CPU accounting. For example, Full styling can include Classification, which can include NPC title lookup. Runtime update can include Reconciliation and Text repair. Do not add the rows together or interpret their sum as total addon CPU. The elapsed session duration measures wall time, not time spent executing addon code.
 
@@ -50,16 +54,18 @@ After the timing rows, the same chat report prints one short row for each observ
 
 | Group | Meaning |
 | --- | --- |
-| Styling requests | Every full-styling entry, including name/health-color hooks, all/unit refreshes, new/late/pending plates and reconciliation fallbacks |
+| Styling requests | Every full-styling entry, including all/unit refreshes, new/late/pending plates, reconciliation fallbacks and invalid-cache/structure fallbacks from focused paths |
 | Styling outcomes | Styled, text suppressed, inaccessible, guarded, deferred/native, or failed; one outcome per request that reaches the guarded styling entry |
 | Queued unit events | Event requests before per-unit coalescing |
-| Queued full refresh | Context/target/mouseover/CVar/restoration requests before full-refresh coalescing; unspecified external requests are labeled settings or callback |
+| Queued global refresh | Requests affecting all visible plates before coalescing: context/settings/CVar/restoration can require full styling, while target/mouseover/TRP3 callbacks request focused work |
+| Focused requests | Name hook, health-color hook or data-update entries, including guarded/inaccessible attempts |
+| Focused outcomes | Updated, guarded, inaccessible, native/restored, restoration pending, failed, or invalid-cache/presentation-change fallback |
 | Name drift | First failing existing check for a plate in each reconciliation pass; multiple simultaneous mismatches are not enumerated |
 | Reconciliation repairs | Successful cached repair versus a full-style fallback request; a fallback request does not establish that full styling succeeded |
 
-Reason counters explain call volume, not elapsed time or unique plate counts. Queued requests can merge, hook requests can return under a guard, and checks can return unknown or early. A drift label reports the current check's decision, not proof of a readable native mismatch: phase 3 will refine unknown-property handling. Phase 1 preserves these decisions so the next live report identifies recurring repair causes.
+Reason counters explain call volume, not elapsed time or unique plate counts. Queued requests can merge, hook requests can return under a guard, and checks can return unknown or early. A drift label reports the current check's decision, not proof of a readable native mismatch: phase 3 will refine unknown-property handling. The periodic drift checks remain broad until phase 3; phase 2 separates event/hook work without redesigning that scan.
 
-The additional wrappers increase profiling overhead. Compare the simplified phase 1 build in matching scenes, with profiling both off and on. Do not treat timing changes across different instrumentation versions as an exact performance gain.
+The additional wrappers increase profiling overhead. Compare each build in matching scenes, with profiling both off and on. Do not treat timing changes across different instrumentation versions as an exact performance gain.
 
 ## Read the memory figures
 

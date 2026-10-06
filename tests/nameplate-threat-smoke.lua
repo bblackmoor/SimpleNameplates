@@ -99,6 +99,11 @@ scaled = secret
 Update(true)
 assert(rawequal(frame.SNPThreatText.argument, secret), "secret scaled percentage passed directly to display API")
 equal(frame.SNPThreatText.shown, true, "opaque scaled percentage displayed")
+local originalFontSetter = frame.SNPThreatText.SetFont
+frame.SNPThreatText.SetFont = function() error("value-only update must not configure fonts") end
+ns.NameplateThreat.UpdateThreatValue(frame, "hostile", {}, {showHealthBar = true})
+assert(rawequal(frame.SNPThreatText.argument, secret), "focused threat passes opaque percentage to the display sink")
+frame.SNPThreatText.SetFont = originalFontSetter
 scaled, raw = nil, 255
 Update(true)
 equal(frame.SNPThreatText.text, "", "raw 255 percentage is never used")

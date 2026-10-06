@@ -54,7 +54,7 @@ end
 local function RestoreNativePresentation(frame, assessment, context, removedUnit)
     local original = frame.SNPOriginalPresentation
     if not original then return end
-    local name = assessment.name
+    local name = frame.SNPOriginalName or assessment.name
     if name then
         for _, property in ipairs(nameProperties) do
             local values = original.name[property[2]]
@@ -87,6 +87,7 @@ local function Capture(frame, assessment, context)
     values.healthBar = ns.AccessibleBoolean(Cap.ReadRegion(assessment.healthBar, "IsShown", context))
     values.nameAlpha = ns.AccessibleNumber(Cap.ReadRegion(assessment.name, "GetAlpha", context))
     frame.SNPOriginalVisibility = values
+    frame.SNPOriginalName = assessment.name
     frame.SNPOriginalUnit = ns.AccessibleValue(frame.unit)
     frame.SNPOriginalHealthBar = assessment.healthBar
     frame.SNPOriginalHealthBarsContainer = frame.HealthBarsContainer
@@ -108,16 +109,18 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     local original = frame.SNPOriginalVisibility or {}
     for _, key in ipairs(visibilityKeys) do
         local region = frame[key]
+        if key == "name" then region = frame.SNPOriginalName end
         if key == "HealthBarsContainer" then region = frame.SNPOriginalHealthBarsContainer end
         if original[key] ~= nil then SetShownSafe(region, original[key], context) end
     end
     if original.healthBar ~= nil then SetShownSafe(frame.SNPOriginalHealthBar, original.healthBar, context) end
-    if original.nameAlpha ~= nil and assessment.name then assessment.name:SetAlpha(original.nameAlpha) end
+    if original.nameAlpha ~= nil and frame.SNPOriginalName then frame.SNPOriginalName:SetAlpha(original.nameAlpha) end
     RestoreNativePresentation(frame, assessment, context, removedUnit)
     frame.SNPNameStyle, frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = nil, nil, nil, nil
     frame.SNPOriginalVisibility, frame.SNPOriginalUnit, frame.SNPOriginalPresentation = nil, nil, nil
     frame.SNPOriginalHealthBar, frame.SNPOriginalHealthBarsContainer = nil, nil
     frame.SNPTitleVisibilityPending = nil
+    frame.SNPOriginalName, frame.SNPStyleSettings, frame.SNPStyledCastBar = nil, nil, nil
 end
 
 local function Request(frame, context, removedUnit)

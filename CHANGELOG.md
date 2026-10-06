@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.203
+
+* Implements performance phase 2 of 4: native name and health-color hooks use focused repairs; ordinary hooks no longer collect entity facts, resolve titles, or reapply bar artwork. Invalid cache/settings/context, changed regions and presentation structure retain safe full-styling fallbacks.
+* Coalesces classification, name/title, threat, cast and layout work per unit and across global requests. Preserves work queued by synchronous callbacks and blocked unit lookups; removal discards departed-unit work. TRP3 callbacks queue content updates.
+* Separates threat values from font setup and updates name space only when threat/native-label presence changes. Cast events update highlight/title visibility without unrelated classification or layout.
+* Preserves native restoration baselines for replaced name regions and native artwork callbacks during focused writes; adds focused-path timings, counters and regression coverage. Thin solid outlines and the 95% gradient endpoint are unchanged.
+
 ## 1.0.202
 
 * Implements performance phase 1 of 4: all styled names, titles, threat, native health and cast labels use thin solid outlines. Removes black glyph copies, their synchronization hooks, the threat health-threshold curve, and its health-event/reconciliation updates. Gradient geometry remains unchanged.
@@ -841,4 +848,3 @@
 * Fresh standalone release with no previous-version or legacy-settings handling.
 * Warns at login when another enabled third-party “plate” addon may conflict.
 * Uses `/snp` for settings and About commands.
-

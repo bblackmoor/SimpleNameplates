@@ -84,9 +84,32 @@ For ordinary plates, show available health bars only when the category's profile
 
 Startup setting compatibility is checked before enabling styling; it is a prerequisite, not another entity category. The [known presentation limits in the README](../../README.md#known-presentation-limits) and in-game About notes record entity types and world contexts where classification succeeds but no matching accessible frame is supplied. Individual character names are irrelevant to these limits. Missing frames must never be reported as a solved settings problem.
 
+## Focused runtime updates
+
+Full styling initializes a plate, applies settings/context changes, or recovers
+from changed regions and invalid cached presentation. Ordinary Blizzard name and
+health-color hooks use focused repairs after checking the current unit, readable
+GUID, original regions, settings and context revision. A readable native name
+change can refresh content/classification without bar artwork.
+
+Queued flags distinguish classification, name/title content, threat, cast state,
+layout and full styling. Flags merge per unit and with all-plate requests. The
+batch is detached before writing, so synchronous callbacks enqueue work for the
+next frame. Unavailable unit lookups retain work; removal discards the departed
+unit's flags. Classification updates priority color/content without artwork when
+the structural decision is unchanged; a category Health Bar or widget-mode
+transition falls back to full styling. Threat updates configure fonts only at
+setup/new label creation and update name layout when label presence changes.
+Cast events synchronize highlight/title visibility without classification or
+name/layout work. TRP3 callbacks request queued name content.
+
+Access assessments remain local to each operation, with existing conservative
+restriction checks. The 0.25-second drift scan remains broad; its optimization
+belongs to phase 3 of the [performance plan](performance-plan.md).
+
 ## Optional profiling
 
-`Profiler.lua` wraps full styling, fact collection/classification, NPC-title lookup, cached text repair, access assessments, bar artwork, name/title styling, health-text layout, drift checks, the per-frame callback and its reconciliation scan. The report also includes styling/queued-event reasons and reconciliation drift/repair counters. `/snp perf start`, `stop` and `report` control session-only collection; profiling is off by default and changes no refresh cadence or saved values. Rows are inclusive and overlap. See the [profiling guide](profiling.md) for command behavior and memory/timing limits.
+`Profiler.lua` wraps full styling, fact collection/classification, NPC-title lookup, cached text repair, focused name/health-color repairs, data/name-layout updates, access assessments, bar artwork, name/title styling, health-text layout, drift checks, the per-frame callback and its reconciliation scan. The report also includes full/focused styling and queued-event reasons and reconciliation drift/repair counters. `/snp perf start`, `stop` and `report` control session-only collection; profiling is off by default and changes no refresh cadence or saved values. Rows are inclusive and overlap. See the [profiling guide](profiling.md) for command behavior and memory/timing limits.
 
 ## Fixed health gradients
 

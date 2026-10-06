@@ -57,7 +57,7 @@ local function UpdateNameText(frame)
     end
 
     name:SetText(displayName)
-    return fullTitle, displayName
+    return fullTitle, displayName, unitName
 end
 
 local function EnsureFullTitleText(frame)
@@ -264,7 +264,8 @@ local function RestoreNameDisplay(frame, context)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then return end
     if frame.SNPInsideName then frame.SNPInsideName:Hide() end
-    if frame.name then frame.name:SetAlpha(1) end
+    local name = frame.SNPOriginalName or frame.name
+    if name then name:SetAlpha(1) end
 end
 
 local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
@@ -272,6 +273,7 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     local expected = frame.SNPNameStyle or {}
     frame.SNPNameStyle = expected
     expected.text = displayName
+    expected.name = frame.name
     expected.font = fontPath
     expected.size = size
     expected.flags = ns.FontFlags()
@@ -305,7 +307,7 @@ local function StyleName(frame, state, context, decision)
     end
     local name = frame and frame.name
     if not name then return end
-    local fullTitle, displayName = UpdateNameText(frame)
+    local fullTitle, displayName, unitName = UpdateNameText(frame)
     local baseSize = GetAppearanceSetting("nameSize") or 12
     local bar = GetHealthBar(frame, context)
     local nameOnly = decision.nameOnly
@@ -340,8 +342,51 @@ local function StyleName(frame, state, context, decision)
     StyleFullTitle(frame, state, fullTitle, baseSize, decision, context, nameR)
     CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
         nameOnly, inside, rightInset, bar, rightRegion)
+    frame.SNPNameStyle.unitName = unitName
     frame.SNPNameStyle.presentation = decision
     frame.SNPNameStyle.healthTextSignature = healthTextSignature
+end
+
+-- Focused native-name repair. No classification, profile lookup, bar artwork
+-- or geometry writes; the runtime refresh handles actual content changes.
+local function RepairNameOnly(frame, context)
+    if not CanAccessFrame(frame, context) or frame.SNPRestoring then return end
+    local expected = frame.SNPNameStyle
+    if expected.suppressed then SuppressText(frame, context); return end
+    local name = frame.name
+    name:SetText(expected.text)
+    name:SetFont(expected.font, expected.size, expected.flags)
+    name:SetShadowColor(0, 0, 0, 0)
+    name:SetShadowOffset(0, 0)
+    name:SetVertexColor(1, 1, 1, 1)
+    name:SetTextColor(expected.r, expected.g, expected.b, 1)
+    name:Show()
+    name:SetAlpha(expected.inside and 0 or 1)
+    if expected.inside then frame.SNPInsideName:Show() end
+end
+
+-- Threat/native-label presence changes the name's right edge. Reposition the
+-- existing labels without rereading names/TRP3 or reapplying their fonts.
+local function UpdateNameLayout(frame, context, decision)
+    if not CanAccessFrame(frame, context) or frame.SNPRestoring then return end
+    local expected = frame.SNPNameStyle
+    if not expected or expected.suppressed then return end
+    local bar = GetHealthBar(frame, context)
+    local inside, size = ApplyConfiguredBarHeight(frame, frame.SNPState, bar,
+        expected.size, context, decision)
+    local rightRegion, signature = ns.NameplateFrames.LayoutHealthText(frame, bar, context)
+    PositionName(frame, frame.name, bar, decision.nameOnly, inside, -3, rightRegion)
+    if inside and frame.SNPInsideName then
+        local name = frame.SNPInsideName
+        name:ClearAllPoints()
+        name:SetPoint("LEFT", bar, "LEFT", 3, -0.5)
+        name:SetPoint("RIGHT", rightRegion or bar, rightRegion and "LEFT" or "RIGHT", -3,
+            rightRegion and 0 or -0.5)
+    end
+    ConstrainFullTitle(frame, context)
+    CacheNameStyle(frame, expected.text, expected.font, size, expected.r, expected.g,
+        expected.b, decision.nameOnly, inside, -3, bar, rightRegion)
+    expected.healthTextSignature = signature
 end
 
 local function NearlyEqual(a, b)
@@ -359,6 +404,7 @@ local function CacheIsCurrent(frame, expected, context)
         if type(widgetsOnly) == "boolean" and widgetsOnly ~= (decision.suppressText == true) then return false, "widget mode" end
     end
     if expected.suppressed then return true end
+    if expected.name ~= frame.name then return false, "name region replaced" end
     if expected.flags ~= ns.FontFlags() then return false, "font flags setting" end
     if expected.font ~= NameFontPath(context) then return false, "font setting" end
     local bar = GetHealthBar(frame, context)
@@ -482,6 +528,9 @@ CachedNameHasDrifted = ns.Profiler.Wrap("Name drift check", CachedNameHasDrifted
 RepairCachedName = ns.Profiler.Wrap("Text repair", RepairCachedName)
 
 ns.NameplateText = {
+    NameFontPath = NameFontPath,
+    RepairNameOnly = RepairNameOnly,
+    UpdateNameLayout = ns.Profiler.Wrap("Name layout update", UpdateNameLayout),
     SyncFullTitleVisibility = SyncFullTitleVisibility,
     StyleName = StyleName,
     RestoreOriginalBarHeight = RestoreOriginalBarHeight,
@@ -490,4 +539,3 @@ ns.NameplateText = {
     CachedNameHasDrifted = CachedNameHasDrifted,
     RepairCachedName = RepairCachedName,
 }
-

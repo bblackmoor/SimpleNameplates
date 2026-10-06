@@ -1172,16 +1172,17 @@ ns.Profiler.Command("stop")
 ns.Profiler.Command("report")
 print = originalPrint
 for _, label in ipairs({"Full styling", "Classification", "NPC title lookup", "Text repair", "Runtime update", "Reconciliation",
-    "Access assessment", "Health text layout", "Bar artwork", "Name/title styling", "Name drift check"}) do
+    "Access assessment", "Health text layout", "Bar artwork", "Name/title styling", "Name drift check",
+    "Name hook repair", "Health-color repair", "Data update"}) do
     local found
     for _, line in ipairs(perfOutput) do if line:find(label .. ":", 1, true) then found = true end end
     assert(found, "runtime instrumentation missing: " .. label)
 end
-for _, expected in ipairs({"Styling requests: health-color hook =", "Styling requests: name hook =",
+for _, expected in ipairs({"Focused requests: health-color hook =", "Focused requests: name hook =",
     "Styling requests: reconciliation fallback =", "Styling outcomes: styled =",
     "Name drift: native name text =", "Name drift: health label layout =",
     "Reconciliation repairs: cached repair =", "Reconciliation repairs: full-style fallback =",
-    "Queued unit events: UNIT_NAME_UPDATE =", "Queued full refresh: PLAYER_TARGET_CHANGED ="}) do
+    "Queued unit events: UNIT_NAME_UPDATE =", "Queued global refresh: PLAYER_TARGET_CHANGED ="}) do
     local found
     for _, line in ipairs(perfOutput) do if line:find(expected, 1, true) then found = true end end
     assert(found, "runtime reason counter missing: " .. expected)
@@ -1636,5 +1637,239 @@ healthBar:SetWidth(73)
 assert(ns.NameplateText.CachedNameHasDrifted(plateFrame, ns.WorldContext.Get()))
 ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
 equal(title.width, 73, "native bar resizing updates title without full restyling")
+
+-- Phase 2: verify actual work counts and behavior across focused hooks/events.
+do
+local function CheckFocusedUpdates()
+    stylingEnabled, categoryMode, showBar, gradients = true, "active", true, false
+    appearance.namePlacement, appearance.nameSize, appearance.healthBarWidth = "INSIDE", 18, 120
+    unit = {player = true, faction = "Alliance", reaction = 5, names = {nameplate1 = "Native Focus"}}
+    local identity, rpName = "Player-Focus-1", "RP Focus"
+    UnitGUID = function() return identity end
+    UnitNameplateShowsWidgetsOnly = function() return false end
+    local rp = {GetDisplayInfo = function() return {roleplayingName = rpName, fullTitle = "Focus title"} end}
+    ns.TRP3, trp3Options = rp, {useRoleplayingName = true, showFullTitle = true}
+    threatEnabled, threatPercent = true, nil
+    plateFrame.unit = "nameplate1"
+    C_NamePlate.GetNamePlateForUnit = function() return plate end
+    C_NamePlate.GetNamePlates = function() return {plate} end
+    ns.RefreshAll()
+    events.scripts.OnUpdate(events, 0.25)
+    local function Measure(callback)
+        local lines, savedPrint = {}, print
+        print = function(line) lines[#lines + 1] = line end
+        ns.Profiler.Command("start")
+        local ok, err = pcall(callback)
+        ns.Profiler.Command("stop"); ns.Profiler.Command("report")
+        print = savedPrint
+        if not ok then error(err) end
+        return table.concat(lines, "\n")
+    end
+    local function NoWork(report, labels)
+        for _, label in ipairs(labels) do
+            assert(not report:find(label .. ":", 1, true), "unrelated work executed: " .. label)
+        end
+    end
+    local function Calls(report, label, count)
+        assert(report:find(label .. ": " .. count .. " calls;", 1, true), "unexpected calls: " .. label)
+    end
+    local report = Measure(function()
+        plateFrame.name:SetText("Native Focus")
+        plateFrame.name:SetTextColor(0, 0, 0)
+        hooks[2].callback(plateFrame)
+        plateFrame.healthBar:SetStatusBarColor(0, 0, 0)
+        hooks[1].callback(plateFrame)
+    end)
+    NoWork(report, {"Full styling", "Classification", "NPC title lookup", "Bar artwork", "Name/title styling", "Health text layout"})
+    Calls(report, "Name hook repair", 1); Calls(report, "Health-color repair", 1)
+    equal(plateFrame.name.text, "RP Focus", "name hook restores cached RP name")
+    equal(plateFrame.SNPInsideName.text, "RP Focus", "inside RP name retained")
+    equal(plateFrame.name.alpha, 0, "focused name hook keeps native name concealed")
+    equal(plateFrame.healthBar.barR, 1, "health hook repairs category color")
+
+    -- Native bar callbacks during focused writes must survive the style guard.
+    local focusedSetFont = plateFrame.name.SetFont
+    plateFrame.name.SetFont = function(self, ...)
+        focusedSetFont(self, ...)
+        for _, callback in ipairs(plateFrame.healthBar.scriptHooks.OnShow) do callback(plateFrame.healthBar) end
+        assert(plateFrame.SNPArtworkPending, "native artwork callback retained during focused write")
+    end
+    report = Measure(function() hooks[2].callback(plateFrame) end)
+    Calls(report, "Bar artwork", 1)
+    NoWork(report, {"Full styling", "Classification", "Name/title styling"})
+    assert(not plateFrame.SNPArtworkPending, "deferred native artwork callback serviced after focused write")
+    plateFrame.name.SetFont = focusedSetFont
+
+    -- Real native source changes refresh names/titles, without bar artwork.
+    unit.names.nameplate1, rpName = "Renamed Native", "Renamed RP"
+    report = Measure(function() hooks[2].callback(plateFrame) end)
+    NoWork(report, {"Full styling", "Bar artwork"})
+    equal(plateFrame.SNPInsideName.text, "Renamed RP", "changed source updates RP display")
+
+    -- Threat presence changes layout once; percent changes keep fonts/layout.
+    threatPercent = 55
+    report = Measure(function()
+        events.scripts.OnEvent(events, "UNIT_THREAT_LIST_UPDATE", "nameplate1")
+        events.scripts.OnEvent(events, "UNIT_THREAT_SITUATION_UPDATE", "nameplate1")
+        events.scripts.OnUpdate(events, 0.001)
+    end)
+    Calls(report, "Data update", 1); Calls(report, "Classification", 1); Calls(report, "Name layout update", 1)
+    NoWork(report, {"Full styling", "Bar artwork", "Name/title styling"})
+    equal(plateFrame.SNPThreatText.text, "55%", "threat event updates percentage")
+    equal(plateFrame.SNPInsideName.points[2][2], plateFrame.SNPThreatText, "threat presence reserves name space")
+    local fontWrites, setFont = 0, plateFrame.SNPThreatText.SetFont
+    plateFrame.SNPThreatText.SetFont = function(self, ...)
+        fontWrites = fontWrites + 1; return setFont(self, ...)
+    end
+    threatPercent = 65
+    report = Measure(function()
+        events.scripts.OnEvent(events, "UNIT_THREAT_LIST_UPDATE", "nameplate1")
+        events.scripts.OnUpdate(events, 0.001)
+    end)
+    equal(fontWrites, 0, "value-only threat update leaves font unchanged")
+    NoWork(report, {"Full styling", "Bar artwork", "Name/title styling", "Name layout update", "Health text layout"})
+    threatPercent = nil
+    events.scripts.OnEvent(events, "UNIT_THREAT_LIST_UPDATE", "nameplate1")
+    events.scripts.OnUpdate(events, 0.001)
+    equal(plateFrame.SNPInsideName.points[2][2], plateFrame.healthBar, "missing threat releases name space")
+    plateFrame.SNPThreatText.SetFont = setFont
+
+    -- A queued global classification refresh must not discard a unit name event.
+    rpName, threatPercent = "Merged RP", 75
+    report = Measure(function()
+        events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", "nameplate1")
+        events.scripts.OnEvent(events, "PLAYER_TARGET_CHANGED")
+        events.scripts.OnEvent(events, "UNIT_THREAT_LIST_UPDATE", "nameplate1")
+        events.scripts.OnUpdate(events, 0.001)
+    end)
+    Calls(report, "Data update", 1); Calls(report, "Classification", 1); Calls(report, "Name/title styling", 1)
+    NoWork(report, {"Full styling", "Bar artwork"})
+    equal(plateFrame.SNPInsideName.text, "Merged RP", "coalescing keeps name request")
+    equal(plateFrame.SNPThreatText.text, "75%", "coalescing keeps threat request")
+
+    unit.aggro = true
+    report = Measure(function()
+        events.scripts.OnEvent(events, "UNIT_THREAT_SITUATION_UPDATE", "nameplate1")
+        events.scripts.OnUpdate(events, 0.001)
+    end)
+    NoWork(report, {"Full styling", "Bar artwork"})
+    equal(plateFrame.SNPState, "attacking", "classification updates category without complete styling")
+    equal(plateFrame.SNPNameStyle.presentation, plateFrame.SNPPresentation, "focused update retains coherent cache")
+
+    report = Measure(function()
+        events.scripts.OnEvent(events, "UNIT_SPELLCAST_START", "nameplate1")
+        events.scripts.OnEvent(events, "UNIT_SPELLCAST_INTERRUPTIBLE", "nameplate1")
+        events.scripts.OnUpdate(events, 0.001)
+    end)
+    Calls(report, "Data update", 1)
+    NoWork(report, {"Full styling", "Classification", "NPC title lookup", "Bar artwork", "Name/title styling", "Health text layout"})
+
+    -- Requests queued by a synchronous font callback survive the detached batch.
+    local nativeSetFont, once = plateFrame.name.SetFont, true
+    plateFrame.name.SetFont = function(self, ...)
+        nativeSetFont(self, ...)
+        if once then once = false; events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", "nameplate1") end
+    end
+    events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", "nameplate1")
+    events.scripts.OnUpdate(events, 0.001)
+    report = Measure(function() events.scripts.OnUpdate(events, 0.001) end)
+    Calls(report, "Data update", 1); Calls(report, "Name/title styling", 1)
+    plateFrame.name.SetFont = nativeSetFont
+
+    -- Inaccessible unit lookups retain merged work until access returns.
+    C_NamePlate.GetNamePlateForUnit = function() return nil end
+    rpName = "Deferred RP"
+    events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", "nameplate1")
+    events.scripts.OnUpdate(events, 0.001)
+    events.scripts.OnEvent(events, "UNIT_SPELLCAST_STOP", "nameplate1")
+    events.scripts.OnUpdate(events, 0.001)
+    C_NamePlate.GetNamePlateForUnit = function() return plate end
+    report = Measure(function() events.scripts.OnUpdate(events, 0.25) end)
+    Calls(report, "Data update", 1)
+    equal(plateFrame.SNPInsideName.text, "Deferred RP", "pending updates keep name work")
+
+    -- Actual TRP3 callback uses the queued name path, not complete styling.
+    assert(loadfile("SimpleNameplates/TRP3.lua"))("SimpleNameplates", ns)
+    local refreshRP = ns.TRP3.Refresh
+    ns.TRP3, rpName = rp, "Callback RP"
+    report = Measure(function() refreshRP(); events.scripts.OnUpdate(events, 0.001) end)
+    Calls(report, "Data update", 1); Calls(report, "Name/title styling", 1)
+    NoWork(report, {"Full styling", "Classification", "Bar artwork"})
+    equal(plateFrame.SNPInsideName.text, "Callback RP", "TRP3 callback updates content")
+
+    -- Invalid settings and identity use safe full-styling fallbacks.
+    appearance.nameSize = 20
+    report = Measure(function() hooks[2].callback(plateFrame) end)
+    Calls(report, "Full styling", 1)
+    equal(plateFrame.SNPInsideName.size, 20, "settings invalidate focused cache")
+    identity = "Player-Recycled-Same-Token"
+    report = Measure(function() hooks[1].callback(plateFrame) end)
+    Calls(report, "Full styling", 1)
+    equal(plateFrame.SNPEntityFacts.guid, identity, "readable GUID detects same-token recycling")
+
+    -- Replaced native names restore the retired region and capture a new baseline.
+    local retired = plateFrame.name
+    plateFrame.name = Region()
+    plateFrame.name:SetFont("Replacement native", 11, "THICKOUTLINE")
+    plateFrame.name:SetAlpha(0.6)
+    report = Measure(function() hooks[2].callback(plateFrame) end)
+    Calls(report, "Full styling", 1)
+    equal(plateFrame.SNPOriginalName, plateFrame.name, "replacement name gets its own baseline")
+    assert(retired.alpha ~= 0, "retired native name no longer concealed")
+    ns.RestoreAll()
+    equal(plateFrame.name.font, "Replacement native", "replacement native font restored")
+    equal(plateFrame.name.flags, "THICKOUTLINE", "replacement native outline restored")
+    equal(plateFrame.name.alpha, 0.6, "replacement alpha preserved before first style")
+    ns.RefreshAll()
+
+    local failure = {}
+    plateFrame.name.SetFont = function() error(failure) end
+    local ok, err = pcall(hooks[2].callback, plateFrame)
+    assert(not ok and err == failure, "focused errors retain the original object")
+    assert(plateFrame.SNPApplyingStyle == nil, "failed focused write releases guard")
+    plateFrame.name.SetFont = nativeSetFont
+    hooks[2].callback(plateFrame)
+
+    -- Synchronous health-color callbacks cannot recurse through the repair.
+    local nativeColor, colorWrites = plateFrame.healthBar.SetStatusBarColor, 0
+    plateFrame.healthBar.SetStatusBarColor = function(self, ...)
+        colorWrites = colorWrites + 1
+        assert(colorWrites < 3, "focused color repair recursed")
+        nativeColor(self, ...)
+        hooks[1].callback(plateFrame)
+    end
+    report = Measure(function() hooks[1].callback(plateFrame) end)
+    equal(colorWrites, 1, "focused color reentry guard prevents duplicate writes")
+    assert(report:find("Focused outcomes: guarded = 1", 1, true))
+    plateFrame.healthBar.SetStatusBarColor = nativeColor
+
+    -- A category-specific bar change still requires a complete new layout.
+    local oldBarPreference = ns.GetHealthBarEnabled
+    ns.GetHealthBarEnabled = function(state) return state ~= "attacking" end
+    unit.aggro = false; ns.RefreshAll()
+    unit.aggro = true
+    report = Measure(function()
+        events.scripts.OnEvent(events, "UNIT_THREAT_SITUATION_UPDATE", "nameplate1")
+        events.scripts.OnUpdate(events, 0.001)
+    end)
+    Calls(report, "Full styling", 1)
+    equal(plateFrame.healthBar.shown, false, "changed category preference switches to name-only")
+    equal(plateFrame.SNPInsideName.shown, false, "structural change hides inside overlay")
+    ns.GetHealthBarEnabled = oldBarPreference
+    ns.RefreshAll()
+
+    -- Removal discards queued work before the same frame gains a new owner.
+    events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", "nameplate1")
+    events.scripts.OnEvent(events, "NAME_PLATE_UNIT_REMOVED", "nameplate1")
+    plateFrame.unit = "nameplate2"
+    rpName = "New owner"
+    events.scripts.OnEvent(events, "NAME_PLATE_UNIT_ADDED", "nameplate2")
+    report = Measure(function() events.scripts.OnUpdate(events, 0.001) end)
+    NoWork(report, {"Data update", "Full styling", "Name/title styling"})
+    equal(plateFrame.SNPOriginalUnit, "nameplate2", "recycled plate retains current assignment")
+    equal(plateFrame.SNPInsideName.text, "New owner", "removed-unit work cannot overwrite new name")
+end
+CheckFocusedUpdates()
+end
 
 print("Nameplates smoke: passed")

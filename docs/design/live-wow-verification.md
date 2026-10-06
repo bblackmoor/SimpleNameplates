@@ -128,3 +128,12 @@ Test Silvermoon Shared and Silvermoon Horde separately, including transitions be
 - [ ] Verify the report identifies both Blizzard repair hooks, queued events, name-drift reasons and cached/fallback repairs when exercised. Check fresh sessions clear counters and stopped reports remain frozen.
 
 See [the four-phase performance plan](performance-plan.md). Phase 1 is implemented; these native checks remain open.
+
+## Performance phase 2 acceptance
+
+- [ ] In similar crowded scenes, compare ordinary name/color hook timings and full-styling calls before/after phase 2, including profiling off/on. Capture all report rows; do not sum inclusive timings.
+- [ ] Change target/mouseover, attack a unit, change threat and start/stop casts/channels. Verify immediate category color, threat updates and name space, cast pulse, and title substitution, with unchanged outlines/gradient.
+- [ ] Confirm TRP3 callbacks update names/titles on the next runtime batch. Test category Health Bar switches and profile/font changes, including frames or regions replaced by Blizzard.
+- [ ] Verify recycling and disabling styling restore the correct native regions, including native-name alpha/font, and blocked updates recover when access returns.
+
+Phase 2 is implemented; native performance, rendering and secure acceptance remain pending.

@@ -38,7 +38,26 @@ Implemented in 1.0.202; live acceptance pending.
 
 ## Phase 2 — Separate styling from updates
 
-Pending. Use the new report to order the work within this phase.
+Implemented in 1.0.203; live acceptance pending.
+
+- Ordinary native-name hooks restore the cached name/font/color/visibility. A
+  readable native source-name change updates content and classification, without
+  artwork when presentation structure is unchanged.
+- Ordinary health-color hooks repair category bar color/visibility. Settings,
+  current token/readable GUID, original regions, cast-region identity and context
+  revision validate the focused cache; invalid state safely falls back to full
+  styling. Retired native name regions retain their own restoration baseline.
+- Per-unit work flags merge with all-plate work. A detached batch protects requests
+  queued by synchronous callbacks; inaccessible unit lookups retain their merged
+  work, and removal discards work for the departed unit.
+- Name events update content/classification, threat events update threat and
+  classification, cast events update highlight/title visibility, and target or
+  interaction events request focused all-plate work. TRP3 callbacks queue name
+  content. Threat/native-label presence can request a separate name-layout update.
+- Tests verify absent unrelated timing rows for ordinary hooks and cast/value
+  updates, queue preservation, structural fallback, recycling and error guards.
+
+Original phase 2 requirements:
 
 - Introduce focused name and health-color repair paths for Blizzard hooks.
 - Separate classification, name/title content, threat, cast state and layout

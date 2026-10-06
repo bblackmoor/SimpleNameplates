@@ -8,6 +8,7 @@ local GetStylingEnabled = ns.GetStylingEnabled
 local StateForUnit = ns.NameplateClassification.StateForUnit
 local GetUnitFrame, GetHealthBar = ns.NameplateFrames.GetUnitFrame, ns.NameplateFrames.GetHealthBar
 local ApplySimpleStyle = ns.NameplatePresentation.ApplySimpleStyle
+local UpdateData = ns.NameplatePresentation.UpdateData
 local RepairHealthColor, RepairName =
     ns.NameplatePresentation.RepairHealthColor, ns.NameplatePresentation.RepairName
 local Restoration = ns.NameplateRestoration
@@ -18,27 +19,48 @@ local pendingPlates = setmetatable({}, {__mode = "k"})
 local CachedNameHasDrifted, RepairCachedName =
     ns.NameplateText.CachedNameHasDrifted, ns.NameplateText.RepairCachedName
 
-local function RefreshUnit(unit, reason)
+local fullWork = {full = true}
+local workKeys = {"full", "classify", "name", "threat", "cast", "layout"}
+local function MergeWork(destination, source)
+    for _, key in ipairs(workKeys) do if source[key] then destination[key] = true end end
+    return destination
+end
+
+local function RefreshUnit(unit, reason, work)
     if removedUnits[unit] then return end
+    work = MergeWork(pendingUnits[unit] or {}, work or fullWork)
     local context = WorldContext.Get()
     local frame = GetUnitFrame(unit, context)
     if frame then
         knownFrames[unit], pendingUnits[unit] = frame, nil
-        ApplySimpleStyle(frame, context, reason or "unit refresh")
-    else pendingUnits[unit] = true end
+        if work.full then ApplySimpleStyle(frame, context, reason or "unit refresh")
+        else UpdateData(frame, context, work) end
+    else pendingUnits[unit] = work end
 end
 
-local function RefreshAll()
+local function RefreshAll(work, queuedUnits)
     if not GetStylingEnabled() then return end
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
+    work = work or fullWork
     local context = WorldContext.Get()
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
         local frame = GetFrameFromPlate(plate, context)
         if frame then
             local unit = ns.AccessibleValue(frame.unit)
-            if type(unit) == "string" then knownFrames[unit], removedUnits[unit] = frame, nil end
+            local currentWork = work
+            if type(unit) == "string" then
+                knownFrames[unit], removedUnits[unit] = frame, nil
+                local pending = pendingUnits[unit]
+                if queuedUnits and queuedUnits[unit] then
+                    pending = MergeWork(pending or {}, queuedUnits[unit])
+                    queuedUnits[unit] = nil
+                end
+                if pending then currentWork = MergeWork(pending, work) end
+                pendingUnits[unit] = nil
+            end
             pendingPlates[plate] = nil
-            ApplySimpleStyle(frame, context, "refresh all")
+            if currentWork.full then ApplySimpleStyle(frame, context, "refresh all")
+            else UpdateData(frame, context, currentWork) end
         else pendingPlates[plate] = true end
     end
 end
@@ -68,31 +90,44 @@ for _, event in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_REGEN_ENABLED","NA
 end
 
 local dirtyUnits = {}
-local refreshAllQueued = false
+local allWork
+local eventWork = {
+    UNIT_NAME_UPDATE = {classify = true, name = true},
+    UNIT_FACTION = {classify = true}, UNIT_FLAGS = {classify = true},
+    UNIT_TARGET = {classify = true, threat = true},
+    UNIT_THREAT_LIST_UPDATE = {classify = true, threat = true},
+    UNIT_THREAT_SITUATION_UPDATE = {classify = true, threat = true},
+    PLAYER_TARGET_CHANGED = {classify = true, threat = true},
+    PLAYER_SOFT_INTERACT_CHANGED = {classify = true, name = true},
+    UPDATE_MOUSEOVER_UNIT = {classify = true, name = true},
+}
+local castWork = {cast = true}
+for _, event in ipairs({"UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP",
+    "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_CHANNEL_START",
+    "UNIT_SPELLCAST_CHANNEL_STOP", "UNIT_SPELLCAST_EMPOWER_START", "UNIT_SPELLCAST_EMPOWER_STOP",
+    "UNIT_SPELLCAST_INTERRUPTIBLE", "UNIT_SPELLCAST_NOT_INTERRUPTIBLE"}) do eventWork[event] = castWork end
 
 local function QueueUnitRefresh(unit, event)
-    if unit and tostring(unit):match("^nameplate%d+$") then
-        dirtyUnits[unit] = true
+    unit = ns.AccessibleValue(unit)
+    if type(unit) == "string" and unit:match("^nameplate%d+$") then
+        dirtyUnits[unit] = MergeWork(dirtyUnits[unit] or {}, eventWork[event] or fullWork)
         ns.Profiler.Count("Queued unit events", event or "unspecified")
     end
 end
 
-local function QueueRefreshAll(reason)
-    ns.Profiler.Count("Queued full refresh", reason or "settings or callback")
-    refreshAllQueued = true
+local function QueueRefreshAll(reason, work)
+    ns.Profiler.Count("Queued global refresh", reason or "settings or callback")
+    allWork = MergeWork(allWork or {}, work or fullWork)
 end
 
 local function FlushQueuedRefreshes()
-    if refreshAllQueued then
-        refreshAllQueued = false
-        wipe(dirtyUnits)
-        RefreshAll()
-        return
-    end
-    for unit in pairs(dirtyUnits) do
-        dirtyUnits[unit] = nil
-        RefreshUnit(unit)
-    end
+    if not allWork and not next(dirtyUnits) then return end
+    -- Detach the batch before writes: synchronous native callbacks may enqueue
+    -- new work, which must survive for the next frame rather than being wiped.
+    local units, work = dirtyUnits, allWork
+    dirtyUnits, allWork = {}, nil
+    if work then RefreshAll(work, units) end
+    for unit, flags in pairs(units) do RefreshUnit(unit, "unit refresh", flags) end
 end
 
 local function HandlePlayerLogin()
@@ -194,9 +229,9 @@ local function HandleEvent(_, event, unit)
     if not GetStylingEnabled() then return end
     if HandleNameplateEvent(event, unit) then return end
     if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_SOFT_INTERACT_CHANGED"
-        or event == "UPDATE_MOUSEOVER_UNIT" then QueueRefreshAll(event); return end
-    if unit and tostring(unit):match("^nameplate%d+$") then QueueUnitRefresh(unit, event)
-    elseif event == "UNIT_THREAT_SITUATION_UPDATE" or event == "UNIT_THREAT_LIST_UPDATE" then QueueRefreshAll(event) end
+        or event == "UPDATE_MOUSEOVER_UNIT" then QueueRefreshAll(event, eventWork[event]); return end
+    if type(readableUnit) == "string" and readableUnit:match("^nameplate%d+$") then QueueUnitRefresh(readableUnit, event)
+    elseif event == "UNIT_THREAT_SITUATION_UPDATE" or event == "UNIT_THREAT_LIST_UPDATE" then QueueRefreshAll(event, eventWork[event]) end
 end
 
 events:SetScript("OnEvent", HandleEvent)
@@ -212,6 +247,10 @@ local function ReconcileNames(context)
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
         local frame = GetFrameFromPlate(plate, context)
+        if frame and frame.SNPArtworkPending then
+            local assessment = ns.PresentationCapabilities.InspectFrame(frame, context)
+            if assessment.canAccess then ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context) end
+        end
         if frame and frame.SNPTitleVisibilityPending then
             ns.NameplateText.SyncFullTitleVisibility(frame, context)
         end
@@ -253,7 +292,7 @@ local function RuntimeUpdate(_, elapsed)
             end
         end
         if GetStylingEnabled() then
-            for unit in pairs(pendingUnits) do RefreshUnit(unit, "pending unit") end
+            for unit, work in pairs(pendingUnits) do RefreshUnit(unit, "pending unit", work) end
         end
     end
     if not GetStylingEnabled() then return end
@@ -266,7 +305,7 @@ events:SetScript("OnUpdate", ns.Profiler.Wrap("Runtime update", RuntimeUpdate))
 
 
 ns.QueueNameplateRefresh = QueueRefreshAll
-ns.RefreshAll = RefreshAll
+ns.RefreshAll = function() RefreshAll() end
+ns.RefreshNameplateData = function(work) QueueRefreshAll("TRP3 callback", work) end
 ns.RestoreAll = RestoreAll
 ns.StateForUnit = StateForUnit
-

@@ -108,7 +108,8 @@ function TRP3.GetDisplayInfo(unitToken)
 end
 
 function TRP3.Refresh()
-    if ns.RefreshAll then ns.RefreshAll() end
+    if ns.RefreshNameplateData then ns.RefreshNameplateData({name = true})
+    elseif ns.RefreshAll then ns.RefreshAll() end
 end
 
 function TRP3.RegisterCallbacks()
@@ -129,3 +130,4 @@ function TRP3.RegisterCallbacks()
 end
 
 ns.TRP3 = TRP3
+

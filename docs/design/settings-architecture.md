@@ -40,7 +40,7 @@ Reset settings on Appearance restores profile appearance and threat display plus
 | `NameplateThreat.lua` | Secret-safe formatted threat percentage; blank when unavailable |
 | `CastHighlight.lua` | Interruptible-cast LibCustomGlow effects and visibility/icon lifecycle |
 | `NameplateRestoration.lua` | Original presentation restoration and deferred cleanup/retries |
-| `NameplatePresentation.lua` | Shared full styling path and Blizzard name/health repair entry points |
+| `NameplatePresentation.lua` | Full styling, focused native name/health-color repairs and data updates |
 | `Nameplates.lua` | Single event frame, secure hooks, refresh queues, retries and 0.25-second reconciliation |
 | `Diagnostics.lua` | Read-only context, targeted-unit and relevant-plate reporting |
 | `SettingsControls.lua` / `SettingsWidgets.lua` | Shared layout/reflow and the Details Framework widget adapter |
@@ -61,7 +61,7 @@ Classification determines priority color. Every ordinary accessible plate shows 
 
 WorldContext reads game APIs only on refresh events; its Get operation returns the cache. Presentation and repair paths assess frame access before inspecting or writing regions. Unknown and secret observations remain distinct from false. Threat percentages use the supported text formatter without addon arithmetic on secret values.
 
-Queued refreshes run from the per-frame callback. Restoration retries, pending unit/plate retries, cached-name drift scans and pending title-visibility repairs run on the 0.25-second reconciliation cadence. Reconciliation does not routinely reclassify every visible entity; unresolved cached repair can fall back to full styling. Profiling wraps these existing paths without changing their cadence.
+Queued refresh flags merge per unit and across all-plate requests, then run from a detached batch in the per-frame callback. Ordinary Blizzard name/color hooks use focused repair paths; invalid cached presentation falls back to full styling. Restoration retries, pending unit/plate retries, cached-name drift scans and pending title-visibility repairs run on the 0.25-second reconciliation cadence. Reconciliation does not routinely reclassify every visible entity; unresolved cached repair can fall back to full styling. Profiling wraps these existing paths without changing their cadence.
 
 ## Load order and CVar safety
 
