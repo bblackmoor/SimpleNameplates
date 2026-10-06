@@ -1,4 +1,4 @@
--- Simple Nameplates: Blizzard-driven interruptible-cast effects from LibCustomGlow.
+-- Simple Nameplates: Blizzard-driven interruptible-cast pulse highlight.
 local _, ns = ...
 local CanAccessFrame = ns.PresentationCapabilities.CanAccessFrame
 local GetContext = ns.WorldContext.Get
@@ -7,58 +7,45 @@ local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
 local EffectColor = ns.EffectColor
 local GetHealthBar, GetCastBar = ns.NameplateFrames.GetHealthBar, ns.NameplateFrames.GetCastBar
 
-local Glow = LibStub and LibStub("LibCustomGlow-1.0", true)
-local GLOW_KEY = "SNPInterruptible"
 local pendingFrames = setmetatable({}, {__mode = "k"})
 
+local function CreateBorder(parent, inset, thickness)
+    local top = parent:CreateTexture(nil, "OVERLAY", nil, 7)
+    top:SetPoint("TOPLEFT", parent, "TOPLEFT", inset, -inset)
+    top:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -inset, -inset)
+    top:SetHeight(thickness)
+
+    local bottom = parent:CreateTexture(nil, "OVERLAY", nil, 7)
+    bottom:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", inset, inset)
+    bottom:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -inset, inset)
+    bottom:SetHeight(thickness)
+
+    local left = parent:CreateTexture(nil, "OVERLAY", nil, 7)
+    left:SetPoint("TOPLEFT", parent, "TOPLEFT", inset, -inset)
+    left:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", inset, inset)
+    left:SetWidth(thickness)
+
+    local right = parent:CreateTexture(nil, "OVERLAY", nil, 7)
+    right:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -inset, -inset)
+    right:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -inset, inset)
+    right:SetWidth(thickness)
+
+    return {top, bottom, left, right}
+end
+
 local function StopRenderer(highlight)
-    local host, style = highlight.glowHost, highlight.glowStyle
-    if host then host:Hide() end
-    -- Hide first so Action Button Glow stops immediately rather than fading
-    -- over a newly selected effect or a finished cast.
-    if Glow and host then
-        if style == "PIXEL" then Glow.PixelGlow_Stop(host, GLOW_KEY)
-        elseif style == "AUTOCAST" then Glow.AutoCastGlow_Stop(host, GLOW_KEY)
-        elseif style == "BUTTON" then Glow.ButtonGlow_Stop(host)
-        elseif style == "PROC" then Glow.ProcGlow_Stop(host, GLOW_KEY) end
-    end
-    highlight.glowStyle, highlight.glowColor = nil, nil
-    highlight.glowWidth, highlight.glowHeight = nil, nil
+    if highlight.pulse then highlight.pulse:Stop() end
+    if highlight.frame then highlight.frame:SetAlpha(1) end
+    for _, edge in ipairs(highlight.border or {}) do edge:Hide() end
 end
 
 local function ApplyRenderer(highlight)
-    if not highlight.glowHost then return end
-    local style = ns.GetInterruptibleCastStyle()
-    if not Glow or style == "NONE" then StopRenderer(highlight); return end
-    local ok, w, h = pcall(highlight.castBar.GetSize, highlight.castBar)
-    local width, height
-    if ok then width, height = ns.AccessibleNumber(w), ns.AccessibleNumber(h) end
-    if not width or not height or width <= 0 or height <= 0 then StopRenderer(highlight); return end
     local r, g, b = EffectColor("interruptible")
-    local color = highlight.glowColor
-    if highlight.glowStyle == style and color and color[1] == r and color[2] == g and color[3] == b
-        and highlight.glowWidth == width and highlight.glowHeight == height then return end
-    StopRenderer(highlight)
-    local host = highlight.glowHost
-    -- All library effects perform geometry arithmetic. Use explicit readable
-    -- dimensions on our own host; never pass secret native sizes to the library.
-    host:SetSize(width + 6, height + 6)
-    host:Show()
-    local rgba = {r, g, b, 1}
-    if style == "PIXEL" then
-        Glow.PixelGlow_Start(host, rgba, 12, 0.125, 8, 2, 0, 0, false, GLOW_KEY)
-    elseif style == "AUTOCAST" then
-        Glow.AutoCastGlow_Start(host, rgba, 4, 0.125, 1, 0, 0, GLOW_KEY)
-    elseif style == "BUTTON" then
-        Glow.ButtonGlow_Start(host, rgba)
-    elseif style == "PROC" then
-        Glow.ProcGlow_Start(host, {color = rgba, key = GLOW_KEY})
-    else
-        host:Hide()
-        return
+    for _, edge in ipairs(highlight.border) do
+        edge:SetColorTexture(r, g, b, 1)
+        edge:Show()
     end
-    highlight.glowStyle, highlight.glowColor = style, {r, g, b}
-    highlight.glowWidth, highlight.glowHeight = width, height
+    if not highlight.pulse:IsPlaying() then highlight.pulse:Play() end
 end
 
 local function SetInterruptibleHighlightShown(overlay, shown)
@@ -127,15 +114,28 @@ local function EnsureInterruptibleHighlight(frame, context)
     overlay:SetFrameLevel(highestFrameLevel + 20)
     overlay:Hide()
 
-    local highlight = {castBar = castBar, owner = frame, frame = overlay}
-    local glowHost = CreateFrame("Frame", nil, overlay)
-    glowHost:SetPoint("TOPLEFT", castBar, "TOPLEFT", -3, 3)
-    glowHost:SetFrameLevel(overlay:GetFrameLevel())
-    highlight.glowHost = glowHost
+    local highlight = {
+        castBar = castBar,
+        owner = frame,
+        frame = overlay,
+        border = CreateBorder(overlay, 2, 4),
+    }
+    local pulse = overlay:CreateAnimationGroup()
+    local fadeOut = pulse:CreateAnimation("Alpha")
+    fadeOut:SetFromAlpha(1)
+    fadeOut:SetToAlpha(0.35)
+    fadeOut:SetDuration(0.55)
+    fadeOut:SetOrder(1)
+    local fadeIn = pulse:CreateAnimation("Alpha")
+    fadeIn:SetFromAlpha(0.35)
+    fadeIn:SetToAlpha(1)
+    fadeIn:SetDuration(0.55)
+    fadeIn:SetOrder(2)
+    pulse:SetLooping("REPEAT")
+    highlight.pulse = pulse
+
     overlay:SetScript("OnShow", function() ApplyRenderer(highlight) end)
-    overlay:SetScript("OnHide", function()
-        StopRenderer(highlight)
-    end)
+    overlay:SetScript("OnHide", function() StopRenderer(highlight) end)
     frame.SNPInterruptibleHighlight = highlight
 
     -- Icon updates notify us of cast/interruptibility changes in every native
