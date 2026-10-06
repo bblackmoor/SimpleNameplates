@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.194
+
+* Removes the four LibCustomGlow interruptible-cast effects and their selector. Interruptible casts now use the addon-owned pulsing border, which is anchored to Blizzard's cast bar without reading restricted width or height.
+* Replaces the effect selector with a per-profile Active switch on Colors. Existing profiles with any retired effect selected remain enabled; None remains inactive. Reset all colors disables the highlight.
+* Stops loading LibCustomGlow for Simple Nameplates and updates the documentation for the single reliable cast-highlight path.
+
 ## 1.0.193
 
 * Hides Blizzard’s bright right-edge absorb overflow glow on styled health bars, supporting native bar-owned and legacy frame-owned regions. Preserves absorb fill, healing predictions, and threat/gradient behavior; restores the original glow alpha when styling ends.
