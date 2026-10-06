@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.190
+
+* Constrains NPC subtitles and TRP3 long titles to the configured health-bar width even when the bar is hidden. Native single-line font layout truncates overflow; the source text is retained so widening restores more text. Cached repair follows width changes.
+* Defaults health-bar width to 120%, including new profiles and Appearance reset. Existing saved width choices remain unchanged.
+
 ## 1.0.189
 
 * Matches the requested Default palette: red #FF0000, orange #FF6600, yellow #FFCC00, blue #0000FF, green #00FF00, grey #999999. Health bars default On except NPC - Background; background-name dimming defaults On. Existing saved choices are preserved; missing/invalid values and Colors reset use the new defaults. High Contrast retains its separate palette.

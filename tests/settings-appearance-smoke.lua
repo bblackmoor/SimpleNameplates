@@ -153,7 +153,7 @@ for _, object in ipairs(ui.objects) do
     if object.MyObject and object.MyObject.type == "button" and object.text:GetText() == "Reset settings" then reset = object end
 end
 Click(reset)
-assert(size:GetValue() == 18 and width:GetValue() == 100 and ns.GetThreatEnabled())
+assert(size:GetValue() == 18 and width:GetValue() == 120 and ns.GetThreatEnabled())
 assert(ns.GetAppearanceSetting("useSlugRendering") and slug.MyObject:GetValue(), "Appearance reset enables Slug")
 assert(ns.GetAppearanceSetting("nameFont") == "FRIZQT" and ns.GetAppearanceSetting("threatFont") == "ARIALN")
 assert(ns.GetAppearanceSetting("namePlacement") == "ABOVE" and ns.GetAppearanceSetting("matchSanctuaryFont"))

@@ -44,7 +44,7 @@ end
 
 -- Width defaults, clamps, survives profile copying/reload, and resets.
 local widthNS = fresh()
-equal(widthNS.GetAppearanceSetting("healthBarWidth"), 100, "native width default")
+equal(widthNS.GetAppearanceSetting("healthBarWidth"), 120, "wider bar default")
 widthNS.SetAppearanceSetting("healthBarWidth", 300)
 equal(widthNS.GetAppearanceSetting("healthBarWidth"), 150, "width upper clamp")
 widthNS.SetAppearanceSetting("healthBarWidth", 10)
@@ -57,7 +57,7 @@ widthNS.CopyActiveProfile("Wider bars")
 widthNS = loadCore()
 equal(widthNS.GetAppearanceSetting("healthBarWidth"), 125, "copied width survives reload")
 widthNS.ResetAppearance()
-equal(widthNS.GetAppearanceSetting("healthBarWidth"), 100, "Appearance reset restores native width")
+equal(widthNS.GetAppearanceSetting("healthBarWidth"), 120, "Appearance reset restores wider default")
 
 -- Cast renderer is profile-specific, survives reload, and resets with Colors.
 local effectNS = fresh()

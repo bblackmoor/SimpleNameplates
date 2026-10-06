@@ -101,6 +101,24 @@ local function InstallTitleCastHooks(frame, cast)
     cast.SNPTitleHookOwner = frame
 end
 
+local function FullTitleWidth(frame, context)
+    local cap = ns.PresentationCapabilities
+    for _, region in ipairs({GetHealthBar(frame, context) or false, frame.HealthBarsContainer or false, frame}) do
+        if region and cap.ObjectStatus(region, context) == "accessible" then
+            local width = AccessibleNumber(cap.ReadRegion(region, "GetWidth", context))
+            if width and width > 0 then return width end
+        end
+    end
+    -- Unknown geometry must not leave an unlimited title. Reconciliation retries.
+    return 1
+end
+
+local function ConstrainFullTitle(frame, context)
+    if frame.SNPFullTitleText then
+        frame.SNPFullTitleText:SetWidth(FullTitleWidth(frame, context))
+    end
+end
+
 local function StyleFullTitle(frame, state, text, baseNameSize, decision, context)
     local fullTitle = frame.SNPFullTitleText
     local bar = GetHealthBar(frame, context)
@@ -113,6 +131,9 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
     fullTitle = EnsureFullTitleText(frame)
     local titleSize = math.max(6, baseNameSize - 2)
     fullTitle:SetFont(NameFontPath(context), titleSize, ns.FontFlags(true))
+    -- Native single-line layout truncates overflow using the actual font.
+    -- Keep the source string intact so widening the bar restores more text.
+    ConstrainFullTitle(frame, context)
     fullTitle:SetText(text)
     fullTitle:SetShadowColor(0, 0, 0, 0)
     fullTitle:SetShadowOffset(0, 0)
@@ -397,6 +418,9 @@ local function CachedNameHasDrifted(frame, context)
     if expected.barWidth and not NearlyEqual(expected.bar:GetWidth(), expected.barWidth) then return true end
     if expected.containerWidth and frame.HealthBarsContainer
         and not NearlyEqual(frame.HealthBarsContainer:GetWidth(), expected.containerWidth) then return true end
+    if frame.SNPFullTitleAvailable and frame.SNPFullTitleText
+        and not NearlyEqual(ns.PresentationCapabilities.ReadRegion(frame.SNPFullTitleText, "GetWidth", context),
+            FullTitleWidth(frame, context)) then return true end
     if expected.inside then
         local insideName = frame.SNPInsideName
         if not insideName or AccessibleBoolean(insideName:IsShown()) ~= true or not NearlyEqual(name:GetAlpha(), 0) then
@@ -443,6 +467,7 @@ local function RepairCachedName(frame, context)
     end
     if expected.barWidth then expected.bar:SetWidth(expected.barWidth) end
     if expected.containerWidth and frame.HealthBarsContainer then frame.HealthBarsContainer:SetWidth(expected.containerWidth) end
+    ConstrainFullTitle(frame, context)
     PositionName(frame, name, expected.bar, expected.nameOnly, expected.inside,
         expected.rightInset or -3, expected.rightRegion)
     name:Show()

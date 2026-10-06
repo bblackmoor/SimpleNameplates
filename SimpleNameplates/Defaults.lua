@@ -60,7 +60,7 @@ local DEFAULT_APPEARANCE = {
     nameSize = 18,
     threatFont = "ARIALN",
     namePlacement = "ABOVE",
-    healthBarWidth = 100,
+    healthBarWidth = 120,
 }
 local MIN_NAME_SIZE = 8
 local MAX_NAME_SIZE = 36

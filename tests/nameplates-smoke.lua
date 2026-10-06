@@ -190,8 +190,10 @@ local function Region()
     function region:CreateFontString() return Region() end
     function region:SetShadowColor(...) self.shadow = {...} end
     function region:SetShadowOffset(x,y) self.shadowX, self.shadowY = x,y end
+    function region:SetWordWrap(value) self.wordWrap = value end
+    function region:SetMaxLines(value) self.maxLines = value end
     for _, method in ipairs({ "SetJustifyH", "SetJustifyV",
-        "SetWordWrap", "SetMaxLines", "SetDrawLayer" }) do region[method] = function() end end
+        "SetDrawLayer" }) do region[method] = function() end end
     return region
 end
 local plateFrame = Region()
@@ -1561,6 +1563,35 @@ end
 showBar = true; unit = {reaction = 5, interactable = true}
 ns.RefreshAll()
 equal(plateFrame.name.r, 1, "interactive NPC name stays white")
+
+-- Native one-line title layout is constrained even when the bar is hidden.
+ns.TRP3 = {GetDisplayInfo = function() return {fullTitle = "A very long roleplaying title with wide glyphs WWW and accented é characters"} end}
+trp3Options.showFullTitle = true
+for _, enabled in ipairs({true, false}) do
+    showBar = enabled
+    appearance.healthBarWidth = 100
+    ns.RefreshAll()
+    local title = plateFrame.SNPFullTitleText
+    local healthBar = ns.NameplateFrames.GetHealthBar(plateFrame)
+    equal(title.width, healthBar.width, "title uses bar width with either visibility")
+    equal(title.wordWrap, false, "title cannot wrap")
+    equal(title.maxLines, 1, "title remains single line")
+    local source = title.text
+    appearance.healthBarWidth = 120; ns.RefreshAll()
+    equal(title.width, healthBar.width, "wider bar updates title constraint")
+    equal(title.text, source, "constraint retains source title for native truncation")
+    title:SetWidth(999)
+    assert(ns.NameplateText.CachedNameHasDrifted(plateFrame, ns.WorldContext.Get()))
+    ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
+    equal(title.width, healthBar.width, "cached repair restores title width")
+end
+appearance.healthBarWidth = 100; ns.RefreshAll()
+local title = plateFrame.SNPFullTitleText
+local healthBar = ns.NameplateFrames.GetHealthBar(plateFrame)
+healthBar:SetWidth(73)
+assert(ns.NameplateText.CachedNameHasDrifted(plateFrame, ns.WorldContext.Get()))
+ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
+equal(title.width, 73, "native bar resizing updates title without full restyling")
 
 print("Nameplates smoke: passed")
 
