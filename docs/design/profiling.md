@@ -29,14 +29,14 @@ Rows appear in descending total elapsed time, with call count, total millisecond
 | Full styling | Complete presentation setup used by initialization, settings/context refreshes, changed structure and invalid-cache fallbacks |
 | Classification | Entity-fact collection and priority classification together |
 | NPC title lookup | Title resolution, including cache and tooltip paths when used |
-| Text repair | Cached-name repair attempts, including attempts that return without repairing |
+| Text repair | Selective cached-name repair attempts; direct calls may return without writing |
 | Runtime update | The per-frame callback: context access, queued refreshes and periodic restoration, deferred cast-highlight retry and reconciliation work |
 | Reconciliation | The visible-plate scan for pending title visibility and cached-name drift (including visibility and readable text), normally every 0.25 seconds while styling is enabled |
-| Access assessment | Complete frame/region capability assessment, including repeated assessments within one operation |
+| Access assessment | Complete frame/region capability assessment; routine reconciliation shares one across lookup, observation and repair, with renewal after invalidation |
 | Bar artwork | Guarded application of flat fills, gradient, native text outlines and decorative edge removal |
 | Health text layout | Native health-label/threat anchoring; can run multiple times within styling |
 | Name/title styling | Name content, fonts, dimensions, layout and full-title presentation |
-| Name drift check | Existing cached presentation and property checks, including checks with no drift |
+| Name drift check | Cached presentation validation and readable property observations, collecting selective differences or returning no drift |
 | Name hook repair | Focused native-name repair; includes content updates or full fallback if needed |
 | Health-color repair | Focused category bar-color/visibility repair; includes full fallback if needed |
 | Data update | Coalesced classification, name/title, threat, cast and layout work for one current plate |
@@ -60,10 +60,10 @@ After the timing rows, the same chat report prints one short row for each observ
 | Queued global refresh | Requests affecting all visible plates before coalescing: context/settings/CVar/restoration can require full styling, while target/mouseover/TRP3 callbacks request focused work |
 | Focused requests | Name hook, health-color hook or data-update entries, including guarded/inaccessible attempts |
 | Focused outcomes | Updated, guarded, inaccessible, native/restored, restoration pending, failed, or invalid-cache/presentation-change fallback |
-| Name drift | First failing existing check for a plate in each reconciliation pass; multiple simultaneous mismatches are not enumerated |
+| Name drift | First observed readable mismatch or structural invalidation for a plate in each pass; simultaneous mismatches repair together but are not enumerated |
 | Reconciliation repairs | Successful cached repair versus a full-style fallback request; a fallback request does not establish that full styling succeeded |
 
-Reason counters explain call volume, not elapsed time or unique plate counts. Queued requests can merge, hook requests can return under a guard, and checks can return unknown or early. A drift label reports the current check's decision, not proof of a readable native mismatch: phase 3 will refine unknown-property handling. The periodic drift checks remain broad until phase 3; phase 2 separates event/hook work without redesigning that scan.
+Reason counters explain call volume, not elapsed time or unique plate counts. Queued requests can merge, hook requests can return under a guard, and checks can return unknown or early. A drift label identifies a readable mismatch or structural cache invalidation. Unknown property values do not count as drift and do not trigger repair writes; they retry with backoff to at most sixteen passes. Independent readable properties continue to be checked. Native label-chain changes use selective layout repair, while replaced regions or invalid presentation require full styling. Unchanged reconciliation plates perform no repair writes; the 0.25-second cadence remains unchanged.
 
 The additional wrappers increase profiling overhead. Compare each build in matching scenes, with profiling both off and on. Do not treat timing changes across different instrumentation versions as an exact performance gain.
 

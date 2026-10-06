@@ -8,16 +8,17 @@ end
 
 local function GetFrameFromPlate(plate, context)
     local frame = Capabilities.SafeField(plate, "UnitFrame", context)
-    return Capabilities.InspectFrame(frame, context).frame
+    local assessment = Capabilities.InspectFrame(frame, context)
+    return assessment.frame, assessment
 end
 
-local function GetHealthBar(frame, context)
-    local assessment = Capabilities.InspectFrame(frame, context)
+local function GetHealthBar(frame, context, assessment)
+    assessment = assessment or Capabilities.InspectFrame(frame, context)
     if assessment.canAccess then return assessment.healthBar end
 end
 
-local function GetCastBar(frame, context)
-    local assessment = Capabilities.InspectFrame(frame, context)
+local function GetCastBar(frame, context, assessment)
+    assessment = assessment or Capabilities.InspectFrame(frame, context)
     if assessment.canAccess then return assessment.castBar end
 end
 
@@ -183,11 +184,13 @@ end
 
 local function GetHealthTextInsetRegion(frame, bar, context)
     local labels, threat, signature = HealthTextLayoutState(frame, bar, context)
-    return labels[#labels] or threat, signature
+    return labels[#labels] or threat, signature, labels, threat
 end
 
-local function LayoutHealthText(frame, bar, context)
-    local labels, threat = HealthTextLayoutState(frame, bar, context)
+local function LayoutHealthText(frame, bar, context, observed)
+    local labels, threat, signature
+    if observed then labels, threat, signature = observed.labels, observed.threat, observed.signature
+    else labels, threat, signature = HealthTextLayoutState(frame, bar, context) end
     local previous = threat
     if threat then
         threat:ClearAllPoints()
@@ -198,7 +201,7 @@ local function LayoutHealthText(frame, bar, context)
         region:SetPoint("RIGHT", previous or bar, previous and "LEFT" or "RIGHT", -3, previous and 0 or -0.5)
         previous = region
     end
-    return GetHealthTextInsetRegion(frame, bar, context)
+    return labels[#labels] or threat, signature
 end
 
 local function FlattenBar(frame, bar, backgroundKey, context)

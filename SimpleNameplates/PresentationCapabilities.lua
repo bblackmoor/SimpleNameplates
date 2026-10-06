@@ -124,10 +124,30 @@ local function InspectFrame(frame, context)
         return result
     end
     result.frame, result.canAccess = frame, true
+    result.contextRevision = context.revision
+    result.healthContainer, result.castContainer = container, castContainer
     result.hasName, result.hasHealthBar, result.hasCastBar =
         result.name ~= nil, result.healthBar ~= nil, result.castBar ~= nil
     -- Presence/access is assessed; it is not a guarantee of every UI operation.
     return result
+end
+
+-- Identity validation for a synchronous operation's existing assessment.
+-- This is not a persistent permission cache; invalidation requires InspectFrame.
+local function AssessmentIsCurrent(frame, assessment, context)
+    if not assessment or not assessment.canAccess or assessment.frame ~= frame
+        or assessment.contextRevision ~= context.revision then return false end
+    for _, region in pairs({frame, assessment.name, assessment.healthBar, assessment.castBar,
+        assessment.healthContainer, assessment.castContainer}) do
+        if ObjectStatus(region, context) ~= "accessible" then return false end
+    end
+    local container = SafeField(frame, "HealthBarsContainer", context)
+    local castContainer = SafeField(frame, "CastBarsContainer", context)
+    return container == assessment.healthContainer and castContainer == assessment.castContainer
+        and SafeField(frame, "name", context) == assessment.name
+        and (SafeField(frame, "healthBar", context) or SafeField(container, "healthBar", context)) == assessment.healthBar
+        and (SafeField(frame, "castBar", context) or SafeField(frame, "CastBar", context)
+            or SafeField(castContainer, "castBar", context)) == assessment.castBar
 end
 
 local function InspectUnit(unit, context)
@@ -160,6 +180,6 @@ InspectFrame = ns.Profiler.Wrap("Access assessment", InspectFrame)
 ns.PresentationCapabilities = {
     InspectFrame = InspectFrame, InspectUnit = InspectUnit,
     CanAccessFrame = CanAccessFrame, ObjectStatus = ObjectStatus,
+    AssessmentIsCurrent = AssessmentIsCurrent,
     SafeField = SafeField, ReadRegion = ReadRegion,
 }
-

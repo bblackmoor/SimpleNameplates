@@ -84,6 +84,10 @@ local function ApplyStyle(frame, context)
     local previous = frame.SNPPresentation
     if previous and (previous.suppressText == true) ~= (decision.suppressText == true) then
         if not Restore.Request(frame, context) then return end
+        assessment = Cap.InspectFrame(frame, context)
+        if not assessment.canAccess then return end
+        decision = Resolve(context, facts, state, assessment, ns.GetStylingEnabled(), ns.GetHealthBarEnabled(state))
+        if decision.action ~= "style" then return end
     end
     Restore.Cancel(frame)
     Restore.Capture(frame, assessment, context)
@@ -91,7 +95,7 @@ local function ApplyStyle(frame, context)
     frame.SNPStyledCastBar = assessment.castBar
     frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = state, decision, facts
     if decision.suppressText then
-        Text.StyleName(frame, state, context, decision)
+        Text.StyleName(frame, state, context, decision, assessment)
         return "text suppressed"
     end
     ns.NameplateFrames.ApplyBarWidth(frame, assessment, context)
@@ -99,7 +103,7 @@ local function ApplyStyle(frame, context)
     ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
     ns.NameplateThreat.UpdateThreatText(frame, state, context, decision)
     ns.NameplateFrames.LayoutHealthText(frame, assessment.healthBar, context)
-    Text.StyleName(frame, state, context, decision)
+    Text.StyleName(frame, state, context, decision, assessment)
     if decision.showHealthBar then assessment.healthBar:SetStatusBarColor(ns.PriorityColorForState(decision.colorState)) end
     ns.CastHighlight.UpdateInterruptibleHighlight(frame, context, decision)
     return "styled"
@@ -216,13 +220,13 @@ local function PerformDataUpdate(frame, assessment, context, work)
     end
     if colorChanged then RepairBarColor(frame, assessment, context) end
     if nameChanged then
-        Text.StyleName(frame, state, context, decision)
+        Text.StyleName(frame, state, context, decision, assessment)
     elseif work.layout or (work.threat and LayoutHasChanged(frame, context)) then
-        Text.UpdateNameLayout(frame, context, decision)
+        Text.UpdateNameLayout(frame, context, decision, assessment)
     end
     if work.cast then
         ns.CastHighlight.UpdateInterruptibleHighlight(frame, context, decision)
-        Text.SyncFullTitleVisibility(frame, context)
+        Text.SyncFullTitleVisibility(frame, context, assessment)
     end
 end
 
@@ -234,9 +238,9 @@ local function PerformNameRepair(frame, assessment, context)
         and source ~= previous then
         return PerformDataUpdate(frame, assessment, context, {classify = true, name = true})
     end
-    Text.RepairNameOnly(frame, context)
+    Text.RepairNameOnly(frame, context, assessment)
     RepairBarVisibility(frame, assessment, context)
-    if LayoutHasChanged(frame, context) then Text.UpdateNameLayout(frame, context, frame.SNPPresentation) end
+    if LayoutHasChanged(frame, context) then Text.UpdateNameLayout(frame, context, frame.SNPPresentation, assessment) end
 end
 
 local function FocusedUpdate(frame, context, work, kind)

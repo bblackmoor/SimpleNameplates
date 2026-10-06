@@ -213,6 +213,8 @@ local function Region()
     end
     function region:SetShadowColor(...) self.shadow = {...} end
     function region:SetShadowOffset(x,y) self.shadowX, self.shadowY = x,y end
+    function region:GetShadowColor() return table.unpack(self.shadow or {0, 0, 0, 0}) end
+    function region:GetShadowOffset() return self.shadowX or 0, self.shadowY or 0 end
     function region:SetWordWrap(value) self.wordWrap = value end
     function region:SetMaxLines(value) self.maxLines = value end
     for _, method in ipairs({ "SetJustifyH", "SetJustifyV",
@@ -505,7 +507,9 @@ equal(plateFrame.SNPPresentation.nameOnly, true, "missing bar uses name color")
 equal(plateFrame.name.g, 0, "missing-bar priority color")
 equal(plateFrame.SNPFullTitleText.shown, true, "missing bar allows long title")
 plateFrame.name:ClearAllPoints()
-equal(ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get()), true, "missing-bar cached repair succeeds")
+equal(ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get()), true, "unchanged readable properties need no repair")
+equal(#plateFrame.name.points, 0, "reconciliation does not rewrite unobserved native anchors")
+ns.NameplateText.UpdateNameLayout(plateFrame, ns.WorldContext.Get(), plateFrame.SNPPresentation)
 equal(plateFrame.name.points[1][2], plateFrame, "missing-bar repair uses the owning frame")
 equal(plateFrame.name.points[1][1], "BOTTOM", "missing-bar repair restores floating placement")
 plateFrame.healthBar = savedBar
@@ -1159,9 +1163,10 @@ hooks[1].callback(plateFrame)
 hooks[2].callback(plateFrame)
 plateFrame.name.text = "Drifted"
 events.scripts.OnUpdate(events, 0.25)
--- An invalid layout cache forces the reconciliation fallback, preserving the
--- distinction between a successful cached repair and a full styling request.
+-- Label-chain drift needs only layout; structural invalidation still falls back.
 plateFrame.SNPNameStyle.healthTextSignature = "stale"
+events.scripts.OnUpdate(events, 0.25)
+plateFrame.SNPNameStyle.presentation = nil
 events.scripts.OnUpdate(events, 0.25)
 ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
 events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", "nameplate1")
@@ -1870,6 +1875,195 @@ local function CheckFocusedUpdates()
     equal(plateFrame.SNPInsideName.text, "New owner", "removed-unit work cannot overwrite new name")
 end
 CheckFocusedUpdates()
+end
+
+-- Phase 3: assert actual reads/writes, not just the repair's return value.
+do
+local function CheckSelectiveReconciliation()
+    stylingEnabled, categoryMode, showBar, gradients = true, "active", true, false
+    appearance.namePlacement, appearance.nameSize, appearance.healthBarWidth = "INSIDE", 18, 120
+    threatEnabled, threatPercent = false, nil
+    unit = {player = true, faction = "Alliance", reaction = 5, names = {nameplate1 = "Selective Native"}}
+    plateFrame.unit = "nameplate1"
+    UnitGUID = function() return "Player-Selective" end
+    ns.TRP3 = {GetDisplayInfo = function() return {roleplayingName = "Selective RP", fullTitle = "Selective title"} end}
+    trp3Options = {useRoleplayingName = true, showFullTitle = true}
+    plateFrame.castBar = Region()
+    plateFrame.castBar.shown = false
+    ns.RefreshAll()
+    events.scripts.OnUpdate(events, 0.25)
+    local context = ns.WorldContext.Get()
+    local cap, text = ns.PresentationCapabilities, ns.NameplateText
+    local name, bar, inside, title = plateFrame.name, plateFrame.healthBar, plateFrame.SNPInsideName, plateFrame.SNPFullTitleText
+    local writes, saved = {}, {}
+    local function Watch(region, label)
+        if not region then return end
+        local methods = {}
+        saved[region] = methods
+        for _, method in ipairs({"SetText", "SetFont", "SetTextColor", "SetVertexColor", "SetShadowColor", "SetShadowOffset",
+            "SetWidth", "SetHeight", "SetAlpha", "SetShown", "Show", "Hide", "ClearAllPoints", "SetPoint", "SetJustifyH"}) do
+            local original = region[method]
+            if original then
+                methods[method] = original
+                region[method] = function(self, ...)
+                    local key = label .. "." .. method
+                    writes[key] = (writes[key] or 0) + 1
+                    return original(self, ...)
+                end
+            end
+        end
+    end
+    Watch(name, "name"); Watch(bar, "bar"); Watch(inside, "inside"); Watch(title, "title")
+    Watch(plateFrame.HealthBarsContainer, "container")
+    Watch(plateFrame.SNPThreatText, "threat")
+    for _, key in ipairs({"LeftText", "RightText", "Text"}) do Watch(bar[key], key) end
+    local function Only(expected, label)
+        for key, count in pairs(writes) do equal(count, expected[key], label .. " unexpected " .. key) end
+        for key, count in pairs(expected) do equal(writes[key], count, label .. " missing " .. key) end
+        writes = {}
+    end
+    local function FindReconciliation(fn, seen)
+        seen = seen or {}
+        if seen[fn] then return end
+        seen[fn] = true
+        local index = 1
+        while true do
+            local key, value = debug.getupvalue(fn, index)
+            if not key then return end
+            if key == "ReconcileNames" then return value end
+            if type(value) == "function" then
+                local found = FindReconciliation(value, seen)
+                if found then return found end
+            end
+            index = index + 1
+        end
+    end
+    -- Isolate the real reconciliation callback from unrelated deferred work
+    -- left by earlier restricted-restoration fixtures.
+    local reconcileNames = assert(FindReconciliation(events.scripts.OnUpdate))
+    local function Reconcile() reconcileNames(context) end
+    -- One complete assessment per ordinary plate, shared by lookup/check/repair.
+    local lines, originalPrint = {}, print
+    print = function(line) lines[#lines + 1] = line end
+    ns.Profiler.Command("start"); Reconcile(); ns.Profiler.Command("stop"); ns.Profiler.Command("report")
+    print = originalPrint
+    local report = table.concat(lines, "\n")
+    assert(report:find("Access assessment: 1 calls;", 1, true), "unchanged scan shares one assessment: " .. report)
+    assert(not report:find("Text repair:", 1, true), "unchanged scan does not enter repair")
+    Only({}, "unchanged scan")
+    plateFrame.SNPTitleVisibilityPending = true
+    Reconcile(); Only({}, "unchanged pending title")
+    name.text = "Native overwritten"; Reconcile(); Only({["name.SetText"] = 1}, "native text only")
+    name.r = 0.2; Reconcile(); Only({["name.SetTextColor"] = 1}, "native color only")
+    name.vg = 0.2; Reconcile(); Only({["name.SetVertexColor"] = 1}, "native vertex only")
+    name.flags = "THICKOUTLINE"; Reconcile(); Only({["name.SetFont"] = 1}, "native font only")
+    name.shadowX = 1; Reconcile(); Only({["name.SetShadowOffset"] = 1}, "shadow offset only")
+    name.shown = false; Reconcile(); Only({["name.SetShown"] = 1}, "visibility only")
+    inside.text = "Inside overwritten"; Reconcile(); Only({["inside.SetText"] = 1}, "inside text only")
+    bar.height = 1; Reconcile(); Only({["bar.SetHeight"] = 1}, "bar height only")
+    title.width = 999; Reconcile(); Only({["title.SetWidth"] = 1}, "title width only")
+    name.text, name.r, name.alpha = "Two differences", 0.2, 0.4
+    Reconcile(); Only({["name.SetText"] = 1, ["name.SetTextColor"] = 1, ["name.SetAlpha"] = 1}, "combined differences")
+
+    -- An unknown font must not suppress independently readable differences.
+    local fontGetter = name.GetFont
+    name.GetFont = function() error("unreadable native font") end
+    name.r = 0.3; Reconcile(); Only({["name.SetTextColor"] = 1}, "unknown font with color drift")
+    name.GetFont = fontGetter
+    for _ = 1, 4 do Reconcile() end
+    Only({}, "font access recovery")
+
+    -- Opaque geometry/colors cause neither repairs nor unbounded read attempts.
+    local opaque = setmetatable({}, {__eq = function() error("opaque value compared") end,
+        __tostring = function() error("opaque value formatted") end})
+    local oldSecret = issecretvalue
+    issecretvalue = function(value) return rawequal(value, opaque) or (oldSecret and oldSecret(value)) end
+    local heightGetter, colorGetter, vertexGetter = bar.GetHeight, name.GetTextColor, name.GetVertexColor
+    local heightReads = 0
+    bar.GetHeight = function() heightReads = heightReads + 1; return opaque end
+    name.GetTextColor = function() return opaque, opaque, opaque end
+    name.GetVertexColor = function() return opaque, opaque, opaque, opaque end
+    for _ = 1, 40 do Reconcile() end
+    assert(heightReads <= 7, "unknown property retries are bounded")
+    Only({}, "unknown observations")
+    bar.GetHeight, name.GetTextColor, name.GetVertexColor = heightGetter, colorGetter, vertexGetter
+    issecretvalue = oldSecret
+    bar.height, name.r = 1, 0.2
+    for _ = 1, 17 do Reconcile() end
+    Only({["bar.SetHeight"] = 1, ["name.SetTextColor"] = 1}, "bounded retry repairs after access returns")
+
+    -- Label observations are shared by checking and repairing the anchor chain.
+    local label = bar.Text
+    assert(label and label.GetNumPoints)
+    local reads, shownGetter = 0, label.IsShown
+    label.IsShown = function(self) reads = reads + 1; return shownGetter(self) end
+    label.shown = not label.shown
+    local assessment = cap.InspectFrame(plateFrame, context)
+    local drifted, reason, plan = text.CachedNameHasDrifted(plateFrame, context, assessment)
+    assert(drifted and plan.layout, "label visibility produces selective layout work")
+    local observationReads = reads
+    assert(text.RepairCachedName(plateFrame, context, assessment, plan))
+    equal(reads, observationReads, "layout repair reuses label observations")
+    assert(not writes["name.SetFont"] and not writes["name.SetText"] and not writes["title.SetWidth"], "layout repair avoids content/font/title writes")
+    label.IsShown = shownGetter
+    writes = {}
+    Reconcile(); Only({}, "layout settled")
+
+    -- Unknown cast visibility keeps the title hidden with bounded retries.
+    local cast, castReads = plateFrame.castBar, 0
+    local castShown = cast.IsShown
+    cast.IsShown = function() castReads = castReads + 1; return nil end
+    text.SyncFullTitleVisibility(plateFrame, context)
+    assert(not title.shown and plateFrame.SNPTitleVisibilityPending)
+    writes = {}
+    for _ = 1, 40 do Reconcile() end
+    assert(castReads <= 8, "unknown cast visibility retries are bounded")
+    Only({}, "unknown cast keeps title hidden without repeat writes")
+    cast.IsShown = castShown
+    cast.shown = false
+    -- Native cast hooks remain immediate even during periodic backoff.
+    for _, callback in ipairs(cast.scriptHooks.OnHide) do callback(cast) end
+    equal(title.shown, true, "native cast hook bypasses unknown retry backoff")
+    Only({["title.SetShown"] = 1}, "cast hook shows title once")
+
+    -- Replaced regions invalidate observations before any stale writes.
+    name.text = "Stale observation"
+    assessment = cap.InspectFrame(plateFrame, context)
+    drifted, reason, plan = text.CachedNameHasDrifted(plateFrame, context, assessment)
+    local replacement = Region()
+    plateFrame.name = replacement
+    equal(text.RepairCachedName(plateFrame, context, assessment, plan), false, "replaced name invalidates assessment")
+    Only({}, "stale name assessment")
+    plateFrame.name = name
+    name.text = "Selective RP"
+    local container = plateFrame.HealthBarsContainer
+    plateFrame.HealthBarsContainer = Region()
+    equal(cap.AssessmentIsCurrent(plateFrame, assessment, context), false, "replaced container invalidates assessment")
+    plateFrame.HealthBarsContainer = container
+
+    name.IsForbidden = function() return true end
+    equal(text.RepairCachedName(plateFrame, context, assessment, plan), false, "changed access invalidates assessment")
+    Only({}, "newly forbidden name")
+    name.IsForbidden = nil
+
+    local alteredContext = {revision = context.revision + 1, combatLockdown = context.combatLockdown}
+    equal(text.RepairCachedName(plateFrame, alteredContext, assessment, plan), false, "changed context invalidates assessment")
+    Only({}, "stale context assessment")
+
+    -- Guarded write failures keep the original error and allow a later retry.
+    name.r = 0.4
+    local failure, colorSetter = {}, name.SetTextColor
+    name.SetTextColor = function() error(failure) end
+    local ok, err = pcall(Reconcile)
+    assert(not ok and err == failure, "selective repair preserves original error")
+    assert(not plateFrame.SNPApplyingStyle, "selective failure releases reentry guard")
+    name.SetTextColor = colorSetter
+    Reconcile(); Only({["name.SetTextColor"] = 1}, "failed write retry")
+    for region, methods in pairs(saved) do for method, original in pairs(methods) do region[method] = original end end
+    -- All previously exercised restoration/recycling tests still apply.
+    ns.RestoreAll(); ns.RefreshAll()
+end
+CheckSelectiveReconciliation()
 end
 
 print("Nameplates smoke: passed")

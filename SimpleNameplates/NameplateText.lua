@@ -1,6 +1,5 @@
 -- Simple Nameplates: unit names, TRP3 titles, layout, and cached text repair.
 local _, ns = ...
-local CanAccessFrame = ns.PresentationCapabilities.CanAccessFrame
 local GetContext = ns.WorldContext.Get
 local AccessibleBoolean = ns.AccessibleBoolean
 local UnitName = UnitName
@@ -72,27 +71,47 @@ local function EnsureFullTitleText(frame)
     return fullTitle
 end
 
-local function SyncFullTitleVisibility(frame, context)
+local function SetTitleShown(frame, title, desired, context)
+    local actual = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(title, "IsShown", context))
+    if (actual ~= nil and actual ~= desired) or (actual == nil
+        and (frame.SNPTitleDesiredRegion ~= title or frame.SNPTitleDesired ~= desired)) then
+        title:SetShown(desired)
+    end
+    frame.SNPTitleDesiredRegion, frame.SNPTitleDesired = title, desired
+end
+
+local function SyncFullTitleVisibility(frame, context, assessment, retrying)
     context = context or GetContext()
-    if not CanAccessFrame(frame, context) or frame.SNPRestoring then return end
+    assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
+    if not assessment.canAccess or frame.SNPRestoring then return end
+    local retry = retrying and frame.SNPTitleVisibilityRetry
+    if retry and retry.remaining > 0 then retry.remaining = retry.remaining - 1; return end
     frame.SNPTitleVisibilityPending = nil
     local title, decision = frame.SNPFullTitleText, frame.SNPPresentation
     if not title then return end
     if not ns.GetStylingEnabled() or not frame.SNPFullTitleAvailable
         or not decision or not decision.showFullTitle or decision.suppressText then
-        title:Hide(); return
+        frame.SNPTitleVisibilityRetry = nil
+        SetTitleShown(frame, title, false, context)
+        return
     end
-    local cast = GetCastBar(frame, context)
+    local cast = assessment.castBar
     local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(cast, "IsShown", context))
-    if cast and shown == nil then frame.SNPTitleVisibilityPending = true end
+    if cast and shown == nil then
+        frame.SNPTitleVisibilityPending = true
+        local delay = math.min((retry and retry.delay * 2 or 1), 16)
+        frame.SNPTitleVisibilityRetry = {remaining = delay - 1, delay = delay}
+    else frame.SNPTitleVisibilityRetry = nil end
     -- Unknown cast visibility must not put title text over a possible cast.
-    if cast and shown ~= false then title:Hide() else title:Show() end
+    local desired = not cast or shown == false
+    SetTitleShown(frame, title, desired, context)
 end
 
 local function InstallTitleCastHooks(frame, cast)
     if not cast or type(cast.HookScript) ~= "function" or cast.SNPTitleHookOwner == frame then return end
     local function Refresh()
         frame.SNPTitleVisibilityPending = true
+        frame.SNPTitleVisibilityRetry = nil
         local context = GetContext()
         if GetCastBar(frame, context) == cast then SyncFullTitleVisibility(frame, context) end
     end
@@ -101,9 +120,9 @@ local function InstallTitleCastHooks(frame, cast)
     cast.SNPTitleHookOwner = frame
 end
 
-local function FullTitleWidth(frame, context)
+local function FullTitleWidth(frame, context, assessment)
     local cap = ns.PresentationCapabilities
-    for _, region in ipairs({GetHealthBar(frame, context) or false, frame.HealthBarsContainer or false, frame}) do
+    for _, region in ipairs({GetHealthBar(frame, context, assessment) or false, frame.HealthBarsContainer or false, frame}) do
         if region and cap.ObjectStatus(region, context) == "accessible" then
             local width = AccessibleNumber(cap.ReadRegion(region, "GetWidth", context))
             if width and width > 0 then return width end
@@ -113,15 +132,16 @@ local function FullTitleWidth(frame, context)
     return 1
 end
 
-local function ConstrainFullTitle(frame, context)
+local function ConstrainFullTitle(frame, context, assessment)
     if frame.SNPFullTitleText then
-        frame.SNPFullTitleText:SetWidth(FullTitleWidth(frame, context))
+        frame.SNPFullTitleText:SetWidth(FullTitleWidth(frame, context, assessment))
     end
 end
 
-local function StyleFullTitle(frame, state, text, baseNameSize, decision, context, nameShade)
+local function StyleFullTitle(frame, state, text, baseNameSize, decision, context, nameShade, assessment)
+    frame.SNPTitleDesiredRegion, frame.SNPTitleDesired = nil, nil
     local fullTitle = frame.SNPFullTitleText
-    local bar = GetHealthBar(frame, context)
+    local bar = GetHealthBar(frame, context, assessment)
     frame.SNPFullTitleAvailable = text ~= nil and decision.showFullTitle == true
     if not frame.SNPFullTitleAvailable then
         if fullTitle then fullTitle:SetText(""); fullTitle:Hide() end
@@ -133,7 +153,7 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
     fullTitle:SetFont(NameFontPath(context), titleSize, ns.FontFlags())
     -- Native single-line layout truncates overflow using the actual font.
     -- Keep the source string intact so widening the bar restores more text.
-    ConstrainFullTitle(frame, context)
+    ConstrainFullTitle(frame, context, assessment)
     fullTitle:SetText(text)
     fullTitle:SetShadowColor(0, 0, 0, 0)
     fullTitle:SetShadowOffset(0, 0)
@@ -143,13 +163,14 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
     fullTitle:SetVertexColor(1, 1, 1, 1)
     local shade = state == "useless" and nameShade or 1
     fullTitle:SetTextColor(shade, shade, shade, 1)
-    InstallTitleCastHooks(frame, GetCastBar(frame, context))
-    SyncFullTitleVisibility(frame, context)
+    InstallTitleCastHooks(frame, GetCastBar(frame, context, assessment))
+    SyncFullTitleVisibility(frame, context, assessment)
 end
 
-local function RestoreOriginalBarHeight(frame, bar, context)
+local function RestoreOriginalBarHeight(frame, bar, context, assessment)
     context = context or GetContext()
-    if not CanAccessFrame(frame, context) then return end
+    assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
+    if not assessment.canAccess then return end
     if not frame then return end
     bar = frame.SNPOriginalHealthBar or bar
     if bar and frame.SNPOriginalBarHeight then
@@ -168,9 +189,10 @@ local function InsideBarHeight(frame, nameSize)
         frame.SNPOriginalHealthBarsContainerHeight or 0)
 end
 
-local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context, decision)
+local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context, decision, assessment)
     context = context or GetContext()
-    if not CanAccessFrame(frame, context) then return false, baseNameSize end
+    assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
+    if not assessment.canAccess then return false, baseNameSize end
     local inside = GetAppearanceSetting("namePlacement") == "INSIDE"
         and decision and decision.showHealthBar and bar ~= nil
     local hasThreat = frame.SNPThreatStatus == "displayed raw percentage"
@@ -184,7 +206,7 @@ local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context
         end
     end
     if not inside and not hasThreat and not hasNativeText then
-        RestoreOriginalBarHeight(frame, bar, context)
+        RestoreOriginalBarHeight(frame, bar, context, assessment)
         return false, baseNameSize
     end
 
@@ -260,9 +282,10 @@ local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, righ
     frame.name:SetAlpha(0)
 end
 
-local function RestoreNameDisplay(frame, context)
+local function RestoreNameDisplay(frame, context, assessment)
     context = context or GetContext()
-    if not CanAccessFrame(frame, context) then return end
+    assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
+    if not assessment.canAccess then return end
     if frame.SNPInsideName then frame.SNPInsideName:Hide() end
     local name = frame.SNPOriginalName or frame.name
     if name then name:SetAlpha(1) end
@@ -274,6 +297,8 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     frame.SNPNameStyle = expected
     expected.text = displayName
     expected.name = frame.name
+    expected.unit = AccessibleValue(frame.unit)
+    expected.unknownReads = nil
     expected.font = fontPath
     expected.size = size
     expected.flags = ns.FontFlags()
@@ -296,22 +321,24 @@ local function SuppressText(frame, context)
     end
 end
 
-local function StyleName(frame, state, context, decision)
+local function StyleName(frame, state, context, decision, assessment)
     context = context or GetContext()
-    if not CanAccessFrame(frame, context) then return end
+    assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
+    if not assessment.canAccess then return end
     if not decision or decision.action ~= "style" then return end
     if decision.suppressText then
         SuppressText(frame, context)
-        frame.SNPNameStyle = {suppressed = true, presentation = decision}
+        frame.SNPNameStyle = {suppressed = true, presentation = decision, name = frame.name,
+            unit = AccessibleValue(frame.unit)}
         return
     end
     local name = frame and frame.name
     if not name then return end
     local fullTitle, displayName, unitName = UpdateNameText(frame)
     local baseSize = GetAppearanceSetting("nameSize") or 12
-    local bar = GetHealthBar(frame, context)
+    local bar = GetHealthBar(frame, context, assessment)
     local nameOnly = decision.nameOnly
-    local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize, context, decision)
+    local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize, context, decision, assessment)
     local rightInset = -3
 
     local fontPath = NameFontPath(context)
@@ -337,9 +364,9 @@ local function StyleName(frame, state, context, decision)
     if inside then
         ShowInsideName(frame, bar, displayName, fontPath, size, rightInset, rightRegion, nameR)
     else
-        RestoreNameDisplay(frame, context)
+        RestoreNameDisplay(frame, context, assessment)
     end
-    StyleFullTitle(frame, state, fullTitle, baseSize, decision, context, nameR)
+    StyleFullTitle(frame, state, fullTitle, baseSize, decision, context, nameR, assessment)
     CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
         nameOnly, inside, rightInset, bar, rightRegion)
     frame.SNPNameStyle.unitName = unitName
@@ -349,8 +376,9 @@ end
 
 -- Focused native-name repair. No classification, profile lookup, bar artwork
 -- or geometry writes; the runtime refresh handles actual content changes.
-local function RepairNameOnly(frame, context)
-    if not CanAccessFrame(frame, context) or frame.SNPRestoring then return end
+local function RepairNameOnly(frame, context, assessment)
+    assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
+    if not assessment.canAccess or frame.SNPRestoring then return end
     local expected = frame.SNPNameStyle
     if expected.suppressed then SuppressText(frame, context); return end
     local name = frame.name
@@ -367,13 +395,14 @@ end
 
 -- Threat/native-label presence changes the name's right edge. Reposition the
 -- existing labels without rereading names/TRP3 or reapplying their fonts.
-local function UpdateNameLayout(frame, context, decision)
-    if not CanAccessFrame(frame, context) or frame.SNPRestoring then return end
+local function UpdateNameLayout(frame, context, decision, assessment)
+    assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
+    if not assessment.canAccess or frame.SNPRestoring then return end
     local expected = frame.SNPNameStyle
     if not expected or expected.suppressed then return end
-    local bar = GetHealthBar(frame, context)
+    local bar = GetHealthBar(frame, context, assessment)
     local inside, size = ApplyConfiguredBarHeight(frame, frame.SNPState, bar,
-        expected.size, context, decision)
+        expected.size, context, decision, assessment)
     local rightRegion, signature = ns.NameplateFrames.LayoutHealthText(frame, bar, context)
     PositionName(frame, frame.name, bar, decision.nameOnly, inside, -3, rightRegion)
     if inside and frame.SNPInsideName then
@@ -383,7 +412,7 @@ local function UpdateNameLayout(frame, context, decision)
         name:SetPoint("RIGHT", rightRegion or bar, rightRegion and "LEFT" or "RIGHT", -3,
             rightRegion and 0 or -0.5)
     end
-    ConstrainFullTitle(frame, context)
+    ConstrainFullTitle(frame, context, assessment)
     CacheNameStyle(frame, expected.text, expected.font, size, expected.r, expected.g,
         expected.b, decision.nameOnly, inside, -3, bar, rightRegion)
     expected.healthTextSignature = signature
@@ -394,9 +423,13 @@ local function NearlyEqual(a, b)
     return type(a) == "number" and type(b) == "number" and math.abs(a - b) < 0.001
 end
 
-local function CacheIsCurrent(frame, expected, context)
+-- Assessments and observations belong to one synchronous operation only.
+local function CacheIsCurrent(frame, expected, context, assessment)
+    if ns.NameplateRestoration.IsPending(frame) then return false, "restoration pending" end
     local decision = frame.SNPPresentation
     if not decision or expected.presentation ~= decision or decision.contextRevision ~= context.revision then return false, "presentation revision" end
+    if expected.unit ~= AccessibleValue(frame.unit) then return false, "unit assignment" end
+    if expected.name ~= assessment.name then return false, "name region replaced" end
     if type(UnitNameplateShowsWidgetsOnly) == "function" then
         local ok, value = pcall(UnitNameplateShowsWidgetsOnly, frame.unit)
         local widgetsOnly
@@ -404,121 +437,192 @@ local function CacheIsCurrent(frame, expected, context)
         if type(widgetsOnly) == "boolean" and widgetsOnly ~= (decision.suppressText == true) then return false, "widget mode" end
     end
     if expected.suppressed then return true end
-    if expected.name ~= frame.name then return false, "name region replaced" end
     if expected.flags ~= ns.FontFlags() then return false, "font flags setting" end
     if expected.font ~= NameFontPath(context) then return false, "font setting" end
-    local bar = GetHealthBar(frame, context)
-    if expected.bar ~= bar then return false, "health bar replaced" end
-    local inset, signature = ns.NameplateFrames.GetHealthTextInsetRegion(frame, bar, context)
-    if inset ~= expected.rightRegion or signature ~= expected.healthTextSignature then return false, "health label layout" end
+    if expected.bar ~= assessment.healthBar then return false, "health bar replaced" end
     if frame.SNPOriginalVisibility
         and frame.SNPOriginalHealthBarsContainer ~= frame.HealthBarsContainer then return false, "container replaced" end
-    local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(bar, "IsShown", context))
+    local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(assessment.healthBar, "IsShown", context))
     if shown ~= nil and shown ~= decision.showHealthBar then return false, "bar visibility" end
     return true
 end
 
-local function ReadableTextHasDrifted(region, expectedText, context)
-    local actual = ns.PresentationCapabilities.ReadRegion(region, "GetText", context)
-    local expected = AccessibleValue(expectedText)
-    -- Compare only readable strings. Restricted names still pass directly to SetText.
-    return type(actual) == "string" and type(expected) == "string" and actual ~= expected
+-- Unknown is neither equality nor drift. Retry an unreadable property after
+-- 1, 2, 4, 8, then at most 16 reconciliation passes (four seconds), while
+-- continuing to observe independent properties. Styling resets this backoff.
+local function Observe(expected, key, region, method, context, count)
+    local retries = expected.unknownReads
+    local retry = retries and retries[key]
+    if retry and retry.remaining > 0 then
+        retry.remaining = retry.remaining - 1
+        return
+    end
+    local cap = ns.PresentationCapabilities
+    local getter = cap.SafeField(region, method, context)
+    local ok, a, b, c, d
+    if type(getter) == "function" then ok, a, b, c, d = pcall(getter, region) end
+    if ok then
+        a, b, c, d = AccessibleValue(a), AccessibleValue(b), AccessibleValue(c), AccessibleValue(d)
+    end
+    local unknown = not ok or a == nil or (count and count >= 2 and b == nil)
+        or (count and count >= 3 and c == nil) or (count and count >= 4 and d == nil)
+    if unknown then
+        retries = retries or {}; expected.unknownReads = retries
+        local delay = math.min((retry and retry.delay * 2 or 1), 16)
+        retries[key] = {remaining = delay - 1, delay = delay}
+        if ok then return a, b, c, d end
+        return
+    end
+    if retries then retries[key] = nil end
+    return a, b, c, d
 end
 
-local function CachedNameHasDrifted(frame, context)
+local function Different(actual, desired)
+    if actual == nil or desired == nil then return false end
+    if type(desired) == "number" then
+        return type(actual) == "number" and not NearlyEqual(actual, desired)
+    end
+    return type(actual) == type(desired) and actual ~= desired
+end
+
+local function CachedNameHasDrifted(frame, context, assessment)
     context = context or GetContext()
-    if not CanAccessFrame(frame, context) then return false end
-    local name, expected = frame and frame.name, frame and frame.SNPNameStyle
+    assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
+    if not assessment.canAccess or frame.SNPRestoring or frame.SNPApplyingStyle then return false end
+    local name, expected = assessment.name, frame.SNPNameStyle
     if not name or not expected then return false end
-    local current, reason = CacheIsCurrent(frame, expected, context)
-    if not current then return true, reason end
+    local current, reason = CacheIsCurrent(frame, expected, context, assessment)
+    if not current then return true, reason, {full = true} end
+    local plan
+    local function Add(key, value, label)
+        plan = plan or {expected = expected, name = name, bar = assessment.healthBar,
+            container = frame.HealthBarsContainer, insideName = frame.SNPInsideName,
+            unit = AccessibleValue(frame.unit), presentation = frame.SNPPresentation,
+            revision = context.revision}
+        plan[key] = value
+        reason = reason or label
+    end
+    local function Check(key, region, method, desired, label)
+        if desired == nil then return end
+        local actual = Observe(expected, key, region, method, context)
+        if Different(actual, desired) then Add(key, desired, label) end
+        return actual
+    end
     if expected.suppressed then
-        if not NearlyEqual(name:GetAlpha(), 0) then return true, "suppressed alpha" end
+        Check("alpha", name, "GetAlpha", 0, "suppressed alpha")
         for _, key in ipairs({"SNPInsideName", "SNPFullTitleText", "SNPThreatText"}) do
-            local shown = ns.PresentationCapabilities.ReadRegion(frame[key], "IsShown", context)
-            if AccessibleBoolean(shown) == true then return true, "suppressed text visible" end
+            if frame[key] then Check(key, frame[key], "IsShown", false, "suppressed text visible") end
         end
-        return false
+        return plan ~= nil, reason, plan
     end
-    local shown = ns.PresentationCapabilities.ReadRegion(name, "IsShown", context)
-    if AccessibleBoolean(shown) == false then return true, "name hidden" end
-    if ReadableTextHasDrifted(name, expected.text, context) then return true, "native name text" end
-    local font, size, flags = name:GetFont()
-    font, size, flags = AccessibleValue(font), AccessibleNumber(size), AccessibleValue(flags)
-    if font == nil or size == nil or flags == nil then return false end
-    if font ~= expected.font or not NearlyEqual(size, expected.size) or flags ~= expected.flags then
-        return true, "native font"
+    Check("shown", name, "IsShown", true, "name hidden")
+    Check("text", name, "GetText", AccessibleValue(expected.text), "native name text")
+    local font, size, flags = Observe(expected, "font", name, "GetFont", context, 3)
+    if Different(font, expected.font) or Different(size, expected.size) or Different(flags, expected.flags) then Add("font", true, "native font") end
+    Check("barHeight", expected.bar, "GetHeight", expected.barHeight, "bar height")
+    if frame.HealthBarsContainer then Check("containerHeight", frame.HealthBarsContainer, "GetHeight", expected.barHeight, "container height") end
+    local barWidth = Check("barWidth", expected.bar, "GetWidth", expected.barWidth, "bar width")
+    local containerWidth
+    if frame.HealthBarsContainer then containerWidth = Check("containerWidth", frame.HealthBarsContainer, "GetWidth", expected.containerWidth, "container width") end
+    if frame.SNPFullTitleAvailable and frame.SNPFullTitleText then
+        -- Reuse dimensions already observed, including their repaired values.
+        if plan and plan.barWidth then barWidth = plan.barWidth end
+        if plan and plan.containerWidth then containerWidth = plan.containerWidth end
+        if expected.barWidth == nil and expected.bar then
+            barWidth = Observe(expected, "titleBarWidth", expected.bar, "GetWidth", context)
+        end
+        local width = AccessibleNumber(barWidth)
+        if (not width or width <= 0) and expected.containerWidth == nil and frame.HealthBarsContainer then
+            containerWidth = Observe(expected, "titleContainerWidth", frame.HealthBarsContainer, "GetWidth", context)
+        end
+        if not width or width <= 0 then width = AccessibleNumber(containerWidth) end
+        if not width or width <= 0 then width = AccessibleNumber(Observe(expected, "titleFrameWidth", frame, "GetWidth", context)) end
+        -- No readable source width means no proven title-width drift.
+        if width and width > 0 then Check("titleWidth", frame.SNPFullTitleText, "GetWidth", width, "title width") end
     end
-    if expected.barHeight and expected.bar
-        and not NearlyEqual(expected.bar:GetHeight(), expected.barHeight) then
-        return true, "bar height"
-    end
-    if expected.barHeight and frame.HealthBarsContainer
-        and not NearlyEqual(frame.HealthBarsContainer:GetHeight(), expected.barHeight) then
-        return true, "container height"
-    end
-    if expected.barWidth and not NearlyEqual(expected.bar:GetWidth(), expected.barWidth) then return true, "bar width" end
-    if expected.containerWidth and frame.HealthBarsContainer
-        and not NearlyEqual(frame.HealthBarsContainer:GetWidth(), expected.containerWidth) then return true, "container width" end
-    if frame.SNPFullTitleAvailable and frame.SNPFullTitleText
-        and not NearlyEqual(ns.PresentationCapabilities.ReadRegion(frame.SNPFullTitleText, "GetWidth", context),
-            FullTitleWidth(frame, context)) then return true, "title width" end
+    Check("alpha", name, "GetAlpha", expected.inside and 0 or 1,
+        expected.inside and "inside name visibility" or "native name alpha")
     if expected.inside then
-        local insideName = frame.SNPInsideName
-        if not insideName or AccessibleBoolean(insideName:IsShown()) ~= true or not NearlyEqual(name:GetAlpha(), 0) then
-            return true, "inside name visibility"
-        end
-        if ReadableTextHasDrifted(insideName, expected.text, context) then return true, "inside name text" end
-    elseif not NearlyEqual(name:GetAlpha(), 1) then
-        return true, "native name alpha"
+        local inside = frame.SNPInsideName
+        if not inside or frame.SNPInsideNameBar ~= expected.bar then return true, "inside name replaced", {full = true} end
+        Check("insideShown", inside, "IsShown", true, "inside name visibility")
+        Check("insideText", inside, "GetText", AccessibleValue(expected.text), "inside name text")
+    elseif frame.SNPInsideName then
+        Check("insideShown", frame.SNPInsideName, "IsShown", false, "inside name visible")
     end
-
-    local r, g, b = name:GetTextColor()
-    if not NearlyEqual(r, expected.r) or not NearlyEqual(g, expected.g) or not NearlyEqual(b, expected.b) then
-        return true, "text color"
+    local r, g, b = Observe(expected, "color", name, "GetTextColor", context, 3)
+    if Different(r, expected.r) or Different(g, expected.g) or Different(b, expected.b) then Add("color", true, "text color") end
+    r, g, b, flags = Observe(expected, "vertex", name, "GetVertexColor", context, 4)
+    if Different(r, 1) or Different(g, 1) or Different(b, 1) or Different(flags, 1) then Add("vertex", true, "vertex color") end
+    r, g, b, flags = Observe(expected, "shadow", name, "GetShadowColor", context, 4)
+    if Different(r, 0) or Different(g, 0) or Different(b, 0) or Different(flags, 0) then Add("shadow", true, "shadow color") end
+    r, g = Observe(expected, "shadowOffset", name, "GetShadowOffset", context, 2)
+    if Different(r, 0) or Different(g, 0) then Add("shadowOffset", true, "shadow offset") end
+    -- Scan label presence once. A changed chain needs anchors, not new fonts.
+    local inset, signature, labels, threat = ns.NameplateFrames.GetHealthTextInsetRegion(frame, expected.bar, context)
+    if inset ~= expected.rightRegion or signature ~= expected.healthTextSignature then
+        Add("layout", {inset = inset, signature = signature, labels = labels, threat = threat}, "health label layout")
     end
-
-    local rawVertexR, rawVertexG, rawVertexB, rawVertexA = name:GetVertexColor()
-    local vertexR = AccessibleNumber(rawVertexR)
-    local vertexG = AccessibleNumber(rawVertexG)
-    local vertexB = AccessibleNumber(rawVertexB)
-    local vertexA = AccessibleNumber(rawVertexA)
-    if not NearlyEqual(vertexR, 1) or not NearlyEqual(vertexG, 1)
-        or not NearlyEqual(vertexB, 1) or not NearlyEqual(vertexA, 1) then
-        return true, "vertex color"
-    end
-
-    return false
+    return plan ~= nil, reason, plan
 end
 
-local function RepairCachedName(frame, context)
+local function RepairCachedName(frame, context, assessment, plan)
     context = context or GetContext()
-    if not CanAccessFrame(frame, context) then return false end
-    local name, expected = frame and frame.name, frame and frame.SNPNameStyle
-    if not name or not expected or not CacheIsCurrent(frame, expected, context) then return false end
-    if expected.suppressed then SuppressText(frame, context); return true end
-    name:SetText(expected.text)
-    name:SetFont(expected.font, expected.size, expected.flags)
-    name:SetShadowColor(0, 0, 0, 0)
-    name:SetShadowOffset(0, 0)
-    name:SetVertexColor(1, 1, 1, 1)
-    name:SetTextColor(expected.r, expected.g, expected.b, 1)
-    if expected.barHeight and expected.bar then
-        expected.bar:SetHeight(expected.barHeight)
-        if frame.HealthBarsContainer then frame.HealthBarsContainer:SetHeight(expected.barHeight) end
+    assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
+    if not assessment.canAccess or frame.SNPRestoring then return false end
+    if frame.SNPApplyingStyle then return true end
+    if not plan then
+        local drifted
+        drifted, _, plan = CachedNameHasDrifted(frame, context, assessment)
+        if not drifted then return true end
     end
-    if expected.barWidth then expected.bar:SetWidth(expected.barWidth) end
-    if expected.containerWidth and frame.HealthBarsContainer then frame.HealthBarsContainer:SetWidth(expected.containerWidth) end
-    ConstrainFullTitle(frame, context)
-    PositionName(frame, name, expected.bar, expected.nameOnly, expected.inside,
-        expected.rightInset or -3, expected.rightRegion)
-    name:Show()
-    if expected.inside and expected.bar then
-        ShowInsideName(frame, expected.bar, expected.text, expected.font,
-            expected.size, expected.rightInset or -3, expected.rightRegion, expected.r)
-    else
-        RestoreNameDisplay(frame, context)
-    end
+    if plan.full then return false end
+    local expected, name = frame.SNPNameStyle, assessment.name
+    -- Reject observations if a callback changed their owner/regions/context.
+    if ns.NameplateRestoration.IsPending(frame)
+        or not ns.PresentationCapabilities.AssessmentIsCurrent(frame, assessment, context)
+        or expected ~= plan.expected or name ~= plan.name or assessment.healthBar ~= plan.bar
+        or frame.HealthBarsContainer ~= plan.container or frame.SNPInsideName ~= plan.insideName
+        or AccessibleValue(frame.unit) ~= plan.unit or frame.SNPPresentation ~= plan.presentation
+        or context.revision ~= plan.revision then return false end
+    frame.SNPApplyingStyle = true
+    local ok, err = pcall(function()
+        if plan.text ~= nil then name:SetText(plan.text) end
+        if plan.font then name:SetFont(expected.font, expected.size, expected.flags) end
+        if plan.vertex then name:SetVertexColor(1, 1, 1, 1) end
+        if plan.color then name:SetTextColor(expected.r, expected.g, expected.b, 1) end
+        if plan.shadow then name:SetShadowColor(0, 0, 0, 0) end
+        if plan.shadowOffset then name:SetShadowOffset(0, 0) end
+        if plan.alpha ~= nil then name:SetAlpha(plan.alpha) end
+        if plan.shown ~= nil then name:SetShown(plan.shown) end
+        if plan.barHeight then plan.bar:SetHeight(plan.barHeight) end
+        if plan.containerHeight then plan.container:SetHeight(plan.containerHeight) end
+        if plan.barWidth then plan.bar:SetWidth(plan.barWidth) end
+        if plan.containerWidth then plan.container:SetWidth(plan.containerWidth) end
+        if plan.titleWidth then frame.SNPFullTitleText:SetWidth(plan.titleWidth) end
+        if plan.insideShown ~= nil then frame.SNPInsideName:SetShown(plan.insideShown) end
+        if plan.insideText ~= nil then frame.SNPInsideName:SetText(plan.insideText) end
+        if expected.suppressed then
+            for _, key in ipairs({"SNPInsideName", "SNPFullTitleText", "SNPThreatText"}) do
+                if plan[key] ~= nil then frame[key]:SetShown(plan[key]) end
+            end
+        end
+        if plan.layout then
+            local rightRegion, signature = ns.NameplateFrames.LayoutHealthText(frame, plan.bar, context, plan.layout)
+            PositionName(frame, name, plan.bar, expected.nameOnly, expected.inside,
+                expected.rightInset or -3, rightRegion)
+            if expected.inside then
+                local inside = frame.SNPInsideName
+                inside:ClearAllPoints()
+                inside:SetPoint("LEFT", plan.bar, "LEFT", 3, -0.5)
+                inside:SetPoint("RIGHT", rightRegion or plan.bar, rightRegion and "LEFT" or "RIGHT",
+                    expected.rightInset or -3, rightRegion and 0 or -0.5)
+            end
+            expected.rightRegion, expected.healthTextSignature = rightRegion, signature
+        end
+    end)
+    frame.SNPApplyingStyle = nil
+    if not ok then error(err, 0) end
     return true
 end
 

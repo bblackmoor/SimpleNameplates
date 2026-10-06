@@ -101,9 +101,9 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     end
     if frame.SNPFullTitleText then frame.SNPFullTitleText:SetText(""); frame.SNPFullTitleText:Hide() end
     frame.SNPFullTitleAvailable = nil
-    Text.RestoreNameDisplay(frame, context)
+    Text.RestoreNameDisplay(frame, context, assessment)
     if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
-    Text.RestoreOriginalBarHeight(frame, assessment.healthBar, context)
+    Text.RestoreOriginalBarHeight(frame, assessment.healthBar, context, assessment)
     ns.NameplateFrames.RestoreBarArtwork(frame, context)
     ns.NameplateFrames.RestoreBarWidth(frame, assessment)
     local original = frame.SNPOriginalVisibility or {}
@@ -120,6 +120,7 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     frame.SNPOriginalVisibility, frame.SNPOriginalUnit, frame.SNPOriginalPresentation = nil, nil, nil
     frame.SNPOriginalHealthBar, frame.SNPOriginalHealthBarsContainer = nil, nil
     frame.SNPTitleVisibilityPending = nil
+    frame.SNPTitleDesiredRegion, frame.SNPTitleDesired, frame.SNPTitleVisibilityRetry = nil, nil, nil
     frame.SNPOriginalName, frame.SNPStyleSettings, frame.SNPStyledCastBar = nil, nil, nil
 end
 
@@ -186,4 +187,3 @@ ns.NameplateRestoration = {
     Cancel = function(frame) pendingFrames[frame] = nil end,
     IsPending = function(frame) return pendingFrames[frame] ~= nil end,
 }
-

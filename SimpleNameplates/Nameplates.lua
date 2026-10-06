@@ -246,24 +246,29 @@ events:SetScript("OnEvent", HandleEvent)
 local function ReconcileNames(context)
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
-        local frame = GetFrameFromPlate(plate, context)
+        local frame, assessment = GetFrameFromPlate(plate, context)
         if frame and frame.SNPArtworkPending then
-            local assessment = ns.PresentationCapabilities.InspectFrame(frame, context)
             if assessment.canAccess then ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context) end
+            -- Native callbacks during artwork writes may replace regions.
+            assessment = ns.PresentationCapabilities.InspectFrame(frame, context)
         end
         if frame and frame.SNPTitleVisibilityPending then
-            ns.NameplateText.SyncFullTitleVisibility(frame, context)
+            ns.NameplateText.SyncFullTitleVisibility(frame, context, assessment, true)
         end
-        local drifted, reason
-        if frame and frame.SNPState then drifted, reason = CachedNameHasDrifted(frame, context) end
+        local drifted, reason, plan
+        if frame and frame.SNPState then drifted, reason, plan = CachedNameHasDrifted(frame, context, assessment) end
         if drifted then
             ns.Profiler.Count("Name drift", reason or "unknown")
-            if RepairCachedName(frame, context) then
+            if RepairCachedName(frame, context, assessment, plan) then
                 ns.Profiler.Count("Reconciliation repairs", "cached repair")
             else
                 ns.Profiler.Count("Reconciliation repairs", "full-style fallback")
                 ApplySimpleStyle(frame, context, "reconciliation fallback")
             end
+        end
+        if frame and frame.SNPArtworkPending then
+            local current = ns.PresentationCapabilities.InspectFrame(frame, context)
+            if current.canAccess then ns.NameplateFrames.ApplyBarArtwork(frame, current, context) end
         end
     end
 end

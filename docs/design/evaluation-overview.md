@@ -103,9 +103,18 @@ setup/new label creation and update name layout when label presence changes.
 Cast events synchronize highlight/title visibility without classification or
 name/layout work. TRP3 callbacks request queued name content.
 
-Access assessments remain local to each operation, with existing conservative
-restriction checks. The 0.25-second drift scan remains broad; its optimization
-belongs to phase 3 of the [performance plan](performance-plan.md).
+The 0.25-second reconciliation shares one access assessment across plate lookup,
+drift observation and repair. It collects readable mismatches and writes only
+their properties; changed health-label chains reuse observed labels for layout.
+Structural invalidation falls back to full styling. Assessments persist only for
+one operation and renew after restoration or native artwork callbacks. Text
+setup/layout/restoration helpers also accept their caller's assessment.
+
+Unreadable properties are unknown, with independent retries backing off to at
+most sixteen passes; they neither establish drift nor stop other checks. Pending
+unknown cast visibility keeps titles hidden and backs off similarly, while native
+cast hooks and events remain immediate. Unchanged plates make no repair writes.
+See phase 3 of the [performance plan](performance-plan.md).
 
 ## Optional profiling
 

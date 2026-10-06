@@ -9,8 +9,8 @@ The 2026-10-06 live report recorded 119.6 seconds: 8,454 full-styling calls
 measured costs. Inclusive rows overlap and must not be summed. Profiler overhead
 and differing scenes prevent exact FPS predictions or a memory-leak conclusion.
 
-The code routes Blizzard name and health-color hooks through full styling,
-repeats frame access assessments within operations, and broadly repairs small
+The original baseline routed Blizzard name and health-color hooks through full styling,
+repeated frame access assessments within operations, and broadly repaired small
 text differences. The original black glyph copies also synchronized repeatedly
 through setter hooks, including when only health-dependent alpha changed.
 
@@ -69,7 +69,28 @@ Original phase 2 requirements:
 
 ## Phase 3 — Make reconciliation cheaper
 
-Pending.
+Implemented in 1.0.204; live acceptance pending.
+
+Reconciliation shares an assessment from plate lookup through drift observation
+and selective repair. Text styling/layout/title/restoration helpers can reuse the
+caller's assessment; complete assessments are renewed after restoration and
+native artwork callbacks. No assessment persists between operations.
+
+Readable mismatches form a repair set. Text, font, shadows, colors, visibility and
+geometry repair independently; unchanged plates write nothing. Changed native
+label chains reuse observed labels and anchor only the affected layout. Structural
+cache invalidation still falls back to full styling, with identity validation
+rejecting stale observations before repair.
+
+Unknown properties never establish drift. Per-property retries back off through
+1, 2, 4, 8 and 16 reconciliation passes (nominally up to four seconds), without
+blocking readable properties. Pending unknown cast/title visibility also backs
+off while keeping titles hidden; native cast hooks and events bypass that delay.
+Full content/layout setup resets property retry state. Setter/read-count tests
+cover unchanged scans, isolated/combined mismatches, unknown recovery, label
+observation reuse, replaced regions and error guards. Cadence remains 0.25 seconds.
+
+Original phase 3 requirements:
 
 - Reuse an assessment only within one operation. Renew it after restoration,
   region replacement or other invalidation; retain restricted-frame safeguards.

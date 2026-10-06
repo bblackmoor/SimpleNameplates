@@ -137,3 +137,12 @@ See [the four-phase performance plan](performance-plan.md). Phase 1 is implement
 - [ ] Verify recycling and disabling styling restore the correct native regions, including native-name alpha/font, and blocked updates recover when access returns.
 
 Phase 2 is implemented; native performance, rendering and secure acceptance remain pending.
+
+## Performance phase 3 acceptance
+
+- [ ] Repeat comparable crowded recordings with profiling off/on. Capture all timing/reason rows, FPS, addon version, approximate plate count and combat state. Compare Reconciliation, Access assessment, Text repair and full-styling fallback calls without summing inclusive timings.
+- [ ] Verify stable names stay correct, including inside/above placement, dimming, thin outlines and title width. Change native health-label visibility and confirm name space updates without unrelated text/font changes.
+- [ ] Test inaccessible/secret properties and readable recovery. Unknown observations must not cause repair storms; periodic recovery may take up to sixteen reconciliation passes. Native cast hooks/events must still immediately substitute title/cast visibility.
+- [ ] Test replaced/recycled plates, context/profile/font changes, widgets-only transitions, TRP3 updates and disable/enable restoration. Record secure/taint errors and confirm current regions retain the correct native baseline.
+
+Phase 3 is implemented; native performance, rendering and secure acceptance remain pending. Phase 4 retains work budgeting and final client validation.

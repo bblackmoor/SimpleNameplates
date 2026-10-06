@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.204
+
+* Implements performance phase 3 of 4: reconciliation shares one operation-local access assessment across lookup, observation and selective repair. Text setup and restoration helpers also reuse their caller's assessment; restoration/region changes renew it.
+* Collects readable differences and writes only affected text, font, shadow, color, visibility or dimensions. Unchanged scans make no repair writes. Native label-chain changes reuse their observations and update only layout, without a full-style fallback.
+* Treats unreadable properties as unknown and backs off retries to at most sixteen reconciliation passes; independent readable differences still repair. Unknown cast visibility keeps titles hidden without repeat writes, while native cast hooks and events remain immediate.
+* Adds setter/read-count regressions for unchanged scans, isolated/combined differences, unknown-value recovery, layout reuse, stale assessments and write failures. Reconciliation remains on its 0.25-second cadence; live FPS/secure acceptance and phase 4 remain pending.
+
 ## 1.0.203
 
 * Implements performance phase 2 of 4: native name and health-color hooks use focused repairs; ordinary hooks no longer collect entity facts, resolve titles, or reapply bar artwork. Invalid cache/settings/context, changed regions and presentation structure retain safe full-styling fallbacks.
