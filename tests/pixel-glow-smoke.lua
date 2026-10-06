@@ -3,6 +3,8 @@ local function equal(actual, expected, label)
     assert(actual == expected, label .. ": expected " .. tostring(expected) .. ", got " .. tostring(actual))
 end
 
+local function NativeIsShown(self) return self.shown end
+
 local function Region(parent)
     local r = {parent = parent, shown = true, level = 1, scripts = {}}
     function r:GetParent() return self.parent end
@@ -12,7 +14,7 @@ local function Region(parent)
     function r:SetFrameLevel(v) self.level = v end
     function r:GetFrameLevel() return self.level end
     function r:SetScript(key, callback) self.scripts[key] = callback end
-    function r:IsShown() return self.shown end
+    r.IsShown = NativeIsShown
     function r:SetShown(value)
         if self.shown == value then return end
         self.shown = value
@@ -115,8 +117,8 @@ Update()
 equal(highlight.frame.shown, true, "interruptible event shows with unreadable native state")
 
 -- Start clears stale event state and uses Blizzard's newly rendered visual.
-frame.castBar.Icon.IsShown = Region.IsShown
-frame.castBar.BorderShield.IsShown = Region.IsShown
+frame.castBar.Icon.IsShown = NativeIsShown
+frame.castBar.BorderShield.IsShown = NativeIsShown
 frame.castBar.Icon.shown = true
 frame.castBar.BorderShield.shown = false
 ns.CastHighlight.RecordSpellcastEvent("UNIT_SPELLCAST_START", "nameplate1")
