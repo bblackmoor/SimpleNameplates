@@ -34,7 +34,7 @@ local function Apply(bar, fill, context)
         mask:SetTexture("Interface\\Buttons\\WHITE8X8", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "NEAREST")
         local tint = bar:CreateTexture(nil, "ARTWORK", nil, 3)
         tint:SetColorTexture(1, 1, 1, 1)
-        tint:SetGradient("HORIZONTAL", CreateColor(0, 0, 0, 0.9), CreateColor(0, 0, 0, SHADE_AT_KNEE))
+        tint:SetGradient("HORIZONTAL", CreateColor(0, 0, 0, 0.8), CreateColor(0, 0, 0, SHADE_AT_KNEE))
         tint:AddMaskTexture(mask)
         tint:SetPoint("TOPLEFT", bar, "TOPLEFT")
         tint:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT")
@@ -78,3 +78,4 @@ local function ThreatLayers(unit)
 end
 
 ns.HealthGradient = {Enabled = Enabled, Apply = Apply, Hide = Hide, ThreatLayers = ThreatLayers}
+

@@ -53,7 +53,7 @@ assert(mask.textureSampling[1] == "CLAMPTOBLACKADDITIVE"
     and mask.textureSampling[3] == "NEAREST", "hard clip cannot blend with transparent outside texels")
 assert(tint.color[1] == 1 and tint.color[2] == 1 and tint.color[3] == 1
     and tint.color[4] == 1, "solid tint base has no texture-edge shading")
-assert(tint.gradient[1] == "HORIZONTAL" and tint.gradient[2].a == 0.9 and tint.gradient[3].a == 0.55)
+assert(tint.gradient[1] == "HORIZONTAL" and tint.gradient[2].a == 0.8 and tint.gradient[3].a == 0.55)
 assert(tail.gradient[2].a == 0.55 and tail.gradient[3].a == 0, "shade stays stronger until final fifth")
 assert(tail.mask == mask, "both fades share native clipping")
 assert(tint.mask == mask and mask.allPoints == fill, "clip follows native remaining fill geometry")
@@ -103,3 +103,4 @@ for _, layer in ipairs(text.SNPUnderlayers) do assert(layer.alpha == 1) end
 ns.HealthGradient.Hide(bar)
 assert(not tail:IsShown() and not tint:IsShown(), "restoration hides tint")
 print("Health gradient smoke: passed")
+

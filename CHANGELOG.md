@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.199
+
+* Lightens the health gradient’s darkest left edge from 90% black to 80% black, including the settings preview. Preserves the fade to 55% black at 80% width and to clear at the right edge.
+
 ## 1.0.198
 
 * Repairs cast-highlight test fixtures by creating the real pulsing border with animation-capable UI stubs. Updates profile, settings, and loader checks for the Active switch and removal of the four library effects.
