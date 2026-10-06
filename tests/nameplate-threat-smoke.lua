@@ -73,7 +73,7 @@ local function Update(showBar)
     ns.NameplateThreat.UpdateThreatText(frame, "hostile", {}, {showHealthBar = showBar})
 end
 Update(true)
-equal(frame.SNPThreatText.text, "73%", "raw percentage preferred")
+equal(frame.SNPThreatText.text, "55%", "scaled percentage displayed")
 equal(frame.SNPThreatText.shown, true, "percentage explicitly shown")
 equal(frame.SNPThreatText.drawLevel, 7, "percentage drawn above bar artwork")
 equal(frame.SNPThreatText.r, 1, "threat stays white")
@@ -92,16 +92,17 @@ nameSize = 36
 Update(true)
 equal(frame.SNPThreatText.r, 1, "threat remains white after size change")
 equal(frame.SNPThreatText.size, 36, "threat follows changed name size")
-raw = 0
+scaled = 0
 Update(true)
 equal(frame.SNPThreatText.text, "0%", "readable zero displayed")
-raw = nil
+scaled = secret
 Update(true)
-equal(frame.SNPThreatText.text, "55%", "scaled fallback")
-raw = secret
+assert(rawequal(frame.SNPThreatText.argument, secret), "secret scaled percentage passed directly to display API")
+equal(frame.SNPThreatText.shown, true, "opaque scaled percentage displayed")
+scaled, raw = nil, 255
 Update(true)
-assert(rawequal(frame.SNPThreatText.argument, secret), "secret passed directly to display API")
-equal(frame.SNPThreatText.shown, true, "opaque percentage displayed")
+equal(frame.SNPThreatText.text, "", "raw 255 percentage is never used")
+equal(frame.SNPThreatText.shown, false, "raw-only threat is hidden")
 raw, scaled = nil, nil
 Update(true)
 equal(frame.SNPThreatText.text, "", "absent threat never fabricated")
