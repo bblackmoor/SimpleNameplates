@@ -98,6 +98,6 @@ ns.Defaults = {
     trp3 = DEFAULT_TRP3,
     stylingEnabled = DEFAULT_STYLING_ENABLED,
     showThreat = DEFAULT_SHOW_THREAT,
-    interruptibleCastStyle = "NONE",
+    interruptibleHighlight = false,
     hideCritterCompanionNames = DEFAULT_HIDE_CRITTER_COMPANION_NAMES,
 }
