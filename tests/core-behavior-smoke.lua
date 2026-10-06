@@ -501,7 +501,7 @@ for line in toc:lines() do
 end
 toc:close()
 equal(table.concat(modules, ","),
-    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,Profiler.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,HealthGradient.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsColorPicker.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfileDialogs.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
+    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,Profiler.lua,PeriodicWork.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,HealthGradient.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsColorPicker.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfileDialogs.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
     "TOC module order")
 
 -- Removing the optional bundle persists until an explicit bundled restore.
@@ -692,6 +692,5 @@ do
 end
 
 print("Core behavior smoke: passed")
-
 
 

@@ -12,7 +12,14 @@ local UpdateData = ns.NameplatePresentation.UpdateData
 local RepairHealthColor, RepairName =
     ns.NameplatePresentation.RepairHealthColor, ns.NameplatePresentation.RepairName
 local Restoration = ns.NameplateRestoration
-local knownFrames = {}
+local Periodic = ns.PeriodicWork
+local Cap = ns.PresentationCapabilities
+local knownFrames, knownPlates = {}, {}
+local reconcilePlates, nextSnapshot = {}, 0
+local function ResetReconciliation()
+    Periodic.Clear("reconciliation")
+    reconcilePlates, nextSnapshot = {}, 0
+end
 local pendingUnits = {}
 local removedUnits = {}
 local pendingPlates = setmetatable({}, {__mode = "k"})
@@ -26,22 +33,54 @@ local function MergeWork(destination, source)
     return destination
 end
 
-local function RefreshUnit(unit, reason, work)
+local RefreshUnit
+local function RetryUnit(unit)
+    if not pendingUnits[unit] or removedUnits[unit] then return end
+    if not GetStylingEnabled() then return end
+    RefreshUnit(unit, "pending unit", pendingUnits[unit])
+    if pendingUnits[unit] then return 0.25 end
+end
+local function RetryPlate(plate)
+    if not pendingPlates[plate] or not GetStylingEnabled() then return end
+    local context = WorldContext.Get()
+    local frame = GetFrameFromPlate(plate, context)
+    if not frame then return 0.25 end
+    local unit = ns.AccessibleValue(frame.unit)
+    if type(unit) ~= "string" then return 0.25 end
+    if removedUnits[unit] then pendingPlates[plate] = nil; return end
+    local ok, current = pcall(C_NamePlate.GetNamePlateForUnit, unit)
+    current = ok and ns.AccessibleValue(current)
+    if not current then return 0.25 end
+    if current ~= plate then pendingPlates[plate] = nil; return end
+    pendingPlates[plate] = nil
+    knownFrames[unit], knownPlates[unit], removedUnits[unit] = frame, plate, nil
+    ApplySimpleStyle(frame, context, "pending plate")
+end
+local function DeferUnit(unit)
+    Periodic.Schedule("unit retry", unit, RetryUnit, 0.25)
+end
+local function DeferPlate(plate)
+    Periodic.Schedule("plate retry", plate, RetryPlate, 0.25)
+end
+RefreshUnit = function(unit, reason, work)
     if removedUnits[unit] then return end
     work = MergeWork(pendingUnits[unit] or {}, work or fullWork)
     local context = WorldContext.Get()
-    local frame = GetUnitFrame(unit, context)
-    if frame then
-        knownFrames[unit], pendingUnits[unit] = frame, nil
+    local frame, _, plate = GetUnitFrame(unit, context)
+    local assigned = frame and ns.AccessibleValue(Cap.SafeField(frame, "unit", context))
+    if frame and assigned == unit then
+        knownFrames[unit], knownPlates[unit], pendingUnits[unit] = frame, plate, nil
+        Periodic.Cancel("unit retry", unit)
         if work.full then ApplySimpleStyle(frame, context, reason or "unit refresh")
         else UpdateData(frame, context, work) end
-    else pendingUnits[unit] = work end
+    else pendingUnits[unit] = work; DeferUnit(unit) end
 end
 
 local function RefreshAll(work, queuedUnits)
     if not GetStylingEnabled() then return end
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     work = work or fullWork
+    if work.full then ResetReconciliation() end
     local context = WorldContext.Get()
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
         local frame = GetFrameFromPlate(plate, context)
@@ -49,7 +88,7 @@ local function RefreshAll(work, queuedUnits)
             local unit = ns.AccessibleValue(frame.unit)
             local currentWork = work
             if type(unit) == "string" then
-                knownFrames[unit], removedUnits[unit] = frame, nil
+                knownFrames[unit], knownPlates[unit], removedUnits[unit] = frame, plate, nil
                 local pending = pendingUnits[unit]
                 if queuedUnits and queuedUnits[unit] then
                     pending = MergeWork(pending or {}, queuedUnits[unit])
@@ -57,15 +96,18 @@ local function RefreshAll(work, queuedUnits)
                 end
                 if pending then currentWork = MergeWork(pending, work) end
                 pendingUnits[unit] = nil
+                Periodic.Cancel("unit retry", unit)
             end
             pendingPlates[plate] = nil
+            Periodic.Cancel("plate retry", plate)
             if currentWork.full then ApplySimpleStyle(frame, context, "refresh all")
             else UpdateData(frame, context, currentWork) end
-        else pendingPlates[plate] = true end
+        else pendingPlates[plate] = true; DeferPlate(plate) end
     end
 end
 
 local function RestoreAll()
+    ResetReconciliation()
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     local context = WorldContext.Get()
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
@@ -116,6 +158,7 @@ local function QueueUnitRefresh(unit, event)
 end
 
 local function QueueRefreshAll(reason, work)
+    if not work or work.full then ResetReconciliation() end
     ns.Profiler.Count("Queued global refresh", reason or "settings or callback")
     allWork = MergeWork(allWork or {}, work or fullWork)
 end
@@ -177,10 +220,17 @@ local function HandleCVarUpdate(cvarName)
 end
 
 local function CleanupRemovedNameplate(unit)
-    if ns.CastHighlight and ns.CastHighlight.ClearUnit then ns.CastHighlight.ClearUnit(unit) end
     local frame = knownFrames[unit] or GetUnitFrame(unit, WorldContext.Get())
+    if ns.CastHighlight and ns.CastHighlight.ClearUnit then ns.CastHighlight.ClearUnit(unit, frame) end
+    local plate = knownPlates[unit]
+    if plate then
+        Periodic.Cancel("reconciliation", plate)
+        Periodic.Cancel("plate retry", plate)
+        pendingPlates[plate], reconcilePlates[plate] = nil, nil
+    end
+    Periodic.Cancel("unit retry", unit)
     Restoration.Request(frame, WorldContext.Get(), unit)
-    knownFrames[unit], dirtyUnits[unit], pendingUnits[unit] = nil, nil, nil
+    knownFrames[unit], knownPlates[unit], dirtyUnits[unit], pendingUnits[unit] = nil, nil, nil, nil
     removedUnits[unit] = true
 end
 
@@ -237,26 +287,35 @@ end
 events:SetScript("OnEvent", HandleEvent)
 
 
--- Blizzard sometimes changes name text, font, or color without calling either
--- compact unit-frame update path. Compare readable text and safe cached
--- properties four times per second and write only when something has drifted.
--- Avoid point inspection on
--- Blizzard frames; hooks handle placement changes. Classification, TRP3
--- profile access, threat checks, and health-bar styling remain event-driven.
-local function ReconcileNames(context)
-    if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
-    for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
-        local frame, assessment = GetFrameFromPlate(plate, context)
-        if frame and frame.SNPArtworkPending then
-            if assessment.canAccess then ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context) end
-            -- Native callbacks during artwork writes may replace regions.
-            assessment = ns.PresentationCapabilities.InspectFrame(frame, context)
+-- Reconcile one current plate per job; no assessment or property observation
+-- survives between jobs. Urgent events are flushed before this shared budget.
+local function ReconcileNames(plate)
+    if not GetStylingEnabled() or not reconcilePlates[plate] then return end
+    local context = WorldContext.Get()
+    local frame, assessment = GetFrameFromPlate(plate, context)
+    if frame then
+        local unit = ns.AccessibleValue(frame.unit)
+        if type(unit) ~= "string" then return 0.25 end
+        if removedUnits[unit] then reconcilePlates[plate] = nil; return end
+        local getter = C_NamePlate and C_NamePlate.GetNamePlateForUnit
+        if type(getter) == "function" then
+            local ok, current = pcall(getter, unit)
+            current = ok and ns.AccessibleValue(current)
+            if not current then return 0.25 end
+            if current ~= plate then
+                ns.Profiler.Count("Periodic limits", "stale plate")
+                reconcilePlates[plate] = nil; return
+            end
         end
-        if frame and frame.SNPTitleVisibilityPending then
+        if frame.SNPArtworkPending then
+            ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
+            assessment = Cap.InspectFrame(frame, context)
+        end
+        if frame.SNPTitleVisibilityPending then
             ns.NameplateText.SyncFullTitleVisibility(frame, context, assessment, true)
         end
         local drifted, reason, plan
-        if frame and frame.SNPState then drifted, reason, plan = CachedNameHasDrifted(frame, context, assessment) end
+        if frame.SNPState then drifted, reason, plan = CachedNameHasDrifted(frame, context, assessment) end
         if drifted then
             ns.Profiler.Count("Name drift", reason or "unknown")
             if RepairCachedName(frame, context, assessment, plan) then
@@ -266,49 +325,67 @@ local function ReconcileNames(context)
                 ApplySimpleStyle(frame, context, "reconciliation fallback")
             end
         end
-        if frame and frame.SNPArtworkPending then
-            local current = ns.PresentationCapabilities.InspectFrame(frame, context)
+        if frame.SNPArtworkPending then
+            local current = Cap.InspectFrame(frame, context)
             if current.canAccess then ns.NameplateFrames.ApplyBarArtwork(frame, current, context) end
         end
     end
+    return 0.25
 end
 ReconcileNames = ns.Profiler.Wrap("Reconciliation", ReconcileNames)
 
-local reconcileElapsed = 0
-local function RuntimeUpdate(_, elapsed)
-    reconcileElapsed = reconcileElapsed + elapsed
-    local reconcile = reconcileElapsed >= 0.25
-    local context = WorldContext.Get()
-    if reconcile then
-        reconcileElapsed = 0
-        if Restoration.Retry(context) and GetStylingEnabled() then QueueRefreshAll("restoration retry") end
-        ns.CastHighlight.RetryPending(context)
-        for plate in pairs(pendingPlates) do
-            if not GetStylingEnabled() then
-                if Restoration.RequestPlate(plate, context) then pendingPlates[plate] = nil end
-            else
-                local frame = GetFrameFromPlate(plate, context)
-                if frame then
-                    pendingPlates[plate] = nil
-                    local unit = ns.AccessibleValue(frame.unit)
-                    if type(unit) == "string" then knownFrames[unit], removedUnits[unit] = frame, nil end
-                    ApplySimpleStyle(frame, context, "pending plate")
-                end
-            end
-        end
-        if GetStylingEnabled() then
-            for unit, work in pairs(pendingUnits) do RefreshUnit(unit, "pending unit", work) end
+local function DiscoverPlates()
+    if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
+    -- The native list snapshot and Lua queue bookkeeping do no plate styling.
+    local present = {}
+    for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
+        present[plate], reconcilePlates[plate] = true, true
+        Periodic.Schedule("reconciliation", plate, ReconcileNames)
+    end
+    for plate in pairs(reconcilePlates) do
+        if not present[plate] then
+            Periodic.Cancel("reconciliation", plate)
+            reconcilePlates[plate] = nil
         end
     end
-    if not GetStylingEnabled() then return end
-    FlushQueuedRefreshes()
-    if not reconcile then return end
-
-    ReconcileNames(context)
+    for unit in pairs(pendingUnits) do DeferUnit(unit) end
+    for plate in pairs(pendingPlates) do
+        if present[plate] then DeferPlate(plate)
+        else pendingPlates[plate] = nil; Periodic.Cancel("plate retry", plate) end
+    end
+end
+DiscoverPlates = ns.Profiler.Wrap("Plate discovery", DiscoverPlates)
+local wasEnabled
+local function RuntimeUpdate(_, elapsed)
+    Periodic.Advance(elapsed)
+    local enabled = GetStylingEnabled()
+    if enabled ~= wasEnabled then
+        ResetReconciliation()
+        if not enabled then
+            Periodic.Clear("unit retry"); Periodic.Clear("plate retry")
+        end
+        wasEnabled = enabled
+    end
+    if enabled then
+        FlushQueuedRefreshes()
+        if Periodic.Now() >= nextSnapshot then
+            nextSnapshot = Periodic.Now() + 0.25
+            DiscoverPlates()
+        end
+    end
+    -- Restoration remains eligible while styling is disabled. All routine
+    -- reconciliation and deferred retries share this frame's one budget.
+    Periodic.Run()
 end
 events:SetScript("OnUpdate", ns.Profiler.Wrap("Runtime update", RuntimeUpdate))
 
 
+ns.RefreshRestoredNameplate = function(frame)
+    local unit = ns.AccessibleValue(frame.unit)
+    if GetStylingEnabled() and type(unit) == "string" and not removedUnits[unit] then
+        RefreshUnit(unit, "restoration retry", fullWork)
+    end
+end
 ns.QueueNameplateRefresh = QueueRefreshAll
 ns.RefreshAll = function() RefreshAll() end
 ns.RefreshNameplateData = function(work) QueueRefreshAll("TRP3 callback", work) end

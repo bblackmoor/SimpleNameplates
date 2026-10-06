@@ -159,8 +159,10 @@ local function InspectUnit(unit, context)
     local status = ObjectStatus(plate, context)
     if status ~= "accessible" then return { status = status, canAccess = false } end
     local frame, readable = Field(plate, "UnitFrame")
-    if readable == false then return {status = "unknown", canAccess = false} end
-    return InspectFrame(frame, context)
+    if readable == false then return {status = "unknown", canAccess = false, plate = plate} end
+    local assessment = InspectFrame(frame, context)
+    assessment.plate = plate
+    return assessment
 end
 
 local function CanAccessFrame(frame, context)

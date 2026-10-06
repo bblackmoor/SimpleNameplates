@@ -1,7 +1,7 @@
 # Live WoW integration verification
 
-Status: pending. Details Framework phases 1–6 repository work and follow-up fixes
-are complete through 1.0.163, with all 18 local smoke suites passing. These checks
+Status: pending. Repository work includes all four performance phases through
+1.0.205, with all 21 local smoke suites passing. These checks
 require a World of Warcraft client; local Lua stubs do not establish actual frame
 behavior, secure CVar behavior, or Midnight secret-value safety. Record the client
 build, addon version, date, and observed result when running them. Leave a check
@@ -142,7 +142,17 @@ Phase 2 is implemented; native performance, rendering and secure acceptance rema
 
 - [ ] Repeat comparable crowded recordings with profiling off/on. Capture all timing/reason rows, FPS, addon version, approximate plate count and combat state. Compare Reconciliation, Access assessment, Text repair and full-styling fallback calls without summing inclusive timings.
 - [ ] Verify stable names stay correct, including inside/above placement, dimming, thin outlines and title width. Change native health-label visibility and confirm name space updates without unrelated text/font changes.
-- [ ] Test inaccessible/secret properties and readable recovery. Unknown observations must not cause repair storms; periodic recovery may take up to sixteen reconciliation passes. Native cast hooks/events must still immediately substitute title/cast visibility.
+- [ ] Test inaccessible/secret properties and readable recovery. Unknown observations must not cause repair storms; phase 4 uses elapsed retry eligibility of up to four seconds, followed by fair budgeted service. Native cast hooks/events must still immediately substitute title/cast visibility.
 - [ ] Test replaced/recycled plates, context/profile/font changes, widgets-only transitions, TRP3 updates and disable/enable restoration. Record secure/taint errors and confirm current regions retain the correct native baseline.
 
 Phase 3 is implemented; native performance, rendering and secure acceptance remain pending. Phase 4 retains work budgeting and final client validation.
+
+## Performance phase 4 acceptance (1.0.205)
+
+- [ ] In a similar crowded scene, record approximately 120 seconds with `/snp perf start`, then `/snp perf stop` and `/snp perf report`. Screenshot all rows and record approximate plate count, FPS/range, combat state, addon version, TRP3/gradient/Slug settings and activity. Repeat with profiling off and compare with earlier builds without summing inclusive rows.
+- [ ] Confirm Periodic work, Plate discovery, per-plate Reconciliation and job/limit counters are readable. Reconciliation calls now mean individual plates, so pre-phase-4 per-call averages/counts are not comparable. Use runtime/total costs and observed frame pacing to tune the initial four-job/one-millisecond target.
+- [ ] With many plates, move targets/mouseover, rename/update TRP3, gain/lose threat, and start/stop/interruption casts/channels. Confirm urgent changes and title/cast substitution stay immediate while routine work is distributed.
+- [ ] Move away/back, remove/recycle plates, replace bars/names and switch profiles/fonts/context/combat state. All current plates must progress fairly; departed assignments must not receive stale text/layout. Check unknown/secret recovery, disable/re-enable and deferred restoration.
+- [ ] Record errors/taint and compare profiling off/on. The time target is cooperative and cannot preempt one expensive UI operation. Heavy queues or low FPS can extend intervals and service after retry deadlines; record visible lag before choosing a different budget.
+
+All four performance code phases are implemented. Live FPS, rendering, secure acceptance and budget tuning remain open; no native result is inferred from local stubs.

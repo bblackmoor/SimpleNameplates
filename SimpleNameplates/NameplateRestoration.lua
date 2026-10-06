@@ -4,8 +4,30 @@ local Cap = ns.PresentationCapabilities
 local GetContext = ns.WorldContext.Get
 local SetShownSafe = ns.NameplateFrames.SetShownSafe
 local Text = ns.NameplateText
+local Periodic = ns.PeriodicWork
 local pendingFrames = setmetatable({}, {__mode = "k"})
 local pendingPlates = setmetatable({}, {__mode = "k"})
+local Request, RequestPlate
+local function RetryFrame(frame)
+    if Request(frame, GetContext()) then
+        if ns.RefreshRestoredNameplate then ns.RefreshRestoredNameplate(frame) end
+        return
+    end
+    return 0.25
+end
+local function RetryPlate(plate)
+    local context = GetContext()
+    if RequestPlate(plate, context) then
+        local frame = Cap.SafeField(plate, "UnitFrame", context)
+        if frame and ns.RefreshRestoredNameplate then ns.RefreshRestoredNameplate(frame) end
+    elseif pendingPlates[plate] then return 0.25 end
+end
+local function DeferFrame(frame)
+    Periodic.Schedule("restoration frame", frame, RetryFrame, 0.25)
+end
+local function DeferPlate(plate)
+    Periodic.Schedule("restoration plate", plate, RetryPlate, 0.25)
+end
 -- Cast bars, selection highlights and classification badges stay Blizzard-driven.
 local visibilityKeys = {"name", "HealthBarsContainer", "castBarAnchor"}
 
@@ -124,13 +146,14 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     frame.SNPOriginalName, frame.SNPStyleSettings, frame.SNPStyledCastBar = nil, nil, nil
 end
 
-local function Request(frame, context, removedUnit)
+Request = function(frame, context, removedUnit)
     context = context or GetContext()
     frame = ns.AccessibleValue(frame)
     if not frame then return true end
     local assessment = Cap.InspectFrame(frame, context)
     if not assessment.canAccess then
         pendingFrames[frame] = removedUnit or pendingFrames[frame] or true
+        DeferFrame(frame)
         return false
     end
     if frame.SNPRestoring then return false end
@@ -145,6 +168,7 @@ local function Request(frame, context, removedUnit)
     frame.SNPRestoring = nil
     if not ok then
         pendingFrames[frame] = removedUnit or true
+        DeferFrame(frame)
         local message = tostring(ns.AccessibleValue(err) or "Unavailable restoration error")
         local previous = frame.SNPRestoreError
         frame.SNPRestoreError = message
@@ -152,38 +176,28 @@ local function Request(frame, context, removedUnit)
         return false
     end
     pendingFrames[frame], frame.SNPRestoreError = nil, nil
+    Periodic.Cancel("restoration frame", frame)
     return true
 end
 
-local function RequestPlate(plate, context)
+RequestPlate = function(plate, context)
     context = context or GetContext()
     plate = ns.AccessibleValue(plate)
     if not plate then return true end
     if Cap.ObjectStatus(plate, context) ~= "accessible" then
         pendingPlates[plate] = true
+        DeferPlate(plate)
         return false
     end
     local frame, readable = Cap.SafeField(plate, "UnitFrame", context)
-    if readable == false then pendingPlates[plate] = true; return false end
+    if readable == false then pendingPlates[plate] = true; DeferPlate(plate); return false end
     pendingPlates[plate] = nil
+    Periodic.Cancel("restoration plate", plate)
     return Request(frame, context)
 end
 
-local function Retry(context)
-    context = context or GetContext()
-    local restored = false
-    for plate in pairs(pendingPlates) do
-        if RequestPlate(plate, context) then restored = true end
-    end
-    for frame, removedUnit in pairs(pendingFrames) do
-        if Request(frame, context, type(removedUnit) == "string" and removedUnit or nil) then
-            restored = true
-        end
-    end
-    return restored
-end
 ns.NameplateRestoration = {
-    Capture = Capture, Request = Request, RequestPlate = RequestPlate, Retry = Retry,
-    Cancel = function(frame) pendingFrames[frame] = nil end,
+    Capture = Capture, Request = Request, RequestPlate = RequestPlate,
+    Cancel = function(frame) pendingFrames[frame] = nil; Periodic.Cancel("restoration frame", frame) end,
     IsPending = function(frame) return pendingFrames[frame] ~= nil end,
 }

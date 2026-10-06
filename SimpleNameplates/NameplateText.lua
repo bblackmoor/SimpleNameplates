@@ -85,7 +85,7 @@ local function SyncFullTitleVisibility(frame, context, assessment, retrying)
     assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
     if not assessment.canAccess or frame.SNPRestoring then return end
     local retry = retrying and frame.SNPTitleVisibilityRetry
-    if retry and retry.remaining > 0 then retry.remaining = retry.remaining - 1; return end
+    if retry and ns.PeriodicWork.Now() < retry.due then return end
     frame.SNPTitleVisibilityPending = nil
     local title, decision = frame.SNPFullTitleText, frame.SNPPresentation
     if not title then return end
@@ -99,8 +99,8 @@ local function SyncFullTitleVisibility(frame, context, assessment, retrying)
     local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(cast, "IsShown", context))
     if cast and shown == nil then
         frame.SNPTitleVisibilityPending = true
-        local delay = math.min((retry and retry.delay * 2 or 1), 16)
-        frame.SNPTitleVisibilityRetry = {remaining = delay - 1, delay = delay}
+        local delay = math.min((retry and retry.delay * 2 or 0.25), 4)
+        frame.SNPTitleVisibilityRetry = {due = ns.PeriodicWork.Now() + delay, delay = delay}
     else frame.SNPTitleVisibilityRetry = nil end
     -- Unknown cast visibility must not put title text over a possible cast.
     local desired = not cast or shown == false
@@ -448,15 +448,12 @@ local function CacheIsCurrent(frame, expected, context, assessment)
 end
 
 -- Unknown is neither equality nor drift. Retry an unreadable property after
--- 1, 2, 4, 8, then at most 16 reconciliation passes (four seconds), while
+-- 0.25, 0.5, 1, 2, then four elapsed seconds, independent of visit count, while
 -- continuing to observe independent properties. Styling resets this backoff.
 local function Observe(expected, key, region, method, context, count)
     local retries = expected.unknownReads
     local retry = retries and retries[key]
-    if retry and retry.remaining > 0 then
-        retry.remaining = retry.remaining - 1
-        return
-    end
+    if retry and ns.PeriodicWork.Now() < retry.due then return end
     local cap = ns.PresentationCapabilities
     local getter = cap.SafeField(region, method, context)
     local ok, a, b, c, d
@@ -468,8 +465,8 @@ local function Observe(expected, key, region, method, context, count)
         or (count and count >= 3 and c == nil) or (count and count >= 4 and d == nil)
     if unknown then
         retries = retries or {}; expected.unknownReads = retries
-        local delay = math.min((retry and retry.delay * 2 or 1), 16)
-        retries[key] = {remaining = delay - 1, delay = delay}
+        local delay = math.min((retry and retry.delay * 2 or 0.25), 4)
+        retries[key] = {due = ns.PeriodicWork.Now() + delay, delay = delay}
         if ok then return a, b, c, d end
         return
     end

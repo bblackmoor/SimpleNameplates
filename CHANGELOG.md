@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.205
+
+* Implements performance phase 4 of 4: routine per-plate reconciliation, deferred restoration, cast recovery and pending unit/plate retries share a fair scheduler with at most four jobs per frame and a one-millisecond cooperative time target. A native list snapshot discovers plates every 0.25 seconds; each served plate becomes due again after 0.25 seconds.
+* Flushes urgent event updates before periodic work. Jobs obtain fresh context/access, validate current assignments and cancel departed/recycled work; full refreshes and disable/reset invalidate routine queues. Restoration stays eligible while styling is disabled and refreshes only the recovered unit when active.
+* Converts unreadable-property and cast/title backoff from visit counts to elapsed-time deadlines (0.25–4 seconds). Cast hooks/events bypass backoff; actual retry service can lag a deadline under load. No assessments or property observations persist between jobs.
+* Adds Periodic work and Plate discovery timings plus job/limit counters. Reconciliation now measures one plate job, so older all-plate call counts/averages are not directly comparable.
+* All 21 smoke suites pass, including scheduler count/time limits, fairness, cancellation, callback failures, crowded runtime queues, urgent updates, recycling and disabled restoration. All four performance code phases are implemented; in-game FPS, rendering and secure acceptance remain pending. The initial budget awaits live tuning and cannot preempt one expensive UI operation.
+
 ## 1.0.204
 
 * Implements performance phase 3 of 4: reconciliation shares one operation-local access assessment across lookup, observation and selective repair. Text setup and restoration helpers also reuse their caller's assessment; restoration/region changes renew it.

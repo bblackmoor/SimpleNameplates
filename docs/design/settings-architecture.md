@@ -1,6 +1,6 @@
 # Settings and runtime architecture
 
-Current as of 1.0.167. Settings conversion and runtime module work are implemented; live WoW checks remain open. Saved data stays schema 2, with global behavior and account-wide appearance profiles selected per character. Earlier phase history is preserved in the [original implementation plan](implementation-plan.md), [runtime refactor plan](runtime-refactor-plan.md) and [Details Framework conversion record](details-framework-conversion.md).
+Current as of 1.0.205. Settings conversion and runtime module work are implemented; live WoW checks remain open. Saved data stays schema 2, with global behavior and account-wide appearance profiles selected per character. Earlier phase history is preserved in the [original implementation plan](implementation-plan.md), [runtime refactor plan](runtime-refactor-plan.md) and [Details Framework conversion record](details-framework-conversion.md).
 
 ## Settings ownership and pages
 
@@ -33,15 +33,16 @@ Reset settings on Appearance restores profile appearance and threat display plus
 | `TRP3.lua` | Optional cached RP integration with normal-name fallback |
 | `EntityFacts.lua` / `NameplateClassification.lua` | Safe observations and six-category first-match priority |
 | `PresentationCapabilities.lua` / `PresentationRules.lua` | Frame access and uniform Active presentation policy |
+| `PeriodicWork.lua` | Fair due-time scheduler, shared job/time budgets and elapsed-time retry clock |
 | `FontRendering.lua` | Shared thin solid outline flags for all styled plate text |
 | `NameplateFrames.lua` | Region access, original bar artwork/width and flat-fill styling |
 | `NPCTitles.lua` | Safe structured-tooltip subtitle resolution and bounded session caches |
 | `NameplateText.lua` | Names/titles, placement, bar-height padding, cast/title visibility and cached repair |
 | `NameplateThreat.lua` | Secret-safe formatted threat percentage; blank when unavailable |
-| `CastHighlight.lua` | Interruptible-cast LibCustomGlow effects and visibility/icon lifecycle |
+| `CastHighlight.lua` | Interruptible-cast pulse and visibility/icon lifecycle |
 | `NameplateRestoration.lua` | Original presentation restoration and deferred cleanup/retries |
 | `NameplatePresentation.lua` | Full styling, focused native name/health-color repairs and data updates |
-| `Nameplates.lua` | Single event frame, secure hooks, refresh queues, retries and 0.25-second reconciliation |
+| `Nameplates.lua` | Single event frame, secure hooks, urgent refresh queues, periodic discovery and per-plate reconciliation |
 | `Diagnostics.lua` | Read-only context, targeted-unit and relevant-plate reporting |
 | `SettingsControls.lua` / `SettingsWidgets.lua` | Shared layout/reflow and the Details Framework widget adapter |
 | `SettingsColorPicker.lua` | Native RGB session ownership, captured target, preview/commit/cancel and stale callbacks |
@@ -61,7 +62,7 @@ Classification determines priority color. Every ordinary accessible plate shows 
 
 WorldContext reads game APIs only on refresh events; its Get operation returns the cache. Presentation and repair paths assess frame access before inspecting or writing regions. Unknown and secret observations remain distinct from false. Threat percentages use the supported text formatter without addon arithmetic on secret values.
 
-Queued refresh flags merge per unit and across all-plate requests, then run from a detached batch in the per-frame callback. Ordinary Blizzard name/color hooks use focused repair paths; invalid cached presentation falls back to full styling. Restoration retries, pending unit/plate retries, cached-name drift scans and pending title-visibility repairs run on the 0.25-second reconciliation cadence. Reconciliation shares its lookup assessment through observation/repair, writes only readable differences and reuses native-label observations for changed layout. Unknown properties back off retries without blocking readable checks; unchanged plates receive no repair writes. It does not routinely reclassify every visible entity; structural invalidation can fall back to full styling. Profiling wraps these existing paths without changing their cadence.
+Queued refresh flags merge per unit and across all-plate requests, then run from a detached batch in the per-frame callback. Ordinary Blizzard name/color hooks use focused repair paths; invalid cached presentation falls back to full styling. Restoration, cast and pending unit/plate retries share a scheduler budget with per-plate reconciliation: at most four jobs per frame with a one-millisecond target checked between jobs. List discovery runs every 0.25 seconds; served plates become due again after 0.25 seconds. Events remain ahead of routine work and restoration continues while styling is disabled. Reconciliation shares its lookup assessment through observation/repair, writes only readable differences and reuses native-label observations for changed layout. Unknown properties use elapsed-time retry deadlines of 0.25–4 seconds without blocking readable checks; unchanged plates receive no repair writes. It does not routinely reclassify every visible entity; structural invalidation can fall back to full styling. Profiling measures periodic slices, native-list discovery and individual plate jobs; it does not change scheduling settings.
 
 ## Load order and CVar safety
 

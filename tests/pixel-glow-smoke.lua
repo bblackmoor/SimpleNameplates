@@ -84,6 +84,8 @@ frame.castBar.BorderShield = Region(frame.castBar)
 frame.castBar.BorderShield:Hide()
 frame.castBar.HideIconWhenNotInterruptible = true
 
+assert(loadfile("SimpleNameplates/Profiler.lua"))("SimpleNameplates", ns)
+assert(loadfile("SimpleNameplates/PeriodicWork.lua"))("SimpleNameplates", ns)
 assert(loadfile("SimpleNameplates/CastHighlight.lua"))("SimpleNameplates", ns)
 local function Update() ns.CastHighlight.UpdateInterruptibleHighlight(frame, {}, frame.SNPPresentation) end
 
@@ -155,7 +157,8 @@ blocked = true
 frame.castBar.Icon:SetShown(false)
 assert(highlight.frame.shown, "blocked hook defers refresh")
 blocked = false
-ns.CastHighlight.RetryPending({})
+ns.PeriodicWork.Advance(0.25)
+ns.PeriodicWork.Run()
 equal(highlight.frame.shown, false, "deferred refresh uses current native state")
 
 enabled = false

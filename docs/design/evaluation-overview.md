@@ -1,6 +1,6 @@
 # Onscreen entity evaluation
 
-Updated 2026-10-05 for 1.0.163. This document describes the actual runtime order. It does not propose a different tree or change classification behavior.
+Updated 2026-10-06 for 1.0.205. This document describes the actual runtime order. It does not propose a different tree or change classification behavior.
 
 ## Runtime entry and frame checks
 
@@ -15,7 +15,7 @@ Startup checks setting compatibility before normal styling. Events, queued refre
 7. Capture original values and save the selected state/decision. A widget-only decision suppresses actor text and returns.
 8. Apply ordinary bar/indicator visibility, name/title styling, supported health-bar color, threat text, and cast highlighting, in that order.
 
-`RefreshUnit` looks up a supplied plate before this pass; missing frames are queued for later retry. The 0.25-second reconciliation can repair current cached name styling without recollecting/classifying every entity. If cache repair cannot handle drift, it invokes a full styling pass. `/snp debug` separately collects target facts even when no plate exists, explaining why it can report Friendly for an entity that cannot be styled.
+`RefreshUnit` looks up a supplied plate before this pass; missing frames are queued for later retry. Each periodic plate reconciliation can repair current cached name styling without recollecting/classifying every entity. If cache repair cannot handle drift, it invokes a full styling pass. `/snp debug` separately collects target facts even when no plate exists, explaining why it can report Friendly for an entity that cannot be styled.
 
 ## Facts and classification
 
@@ -103,22 +103,29 @@ setup/new label creation and update name layout when label presence changes.
 Cast events synchronize highlight/title visibility without classification or
 name/layout work. TRP3 callbacks request queued name content.
 
-The 0.25-second reconciliation shares one access assessment across plate lookup,
+Each periodic plate job shares one access assessment across plate lookup,
 drift observation and repair. It collects readable mismatches and writes only
 their properties; changed health-label chains reuse observed labels for layout.
 Structural invalidation falls back to full styling. Assessments persist only for
 one operation and renew after restoration or native artwork callbacks. Text
 setup/layout/restoration helpers also accept their caller's assessment.
 
-Unreadable properties are unknown, with independent retries backing off to at
-most sixteen passes; they neither establish drift nor stop other checks. Pending
+Unreadable properties are unknown, with independent retries backing off to from
+0.25 seconds to four seconds; they neither establish drift nor stop other checks. Pending
 unknown cast visibility keeps titles hidden and backs off similarly, while native
 cast hooks and events remain immediate. Unchanged plates make no repair writes.
-See phase 3 of the [performance plan](performance-plan.md).
+Phase 4 puts reconciliation and deferred restoration/cast/unit/plate retries
+under one due-time scheduler: at most four jobs per frame with a one-millisecond
+cooperative target. Native list discovery occurs every 0.25 seconds; plate jobs
+are due again 0.25 seconds after service. Urgent event queues run first; routine
+backlog can extend service intervals. Removed/recycled assignments, full refreshes
+and disabling styling cancel stale routine work. Restoration stays eligible
+while disabled and refreshes only the recovered unit when active. Retry deadlines
+use elapsed time instead of visit counts. See the [performance plan](performance-plan.md).
 
 ## Optional profiling
 
-`Profiler.lua` wraps full styling, fact collection/classification, NPC-title lookup, cached text repair, focused name/health-color repairs, data/name-layout updates, access assessments, bar artwork, name/title styling, health-text layout, drift checks, the per-frame callback and its reconciliation scan. The report also includes full/focused styling and queued-event reasons and reconciliation drift/repair counters. `/snp perf start`, `stop` and `report` control session-only collection; profiling is off by default and changes no refresh cadence or saved values. Rows are inclusive and overlap. See the [profiling guide](profiling.md) for command behavior and memory/timing limits.
+`Profiler.lua` wraps full styling, fact collection/classification, NPC-title lookup, cached text repair, periodic scheduling/native-list discovery, focused name/health-color repairs, data/name-layout updates, access assessments, bar artwork, name/title styling, health-text layout, drift checks, the per-frame callback and its reconciliation scan. The report also includes full/focused styling and queued-event reasons and reconciliation drift/repair counters. `/snp perf start`, `stop` and `report` control session-only collection; profiling is off by default and changes no refresh cadence or saved values. Rows are inclusive and overlap. See the [profiling guide](profiling.md) for command behavior and memory/timing limits.
 
 ## Fixed health gradients
 

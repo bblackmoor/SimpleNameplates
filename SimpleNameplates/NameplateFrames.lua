@@ -3,7 +3,8 @@ local _, ns = ...
 local Capabilities = ns.PresentationCapabilities
 
 local function GetUnitFrame(unit, context)
-    return Capabilities.InspectUnit(unit, context).frame
+    local assessment = Capabilities.InspectUnit(unit, context)
+    return assessment.frame, assessment, assessment.plate
 end
 
 local function GetFrameFromPlate(plate, context)

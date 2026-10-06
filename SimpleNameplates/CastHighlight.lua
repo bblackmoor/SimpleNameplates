@@ -10,6 +10,20 @@ local GetHealthBar, GetCastBar = ns.NameplateFrames.GetHealthBar, ns.NameplateFr
 
 local pendingFrames = setmetatable({}, {__mode = "k"})
 local eventStateByUnit = {}
+local UpdateInterruptibleHighlight
+local function RetryFrame(frame)
+    if not pendingFrames[frame] then return end
+    local context = GetContext()
+    if CanAccessFrame(frame, context) then
+        UpdateInterruptibleHighlight(frame, context, frame.SNPPresentation)
+        return
+    end
+    return 0.25
+end
+local function DeferFrame(frame)
+    pendingFrames[frame] = true
+    ns.PeriodicWork.Schedule("cast retry", frame, RetryFrame, 0.25)
+end
 
 local START_EVENTS = {
     UNIT_SPELLCAST_START = true,
@@ -123,7 +137,7 @@ local function InstallRegionHook(highlight, region, registry)
     local ok = pcall(hooksecurefunc, region, "SetShown", function()
         local context = GetContext()
         if not CanAccessFrame(highlight.owner, context) then
-            pendingFrames[highlight.owner] = true
+            DeferFrame(highlight.owner)
             return
         end
         if highlight.owner.SNPInterruptibleHighlight ~= highlight then overlay:Hide(); return end
@@ -192,10 +206,11 @@ local function EnsureInterruptibleHighlight(frame, context)
     return highlight
 end
 
-local function UpdateInterruptibleHighlight(frame, context, decision)
+UpdateInterruptibleHighlight = function(frame, context, decision)
     context = context or GetContext()
-    if not CanAccessFrame(frame, context) then pendingFrames[frame] = true; return end
+    if not CanAccessFrame(frame, context) then DeferFrame(frame); return end
     pendingFrames[frame] = nil
+    ns.PeriodicWork.Cancel("cast retry", frame)
     if not GetStylingEnabled() or not decision or not decision.showCastBar
         or not GetInterruptibleHighlightEnabled() then
         if frame.SNPInterruptibleHighlight then
@@ -228,16 +243,9 @@ local function RecordSpellcastEvent(event, unit)
     return true
 end
 
-local function ClearUnit(unit)
+local function ClearUnit(unit, frame)
     if type(unit) == "string" then eventStateByUnit[unit] = nil end
-end
-
-local function RetryPending(context)
-    for frame in pairs(pendingFrames) do
-        if CanAccessFrame(frame, context) then
-            UpdateInterruptibleHighlight(frame, context, frame.SNPPresentation)
-        end
-    end
+    if frame then pendingFrames[frame] = nil; ns.PeriodicWork.Cancel("cast retry", frame) end
 end
 
 ns.CastHighlight = {
@@ -245,5 +253,4 @@ ns.CastHighlight = {
     UpdateInterruptibleHighlight = UpdateInterruptibleHighlight,
     RecordSpellcastEvent = RecordSpellcastEvent,
     ClearUnit = ClearUnit,
-    RetryPending = RetryPending,
 }

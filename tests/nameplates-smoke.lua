@@ -97,7 +97,7 @@ local ns = {
     BLIZZARD_CRITTER_COMPANION_NAME_CVARS = {},
     FRIENDLY_COLOR_CVARS = {},
 }
-for _, file in ipairs({ "Profiler.lua", "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "FontRendering.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
+for _, file in ipairs({ "Profiler.lua", "PeriodicWork.lua", "WorldContext.lua", "EntityFacts.lua", "NameplateClassification.lua", "PresentationCapabilities.lua", "PresentationRules.lua", "FontRendering.lua", "NameplateFrames.lua", "NPCTitles.lua", "NameplateText.lua", "NameplateThreat.lua", "CastHighlight.lua", "NameplateRestoration.lua", "NameplatePresentation.lua", "Nameplates.lua", "Diagnostics.lua" }) do
     assert(loadfile("SimpleNameplates/" .. file))("SimpleNameplates", ns)
 end
 -- Retired category-disable fixtures exercise the global restoration path.
@@ -107,6 +107,12 @@ ns.RefreshAll = function()
 end
 equal(#frames, 1, "one event frame")
 local events = frames[1]
+-- Characterization fixtures wait for the bounded periodic cycle to settle.
+-- Phase 4's dedicated checks below use individual RuntimeUpdate calls.
+local function Tick(elapsed)
+    events.scripts.OnUpdate(events, elapsed)
+    for _ = 1, 20 do ns.PeriodicWork.Run() end
+end
 equal(#hooks, 2, "two Blizzard repair hooks")
 equal(hooks[1].name, "CompactUnitFrame_UpdateHealthColor", "health hook")
 equal(hooks[2].name, "CompactUnitFrame_UpdateName", "name hook")
@@ -129,7 +135,7 @@ events.scripts.OnEvent(events, "CVAR_UPDATE", "UnitNameFriendlyPlayerName")
 equal(calls.managed, 1, "managed CVar update reapplied")
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
 equal(calls.pending, 1, "deferred CVar action applied after combat")
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 assert(ns.RefreshAll and ns.RestoreAll and ns.DebugUnit and ns.StateForUnit, "runtime API")
 
 local cases = {
@@ -251,7 +257,7 @@ ns.RefreshAll()
 equal(plateFrame.healthBar.width, 210, "bar uses 150 percent native width")
 equal(plateFrame.HealthBarsContainer.width, 210, "container follows bar width")
 plateFrame.healthBar.width, plateFrame.HealthBarsContainer.width = 140, 140
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.healthBar.width, 210, "cached repair restores configured width")
 appearance.healthBarWidth = 125
 ns.RefreshAll()
@@ -269,7 +275,7 @@ ns.RefreshAll()
 equal(plateFrame.healthBar.shown, true, "friendly uniform bar presentation")
 equal(plateFrame.name.g, 1, "uniform bar name stays white")
 plateFrame.name:SetTextColor(0, 1, 1)
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.name.g, 1, "cached drift repaired across module boundary")
 
 ns.TRP3 = { GetDisplayInfo = function()
@@ -284,7 +290,7 @@ appearance.namePlacement = "INSIDE"
 local oldNameStyle = {}
 for key, value in pairs(plateFrame.SNPNameStyle) do oldNameStyle[key] = value end
 events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.SNPState, "friendly", "combat does not change category")
 equal(plateFrame.healthBar.shown, true, "friendly combat bar")
 equal(plateFrame.SNPFullTitleText.shown, true, "idle friendly combat retains long title")
@@ -303,7 +309,7 @@ ns.RefreshAll()
 
 plateFrame.SNPNameStyle = oldNameStyle
 equal(ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get()), false, "stale cache rejected")
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.healthBar.shown, true, "stale drift cannot undo combat bar")
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
 -- A Blizzard name hook must apply the whole new decision before the queued refresh.
@@ -347,7 +353,7 @@ equal(plateFrame.SNPInsideName.points[1][5], -0.5, "asymmetric padding moves nam
 equal(plateFrame.healthBar.height, 43, "bar expands for full font plus padding")
 equal(plateFrame.HealthBarsContainer.height, 43, "container expands with bar")
 plateFrame.healthBar:SetHeight(20)
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.healthBar.height, 43, "drift repair retains expanded height")
 appearance.namePlacement, threatEnabled, threatPercent = "ABOVE", true, 100
 ns.RefreshAll()
@@ -409,7 +415,7 @@ equal(plateFrame.SNPRestoring, nil, "failed restoration releases guard")
 assert(ns.NameplateRestoration.IsPending(plateFrame), "failed restoration retained for retry")
 assert(plateFrame.SNPOriginalPresentation, "failed restoration retains native presentation")
 plateFrame.healthBar.SetStatusBarColor = setBarColor
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(ns.NameplateRestoration.IsPending(plateFrame), false, "successful retry removes pending work")
 equal(plateFrame.SNPState, "hostile", "successful retry reapplies hostile presentation")
 ns.RestoreAll()
@@ -446,15 +452,15 @@ plateFrame.IsForbidden = function() return true end
 plateFrame.castBar:Hide()
 equal(plateFrame.SNPTitleVisibilityPending, true, "blocked transition queues title visibility")
 plateFrame.IsForbidden = nil
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.SNPFullTitleText.shown, true, "blocked cast end retries when accessible")
 plateFrame.castBar:Show()
 events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(castOverlay.shown, true, "combat cast effect follows Blizzard icon")
 local iconHook = hooks[#hooks].callback
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 iconHook(plateFrame.castBar.Icon, true)
 equal(castOverlay.shown, true, "uniform icon hook remains available after combat")
 highlightEnabled = false
@@ -473,7 +479,7 @@ ns.RefreshAll()
 equal(plateFrame.SNPFullTitleText.shown, false, "unreadable cast visibility hides title")
 equal(plateFrame.SNPTitleVisibilityPending, true, "unreadable cast visibility queues retry")
 currentCast.IsShown = readShown
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.SNPFullTitleText.shown, true, "readable idle state restores title")
 plateFrame.castBar = Region(); plateFrame.castBar:Hide(); ns.RefreshAll()
 plateFrame.castBar:Show()
@@ -501,7 +507,7 @@ local savedBar = plateFrame.healthBar
 plateFrame.healthBar = nil
 unit = { reaction = 3 }
 events.scripts.OnEvent(events, "PLAYER_REGEN_DISABLED")
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.SNPPresentation.showHealthBar, false, "no fabricated health bar")
 equal(plateFrame.SNPPresentation.nameOnly, true, "missing bar uses name color")
 equal(plateFrame.name.g, 0, "missing-bar priority color")
@@ -539,7 +545,7 @@ ns.RefreshAll()
 ns.RestoreAll()
 hooks[1].callback(forbidden)
 hooks[2].callback(forbidden)
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 events.scripts.OnEvent(events, "NAME_PLATE_UNIT_REMOVED", "nameplate1")
 ns.NameplateText.RestoreNameDisplay(forbidden)
 equal(ns.NameplateText.CachedNameHasDrifted(forbidden), false, "forbidden drift skipped")
@@ -557,7 +563,7 @@ ns.RefreshAll()
 equal(plateFrame.SNPState, nil, "protected frame skipped during lockdown")
 locked = false
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 assert(plateFrame.SNPState, "protected frame refreshed after lockdown")
 plateFrame.IsProtected = nil
 C_NamePlate.GetNamePlateForUnit = function() return nil end
@@ -577,11 +583,11 @@ locked = true
 ns.WorldContext.Refresh("PLAYER_REGEN_DISABLED")
 stylingEnabled = false
 ns.RestoreAll()
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 assert(plateFrame.SNPState, "protected style retained until safe restoration")
 locked = false
 events.scripts.OnEvent(events, "PLAYER_REGEN_ENABLED")
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.SNPState, nil, "disabled styling restoration retried")
 equal(plateFrame.SNPPresentation, nil, "presentation cache cleared on restore")
 equal(plateFrame.SNPInsideName.shown, false, "deferred inside name hidden")
@@ -593,10 +599,10 @@ local baseForbidden = true
 plate.IsForbidden = function() return baseForbidden end
 stylingEnabled = false
 ns.RestoreAll()
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 assert(plateFrame.SNPState, "forbidden base plate restoration postponed")
 baseForbidden = false
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.SNPState, nil, "base plate restoration retried with styling off")
 plate.IsForbidden = nil
 stylingEnabled = true
@@ -607,7 +613,7 @@ plateFrame.IsForbidden = function() return frameForbidden end
 categoryMode = "inactive"
 ns.RefreshAll()
 frameForbidden = false
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.SNPState, nil, "inactive restoration after access returns without context event")
 plateFrame.IsForbidden = nil
 categoryMode = "active"
@@ -624,7 +630,7 @@ ns.WorldContext.Refresh("PLAYER_REGEN_ENABLED")
 C_NamePlate.GetNamePlateForUnit = function() return plate end
 ns.RefreshAll()
 equal(plateFrame.SNPOriginalUnit, "nameplate2", "recycled frame captures current owner")
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 assert(plateFrame.SNPState, "old pending cleanup does not clear recycled style")
 equal(plateFrame.name.text, "Roleplay Name", "recycled name remains")
 plateFrame.IsProtected = nil
@@ -873,10 +879,10 @@ equal(plateFrame.name.flags, "OUTLINE", "sanctuary name uses thin outline")
 equal(plateFrame.SNPFullTitleText.flags, "OUTLINE", "title uses thin outline")
 equal(plateFrame.SNPFullTitleText.font, "Fonts\\WorldLocalized.ttf", "sanctuary TRP3 title font")
 plateFrame.name:SetFont("Fonts\\Drift.ttf", 12, "OUTLINE")
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.name.font, "Fonts\\WorldLocalized.ttf", "cached repair retains sanctuary font")
 appearance.matchSanctuaryFont = false
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(plateFrame.name.font, "Fonts\\ARIALN.TTF", "switch off invalidates font cache")
 equal(plateFrame.SNPFullTitleText.font, "Fonts\\ARIALN.TTF", "switch off refreshes title font")
 appearance.matchSanctuaryFont = true
@@ -1019,6 +1025,7 @@ widgetFrame.healthBar, widgetFrame.HealthBarsContainer = Region(), Region()
 widgetFrame.WidgetContainer = Region()
 widgetFrame.SNPFullTitleText, widgetFrame.SNPInsideName = Region(), Region()
 local widgetPlate = {UnitFrame = widgetFrame}
+C_NamePlate.GetNamePlateForUnit = function(token) return token == "nameplate21" and widgetPlate or plate end
 C_NamePlate.GetNamePlates = function() return {widgetPlate, plate} end
 C_TooltipInfo = {GetUnit = function() return {lines = {
     {type = 2, leftText = "Orin Straylight"},
@@ -1040,7 +1047,7 @@ equal(plateFrame.SNPFullTitleText.shown, true, "ordinary service title visible")
 equal(plateFrame.name.g, 1, "ordinary uniform bar name remains white")
 widgetFrame.name:SetAlpha(1)
 widgetFrame.SNPFullTitleText:Show()
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(widgetFrame.name.alpha, 0, "widget name drift repaired")
 equal(widgetFrame.SNPFullTitleText.shown, false, "widget title drift repaired")
 widgetFrame.name:SetAlpha(1)
@@ -1059,11 +1066,11 @@ equal(widgetFrame.WidgetContainer.shown, true, "restoration preserves widgets")
 stylingEnabled = true
 ns.RefreshAll()
 widgetMode = false
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(widgetFrame.name.alpha, 1, "widget-to-ordinary transition restores name")
 equal(widgetFrame.SNPFullTitleText.shown, true, "widget-to-ordinary transition styles title")
 widgetMode = true
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(widgetFrame.name.alpha, 0, "ordinary-to-widget transition suppresses text")
 equal(widgetFrame.healthBar.shown, true, "transition restores Blizzard bar before suppression")
 UnitNameplateShowsWidgetsOnly = function() error("restricted") end
@@ -1162,12 +1169,12 @@ ns.RefreshAll()
 hooks[1].callback(plateFrame)
 hooks[2].callback(plateFrame)
 plateFrame.name.text = "Drifted"
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 -- Label-chain drift needs only layout; structural invalidation still falls back.
 plateFrame.SNPNameStyle.healthTextSignature = "stale"
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 plateFrame.SNPNameStyle.presentation = nil
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 ns.NameplateText.RepairCachedName(plateFrame, ns.WorldContext.Get())
 events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", "nameplate1")
 events.scripts.OnUpdate(events, 0.01)
@@ -1216,7 +1223,7 @@ for _, disableMaster in ipairs({false, true}) do
         else categoryMode = "inactive"; ns.RefreshAll() end
         equal(plateFrame.castBar.shown, not initiallyCasting, "disable preserves current cast visibility")
         equal(plateFrame.name.text, "After rename", "disable restores current native unit name")
-        events.scripts.OnUpdate(events, 0.25)
+        Tick(0.25)
         equal(plateFrame.castBar.shown, not initiallyCasting, "cast state survives reconciliation")
     end
 end
@@ -1231,14 +1238,14 @@ for _, placement in ipairs({"ABOVE", "INSIDE"}) do
     appearance.namePlacement = placement
     ns.RefreshAll()
     plateFrame.name:Hide()
-    events.scripts.OnUpdate(events, 0.25)
+    Tick(0.25)
     equal(plateFrame.name.shown, true, "native name visibility repaired")
     plateFrame.name:SetText("Overwritten native name")
-    events.scripts.OnUpdate(events, 0.25)
+    Tick(0.25)
     equal(plateFrame.name.text, "Expected RP name", "native text-only drift repaired")
     if placement == "INSIDE" then
         plateFrame.SNPInsideName:SetText("Overwritten inside name")
-        events.scripts.OnUpdate(events, 0.25)
+        Tick(0.25)
         equal(plateFrame.SNPInsideName.text, "Expected RP name", "inside text-only drift repaired")
     end
 end
@@ -1274,10 +1281,10 @@ for _, shown in ipairs({false, true}) do
     iconBlocked = true
     plateFrame.castBar.Icon:SetShown(shown)
     retryIconHook(plateFrame.castBar.Icon, shown)
-    events.scripts.OnUpdate(events, 0.25)
+    Tick(0.25)
     equal(retryOverlay.shown, not shown, "restricted cast callback defers writes")
     iconBlocked = false
-    events.scripts.OnUpdate(events, 0.25)
+    Tick(0.25)
     equal(retryOverlay.shown, shown, "cast retry reads current icon visibility")
 end
 iconBlocked = true
@@ -1285,7 +1292,7 @@ retryIconHook(plateFrame.castBar.Icon, false)
 stylingEnabled = false
 ns.RestoreAll()
 iconBlocked = false
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(retryOverlay.shown, false, "pending cast retry cannot revive disabled styling")
 stylingEnabled = true
 
@@ -1320,7 +1327,7 @@ ns.RefreshAll()
 local containerOnly = Region()
 containerOnly:SetWidth(240); containerOnly:SetHeight(40); containerOnly:Hide()
 plateFrame.HealthBarsContainer = containerOnly
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(containerOnly.width, 360, "container-only replacement uses its own width")
 equal(containerOnly.height, 40, "container-only replacement keeps taller native height")
 equal(replacementContainer.width, 220, "retired container restored during reconciliation")
@@ -1339,7 +1346,7 @@ plateFrame.healthBar = accessibleNewBar
 ns.RefreshAll()
 equal(accessibleNewBar.width, 180, "restricted retired bar defers replacement styling")
 retiredBlocked = false
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(accessibleNewBar.width, 270, "replacement styled when retired bar accessible")
 ns.RestoreAll()
 equal(accessibleNewBar.width, 180, "replacement width restores after access retry")
@@ -1481,17 +1488,17 @@ for _, label in pairs(healthLabels) do label:Show() end
 appearance.namePlacement, threatEnabled = "INSIDE", true
 ns.RefreshAll()
 healthLabels.RightText:Hide()
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(healthLabels.Text.points[1][2], healthLabels.LeftText, "reconciliation removes hidden middle label")
 healthLabels.RightText:Show()
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(healthLabels.Text.points[1][2], healthLabels.RightText, "reconciliation reserves newly shown middle label")
 local nativeLabelBlocked = true
 healthLabels.RightText.IsForbidden = function() return nativeLabelBlocked end
 stylingEnabled = false; ns.RestoreAll()
 assert(ns.NameplateRestoration.IsPending(plateFrame), "inaccessible health label defers restoration")
 nativeLabelBlocked = false
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 equal(healthLabels.RightText.points[1][4], -4, "health-label restoration retries after access returns")
 
 -- Unknown native visibility reserves space without inspecting opaque health text.
@@ -1531,7 +1538,7 @@ for _, placement in ipairs({"ABOVE", "INSIDE"}) do
         equal(plateFrame.SNPFullTitleText.shown, true, "bar off displays title")
         equal(plateFrame.SNPThreatText.shown, false, "bar off hides threat")
         plateFrame.healthBar:Show()
-        events.scripts.OnUpdate(events, 0.25)
+        Tick(0.25)
         equal(plateFrame.healthBar.shown, false, "reconciliation repairs native reshow")
         showBar = true
         ns.RefreshAll()
@@ -1567,7 +1574,7 @@ appearance.namePlacement, threatEnabled, threatPercent = "INSIDE", true, 255
 ns.RefreshAll()
 assert(bar.SNPHealthGradient.shown)
 assert(plateFrame.SNPInsideName.flags == "OUTLINE" and plateFrame.SNPInsideName.SNPUnderlayers == nil)
-events.scripts.OnUpdate(events, 0.25)
+Tick(0.25)
 gradients = false
 ns.RefreshAll()
 assert(not bar.SNPHealthGradient.shown)
@@ -1659,7 +1666,7 @@ local function CheckFocusedUpdates()
     C_NamePlate.GetNamePlateForUnit = function() return plate end
     C_NamePlate.GetNamePlates = function() return {plate} end
     ns.RefreshAll()
-    events.scripts.OnUpdate(events, 0.25)
+    Tick(0.25)
     local function Measure(callback)
         local lines, savedPrint = {}, print
         print = function(line) lines[#lines + 1] = line end
@@ -1789,7 +1796,7 @@ local function CheckFocusedUpdates()
     events.scripts.OnEvent(events, "UNIT_SPELLCAST_STOP", "nameplate1")
     events.scripts.OnUpdate(events, 0.001)
     C_NamePlate.GetNamePlateForUnit = function() return plate end
-    report = Measure(function() events.scripts.OnUpdate(events, 0.25) end)
+    report = Measure(function() Tick(0.25) end)
     Calls(report, "Data update", 1)
     equal(plateFrame.SNPInsideName.text, "Deferred RP", "pending updates keep name work")
 
@@ -1891,7 +1898,7 @@ local function CheckSelectiveReconciliation()
     plateFrame.castBar = Region()
     plateFrame.castBar.shown = false
     ns.RefreshAll()
-    events.scripts.OnUpdate(events, 0.25)
+    Tick(0.25)
     local context = ns.WorldContext.Get()
     local cap, text = ns.PresentationCapabilities, ns.NameplateText
     local name, bar, inside, title = plateFrame.name, plateFrame.healthBar, plateFrame.SNPInsideName, plateFrame.SNPFullTitleText
@@ -1941,7 +1948,7 @@ local function CheckSelectiveReconciliation()
     -- Isolate the real reconciliation callback from unrelated deferred work
     -- left by earlier restricted-restoration fixtures.
     local reconcileNames = assert(FindReconciliation(events.scripts.OnUpdate))
-    local function Reconcile() reconcileNames(context) end
+    local function Reconcile() ns.PeriodicWork.Advance(0.25); reconcileNames(plate) end
     -- One complete assessment per ordinary plate, shared by lookup/check/repair.
     local lines, originalPrint = {}, print
     print = function(line) lines[#lines + 1] = line end
@@ -1985,6 +1992,12 @@ local function CheckSelectiveReconciliation()
     name.GetVertexColor = function() return opaque, opaque, opaque, opaque end
     for _ = 1, 40 do Reconcile() end
     assert(heightReads <= 7, "unknown property retries are bounded")
+    local frozenReads = heightReads
+    for _ = 1, 40 do text.CachedNameHasDrifted(plateFrame, context) end
+    equal(heightReads, frozenReads, "extra visits do not consume elapsed-time backoff")
+    ns.PeriodicWork.Advance(4)
+    text.CachedNameHasDrifted(plateFrame, context)
+    equal(heightReads, frozenReads + 1, "elapsed retry deadline does not require sixteen visits")
     Only({}, "unknown observations")
     bar.GetHeight, name.GetTextColor, name.GetVertexColor = heightGetter, colorGetter, vertexGetter
     issecretvalue = oldSecret
@@ -2064,6 +2077,173 @@ local function CheckSelectiveReconciliation()
     ns.RestoreAll(); ns.RefreshAll()
 end
 CheckSelectiveReconciliation()
+end
+
+-- Phase 4: exercise the real per-frame scheduler with a crowded visible set.
+do
+local function CheckBoundedRuntime()
+    local originalClock = GetTimePreciseSec
+    GetTimePreciseSec = function() return 0 end
+    local work = ns.PeriodicWork
+    for _, group in ipairs({"reconciliation", "restoration frame", "restoration plate", "cast retry", "unit retry", "plate retry"}) do work.Clear(group) end
+    stylingEnabled, categoryMode, showBar, gradients, highlightEnabled = true, "active", true, false, true
+    appearance.namePlacement, appearance.nameSize, appearance.healthBarWidth = "INSIDE", 18, 120
+    threatEnabled, threatPercent = true, nil
+    unit = {player = true, faction = "Alliance", reaction = 5, names = {}}
+    local list, byUnit, framesByUnit, repairs = {}, {}, {}, {}
+    local rpName = "Crowded RP"
+    ns.TRP3 = {GetDisplayInfo = function() return {roleplayingName = rpName, fullTitle = "Crowded title"} end}
+    trp3Options = {useRoleplayingName = true, showFullTitle = true}
+    UnitGUID = function(token) return "Player-" .. token end
+    for index = 1, 16 do
+        local token, frame = "nameplate" .. (100 + index), Region()
+        frame.unit, frame.name = token, Region()
+        frame.healthBar, frame.HealthBarsContainer, frame.castBar = Region(), Region(), Region()
+        frame.castBar.shown = false
+        frame.castBar.Icon = Region()
+        frame.castBar.HideIconWhenNotInterruptible = true
+        frame.name:SetFont("Crowded native", 12, "")
+        frame.name:SetTextColor(0.2, 0.4, 0.6)
+        local current = {UnitFrame = frame}
+        list[index], byUnit[token], framesByUnit[token], unit.names[token] = current, current, frame, "Native " .. token
+    end
+    C_NamePlate.GetNamePlates = function() return list end
+    C_NamePlate.GetNamePlateForUnit = function(token) return byUnit[token] end
+    ns.RefreshAll()
+    for token, frame in pairs(framesByUnit) do
+        local setter = frame.name.SetText
+        frame.name.SetText = function(self, value)
+            repairs[token] = (repairs[token] or 0) + 1
+            setter(self, value)
+        end
+        frame.name.text = "Native overwritten"
+    end
+    local function Count()
+        local total = 0
+        for _, value in pairs(repairs) do total = total + value end
+        return total
+    end
+    events.scripts.OnUpdate(events, 0.25)
+    equal(Count(), 4, "one runtime frame processes only four crowded repairs")
+    -- Urgent name/threat/cast events must run ahead of the remaining scan jobs.
+    local urgent, token = framesByUnit.nameplate116, "nameplate116"
+    equal(urgent.name.text, "Native overwritten", "urgent fixture starts behind scan cursor")
+    rpName, threatPercent = "Immediate RP", 55
+    events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", token)
+    events.scripts.OnEvent(events, "UNIT_THREAT_LIST_UPDATE", token)
+    urgent.castBar:Show()
+    events.scripts.OnEvent(events, "UNIT_SPELLCAST_INTERRUPTIBLE", token)
+    events.scripts.OnUpdate(events, 0.001)
+    equal(urgent.SNPInsideName.text, "Immediate RP", "queued name update bypasses scan backlog")
+    equal(urgent.SNPThreatText.text, "55%", "threat update bypasses scan backlog")
+    equal(urgent.SNPInterruptibleHighlight.frame.shown, true, "cast pulse bypasses scan backlog")
+    equal(urgent.SNPFullTitleText.shown, false, "cast/title substitution stays immediate")
+    -- Finish this routine cycle without advancing its next 0.25-second deadline.
+    events.scripts.OnUpdate(events, 0.001)
+    events.scripts.OnUpdate(events, 0.001)
+    for currentToken, frame in pairs(framesByUnit) do
+        equal(repairs[currentToken], 1, "every current owner progresses once")
+        equal(frame.name.text, currentToken == token and "Immediate RP" or "Crowded RP", "repair uses current owner's cache")
+    end
+    local before = Count()
+    events.scripts.OnUpdate(events, 0.001)
+    equal(Count(), before, "completed plates wait until their next due time")
+
+    -- A deferred unit request must not write through a mismatched lookup.
+    local correctLookup = C_NamePlate.GetNamePlateForUnit
+    C_NamePlate.GetNamePlateForUnit = function(currentToken)
+        if currentToken == "nameplate101" then return byUnit.nameplate102 end
+        return correctLookup(currentToken)
+    end
+    local wrongFrame, wrongText = framesByUnit.nameplate102, framesByUnit.nameplate102.SNPInsideName.text
+    events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", "nameplate101")
+    events.scripts.OnUpdate(events, 0.001)
+    equal(wrongFrame.SNPInsideName.text, wrongText, "mismatched lookup cannot consume another owner's work")
+    assert(work.Has("unit retry", "nameplate101"), "mismatched assignment retains merged work")
+    C_NamePlate.GetNamePlateForUnit = correctLookup
+    Tick(0.25)
+    equal(framesByUnit.nameplate101.SNPInsideName.text, "Immediate RP", "correct assignment receives deferred name work")
+    assert(not work.Has("unit retry", "nameplate101"), "recovered unit request leaves retry queue")
+
+    -- New native snapshots may reorder plates without starving older work.
+    for index = 1, 8 do list[index], list[17 - index] = list[17 - index], list[index] end
+    repairs = {}
+    for _, frame in pairs(framesByUnit) do frame.name.text = "Overwritten again" end
+    events.scripts.OnUpdate(events, 0.25)
+    equal(Count(), 4, "reordered cycle retains one frame's cap")
+    -- Remove an unprocessed plate, then recycle it with a new assignment.
+    local retiredToken = "nameplate115"
+    assert(not repairs[retiredToken], "retired fixture has not been scanned in reordered cycle")
+    local recycled, recycledPlate = framesByUnit[retiredToken], byUnit[retiredToken]
+    events.scripts.OnEvent(events, "NAME_PLATE_UNIT_REMOVED", retiredToken)
+    assert(not work.Has("reconciliation", recycledPlate), "removal cancels queued plate work")
+    byUnit[retiredToken], framesByUnit[retiredToken] = nil, nil
+    local newToken = "nameplate199"
+    recycled.unit, byUnit[newToken], framesByUnit[newToken], unit.names[newToken] = newToken, recycledPlate, recycled, "New native"
+    events.scripts.OnEvent(events, "NAME_PLATE_UNIT_ADDED", newToken)
+    equal(recycled.SNPOriginalUnit, newToken, "recycled owner initialized immediately")
+    repairs = {}
+    for _ = 1, 4 do events.scripts.OnUpdate(events, 0.001) end
+    assert(not repairs[retiredToken], "departed queued owner performs no later text writes")
+    equal(recycled.SNPInsideName.text, "Immediate RP", "stale scan cannot overwrite recycled content")
+
+    -- Settings invalidate routine work; the urgent refresh establishes new caches.
+    appearance.nameSize = 22
+    ns.QueueNameplateRefresh("phase 4 settings regression")
+    assert(not work.Has("reconciliation", byUnit.nameplate116), "full refresh cancels the old cycle")
+    events.scripts.OnUpdate(events, 0.001)
+    for _, frame in pairs(framesByUnit) do equal(frame.SNPInsideName.size, 22, "settings refresh does not wait behind budget") end
+    local oldRevision = ns.WorldContext.Get().revision
+    C_PvP = {GetZonePVPInfo = function() return "contested", false end}
+    events.scripts.OnEvent(events, "ZONE_CHANGED_NEW_AREA")
+    assert(ns.WorldContext.Get().revision > oldRevision, "context fixture changed revision")
+    events.scripts.OnUpdate(events, 0.001)
+    for _, frame in pairs(framesByUnit) do
+        equal(frame.SNPPresentation.contextRevision, ns.WorldContext.Get().revision, "jobs/settings use fresh context")
+    end
+    stylingEnabled = false
+    ns.RestoreAll()
+    assert(not work.Has("reconciliation", recycledPlate), "disable discards routine work")
+    local nativeText = recycled.name.text
+    for _ = 1, 4 do events.scripts.OnUpdate(events, 0.25) end
+    equal(recycled.name.text, nativeText, "disabled scans cannot restore addon text")
+    -- Deferred restoration and cast retries share the same runtime budget,
+    -- including while styling is disabled.
+    stylingEnabled = true; ns.RefreshAll()
+    local blocked = true
+    for _, frame in pairs(framesByUnit) do frame.IsForbidden = function() return blocked end end
+    stylingEnabled = false; ns.RestoreAll()
+    for _, frame in pairs(framesByUnit) do
+        assert(ns.NameplateRestoration.IsPending(frame), "blocked restoration scheduled")
+        ns.CastHighlight.UpdateInterruptibleHighlight(frame, ns.WorldContext.Get(), frame.SNPPresentation)
+    end
+    blocked = false
+    local originalCount, jobs = ns.Profiler.Count, 0
+    ns.Profiler.Count = function(group, reason)
+        if group == "Periodic jobs" then jobs = jobs + 1 end
+        originalCount(group, reason)
+    end
+    events.scripts.OnUpdate(events, 0.25)
+    equal(jobs, 4, "disabled runtime bounds restoration/cast work together")
+    local restored = 0
+    for _, frame in pairs(framesByUnit) do if not frame.SNPState then restored = restored + 1 end end
+    equal(restored, 4, "restoration no longer retries all plates in one frame")
+    for _ = 1, 12 do
+        jobs = 0; events.scripts.OnUpdate(events, 0.001)
+        assert(jobs <= 4, "all deferred groups share each frame's cap")
+    end
+    ns.Profiler.Count = originalCount
+    for _, frame in pairs(framesByUnit) do
+        equal(frame.SNPState, nil, "every blocked restoration recovers fairly")
+        assert(not work.Has("cast retry", frame), "every cast retry recovers fairly")
+        frame.IsForbidden = nil
+    end
+    -- Restore fixtures for any later checks.
+    stylingEnabled = true
+    GetTimePreciseSec = originalClock
+    work.Clear("reconciliation")
+end
+CheckBoundedRuntime()
 end
 
 print("Nameplates smoke: passed")

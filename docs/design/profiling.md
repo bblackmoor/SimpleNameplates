@@ -30,8 +30,10 @@ Rows appear in descending total elapsed time, with call count, total millisecond
 | Classification | Entity-fact collection and priority classification together |
 | NPC title lookup | Title resolution, including cache and tooltip paths when used |
 | Text repair | Selective cached-name repair attempts; direct calls may return without writing |
-| Runtime update | The per-frame callback: context access, queued refreshes and periodic restoration, deferred cast-highlight retry and reconciliation work |
-| Reconciliation | The visible-plate scan for pending title visibility and cached-name drift (including visibility and readable text), normally every 0.25 seconds while styling is enabled |
+| Runtime update | The per-frame callback: elapsed clock, urgent queued refreshes, periodic native-list discovery and the shared routine-work budget |
+| Periodic work | The scheduler slice, including bounded reconciliation/restoration/cast/unit/plate jobs; idle calls are also counted |
+| Plate discovery | Native visible-list snapshot and Lua queue membership bookkeeping, normally every 0.25 seconds while enabled |
+| Reconciliation | One current plate job for pending artwork/title visibility and cached-name drift; due again 0.25 seconds after service, with later service possible under load |
 | Access assessment | Complete frame/region capability assessment; routine reconciliation shares one across lookup, observation and repair, with renewal after invalidation |
 | Bar artwork | Guarded application of flat fills, gradient, native text outlines and decorative edge removal |
 | Health text layout | Native health-label/threat anchoring; can run multiple times within styling |
@@ -62,8 +64,20 @@ After the timing rows, the same chat report prints one short row for each observ
 | Focused outcomes | Updated, guarded, inaccessible, native/restored, restoration pending, failed, or invalid-cache/presentation-change fallback |
 | Name drift | First observed readable mismatch or structural invalidation for a plate in each pass; simultaneous mismatches repair together but are not enumerated |
 | Reconciliation repairs | Successful cached repair versus a full-style fallback request; a fallback request does not establish that full styling succeeded |
+| Periodic jobs | Attempted jobs by group: reconciliation, restoration frame/plate, cast retry and unit/plate retry; includes guarded/blocked/no-write jobs |
+| Periodic limits | Slices stopped by job count or time target, plus discarded stale plate assignments; count/time reasons can overlap |
 
-Reason counters explain call volume, not elapsed time or unique plate counts. Queued requests can merge, hook requests can return under a guard, and checks can return unknown or early. A drift label identifies a readable mismatch or structural cache invalidation. Unknown property values do not count as drift and do not trigger repair writes; they retry with backoff to at most sixteen passes. Independent readable properties continue to be checked. Native label-chain changes use selective layout repair, while replaced regions or invalid presentation require full styling. Unchanged reconciliation plates perform no repair writes; the 0.25-second cadence remains unchanged.
+Reason counters explain call volume, not elapsed time or unique plate counts. Queued requests can merge, hook requests can return under a guard, and checks can return unknown or early. A drift label identifies a readable mismatch or structural cache invalidation. Unknown property values do not count as drift and do not trigger repair writes; they retry with elapsed-time backoff from 0.25 seconds to four seconds. Independent readable properties continue to be checked. Native label-chain changes use selective layout repair, while replaced regions or invalid presentation require full styling. Unchanged reconciliation plates perform no repair writes; plates become eligible again after 0.25 seconds, with actual service subject to the shared budget.
+
+From 1.0.205, Reconciliation counts individual plate jobs rather than complete
+visible-list passes. Do not compare its call counts or per-call averages directly
+with older builds. Compare matching sessions' total elapsed rows and FPS,
+including Runtime update, Periodic work and Plate discovery, without adding
+inclusive totals. A count/time limit indicates deferred routine work, not lost
+updates or proof of a bottleneck. The initial four-job/one-millisecond budget is
+cooperative: it cannot preempt one slow operation, and discovery/urgent events
+are measured separately. Retry deadlines establish eligibility, not a hard
+wall-time recovery guarantee under heavy queues or low FPS.
 
 The additional wrappers increase profiling overhead. Compare each build in matching scenes, with profiling both off and on. Do not treat timing changes across different instrumentation versions as an exact performance gain.
 

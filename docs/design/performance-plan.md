@@ -86,7 +86,8 @@ Unknown properties never establish drift. Per-property retries back off through
 1, 2, 4, 8 and 16 reconciliation passes (nominally up to four seconds), without
 blocking readable properties. Pending unknown cast/title visibility also backs
 off while keeping titles hidden; native cast hooks and events bypass that delay.
-Full content/layout setup resets property retry state. Setter/read-count tests
+Full content/layout setup resets property retry state. Phase 4 replaces these
+visit-count delays with elapsed-time deadlines. Setter/read-count tests
 cover unchanged scans, isolated/combined mismatches, unknown recovery, label
 observation reuse, replaced regions and error guards. Cadence remains 0.25 seconds.
 
@@ -103,7 +104,38 @@ Original phase 3 requirements:
 
 ## Phase 4 — Bound periodic work and verify in WoW
 
-Pending.
+Implemented in 1.0.205; live acceptance and budget tuning pending.
+
+The user authorized bounded work without a post-phase-3 live recording. The
+initial conservative budget is four atomic jobs per frame and a one-millisecond
+elapsed target checked between jobs. An expensive single UI operation may exceed
+that target; no native FPS improvement has been established yet.
+
+A due-time heap shares this budget across reconciliation, restoration, cast
+recovery and pending unit/plate retries. Equal deadlines preserve insertion order;
+coalescing retains older work, and failed jobs retry without monopolizing the
+queue. The native visible list is discovered every 0.25 seconds with Lua queue
+bookkeeping, separate from plate styling. Each served plate is due again after
+0.25 seconds; backlog and low FPS may extend actual service intervals.
+
+Jobs obtain fresh context/access and observations only when processed. Removal,
+changed assignments, full refreshes and disabling styling invalidate routine
+work. Urgent event queues are flushed before the periodic budget; successful
+restoration refreshes only the recovered unit when styling is active, while
+restoration remains eligible when it is disabled. Broad retry loops are retired.
+
+Unreadable-property/title retries now use elapsed deadlines of 0.25, 0.5, 1, 2
+and four seconds instead of sixteen visits. Native cast hooks/events still
+bypass backoff. A deadline establishes eligibility; a congested queue can service
+it later. Tests cover the shared count/time limits, fairness, heap cancellation,
+callback replacement/errors, crowded queues, urgent updates, context/settings,
+recycling, disabled restoration and elapsed-time backoff.
+
+All four code phases are implemented. The live checklist stays open; comparable
+in-game recordings must establish FPS impact, native correctness and whether
+the initial budget should change. No release artifact or ZIP is generated.
+
+Original phase 4 requirements:
 
 - If the optimized scan still causes spikes, distribute routine reconciliation
   across frames with a bounded work budget and fair progress for every plate.
