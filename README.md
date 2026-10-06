@@ -14,7 +14,7 @@ Simple Nameplates keeps Blizzard's standard Midnight nameplates, but gives NPCs 
 | 4 | Friendly | Blue | Available health bar in and out of combat |
 | 5 | NPC - Interactive | Green | Interactive NPC: available health bar in both combat states |
 | 6 | NPC - Background | Gray | Names by default; optional health bar |
-| — | Interruptible cast | Cyan | Optional LibCustomGlow cast-bar effect |
+| — | Interruptible cast | Cyan | Optional pulsing cast-bar border |
 | — | Native overhead names without an accessible plate | Unchanged | Entity types and contexts are recorded below |
 
 ## How It Works
@@ -62,7 +62,7 @@ NPC subtitles such as `<Voidforge Steward>` are read first from structured GUID 
 * Normal Blizzard cast/channel bar and spell information
 * Blizzard target scaling and highlighting; decorative bar borders are removed
 * Optional threat percentage at the right side of the health bar when WoW supplies a percentage its text API can display
-* Optional selectable LibCustomGlow effect around interruptible cast bars, with a configurable solid color
+* Optional pulsing border around interruptible cast bars, with a configurable solid color
 
 ## Global behavior
 
@@ -125,7 +125,7 @@ The selected Name font defaults to WoW's built-in **Friz Quadrata**, the threat-
 
 Styled health and cast bars use flat fills and backgrounds without native decorative borders or shaded overlays. The bright right-edge absorb overflow glow is suppressed on styled health bars; shield fill and healing predictions remain visible. Cast lookup supports both direct legacy fields and Retail's native `CastBarsContainer.castBar` layout, checking container and bar access before use. Cast spell and target labels keep their native font and size with thin outlines whether Slug is on or off, and no shadows. Cast progress, spell icons, non-interruptible shields, and Blizzard target/mouseover selection highlighting and classification-badge visibility are preserved; original artwork is restored when styling ends.
 
-About contains three informational swatches for native opposite-faction PC sanctuary labels, interactive-NPC labels, and vendor-NPC labels. These describe native labels, not blanket unalterable entity categories; separate accessible NPC plates can be styled. The optional interruptible highlight offers Moving dashes, Autocast Shine, Action Button Glow and Proc Glow around Blizzard's existing cast bar; None disables the effect. It forwards Blizzard's own interruptibility result directly to the visibility API, applies to casts and channels in both Modern and Classic nameplate styles, and preserves Blizzard's normal non-interruptible shield treatment. It does not infer interruptibility from spell-icon visibility, and an unavailable native decision hides the effect.
+About contains three informational swatches for native opposite-faction PC sanctuary labels, interactive-NPC labels, and vendor-NPC labels. These describe native labels, not blanket unalterable entity categories; separate accessible NPC plates can be styled. The optional interruptible highlight draws a pulsing colored border around Blizzard's existing cast bar; the Active switch enables or disables it. The border is anchored to the native bar and does not read cast-bar dimensions, so restricted Midnight geometry cannot suppress the effect. It forwards Blizzard's own interruptibility result directly to the visibility API, applies to casts and channels in both Modern and Classic nameplate styles, and preserves Blizzard's normal non-interruptible shield treatment. It does not infer interruptibility from spell-icon visibility, and an unavailable native decision hides the effect.
 
 ## TRP3 Integration
 
@@ -195,7 +195,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Bundled libraries
 
-Cast highlighting uses [LibCustomGlow](https://github.com/Stanzilla/LibCustomGlow) (MIT) and [LibStub](https://github.com/lua-wow/LibStub) (public domain). Both are included; no separate installation is required. Choose **None**, **Moving dashes**, **Autocast Shine**, **Action Button Glow**, or **Proc Glow** below the cast-highlight color on Colors. This selector replaces the separate Active switch; None turns highlighting off.
+Cast highlighting uses an addon-owned pulsing border anchored to Blizzard's cast bar. Use the **Active** switch below the cast-highlight color on Colors to enable or disable it. No cast geometry is read or passed to a glow library.
 
 LibSharedMedia and CallbackHandler supply the shared font registry and provider-change notifications. External font packs are optional; solid bar fills have no texture selector.
 
