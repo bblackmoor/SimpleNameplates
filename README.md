@@ -195,7 +195,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Bundled libraries
 
-Cast highlighting uses an addon-owned pulsing border anchored to Blizzard's cast bar. Use the **Active** switch below the cast-highlight color on Colors to enable or disable it. No cast geometry is read or passed to a glow library.
+Cast highlighting uses an addon-owned pulsing border anchored to Blizzard's cast bar. Use the **Active** switch beside the cast-highlight color on Colors to enable or disable it. No cast geometry is read or passed to a glow library.
 
 LibSharedMedia and CallbackHandler supply the shared font registry and provider-change notifications. External font packs are optional; solid bar fills have no texture selector.
 
