@@ -61,7 +61,7 @@ NPC subtitles such as `<Voidforge Steward>` are read first from structured GUID 
 * Normal health depletion as the unit takes damage
 * Normal Blizzard cast/channel bar and spell information
 * Blizzard target scaling and highlighting; decorative bar borders are removed
-* Optional threat percentage at the right side of the health bar when WoW supplies a percentage its text API can display
+* Optional scaled threat percentage at the right side of the health bar when WoW supplies a percentage its text API can display
 * Optional pulsing border around interruptible cast bars, with a configurable solid color
 
 ## Global behavior
@@ -125,7 +125,7 @@ The selected Name font defaults to WoW's built-in **Friz Quadrata**, the threat-
 
 Styled health and cast bars use flat fills and backgrounds without native decorative borders or shaded overlays. The bright right-edge absorb overflow glow is suppressed on styled health bars; shield fill and healing predictions remain visible. Cast lookup supports both direct legacy fields and Retail's native `CastBarsContainer.castBar` layout, checking container and bar access before use. Cast spell and target labels keep their native font and size with thin outlines whether Slug is on or off, and no shadows. Cast progress, spell icons, non-interruptible shields, and Blizzard target/mouseover selection highlighting and classification-badge visibility are preserved; original artwork is restored when styling ends.
 
-About contains three informational swatches for native opposite-faction PC sanctuary labels, interactive-NPC labels, and vendor-NPC labels. These describe native labels, not blanket unalterable entity categories; separate accessible NPC plates can be styled. The optional interruptible highlight draws a pulsing colored border around Blizzard's existing cast bar; the Active switch enables or disables it. The border is anchored to the native bar and does not read cast-bar dimensions, so restricted Midnight geometry cannot suppress the effect. It forwards Blizzard's own interruptibility result directly to the visibility API, applies to casts and channels in both Modern and Classic nameplate styles, and preserves Blizzard's normal non-interruptible shield treatment. It does not infer interruptibility from spell-icon visibility, and an unavailable native decision hides the effect.
+About contains three informational swatches for native opposite-faction PC sanctuary labels, interactive-NPC labels, and vendor-NPC labels. These describe native labels, not blanket unalterable entity categories; separate accessible NPC plates can be styled. The optional interruptible highlight draws a pulsing colored border around Blizzard's existing cast bar; the Active switch enables or disables it. The border is anchored to the native bar and does not read cast-bar dimensions. It never calls Midnight's secrecy-wrapped `IsInterruptable()`. Spellcast interruptibility events trigger refreshes, while Blizzard's already-rendered spell-icon/shield visibility supplies the initial state; the explicit event state is retained as a fallback when those visuals are unreadable. Modern and Classic nameplate styles are both supported, and Blizzard's native non-interruptible shield treatment is preserved.
 
 ## TRP3 Integration
 
@@ -137,7 +137,7 @@ Each field has its own toggle. To keep nameplates readable, roleplaying names ar
 
 ## Saved Settings
 
-Look-and-feel settings are stored in named appearance profiles: priority colors, cast color and effect choice, fonts, sizing, placement, and threat display. Global settings cover styling enablement, category activation, critter/companion visibility, and TRP3 preferences. Each character selects an account-wide profile.
+Look-and-feel settings are stored in named appearance profiles: priority colors, cast-highlight color and Active state, fonts, sizing, placement, and threat display. Global settings cover styling enablement, category activation, critter/companion visibility, and TRP3 preferences. Each character selects an account-wide profile.
 
 Saved settings are validated individually in their current locations. Recognized valid values are retained regardless of the saved schema marker; invalid and unknown settings are silently discarded, with defaults supplying missing values. The current category keys are `attacking`, `hostile`, `neutral`, `friendly`, `useful`, and `useless`. Obsolete category fields are discarded; valid current fields and unrelated settings remain. No old settings are renamed, relocated, or converted.
 
@@ -187,7 +187,7 @@ Running multiple nameplate addons can cause competing colors or duplicate namepl
 
 World of Warcraft: Midnight may mark some threat information as secret.
 
-Simple Nameplates does not inspect or calculate with secret threat values. It passes percentages directly to WoW's supported text formatter, which can display secret values. Missing values or rejected formatting leave the percentage blank. Diagnostics reports whether threat display is disabled, unavailable, or displayed.
+Simple Nameplates does not inspect or calculate with secret threat values. It displays WoW's scaled threat percentage (the 0–100 pull-aggression scale) and does not use the raw percentage that can pin at 255 while tanking. Secret scaled values are passed directly to WoW's supported text formatter. Missing values or rejected formatting leave the percentage blank. Diagnostics reports whether threat display is disabled, unavailable, or displayed.
 
 NPC aggro uses WoW's threat information. PvP does not provide an equally complete threat table, so applying the shared red attacking color to PCs is best effort: it is used when WoW reports threat on you or your pet, or when the hostile player is targeting you, your pet, guardian, or minion.
 
