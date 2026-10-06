@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.191
+
+* Defaults gradients to On for Default and new custom profiles, Off for High Contrast. Missing/invalid settings and Colors reset use the profile default; existing saved choices and profile copies are preserved. Appearance reset and threat-percentage behavior are unchanged.
+
 ## 1.0.190
 
 * Constrains NPC subtitles and TRP3 long titles to the configured health-bar width even when the bar is hidden. Native single-line font layout truncates overflow; the source text is retained so widening restores more text. Cached repair follows width changes.

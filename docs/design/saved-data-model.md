@@ -29,7 +29,7 @@ SimpleNameplatesDB = {
         Default = { priorityColors = { ... }, effectColors = { ... },
                     appearance = { ... }, healthBars = { attacking = true, hostile = true,
                         neutral = true, friendly = true, useful = true, useless = true },
-                    showThreat = true, gradients = false,
+                    showThreat = true, gradients = true,
                     interruptibleCastStyle = "NONE" },
         ["High Contrast"] = { ... },
     },
@@ -84,6 +84,6 @@ Both Global category modes and Profile priority colors recognize only `attacking
 
 `healthBars` accepts boolean values only. Copies and reloads retain false; missing or invalid values default to true. Reset all colors turns all six bars on in the selected profile. Reset Appearance preserves these choices. Names default to size 18; saved sizes are preserved, and long titles use the chosen name size minus two.
 
-`gradients` is a per-profile boolean, on by default. Copies/reloads retain it; invalid or missing values default off. Colors reset disables it; Appearance reset preserves it. It controls fixed-position health fill tinting and inside-bar text underlayers, not cast fill or health values.
+`gradients` is a per-profile boolean, on by default for Default and new custom profiles, off for High Contrast. Copies/reloads retain saved choices; invalid or missing values use the profile’s default. Colors reset restores that default; Appearance reset preserves it. It controls fixed-position health fill tinting and inside-bar text underlayers, not cast fill or health values.
 
 Health bars default On for the first five categories and Off for NPC - Background. `dimBackgroundNames` is a per-profile boolean, default On: background names use #999999 when enabled and #FFFFFF when disabled. Colors reset restores both defaults; Appearance reset preserves them. Valid saved choices remain authoritative.

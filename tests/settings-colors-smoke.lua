@@ -119,9 +119,14 @@ end
 assert(sample and threat and sample.textColor[1] == 1 and threat.textColor[1] == 1)
 assert(sample.flags == "SLUG,OUTLINE" and threat.flags == "SLUG,OUTLINE", "preview text always outlined")
 assert(Row("Gradients").point[5] > Row("1. Attacking me").point[5], "gradient row above colors")
+assert(ns.GetGradientEnabled() and gradientToggle.MyObject:GetValue(), "Default toggle starts on")
 local beforeGradient = refreshes
 gradientToggle:GetScript("OnClick")(gradientToggle, "LeftButton")
-assert(ns.GetGradientEnabled() and refreshes == beforeGradient + 1)
+assert(not ns.GetGradientEnabled() and refreshes == beforeGradient + 1)
+assert(not preview.SNPHealthGradient:IsShown())
+for _, layer in ipairs(sample.SNPUnderlayers) do assert(layer:IsShown()) end
+gradientToggle:GetScript("OnClick")(gradientToggle, "LeftButton")
+assert(ns.GetGradientEnabled() and refreshes == beforeGradient + 2)
 assert(preview.SNPHealthGradient:IsShown() and preview.SNPHealthGradient.width == 190 * 0.8
     and math.abs(preview.SNPHealthGradientTail.width - 190 * 0.2) < 0.00001)
 for _, layer in ipairs(sample.SNPUnderlayers) do assert(not layer:IsShown()) end
@@ -135,8 +140,17 @@ ns.ResetAppearance()
 assert(ns.GetGradientEnabled(), "Appearance reset preserves Colors toggle")
 ns.ResetAllColors()
 panel.Refresh()
+assert(ns.GetGradientEnabled() and preview.SNPHealthGradient:IsShown(), "Default reset enables gradient")
+assert(ns.SetActiveProfileName("High Contrast"))
+panel.Refresh()
+assert(not ns.GetGradientEnabled() and not gradientToggle.MyObject:GetValue(), "High Contrast toggle starts off")
+ns.SetGradientEnabled(true)
+ns.ResetAllColors()
+panel.Refresh()
 assert(not ns.GetGradientEnabled() and not preview.SNPHealthGradient:IsShown())
 for _, layer in ipairs(sample.SNPUnderlayers) do assert(layer:IsShown()) end
+assert(ns.SetActiveProfileName("Default"))
+panel.Refresh()
 
 local effect = Control(Row("Effect"), "dropdown")
 assert(effect.point[4] == 340 and effect:GetWidth() == 190)

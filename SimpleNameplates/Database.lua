@@ -69,7 +69,7 @@ local function NewProfile(presetName)
         healthBars = {},
         appearance = {},
         showThreat = DEFAULT_SHOW_THREAT,
-        gradients = false,
+        gradients = SavedBoolean(preset and preset.gradients, defaults.gradients),
         dimBackgroundNames = DEFAULT_DIM_BACKGROUND_NAMES,
         interruptibleCastStyle = defaults.interruptibleCastStyle,
     }
@@ -132,7 +132,7 @@ local function ValidateProfileToggles(profile, saved)
     for key in pairs(DEFAULT_PRIORITY_COLORS) do
         profile.healthBars[key] = SavedBoolean(savedBars[key], DEFAULT_HEALTH_BARS[key])
     end
-    profile.gradients = SavedBoolean(saved.gradients, false)
+    profile.gradients = SavedBoolean(saved.gradients, profile.gradients)
     profile.dimBackgroundNames = SavedBoolean(saved.dimBackgroundNames, DEFAULT_DIM_BACKGROUND_NAMES)
     profile.showThreat = SavedBoolean(saved.showThreat, profile.showThreat)
     -- Older profiles used a separate activation switch and custom Pulse.
@@ -541,7 +541,7 @@ local function ResetAllColors()
         profile.effectColors[key] = CopyColor(default)
     end
     profile.interruptibleCastStyle = defaults.interruptibleCastStyle
-    profile.gradients = false
+    profile.gradients = defaults.gradients
     profile.dimBackgroundNames = DEFAULT_DIM_BACKGROUND_NAMES
     local modes = EnsureDB().global.categoryModes
     for key, default in pairs(DEFAULT_CATEGORY_MODES) do modes[key] = default end

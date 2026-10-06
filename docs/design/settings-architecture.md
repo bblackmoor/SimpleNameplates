@@ -16,7 +16,7 @@ The pages are About, Profiles, Appearance, Colors and TRP3, in that order. All u
 
 Visible pages refresh their selected-profile controls immediately; hidden pages reread on show. Profile switching cancels active previews before changing selection and refreshes plates. Native profile dialogs capture name and object identity at opening and reject acceptance after selection changes or same-name replacement. Database mutations cancel affected drafts before switching or replacing their targets.
 
-Reset settings on Appearance restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors, cast effect None, gradients Off, and all six Health Bar preferences to On. There are no individual color reset buttons. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
+Reset settings on Appearance restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors, cast effect None, gradients On for Default/custom profiles or Off for High Contrast, and Health Bar preferences On except NPC - Background. There are no individual color reset buttons. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
 
 ## Current source ownership
 

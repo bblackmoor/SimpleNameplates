@@ -628,7 +628,13 @@ end
 
 do
     local gradients = fresh()
-    equal(gradients.GetGradientEnabled(), false, "gradients default off")
+    equal(gradients.GetGradientEnabled(), true, "Default gradients default on")
+    gradients.SetActiveProfileName("High Contrast")
+    equal(gradients.GetGradientEnabled(), false, "High Contrast gradients default off")
+    gradients.SetGradientEnabled(true)
+    gradients.ResetAllColors()
+    equal(gradients.GetGradientEnabled(), false, "High Contrast Colors reset disables gradient")
+    gradients.SetActiveProfileName("Default")
     gradients.SetGradientEnabled(true)
     assert(gradients.CopyActiveProfile("Gradient copy"))
     equal(gradients.GetGradientEnabled(), true, "copy gradient enabled")
@@ -642,10 +648,26 @@ do
     gradients.SetGradientEnabled("bad")
     equal(gradients.GetGradientEnabled(), true, "invalid gradient setter rejected")
     gradients.ResetAllColors()
-    equal(gradients.GetGradientEnabled(), false, "Colors reset disables gradient")
+    equal(gradients.GetGradientEnabled(), true, "Default Colors reset enables gradient")
     SimpleNameplatesDB.profiles.Default.gradients = "bad"
     gradients = loadCore()
-    equal(gradients.GetGradientEnabled(), false, "invalid saved gradient defaults off")
+    equal(gradients.GetGradientEnabled(), true, "invalid Default gradient defaults on")
+    SimpleNameplatesDB.profiles.Default.gradients = nil
+    SimpleNameplatesDB.profiles["High Contrast"].gradients = "bad"
+    gradients = loadCore()
+    equal(gradients.GetGradientEnabled(), true, "missing Default gradient defaults on")
+    gradients.SetActiveProfileName("High Contrast")
+    equal(gradients.GetGradientEnabled(), false, "invalid High Contrast gradient defaults off")
+    SimpleNameplatesDB.profiles["High Contrast"].gradients = nil
+    gradients = loadCore()
+    equal(gradients.GetGradientEnabled(), false, "missing High Contrast gradient defaults off")
+    gradients.SetGradientEnabled(true)
+    gradients.SetActiveProfileName("Default")
+    gradients.SetGradientEnabled(false)
+    gradients = loadCore()
+    equal(gradients.GetGradientEnabled(), false, "saved Default off preserved")
+    gradients.SetActiveProfileName("High Contrast")
+    equal(gradients.GetGradientEnabled(), true, "saved High Contrast on preserved")
 end
 
 print("Core behavior smoke: passed")
