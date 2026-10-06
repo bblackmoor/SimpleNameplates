@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.195
+
+* Places the interruptible-cast **Active** label and switch on the same row as its color swatch, using the same label and toggle spacing as the Priority Color health-bar controls.
+
+
 ## 1.0.194
 
 * Removes the four LibCustomGlow interruptible-cast effects and their selector. Interruptible casts now use the addon-owned pulsing border, which is anchored to Blizzard's cast bar without reading restricted width or height.
