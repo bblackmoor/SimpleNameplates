@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.197
+
+* Makes subtitles beneath dimmed background NPC names use the same grey as the name. Turning dimming off restores white titles; other categories retain white titles.
+
 ## 1.0.196
 
 * Displays only WoW's scaled threat percentage instead of preferring raw threat percentage, preventing the label from sticking at the raw 255% cap while the player is tanking.

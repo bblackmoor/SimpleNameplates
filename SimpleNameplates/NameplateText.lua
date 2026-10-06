@@ -119,7 +119,7 @@ local function ConstrainFullTitle(frame, context)
     end
 end
 
-local function StyleFullTitle(frame, state, text, baseNameSize, decision, context)
+local function StyleFullTitle(frame, state, text, baseNameSize, decision, context, nameShade)
     local fullTitle = frame.SNPFullTitleText
     local bar = GetHealthBar(frame, context)
     frame.SNPFullTitleAvailable = text ~= nil and decision.showFullTitle == true
@@ -141,7 +141,8 @@ local function StyleFullTitle(frame, state, text, baseNameSize, decision, contex
     fullTitle:SetPoint("TOP", decision.showHealthBar and bar or frame.name, "BOTTOM", 0, -1)
     fullTitle:SetJustifyH("CENTER")
     fullTitle:SetVertexColor(1, 1, 1, 1)
-    fullTitle:SetTextColor(1, 1, 1, 1)
+    local shade = state == "useless" and nameShade or 1
+    fullTitle:SetTextColor(shade, shade, shade, 1)
     InstallTitleCastHooks(frame, GetCastBar(frame, context))
     SyncFullTitleVisibility(frame, context)
 end
@@ -342,7 +343,7 @@ local function StyleName(frame, state, context, decision)
     else
         RestoreNameDisplay(frame, context)
     end
-    StyleFullTitle(frame, state, fullTitle, baseSize, decision, context)
+    StyleFullTitle(frame, state, fullTitle, baseSize, decision, context, nameR)
     CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, nameB,
         nameOnly, inside, rightInset, bar, rightRegion)
     frame.SNPNameStyle.presentation = decision

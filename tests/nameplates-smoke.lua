@@ -1540,7 +1540,7 @@ assert(not bar.SNPHealthGradient.shown, "global restoration removes gradient")
 
 -- Use fresh interaction/title observations, independent of earlier cache fixtures.
 UnitIsInteractable = function() return unit.interactable or false end
-ns.NPCTitles.GetTitle = function() return nil end
+ns.NPCTitles.GetTitle = function() return "<Background subtitle>" end
 local dimBackground = false
 ns.GetDimBackgroundNames = function() return dimBackground end
 gradients = false
@@ -1557,6 +1557,9 @@ for _, barEnabled in ipairs({true, false}) do
             equal(plateFrame.name.r, expected, "background native name shade")
             equal(plateFrame.name.g, expected, "background native name green")
             equal(plateFrame.name.b, expected, "background native name blue")
+            equal(plateFrame.SNPFullTitleText.r, expected, "background title matches name red")
+            equal(plateFrame.SNPFullTitleText.g, expected, "background title matches name green")
+            equal(plateFrame.SNPFullTitleText.b, expected, "background title matches name blue")
             if barEnabled and placement == "INSIDE" then
                 equal(plateFrame.SNPInsideName.r, expected, "background inside name shade")
             end
@@ -1569,6 +1572,8 @@ end
 showBar = true; unit = {reaction = 5, interactable = true}
 ns.RefreshAll()
 equal(plateFrame.name.r, 1, "interactive NPC name stays white")
+equal(plateFrame.SNPFullTitleText.r, 1, "interactive NPC title stays white")
+ns.NPCTitles.GetTitle = function() return nil end
 
 -- Native one-line title layout is constrained even when the bar is hidden.
 ns.TRP3 = {GetDisplayInfo = function() return {fullTitle = "A very long roleplaying title with wide glyphs WWW and accented é characters"} end}
