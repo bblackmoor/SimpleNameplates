@@ -168,8 +168,8 @@ end
 local function HealthTextLayoutState(frame, bar, context)
     local labels, signature = {}, ""
     local threat
-    if bar and frame.SNPThreatTextBar == bar and (frame.SNPThreatStatus == "displayed raw percentage"
-        or frame.SNPThreatStatus == "displayed scaled percentage") then
+    if bar and frame.SNPThreatTextBar == bar
+        and frame.SNPThreatStatus == "displayed scaled percentage" then
         threat = frame.SNPThreatText
     end
     signature = threat and "T" or "-"
