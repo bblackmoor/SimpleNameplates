@@ -86,12 +86,12 @@ local function NativeInterruptibleState(highlight, context)
 end
 
 local function ResolvedInterruptibleState(highlight, context)
-    local native = NativeInterruptibleState(highlight, context)
-    if native ~= nil then return native, "native visual" end
     local unit = ns.AccessibleValue(highlight and highlight.owner and highlight.owner.unit)
     if type(unit) == "string" and eventStateByUnit[unit] ~= nil then
         return eventStateByUnit[unit], "spellcast event"
     end
+    local native = NativeInterruptibleState(highlight, context)
+    if native ~= nil then return native, "native visual" end
     return nil, "unavailable"
 end
 
