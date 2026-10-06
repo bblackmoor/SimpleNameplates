@@ -47,26 +47,26 @@ local fill = bar:GetStatusBarTexture()
 ns.HealthGradient.Apply(bar, fill, {})
 local tint, mask = bar.SNPHealthGradient, bar.SNPHealthGradientMask
 local tail = bar.SNPHealthGradientTail
-assert(tint.width == 160 and math.abs(tail.width - 40) < 0.00001, "fade spans first 80% and clear tail spans final 20%")
+assert(tint.width == 190 and math.abs(tail.width - 10) < 0.00001, "fade spans first 95% and clear tail spans final 5%")
 assert(mask.textureSampling[1] == "CLAMPTOBLACKADDITIVE"
     and mask.textureSampling[2] == "CLAMPTOBLACKADDITIVE"
     and mask.textureSampling[3] == "NEAREST", "hard clip cannot blend with transparent outside texels")
 assert(tint.color[1] == 1 and tint.color[2] == 1 and tint.color[3] == 1
     and tint.color[4] == 1, "solid tint base has no texture-edge shading")
 assert(tint.gradient[1] == "HORIZONTAL" and tint.gradient[2].a == 0.8 and tint.gradient[3].a == 0)
-assert(tail.gradient[2].a == 0 and tail.gradient[3].a == 0, "final fifth stays fully clear")
+assert(tail.gradient[2].a == 0 and tail.gradient[3].a == 0, "final 5% stays fully clear")
 assert(tail.mask == mask, "fade and clear tail share native clipping")
 assert(tint.mask == mask and mask.allPoints == fill, "clip follows native remaining fill geometry")
 for _, remainingWidth in ipairs({200, 160, 100, 20}) do
     fill:SetWidth(remainingWidth)
-    assert(tint.width == 160 and math.abs(tail.width - 40) < 0.00001 and mask.allPoints == fill, "native health loss cannot rescale gradient")
+    assert(tint.width == 190 and math.abs(tail.width - 10) < 0.00001 and mask.allPoints == fill, "native health loss cannot rescale gradient")
 end
 local replacement = bar:CreateTexture()
 ns.HealthGradient.Apply(bar, replacement, {})
 assert(mask.allPoints == replacement and bar.SNPHealthGradient == tint, "replacement fill reuses/reanchors tint")
 bar:SetWidth(250)
 ns.HealthGradient.Apply(bar, replacement, {})
-assert(tint.width == 200 and math.abs(tail.width - 50) < 0.00001, "configured width preserves fade and clear tail proportions")
+assert(tint.width == 237.5 and math.abs(tail.width - 12.5) < 0.00001, "configured width preserves fade and clear tail proportions")
 enabled = false
 ns.HealthGradient.Apply(bar, replacement, {})
 assert(not tail:IsShown() and not tint:IsShown() and ns.HealthGradient.ThreatLayers("nameplate1") == nil)

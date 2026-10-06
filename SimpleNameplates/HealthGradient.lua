@@ -1,7 +1,7 @@
 -- Fixed-position health tint, clipped by native fill geometry; no health arithmetic.
 local _, ns = ...
 local THREAT_LAYER_THRESHOLD = 0.8
-local SHADE_KNEE = 0.8
+local SHADE_KNEE = 0.95
 local SHADE_AT_KNEE = 0
 local threatCurve
 
@@ -26,7 +26,7 @@ local function Apply(bar, fill, context)
     if not width or width <= 0 then Hide(bar); return end
     if not bar.SNPHealthGradient then
         -- Native fill anchors resolve in the renderer even with secret health.
-        -- Fade to clear at 80% width; the final fifth stays clear. Only the mask shrinks.
+        -- Fade to clear at 95% width; the final 5% stays clear. Only the mask shrinks.
         local mask = bar:CreateMaskTexture(nil, "ARTWORK")
         -- Linear sampling blends the white mask with transparent outside pixels,
         -- exposing a bright rim (especially wide when an 8px mask is stretched).

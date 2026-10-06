@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.201
+
+* Extends the linear health gradient from 80% black at the left edge to clear at 95% bar width; the final 5% stays clear. The settings preview matches. Threat percentages retain their existing 80% health threshold for black glyph copies.
+
 ## 1.0.200
 
 * Fades the health gradient linearly from 80% black at the left edge to clear at 80% bar width; the final 20% stays clear. Applies to health bars and the settings preview while preserving native health clipping and threat-underlayer behavior.
