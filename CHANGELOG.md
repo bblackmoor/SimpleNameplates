@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.192
+
+* Defaults health-bar name placement to Inside for Default and new custom profiles, Above for High Contrast. Missing/invalid placement and Appearance reset use the active profile’s default. Existing saved choices and profile copies are preserved.
+
 ## 1.0.191
 
 * Defaults gradients to On for Default and new custom profiles, Off for High Contrast. Missing/invalid settings and Colors reset use the profile default; existing saved choices and profile copies are preserved. Appearance reset and threat-percentage behavior are unchanged.

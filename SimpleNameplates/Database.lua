@@ -82,7 +82,9 @@ local function NewProfile(presetName)
         local color = preset and preset.effectColors and preset.effectColors[key] or default
         profile.effectColors[key] = CopyColor(color)
     end
-    for key, value in pairs(DEFAULT_APPEARANCE) do profile.appearance[key] = value end
+    for key, value in pairs(DEFAULT_APPEARANCE) do
+        profile.appearance[key] = preset and preset.appearance and preset.appearance[key] or value
+    end
     return profile
 end
 
@@ -449,7 +451,7 @@ end
 local function ResetAppearance()
     CancelProfileEdits()
     local appearance = ActiveProfile().appearance
-    for key, value in pairs(DEFAULT_APPEARANCE) do appearance[key] = value end
+    for key, value in pairs(ActiveProfileDefaults().appearance) do appearance[key] = value end
 end
 
 local function PriorityColorForState(state)

@@ -27,6 +27,7 @@ local DEFAULT_EFFECT_COLORS = {
 local COLOR_PRESETS = {
     highContrast = {
         gradients = false,
+        appearance = {namePlacement = "ABOVE"},
         priorityColors = {
             attacking = RGB8(255, 0, 255),
             hostile = RGB8(255, 102, 0),
@@ -60,7 +61,7 @@ local DEFAULT_APPEARANCE = {
     useSlugRendering = true,
     nameSize = 18,
     threatFont = "ARIALN",
-    namePlacement = "ABOVE",
+    namePlacement = "INSIDE",
     healthBarWidth = 120,
 }
 local MIN_NAME_SIZE = 8

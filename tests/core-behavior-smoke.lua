@@ -137,7 +137,7 @@ ns.SetAppearanceSetting("matchSanctuaryFont", "false")
 equal(ns.GetAppearanceSetting("matchSanctuaryFont"), true, "invalid setter ignored")
 equal(ns.GetAppearanceSetting("nameFont"), "FRIZQT", "name font default")
 equal(ns.GetAppearanceSetting("nameSize"), 18, "name size default")
-equal(ns.GetAppearanceSetting("namePlacement"), "ABOVE", "placement default")
+equal(ns.GetAppearanceSetting("namePlacement"), "INSIDE", "placement default")
 equal(ns.PriorityColorForState("attacking"), 1, "default red component")
 for _, case in ipairs({
     {"friendly", 0, 0, 255},
@@ -668,6 +668,34 @@ do
     equal(gradients.GetGradientEnabled(), false, "saved Default off preserved")
     gradients.SetActiveProfileName("High Contrast")
     equal(gradients.GetGradientEnabled(), true, "saved High Contrast on preserved")
+end
+
+do
+    local placement = fresh()
+    equal(placement.GetAppearanceSetting("namePlacement"), "INSIDE", "Default placement inside")
+    placement.SetAppearanceSetting("namePlacement", "ABOVE")
+    placement.ResetAppearance()
+    equal(placement.GetAppearanceSetting("namePlacement"), "INSIDE", "Default reset inside")
+    placement.SetActiveProfileName("High Contrast")
+    equal(placement.GetAppearanceSetting("namePlacement"), "ABOVE", "High Contrast placement above")
+    placement.SetAppearanceSetting("namePlacement", "INSIDE")
+    placement.ResetAppearance()
+    equal(placement.GetAppearanceSetting("namePlacement"), "ABOVE", "High Contrast reset above")
+    SimpleNameplatesDB.profiles.Default.appearance.namePlacement = "bad"
+    SimpleNameplatesDB.profiles["High Contrast"].appearance.namePlacement = nil
+    placement = loadCore()
+    equal(placement.GetAppearanceSetting("namePlacement"), "ABOVE", "missing High Contrast placement above")
+    placement.SetActiveProfileName("Default")
+    equal(placement.GetAppearanceSetting("namePlacement"), "INSIDE", "invalid Default placement inside")
+    placement.SetAppearanceSetting("namePlacement", "ABOVE")
+    assert(placement.CopyActiveProfile("Placement copy"))
+    equal(placement.GetAppearanceSetting("namePlacement"), "ABOVE", "copy preserves placement")
+    placement.SetActiveProfileName("High Contrast")
+    placement.SetAppearanceSetting("namePlacement", "INSIDE")
+    placement = loadCore()
+    equal(placement.GetAppearanceSetting("namePlacement"), "INSIDE", "saved High Contrast inside preserved")
+    placement.SetActiveProfileName("Default")
+    equal(placement.GetAppearanceSetting("namePlacement"), "ABOVE", "saved Default above preserved")
 end
 
 print("Core behavior smoke: passed")

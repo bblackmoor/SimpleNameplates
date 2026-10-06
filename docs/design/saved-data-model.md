@@ -15,6 +15,8 @@ Global behavior applies across characters
 
 Account-wide Profiles are selected independently by each character through `profileKeys`. A character without a valid assignment uses Default. There is no Theme collection or Theme reference.
 
+Name placement defaults to Inside for Default and new custom profiles, and Above for High Contrast. Missing or invalid placement uses that profile default; saved choices and copies retain it. Appearance reset restores the active profile’s placement default.
+
 ## Current schema (version 2)
 
 ```lua
