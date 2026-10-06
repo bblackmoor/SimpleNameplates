@@ -133,21 +133,16 @@ local function AddPriorityColorControls(context)
     AddBackgroundNameControl(context)
 end
 
-local function AddCastEffectSelector(context)
-    local options = {
-        {value = "NONE", label = "None"},
-        {value = "PIXEL", label = "Moving dashes"},
-        {value = "AUTOCAST", label = "Autocast Shine"},
-        {value = "BUTTON", label = "Action Button Glow"},
-        {value = "PROC", label = "Proc Glow"},
-    }
-    local _, dropdown = UI.CreateDropdownRow(context.content, context.layout, "Effect", function() return options end, function(value)
-        addon.SetInterruptibleCastStyle(value)
+local function AddCastHighlightControl(context)
+    local row = UI.CreateSettingRow(context.content, context.layout, "Active")
+    local toggle = Widgets.CreateSwitch(row, function(checked)
+        addon.SetInterruptibleHighlightEnabled(checked)
         RefreshContext(context)
         RefreshNameplates()
     end)
+    toggle:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
     context.refreshers[#context.refreshers + 1] = function()
-        dropdown:SetValue(addon.GetInterruptibleCastStyle())
+        toggle:SetChecked(addon.GetInterruptibleHighlightEnabled())
     end
 end
 
@@ -167,7 +162,7 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Restores health bars to On except NPC - Background, background-name dimming to On, gradients to Off, and cast highlight to None.")
+        "Restores health bars to On except NPC - Background, background-name dimming to On, gradients to Off, and cast highlight to Inactive.")
     AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
@@ -175,7 +170,7 @@ local function CreateColorsPanel()
         "Highlights interruptible casts and channels. Applies to the selected profile.",
         function() return EffectColor("interruptible") end,
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end)
-    AddCastEffectSelector(context)
+    AddCastHighlightControl(context)
     panel.Refresh = Refresh
     panel:SetScript("OnShow", panel.Refresh)
     panel:SetScript("OnHide", function() UI.CancelColorEdit() end)
