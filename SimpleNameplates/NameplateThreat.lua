@@ -52,10 +52,11 @@ local function UpdateThreatText(frame, state, context, decision)
     text:SetFont(FontPath(GetAppearanceSetting("threatFont")), GetAppearanceSetting("nameSize") or 12, ns.FontFlags(false))
     text:SetShadowColor(0, 0, 0, 0)
     text:SetShadowOffset(0, 0)
-    local ok, _, _, scaled, raw = pcall(UnitDetailedThreatSituation, "player", frame.unit)
+    local ok, _, _, scaled = pcall(UnitDetailedThreatSituation, "player", frame.unit)
     if not ok then ClearThreatText(frame, "threat API unavailable"); return end
-    if RenderPercent(text, raw) then frame.SNPThreatStatus = "displayed raw percentage"
-    elseif RenderPercent(text, scaled) then frame.SNPThreatStatus = "displayed scaled percentage"
+    -- scaledPercentage is the useful 0-100 "how close am I to pulling aggro"
+    -- value. rawPercentage can pin at 255 once the player is tanking.
+    if RenderPercent(text, scaled) then frame.SNPThreatStatus = "displayed scaled percentage"
     else ClearThreatText(frame, "no displayable threat percentage"); return end
     text:Show()
     local options = ns.HealthGradient and ns.HealthGradient.ThreatLayers(frame.unit)
