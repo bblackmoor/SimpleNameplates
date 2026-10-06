@@ -1,6 +1,7 @@
 -- Simple Nameplates: Blizzard-driven interruptible-cast pulse highlight.
 local _, ns = ...
-local CanAccessFrame = ns.PresentationCapabilities.CanAccessFrame
+local Capabilities = ns.PresentationCapabilities
+local CanAccessFrame = Capabilities.CanAccessFrame
 local GetContext = ns.WorldContext.Get
 local GetStylingEnabled = ns.GetStylingEnabled
 local GetInterruptibleHighlightEnabled = ns.GetInterruptibleHighlightEnabled
@@ -8,6 +9,20 @@ local EffectColor = ns.EffectColor
 local GetHealthBar, GetCastBar = ns.NameplateFrames.GetHealthBar, ns.NameplateFrames.GetCastBar
 
 local pendingFrames = setmetatable({}, {__mode = "k"})
+local eventStateByUnit = {}
+
+local START_EVENTS = {
+    UNIT_SPELLCAST_START = true,
+    UNIT_SPELLCAST_CHANNEL_START = true,
+    UNIT_SPELLCAST_EMPOWER_START = true,
+}
+local STOP_EVENTS = {
+    UNIT_SPELLCAST_STOP = true,
+    UNIT_SPELLCAST_CHANNEL_STOP = true,
+    UNIT_SPELLCAST_EMPOWER_STOP = true,
+    UNIT_SPELLCAST_FAILED = true,
+    UNIT_SPELLCAST_INTERRUPTED = true,
+}
 
 local function CreateBorder(parent, inset, thickness)
     local top = parent:CreateTexture(nil, "OVERLAY", nil, 7)
@@ -48,49 +63,83 @@ local function ApplyRenderer(highlight)
     if not highlight.pulse:IsPlaying() then highlight.pulse:Play() end
 end
 
-local function SetInterruptibleHighlightShown(overlay, shown)
-    if not overlay then return end
-    local ok = pcall(overlay.SetShown, overlay, shown)
-    if not ok then overlay:Hide() end
+-- Midnight can make IsInterruptable() secret. Blizzard has already consumed that
+-- value to render the native icon/shield, so inspect those ordinary visual states
+-- instead. Modern nameplates hide the spell icon for uninterruptible casts;
+-- Classic-style nameplates keep the icon and show BorderShield instead.
+local function NativeInterruptibleState(highlight, context)
+    local bar = highlight and highlight.castBar
+    if not bar then return nil end
+    local barShown = ns.AccessibleBoolean(Capabilities.ReadRegion(bar, "IsShown", context))
+    if barShown ~= true then return false end
+
+    local icon = Capabilities.SafeField(bar, "Icon", context)
+    local shield = Capabilities.SafeField(bar, "BorderShield", context)
+    local iconShown = ns.AccessibleBoolean(Capabilities.ReadRegion(icon, "IsShown", context))
+    local shieldShown = ns.AccessibleBoolean(Capabilities.ReadRegion(shield, "IsShown", context))
+    local hideIcon = Capabilities.SafeField(bar, "HideIconWhenNotInterruptible", context)
+
+    if hideIcon == true and iconShown ~= nil then return iconShown end
+    if shieldShown == true then return false end
+    if iconShown == true then return true end
+    return nil
 end
 
--- Blizzard wraps this result in spell-cast secrecy when needed. Forward it
--- directly to SetShown; never branch on or invert the interruptibility value.
-local function SyncInterruptibleHighlight(highlight)
-    local bar = highlight.castBar
-    local method = bar and bar.IsInterruptable
-    if type(method) ~= "function" then highlight.frame:Hide(); return end
-    local ok, shown = pcall(method, bar)
-    if ok then SetInterruptibleHighlightShown(highlight.frame, shown)
-    else highlight.frame:Hide() end
+local function ResolvedInterruptibleState(highlight, context)
+    local native = NativeInterruptibleState(highlight, context)
+    if native ~= nil then return native, "native visual" end
+    local unit = ns.AccessibleValue(highlight and highlight.owner and highlight.owner.unit)
+    if type(unit) == "string" and eventStateByUnit[unit] ~= nil then
+        return eventStateByUnit[unit], "spellcast event"
+    end
+    return nil, "unavailable"
 end
 
-local function InstallInterruptibleHighlightHook(highlight)
-    local icon = highlight and highlight.castBar and highlight.castBar.Icon
-    if not icon then return false end
-    highlight.hookedIcons = highlight.hookedIcons or setmetatable({}, {__mode = "k"})
-    if highlight.hookedIcons[icon] then return true end
+local function RefreshHighlight(highlight, context, decision)
+    if not highlight then return end
+    if not GetStylingEnabled() or not GetInterruptibleHighlightEnabled()
+        or not decision or not decision.showCastBar then
+        highlight.interruptibleState, highlight.interruptibleSource = false, "disabled"
+        highlight.frame:Hide()
+        return
+    end
+
+    local state, source = ResolvedInterruptibleState(highlight, context)
+    highlight.interruptibleState, highlight.interruptibleSource = state, source
+    if state == true then
+        highlight.frame:Show()
+        ApplyRenderer(highlight)
+    else
+        highlight.frame:Hide()
+    end
+end
+
+local function InstallRegionHook(highlight, region, registry)
+    if not region then return false end
+    highlight[registry] = highlight[registry] or setmetatable({}, {__mode = "k"})
+    if highlight[registry][region] then return true end
 
     local overlay = highlight.frame
-    local ok = pcall(hooksecurefunc, icon, "SetShown", function()
-        if not CanAccessFrame(highlight.owner, GetContext()) then
+    local ok = pcall(hooksecurefunc, region, "SetShown", function()
+        local context = GetContext()
+        if not CanAccessFrame(highlight.owner, context) then
             pendingFrames[highlight.owner] = true
             return
         end
         if highlight.owner.SNPInterruptibleHighlight ~= highlight then overlay:Hide(); return end
-        -- Secure hooks cannot be removed. A replaced icon must no longer drive
-        -- the current bar, even before the next addon refresh notices it.
-        if highlight.castBar.Icon ~= icon then return end
-        local decision = highlight.owner.SNPPresentation
-        if GetStylingEnabled() and GetInterruptibleHighlightEnabled()
-            and decision and decision.showCastBar then
-            SyncInterruptibleHighlight(highlight)
-        else
-            overlay:Hide()
-        end
+        local bar = highlight.castBar
+        if region ~= bar.Icon and region ~= bar.BorderShield then return end
+        RefreshHighlight(highlight, context, highlight.owner.SNPPresentation)
     end)
-    if ok then highlight.hookedIcons[icon] = true end
+    if ok then highlight[registry][region] = true end
     return ok
+end
+
+local function InstallInterruptibleHighlightHooks(highlight)
+    local bar = highlight and highlight.castBar
+    if not bar then return end
+    InstallRegionHook(highlight, bar.Icon, "hookedIcons")
+    InstallRegionHook(highlight, bar.BorderShield, "hookedShields")
 end
 
 local function EnsureInterruptibleHighlight(frame, context)
@@ -100,7 +149,7 @@ local function EnsureInterruptibleHighlight(frame, context)
     if not castBar then return nil end
     local existing = frame.SNPInterruptibleHighlight
     if existing and existing.castBar == castBar then
-        InstallInterruptibleHighlightHook(existing)
+        InstallInterruptibleHighlightHooks(existing)
         return existing
     end
     if existing and existing.frame then existing.frame:Hide() end
@@ -137,12 +186,7 @@ local function EnsureInterruptibleHighlight(frame, context)
     overlay:SetScript("OnShow", function() ApplyRenderer(highlight) end)
     overlay:SetScript("OnHide", function() StopRenderer(highlight) end)
     frame.SNPInterruptibleHighlight = highlight
-
-    -- Icon updates notify us of cast/interruptibility changes in every native
-    -- style. Read Blizzard's decision rather than inferring it from the icon:
-    -- Classic keeps its spell icon visible for uninterruptible casts too.
-    InstallInterruptibleHighlightHook(highlight)
-
+    InstallInterruptibleHighlightHooks(highlight)
     return highlight
 end
 
@@ -150,24 +194,45 @@ local function UpdateInterruptibleHighlight(frame, context, decision)
     context = context or GetContext()
     if not CanAccessFrame(frame, context) then pendingFrames[frame] = true; return end
     pendingFrames[frame] = nil
-    if not GetStylingEnabled() or not decision or not decision.showCastBar or not GetInterruptibleHighlightEnabled() then
-        if frame.SNPInterruptibleHighlight then frame.SNPInterruptibleHighlight.frame:Hide() end
+    if not GetStylingEnabled() or not decision or not decision.showCastBar
+        or not GetInterruptibleHighlightEnabled() then
+        if frame.SNPInterruptibleHighlight then
+            frame.SNPInterruptibleHighlight.interruptibleState = false
+            frame.SNPInterruptibleHighlight.interruptibleSource = "disabled"
+            frame.SNPInterruptibleHighlight.frame:Hide()
+        end
         return
     end
     local highlight = EnsureInterruptibleHighlight(frame, context)
     if not highlight then return end
+    RefreshHighlight(highlight, context, decision)
+end
 
-    local icon = highlight.castBar and highlight.castBar.Icon
-    if not icon then highlight.frame:Hide(); return end
-    SyncInterruptibleHighlight(highlight)
-    if ns.AccessibleBoolean(highlight.frame:IsShown()) == true then ApplyRenderer(highlight) end
+local function RecordSpellcastEvent(event, unit)
+    if type(unit) ~= "string" or not unit:match("^nameplate%d+$") then return false end
+    if event == "UNIT_SPELLCAST_INTERRUPTIBLE" then
+        eventStateByUnit[unit] = true
+    elseif event == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" then
+        eventStateByUnit[unit] = false
+    elseif START_EVENTS[event] then
+        -- Initial state comes from Blizzard's rendered icon/shield after the
+        -- cast-start event has finished dispatching.
+        eventStateByUnit[unit] = nil
+    elseif STOP_EVENTS[event] then
+        eventStateByUnit[unit] = false
+    else
+        return false
+    end
+    return true
+end
+
+local function ClearUnit(unit)
+    if type(unit) == "string" then eventStateByUnit[unit] = nil end
 end
 
 local function RetryPending(context)
     for frame in pairs(pendingFrames) do
         if CanAccessFrame(frame, context) then
-            -- Re-read current state; a missed callback may belong to a removed
-            -- or recycled plate, a retired icon, or a now-disabled category.
             UpdateInterruptibleHighlight(frame, context, frame.SNPPresentation)
         end
     end
@@ -176,5 +241,7 @@ end
 ns.CastHighlight = {
     EnsureInterruptibleHighlight = EnsureInterruptibleHighlight,
     UpdateInterruptibleHighlight = UpdateInterruptibleHighlight,
+    RecordSpellcastEvent = RecordSpellcastEvent,
+    ClearUnit = ClearUnit,
     RetryPending = RetryPending,
 }
