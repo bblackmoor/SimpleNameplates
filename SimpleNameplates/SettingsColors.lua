@@ -27,6 +27,21 @@ local function AddHealthBarSwitch(context, row, swatch, state)
     end
 end
 
+local function AddCastHighlightSwitch(context, row, swatch)
+    local label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    label:SetText("Active")
+    label:SetPoint("LEFT", swatch:GetFrame(), "RIGHT", 12, 0)
+    local toggle = Widgets.CreateSwitch(row, function(checked)
+        addon.SetInterruptibleHighlightEnabled(checked)
+        RefreshContext(context)
+        RefreshNameplates()
+    end)
+    toggle:SetPoint("LEFT", label, "RIGHT", 8, 0)
+    context.refreshers[#context.refreshers + 1] = function()
+        toggle:SetChecked(addon.GetInterruptibleHighlightEnabled())
+    end
+end
+
 local function CreateColorRow(context, text, displayText, getColor, setColor, state)
     local row = UI.CreateSettingRow(context.content, context.layout, text)
     local swatch = Widgets.CreateColorPicker(row, function(r, g, b)
@@ -46,6 +61,7 @@ local function CreateColorRow(context, text, displayText, getColor, setColor, st
     frame:HookScript("OnLeave", function() GameTooltip:Hide() end)
     if state then AddHealthBarSwitch(context, row, swatch, state) end
     if displayText then AddDescription(context.content, context.layout, displayText) end
+    return row, swatch
 end
 
 local function CreatePriorityColorRow(context, text, state, displayText)
@@ -133,19 +149,6 @@ local function AddPriorityColorControls(context)
     AddBackgroundNameControl(context)
 end
 
-local function AddCastHighlightControl(context)
-    local row = UI.CreateSettingRow(context.content, context.layout, "Active")
-    local toggle = Widgets.CreateSwitch(row, function(checked)
-        addon.SetInterruptibleHighlightEnabled(checked)
-        RefreshContext(context)
-        RefreshNameplates()
-    end)
-    toggle:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
-    context.refreshers[#context.refreshers + 1] = function()
-        toggle:SetChecked(addon.GetInterruptibleHighlightEnabled())
-    end
-end
-
 local function CreateColorsPanel()
     local panel, content, layout = UI.CreateScrollablePanel("Colors")
     UI.AddTitle(content, layout, "Colors")
@@ -166,11 +169,11 @@ local function CreateColorsPanel()
     AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
-    CreateColorRow(context, "Interruptible cast highlight",
+    local row, swatch = CreateColorRow(context, "Interruptible cast highlight",
         "Highlights interruptible casts and channels. Applies to the selected profile.",
         function() return EffectColor("interruptible") end,
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end)
-    AddCastHighlightControl(context)
+    AddCastHighlightSwitch(context, row, swatch)
     panel.Refresh = Refresh
     panel:SetScript("OnShow", panel.Refresh)
     panel:SetScript("OnHide", function() UI.CancelColorEdit() end)
