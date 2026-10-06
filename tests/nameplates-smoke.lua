@@ -30,7 +30,7 @@ function wipe(t) for key in pairs(t) do t[key] = nil end end
 local unit = {}
 local barColorOverride
 local threatEnabled, threatPercent = false, nil
-function UnitDetailedThreatSituation() return false, 1, nil, threatPercent end
+function UnitDetailedThreatSituation() return false, 1, threatPercent, 255 end
 function UnitThreatSituation(who) return who == "player" and unit.aggro and 2 or nil end
 function UnitIsUnit(token, target) return unit.targetPlayer and token == "nameplate1target" and target == "player" or false end
 function UnitIsOwnerOrControllerOfUnit() return false end
@@ -112,7 +112,7 @@ equal(hooks[1].name, "CompactUnitFrame_UpdateHealthColor", "health hook")
 equal(hooks[2].name, "CompactUnitFrame_UpdateName", "name hook")
 local countEvents = 0
 for _, registered in pairs(events.registered) do countEvents = countEvents + registered end
-equal(countEvents, 25, "one registration for each event")
+equal(countEvents, 35, "one registration for each event")
 assert(events.scripts.OnEvent and events.scripts.OnUpdate, "event/update scripts installed")
 events.scripts.OnEvent(events, "ADDON_LOADED", "AnotherAddon")
 equal(calls.db, nil, "other addon ignored")
@@ -1359,6 +1359,12 @@ equal(plateFrame.SNPPresentation.showCastBar, true, "native nested cast included
 equal(plateFrame.SNPFullTitleText.shown, false, "native nested cast hides long title")
 equal(plateFrame.SNPInterruptibleHighlight.castBar, nestedCast, "highlight uses native nested cast")
 equal(plateFrame.SNPInterruptibleHighlight.frame.shown, true, "nested interruptible cast permits highlight")
+events.scripts.OnEvent(events, "UNIT_SPELLCAST_NOT_INTERRUPTIBLE", "nameplate1")
+events.scripts.OnUpdate(events, 0.01)
+equal(plateFrame.SNPInterruptibleHighlight.frame.shown, false, "not-interruptible event hides highlight")
+events.scripts.OnEvent(events, "UNIT_SPELLCAST_INTERRUPTIBLE", "nameplate1")
+events.scripts.OnUpdate(events, 0.01)
+equal(plateFrame.SNPInterruptibleHighlight.frame.shown, true, "interruptible event restores highlight")
 nestedCast:Hide()
 equal(plateFrame.SNPFullTitleText.shown, true, "nested cast end restores title without restyling")
 nestedCast:Show()
