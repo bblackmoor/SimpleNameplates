@@ -1,470 +1,91 @@
 # Live WoW integration verification
 
-Status: pending. Repository work includes all four performance phases through
-1.0.205, with all 21 local smoke suites passing. These checks
-require a World of Warcraft client; local Lua stubs do not establish actual frame
-behavior, secure CVar behavior, or Midnight secret-value safety. Record the client
-build, addon version, date, and observed result when running them. Leave a check
-open until it is observed in game.
-
-## Details Framework foundation (1.0.151)
-
-- [ ] With Details, Plater and standalone Details Framework disabled, reload and log in; confirm no library startup errors and all existing settings pages behave as before.
-- [ ] Repeat with an external DF embedder enabled; record its DF minor version and confirm startup/settings work without library conflicts.
-- [ ] Enter/leave combat and reload with the new bundle; record any taint/secret-value errors. Phase 2 does not convert visible controls, so adapter rendering remains a later page-conversion check.
-
-## Details Framework Colors conversion (1.0.152)
-
-- [ ] Check Colors alignment, wrapped descriptions and scrolling; verify swatch borders/insets, switch thumbs, status text, reset buttons, and the effect dropdown at different UI scales.
-- [ ] Apply and cancel RGB edits for priority/cast colors; use each individual reset and Reset all colors in Default, High Contrast and a custom profile. Verify the documented profile/global reset scope and no opacity control.
-- [ ] Switch profiles and reopen Colors; check refreshed colors/effects without changing global activation modes. Exercise all five effects, including None, and compare actual cast highlighting.
-- [ ] Repeat startup/settings and combat checks without Details/Plater and with an external DF embedder; record client build and library minor, and leave unobserved rendering/taint checks pending.
-
-## Details Framework Appearance conversion (1.0.154)
-
-- [ ] Check Appearance alignment, scrolling, endpoint captions and pt/% labels at different UI scales. Exercise name size 8–36/step 1 and bar width 80–150%/step 5.
-- [ ] Type values into both sliders; test Enter/Escape, focus loss, page hide, profile switching and Reset settings during previews. Verify rollback belongs to the original profile and a later Escape cannot undo reset values.
-- [ ] Open both font menus with a large SharedMedia pack; test scrolling/selection, absent saved fonts, late registrations and global font overrides. Labels refresh without resetting unrelated controls or saved font choices.
-- [ ] Verify sanctuary matching, name placement, threat and critter toggles; reset Appearance and confirm its documented profile/global scope. Repeat with Details/Plater absent and an external DF embedder present, recording any combat/taint errors.
-
-## Details Framework Profiles/TRP3/About conversion (1.0.155)
-
-- [ ] Check Profiles selector/switch/status alignment, management-button spacing and 64-character names at different UI scales; verify scrolling with many profiles and updated menus after create/copy/rename/delete/restore on every visual page.
-- [ ] Exercise native dialogs with accept/cancel/Enter/Escape; check Default protection, cross-character assignments, independent copies and bundled restore scope. Verify Appearance previews cancel before switching profiles.
-- [ ] Disable/re-enable styling; check setup consent/suspension and native presentation restoration. Test with Details/Plater absent and an external DF embedder present.
-- [ ] Test TRP3 detected/absent, master and dependent switches, saved choices, disabled/dimmed labels and actual name/title fallback/refreshes.
-- [ ] Verify About's source link is borderless, changes color on hover and opens a usable Ctrl+C dialog. The three color examples remain undimmed and never open a picker; their info links and tooltips work.
-- [ ] Record client build, DF minor, addon version and combat/taint observations. Leave unobserved checks pending.
-
-## Picker and profile-dialog review (1.0.157)
-
-- [ ] Preview a color, then reset that row or the entire page, switch profiles, hide Colors, or open another swatch. Verify rollback stays with the original profile and later Cancel cannot undo a reset or affect the next edit. Accept with Okay and verify the accepted color remains after subsequent page/profile actions.
-- [ ] Open another addon's picker while a Simple Nameplates edit is active; verify this addon does not close or edit the other picker's session.
-- [ ] Open Copy, Rename or Delete, change the selected profile before accepting, then accept. Verify no profile changes and the message asks to reopen the dialog. Confirm normal unchanged-selection operations still work.
-
-## Styling consent display (1.0.159)
-
-- [ ] Keep Profiles visible while enabling styling with incompatible Blizzard visibility settings. Confirm Inactive while consent is pending, Active immediately after successful Apply and enable, and Inactive after refusal or rejected writes, without reopening the page.
-- [ ] Approve during combat, then leave combat; confirm the switch and status update after deferred completion while saved intent and captured originals retain their documented behavior.
-
-## Setup and saved data
-
-- [ ] Fresh install with no `SimpleNameplatesDB`: Default and High Contrast appear, the active Profile is Default, and Global behavior uses factory values.
-- [ ] Load an existing valid schema-2 database: colors, fonts, sizes, placement, category modes, TRP3 preferences, and managed-CVar originals retain their meaning. Verify invalid fields are discarded individually while valid fields survive regardless of the schema marker.
-- [ ] On two characters, select different Profiles; reload and log out/in on each. Selections persist independently and edits to an account-wide Profile appear for both where selected.
-- [ ] Create, copy, rename, and delete a Profile. Copy retains the selected appearance, renaming propagates to character assignments, deletion falls back to Default, and Default cannot be renamed/deleted.
-- [ ] Edit both bundled Profiles, then Restore Bundled Profiles. Factory appearances return and High Contrast is recreated after removal without changing custom Profiles.
-
-## Settings and Blizzard names
-
-- [ ] About, Profiles, Appearance, Colors, and TRP3 render once, scroll correctly, and maintain the expected layout and controls; `/snp`, `/snp profiles`, `/snp appearance`, `/snp colors`, `/snp trp3`, `/snp about`, and `/snp debug` route correctly.
-- [ ] Exercise Active and Inactive for all six priority categories on representative addon-accessible units. Confirm first-match priority and threat/effect behavior; no category Hide option is available.
-- [ ] Confirm experimental replacement is absent. Load valid stored originals from previous replacement use and verify player/NPC/minion names and nameplate-visibility CVars restore, including with styling disabled or restoration deferred by combat. Failed writes retain originals until successful. Verify critter/companion hiding still captures/restores its own CVar independently; no taint or secret-value errors.
-- [ ] Disable and re-enable styling; addon visuals and inside-bar sizing restore and reapply correctly without losing Global modes or the selected Profile.
-
-## Slug font rendering (1.0.161)
-
-- [ ] Compare Slug off/on with built-in and SharedMedia fonts at several UI scales. Check floating, above-bar and inside-bar names, titles, threat, native health text and cast labels; confirm smoothness, thin solid outlines, no black glyph copies and unchanged padding.
-- [ ] Switch/copy profiles, reload, reset Appearance and disable styling. Verify the toggle follows profiles, old caches do not undo the chosen rendering, and native font flags restore without taint or secret-value errors.
-
-## Uniform presentation and cast/title transitions (1.0.162)
-
-- [ ] Verify available health bars in every Active priority category, both combat states and sanctuary/non-sanctuary areas. Keep Inactive categories native, widget-only actor text suppressed, and missing-bar names colored. Check bar widths, inside/above placement, Slug and threat text.
-- [ ] With TRP3 enabled/absent, verify long titles and NPC service subtitles below health bars; missing-bar titles stay below the name. Observe cast and channel start/end/interruption: the native cast bar replaces the title and the title returns afterward. Verify no idle cast bar is forced visible.
-- [ ] Repeat with plate/bar reuse, temporary forbidden/restricted access, unknown cast visibility, title toggles and disabling styling. Confirm no stale title revival, duplicate cast bars, lost shields, or taint/secret-value errors.
-
-## Opt-in profiling (1.0.163)
-
-- [ ] After login/reload, confirm profiling is off and `/snp perf report` reports no session. Start a short session in a representative crowded scene, stop and report; record client build, addon version, approximate plate count, combat state and other enabled nameplate addons.
-- [ ] Check call counts and total/average/longest timings for paths exercised in that scene; rows not called may be absent. Verify the report labels inclusive overlap and measurement overhead. Do not sum rows as total CPU or treat session elapsed time as CPU usage.
-- [ ] Report while running without stopping, try a duplicate start, then stop and repeat reports. Confirm running reports use only start memory, duplicate starts preserve the session and stopped results remain fixed. Starting after stop replaces old results; reload clears them.
-- [ ] Repeat start/stop/report during combat, with no target and with styling disabled. Observe names, casts, titles and restoration for behavior changes, errors or taint; no settings page should open from performance commands.
-- [ ] Compare similar scenes with profiling off/on and repeat across external library embedders. Treat start/end memory as aggregate accounting affected by shared libraries, profiler storage and garbage collection; negative changes are valid. Record unavailable timer/memory messages if observed, without assuming stub coverage proves native safety.
-
-## Nameplate presentation and integration
-
-- [ ] After 1.0.160, repeat cast-effect checks through plate/bar/icon reuse and temporary access loss. Confirm old icons do not restart or stop the current effect, and floating, above-bar and inside-bar name placement survives cached repair.
-- [ ] Switch Profiles while plates are visible; confirm fonts, sizes, colors, threat percentage, and visual effects refresh immediately. Verify name-only plates and Blizzard-controlled overhead names reflect the documented limits.
-- [ ] Move names inside and above health bars. Inside-bar font sizing and bar-height padding are correct; switching back and disabling styling restore Blizzard's original bar height.
-- [ ] Observe interruptible and non-interruptible casts and channels. Test None, Moving dashes, Autocast Shine, Action Button Glow, and Proc Glow; effects appear only when Blizzard reports interruptibility. The existing shield and cast information remain intact.
-- [ ] With TRP3 installed and absent, exercise cached RP names, short/full titles, OOC marker, unavailable-field fallback, and name-length limits. Full titles appear below health bars and disappear during active casts/channels.
-- [ ] Target and update plates during combat and after reload/logout. Confirm frame repair, name visibility, and diagnostic output without restricted-value inspection or Lua errors.
-
-The repository smoke scripts cover saved-data validation, settings callbacks, classification, and event/hook registration. Record client observations here; do not close these items from stub results alone.
-
-## World-context/runtime refactor: pending client matrix
-
-Test Silvermoon Shared and Silvermoon Horde separately, including transitions between them; also test Stormwind, Eversong Woods, Zul'Aman, and dungeon/raid instances. Record faction, War Mode/PvP state, client build, and the observed presentation. These are test locations, not hardcoded context categories.
-
-- [ ] After phase 1, confirm the existing category behavior, fonts, TRP3 titles, cast highlight, inside-bar placement, restoration, and `/snp debug` still work after the module split.
-- [ ] After phase 2, compare `/snp debug` context across Silvermoon Shared/Horde boundaries and the other test locations, including zone/subzone/map, territory/sanctuary, instance, faction, desired versus active War Mode, PvP/FFA, player combat, and lockdown. Verify context updates with styling disabled and appears without a target.
-- [ ] After phase 2, inspect missing, accessible, and forbidden/restricted plates during combat and after combat exit. Verify refresh, hooks, drift repair, cleanup, restoration, and cast effects skip blocked frames without errors and retry when access returns. Repeated diagnostics must not create overlays or hooks; existing cast effects remain unchanged.
-- [ ] After phase 3, verify all six priorities, including a hostile interactive NPC, an NPC that can attack you versus one attackable only by you, pets/guardians, and useful versus unmatched NPCs. Confirm interaction evidence at different distances and when the soft-interaction target changes; record unavailable/secret results explicitly.
-- [ ] After phase 3, compare eligible PvP, sanctuary, non-PvP, and same-faction duel cases. PvP flags alone must not promote a player; faction identity remains in diagnostics when a combat priority wins. Confirm targeting a friendly unit does not make it Attacking.
-- [ ] Verify category/profile changes do not apply replacement settings. Check defaults, presets, obsolete-field discard, and diagnostics reporting Blizzard presentation for Inactive/disabled styling. Confirm the separate critter control remains functional after original values from removed replacement use are restored.
-- [ ] After phases 2–4, check context changes and the same entity's presentation across boundaries, including accessible and restricted frames.
-- [ ] After phase 4, in combat show health bars for all Active entities where supported; out of combat also show available bars for every Active category. Inactive categories keep Blizzard presentation. Refresh when entering/leaving combat; place long titles below health bars, hiding them during casts/channels.
-
-## Runtime phase 4 follow-up (current uniform policy, 1.0.162)
-
-- [ ] Verify every Active category gains a supported bar during player combat, including same/opposite-faction players, interactive NPCs, unmatched NPCs, and minions. On combat exit, every Active category retains its supported health bar. Inactive categories retain Blizzard presentation and missing-bar entities keep colored names.
-- [ ] Verify above/inside layout, full selected name size, four-unit top/three-unit bottom bar padding, white inside-bar text with thin solid black outlines, white above-bar names, category colors, threat text, and cast effects through repeated combat entry/exit and Blizzard name/health repair hooks. Old cached text must not undo a transition.
-- [ ] Verify long titles appear below health bars and disappear during active casts/channels, including friendly combat bars and missing-bar cases. Diagnose unavailable shown state explicitly.
-- [ ] Disable styling during lockdown on a previously styled frame; after combat, confirm original visibility and bar/container heights return while styling stays disabled. Repeat with temporarily forbidden base plates and Inactive categories becoming accessible without a context event.
-- [ ] Remove/recycle plates while restricted and verify deferred cleanup does not clear another entity's name or leave stale overlays. Confirm the uniform presentation rule in diagnostics; normal refreshes must not make new nameplate-visibility CVar claims.
-
-
-## Gradient edge verification (1.0.185)
-
-- [ ] With gradients on, verify full-health bars and the Colors preview have a dark left edge, a smooth fade to the original color at the right, and no bright left strip or faint rim. Repeat at different UI scales and bar widths.
-- [ ] Damage and heal through 80%: the fixed gradient clips at the remaining health edge; threat text retains the same thin solid outline at every health level. Verify no tint extends into depleted health.
-- [ ] Disable gradients and styling in turn; confirm normal flat fills and Blizzard restoration.
-
-
-## Performance phase 1 acceptance
-
-- [ ] Compare gradient off/on and Slug off/on: names, NPC/TRP3 titles, threat, native health labels and cast labels retain thin solid outlines without extra glyph copies. Confirm the settings preview matches and disabling styling restores native text.
-- [ ] Repeat the crowded baseline with similar duration, plate count, settings and activity. Capture all `/snp perf report` timing and reason rows, approximate FPS, addon version and combat state; also compare profiling off/on.
-- [ ] Verify the report identifies both Blizzard repair hooks, queued events, name-drift reasons and cached/fallback repairs when exercised. Check fresh sessions clear counters and stopped reports remain frozen.
-
-See [the four-phase performance plan](performance-plan.md). Phase 1 is implemented; these native checks remain open.
-
-## Performance phase 2 acceptance
-
-- [ ] In similar crowded scenes, compare ordinary name/color hook timings and full-styling calls before/after phase 2, including profiling off/on. Capture all report rows; do not sum inclusive timings.
-- [ ] Change target/mouseover, attack a unit, change threat and start/stop casts/channels. Verify immediate category color, threat updates and name space, cast pulse, and title substitution, with unchanged outlines/gradient.
-- [ ] Confirm TRP3 callbacks update names/titles on the next runtime batch. Test category Health Bar switches and profile/font changes, including frames or regions replaced by Blizzard.
-- [ ] Verify recycling and disabling styling restore the correct native regions, including native-name alpha/font, and blocked updates recover when access returns.
-
-Phase 2 is implemented; native performance, rendering and secure acceptance remain pending.
-
-## Performance phase 3 acceptance
-
-- [ ] Repeat comparable crowded recordings with profiling off/on. Capture all timing/reason rows, FPS, addon version, approximate plate count and combat state. Compare Reconciliation, Access assessment, Text repair and full-styling fallback calls without summing inclusive timings.
-- [ ] Verify stable names stay correct, including inside/above placement, dimming, thin outlines and title width. Change native health-label visibility and confirm name space updates without unrelated text/font changes.
-- [ ] Test inaccessible/secret properties and readable recovery. Unknown observations must not cause repair storms; phase 4 uses elapsed retry eligibility of up to four seconds, followed by fair budgeted service. Native cast hooks/events must still immediately substitute title/cast visibility.
-- [ ] Test replaced/recycled plates, context/profile/font changes, widgets-only transitions, TRP3 updates and disable/enable restoration. Record secure/taint errors and confirm current regions retain the correct native baseline.
-
-Phase 3 is implemented; native performance, rendering and secure acceptance remain pending. Phase 4 retains work budgeting and final client validation.
-
-## Performance phase 4 acceptance (1.0.205)
-
-- [ ] In a similar crowded scene, record approximately 120 seconds with `/snp perf start`, then `/snp perf stop` and `/snp perf report`. Screenshot all rows and record approximate plate count, FPS/range, combat state, addon version, TRP3/gradient/Slug settings and activity. Repeat with profiling off and compare with earlier builds without summing inclusive rows.
-- [ ] Confirm Periodic work, Plate discovery, per-plate Reconciliation and job/limit counters are readable. Reconciliation calls now mean individual plates, so pre-phase-4 per-call averages/counts are not comparable. Use runtime/total costs and observed frame pacing to tune the initial four-job/one-millisecond target.
-- [ ] With many plates, move targets/mouseover, rename/update TRP3, gain/lose threat, and start/stop/interruption casts/channels. Confirm urgent changes and title/cast substitution stay immediate while routine work is distributed.
-- [ ] Move away/back, remove/recycle plates, replace bars/names and switch profiles/fonts/context/combat state. All current plates must progress fairly; departed assignments must not receive stale text/layout. Check unknown/secret recovery, disable/re-enable and deferred restoration.
-- [ ] Record errors/taint and compare profiling off/on. The time target is cooperative and cannot preempt one expensive UI operation. Heavy queues or low FPS can extend intervals and service after retry deadlines; record visible lag before choosing a different budget.
-
-All four performance code phases are implemented. Live FPS, rendering, secure acceptance and budget tuning remain open; no native result is inferred from local stubs.
-
-## 1.0.207 background-name flashing follow-up
-
-- [ ] With background-name dimming on, observe Silvermoon Resident, Enchanted
-  Broom and other ambient NPCs while stationary; names and subtitles stay grey.
-- [ ] Turn dimming off and verify white names; toggle styling off and verify
-  native colors/fonts restore. Target/mouseover, move and enter/exit combat.
-- [ ] Confirm configured face/size, thin outline and optional SLUG rendering
-  survive native frame-option updates and plate recycling without Lua/taint errors.
-- [ ] Repeat the prior one-minute scene with a complete perf report. Inspect
-  Font drift components, Name appearance writes, Focused cache invalidation and
-  Urgent refresh. Continuous equivalent-font repairs should stop; real writes
-  may still occur and be repaired immediately. Record actual FPS with profiling
-  off/on and any remaining 16.7+ ms runtime callbacks.
-
-## 1.0.208 sizing and color follow-up
-
-- [ ] In the same Silvermoon scene, observe background NPC names while stationary,
-  targeting, hovering and moving; no grey/white flashing.
-- [ ] Set health-bar width above/below 100%; confirm bars resize around their
-  native center and inside names retain sufficient vertical space. Reset width
-  and use above-bar names; native anchors restore. Toggle styling off/on.
-- [ ] Capture a full one-minute report. Bar-width/height drift should not recur
-  on every job; native resets may require real one-time repairs. Inspect
-  not-initialized fallbacks separately from the not-a-nameplate outcome.
-- [ ] Check combat/restricted/recycled bars and restoration for Lua/taint errors.
-
-## 1.0.209 color-channel follow-up
-
-Live result: user confirmed that blinking stopped in the Silvermoon scene on
-October 8. Broader color/restoration checks below remain separate acceptance work.
-
-- [ ] Verify the installed version is 1.0.209 and reload. With dimming enabled,
-  observe Silvermoon Resident and Enchanted Broom stationary, then target/hover
-  and move. Names should remain grey. Repeat with profiling off.
-- [ ] Toggle dimming off/on and styling off/on; confirm white/grey and native
-  restoration. Check useful NPCs and hostile units retain their configured colors.
-- [ ] If blinking persists, record a short video and a complete one-minute perf
-  report, including Name size drift samples, Name appearance writes and Name drift.
-  The size loop remains unresolved; these samples separate readable size deltas
-  from anchor counts without changing repair behavior.
-- [ ] Check combat, restricted and recycled plates for Lua/taint errors.
-
-## 1.0.210 size-loop diagnosis
-
-- [ ] In the same scene and with the same appearance settings, capture about one
-  minute of profiling. Include Bar anchor preparation and Name size drift rows.
-- [ ] Determine whether repeated two-anchor drift follows successful preparation
-  (`released opposing anchors`) or a specific skip reason. Do not change width,
-  UI scale or addon settings during this comparison.
-
-
-## Restricted anchor sizing follow-up (1.0.211)
-
-The 84.4-second 1.0.210 report recorded 10,436 `point getter failed`
-preparations and cached repairs on all 3,806 reconciliation jobs. Widths
-remained near 258 instead of 309 with two anchors. Urgent refresh reached
-25.932 ms; that separate timing remains unresolved.
-
-1. Install 1.0.211 and reload. Retain the 120% health-bar width and inside-name settings.
-2. Verify bar width and name height, NPC grey colors, cast/title substitution and threat text.
-3. Record a similar one-minute run with `/snp perf start`, `/snp perf stop`, then `/snp perf report`.
-4. Include Bar anchor preparation, Name drift, Name size drift and Urgent refresh rows.
-   Expect `released native restricted anchors` at setup or a native reset, followed by
-   stable geometry rather than a cached repair on every check. Repeated release still
-   requires investigation of native resets.
-5. Reset width to 100% and move the name above the bar, then disable styling. Verify native
-   anchoring returns. Repeat with Blizzard classic and modern bar styles and a different UI scale.
-
-The patch derives the known native bar/container anchors from Blizzard
-`NamePlateUnitFrameMixin:UpdateAnchors` inputs and writes them through PixelUtil.
-It avoids GetPoint when IsAnchoringRestricted reports true and uses the same
-validated fallback if the getter throws. Unsupported hierarchies remain untouched.
-Smoke coverage models the failed getter, restoration and convergence; it cannot
-establish native secure behavior or prove the runtime spike is fixed.
-
-
-## Native resets and duplicate initialization (1.0.212)
-
-The 94.2-second 1.0.211 report reduced cached reconciliation repairs to
-464 / 4,236 (about 11%). It recorded 385 width-first mismatches, 77 height-first
-mismatches (including 25.108 vs 25.000), and a 27.196 ms urgent-refresh maximum.
-Its 1,547 full styling requests consisted of 525 initial, 525 name-hook fallback,
-473 late and 24 global passes. The regression reproduces a native lookup styling
-through the name hook before ADDED reaches its frame.
-
-1. Install 1.0.212, reload, and retain the same inside-name/120% width settings.
-2. Move between nearby NPCs and out of range/back. Verify immediate bar width,
-   stable grey names, threat space, cast/title substitution and native restoration.
-3. Run a matched one-minute recording and include Geometry hook repair, Global
-   refresh, Initialization, Global refresh plates, Urgent batches, Name drift,
-   Name size drift and Urgent refresh rows. Initial and late reuse should reduce
-   duplicate full styling. A not-initialized name-hook fallback can still be the
-   one required first initialization; it is not by itself proof of a defect.
-4. Verify pixel rounding does not repeatedly repair dimensions at different UI
-   scales, while substantial native width resets still correct immediately.
-5. Compare urgent and global timing maxima. Inclusive rows must not be added
-   together; separate maxima do not prove simultaneous occurrence. Use batch
-   counts to identify broad refresh frequency before changing scheduler limits.
-
-The scheduler and urgent event order are unchanged. The new batch diagnostics
-do not prove the 27 ms spike is fixed. Native secure behavior and performance
-acceptance remain pending.
-
-
-## Selective native visibility repairs (1.0.213)
-
-The 1.0.212 report shows six width-first mismatches in 4,495 reconciliation
-checks, with 543 initial and 403 late initialization reuses. It also shows
-402 bar-visibility mismatches causing full-style fallbacks and 81 cached
-repairs. All 975 full styling requests are accounted for by 543 first
-name-hook initializations, 402 reconciliation fallbacks, 21 global passes
-and nine data-presentation fallbacks.
-
-Version 1.0.213 removes visibility from cache identity validation, observes
-bar/container visibility as selective repair work and handles native bar
-OnHide through the current presentation. Real presentation or identity
-changes still invalidate caches.
-
-1. Install and reload 1.0.213. Keep the same settings and crowded scene.
-2. Move in/out of NPC range, change target/mouseover and enter/leave combat.
-   Verify required bars and inside names remain visible, background grey
-   names stay stable, and configured hidden bars remain hidden.
-3. Profile for about one minute and include Name drift, Reconciliation repairs,
-   Styling requests, Geometry hook repair, Global refresh and Urgent refresh.
-   Bar visibility alone should no longer produce full-style fallbacks; cached
-   or immediate repairs should converge. First name-hook initialization can
-   still require a full style.
-4. Disable styling and switch categories/profiles, including inaccessible
-   contexts. Confirm native visibility restoration and no forced bar show
-   while disabled, suppressed or otherwise native-controlled.
-
-The urgent-refresh maximum was 19.472 ms and global-refresh maximum was
-19.566 ms. These separate maxima do not prove simultaneous occurrence.
-Broad refresh batches remain a candidate; this patch does not change the
-scheduler or claim that the urgent spike is resolved.
-
-
-## Bounded global refreshes (1.0.214)
-
-The 95.3-second 1.0.213 report shows no reported width/height drift or
-reconciliation full-style fallback. It has 571 full styles, 501 cached repairs
-and 440 text-color-first mismatches. Its urgent/global maxima are
-20.085/20.080 ms. The close maxima support global batches as a candidate;
-they do not prove simultaneous occurrence.
-
-Global refreshes now enqueue per-plate jobs in the existing shared scheduler.
-Current and previous target/mouseover/interaction plates and explicitly queued
-unit work bypass that backlog. Settings and background plate updates therefore
-settle over several frames. The count/time limits are unchanged and cannot
-interrupt one running job or bound the separate immediate priority work.
-
-1. Install 1.0.214 and reload. Keep the same crowded scene and settings.
-2. Change target/mouseover, update threat and trigger casts. Verify immediate
-   category/name/threat/cast/title responses on affected units.
-3. Change a profile/font/width setting. Verify the priority plates update
-   immediately and background plates settle promptly over subsequent frames.
-4. Move out of range, recycle plates, cross a zone boundary, and toggle Active.
-   Verify no stale names, delayed writes to departed plates or disabled styling.
-5. Record about one minute and include Runtime update, Urgent refresh, Global
-   refresh, Global plate refresh, Periodic work/jobs/limits, Styling requests
-   and Reconciliation repairs. Compare urgent/runtime maxima and visible hitches.
-   Individual scheduled global jobs may exceed the one-millisecond target.
-6. Include Name drift rows. The text-color repair investigation remains open;
-   do not treat this batching patch as a fix for those 440 prior mismatches.
-
-Global refresh timings now measure snapshot/enqueueing and immediate priority
-work, not a complete synchronous all-plate styling pass. Global plate refresh
-measures one deferred or immediate plate operation. These inclusive rows
-overlap and must not be added together. Broad refresh latency, fairness and
-native secure behavior remain live acceptance gates.
-
-
-## Guarded color callbacks and visibility diagnosis (1.0.215)
-
-The latest 97-second 1.0.214 report has Runtime update/Urgent refresh maxima
-of 5.323/3.198 ms, versus 21.265/20.085 ms in the prior report. It has no
-reported geometry drift or reconciliation full-style fallback, but 528
-text-color and 136 inside-name visibility first mismatches. The memory delta
-alone does not establish a leak; these reports are not matched benchmarks.
-
-A smoke regression confirms that a native color setter nested in a selective
-visibility repair is discarded by the 1.0.214 styling guard. Version 1.0.215
-retains guarded color notifications and checks the completed color on guard
-release. It repairs only readable mismatches, preserving the appearance hook's
-current ownership/access/restoration checks. It does not establish that this
-path explains every live mismatch. Scheduler budgets are unchanged.
-
-1. Install 1.0.215 and reload in the same crowded scene. Verify dim background
-   names remain grey and inside labels remain legible through target/mouseover,
-   bar visibility and profile changes.
-2. Record approximately one minute. Include Name drift, Name appearance writes,
-   Name appearance deferred, Reconciliation repairs, Runtime update and Urgent
-   refresh rows. Compare text-color repair counts and maxima.
-3. The old inside name visibility row now separates inside native name alpha
-   from inside label visibility. Include both rows to identify whether native
-   alpha or the addon label's shown state changes. This patch adds diagnosis;
-   it does not claim a confirmed fix for that remaining visibility drift.
-4. Toggle Active, recycle plates and cross a zone boundary. Verify native
-   restoration and no stale cached colors on reassigned units.
-
-
-## Native opacity recovery and allocation pressure (1.0.216)
-
-The latest 1.0.215 screenshot shows Runtime update/Urgent refresh maxima of
-4.493/2.372 ms. The split counter identifies 162 native-alpha mismatches and
-no reported addon inside-label visibility drift. Text color remains at 525;
-no deferred-color repair counter appears. There are 687 cached repairs and
-no reported geometry drift or reconciliation full-style fallback. The cropped
-report does not provide an elapsed duration, so counts are not normalized rates.
-
-Version 1.0.216 hooks native SetAlpha and checks pending guarded alpha changes.
-Font/color appearance recovery now finishes with the native name's required
-opacity. Tests reproduce direct alpha drift and a color setter replacing alpha;
-they do not prove the writer of every live mismatch. Bounded RGB samples will
-help identify the unresolved color changes. Removing temporary field-read
-closures also reduces synthetic assessment allocations by about 81%; the
-large live memory delta still does not establish a retained-memory leak.
-
-1. Install 1.0.216 and reload. Check dim background names, inside labels and
-   above-bar names while changing target/mouseover and bar/profile settings.
-   Verify no duplicate native names appear behind the inside label.
-2. Capture a minute in the same scene. Include Name appearance writes/deferred,
-   Name drift, Name color drift, Runtime update, Urgent refresh and memory rows.
-   A missing counter means no recorded occurrence, not proof that the writer
-   can never occur. Include a second screenshot if the report exceeds chat.
-3. Toggle Active, recycle plates, enter/leave combat and change zones. Verify
-   native opacity is restored when disabled, with no writes to stale/restricted
-   units or disruption of widget-only plates.
-4. Compare memory over matched runs and with profiling off/on. The Lua fixture
-   measures temporary allocation with GC paused; it cannot establish the size
-   of a live leak or retained memory. Rendering/taint acceptance remains native.
-
-
-## Locate the remaining appearance reset (1.0.217)
-
-The 1.0.216 report shows 504 text-color first mismatches, all sampled as white
-(1.000/1.000/1.000) versus intended grey (0.600/0.600/0.600), plus 131 native
-alpha first mismatches. No SetAlpha or deferred appearance repair row appears.
-Runtime update/Urgent refresh maxima are 4.231/1.976 ms; memory change is
-61,646.8 KiB, compared with 299,053.5 KiB in the previous report. The smaller
-increase supports reduced allocation pressure; these are not matched runs.
-
-Version 1.0.217 observes completed appearance while profiling. It does not
-assume a new native writer or modify repairs based on those observations.
-
-1. Install 1.0.217, reload and profile approximately one minute in the same scene.
-2. Capture Appearance checkpoints, Appearance checkpoint drift/unreadable,
-   Name color origin, Name alpha origin, Name color drift and Name drift rows.
-   Use multiple screenshots if necessary to include the new rows and maxima.
-3. A present after full style/name hook result means appearance was already
-   wrong at that completed boundary. An after verified result means it changed
-   between that checkpoint and reconciliation. These identify intervals; they
-   do not prove which engine call performed the write.
-4. Include native Show/font repair checkpoint results if present. Guarded Show
-   is covered by the enclosing completed update; no mismatch counter means no
-   recorded readable mismatch, not proof that the method never ran.
-5. Verify profiling-off behavior is unchanged, plus disable/restoration,
-   restricted combat plates, widget-only plates and recycled units. Checkpoints
-   perform fresh access validation and never repair or schedule additional work.
-
-Checkpoint reads add profiling overhead. The existing reconciliation recovery
-remains responsible for color/alpha changes until their source is confirmed.
-
-
-## Selective/artwork completion fix (1.0.218)
-
-The 118.4-second 1.0.217 report records 551 white-to-grey first mismatches,
-all already present after cached repair, and 170 alpha observations present
-there. Artwork/cached-repair checkpoints each show 618 color and 185 alpha
-failures. No full-style/name-hook checkpoint failures appear. This locates
-operation boundaries; it does not by itself identify the native writer.
-
-Version 1.0.218 finishes planned appearance after structural callbacks, consumes
-pending artwork during selective repair and makes one validated cached color/
-alpha recovery after standalone artwork. Regression fixtures reproduce raw
-native callback resets that bypass Lua setter hooks and converge with the fix.
-
-1. Install 1.0.218 and reload in the same scene. Verify grey background names
-   stay grey, with no duplicate native names behind inside labels during
-   target/mouseover changes, native bar show/hide and artwork updates.
-2. Capture approximately one minute, including Appearance checkpoint drift,
-   Appearance finalization, Name color/alpha origin and Name drift rows. Compare
-   completed-operation failures and repeated reconciliation repair counts.
-3. Include Runtime update/Urgent refresh maxima and Periodic jobs/limits. The
-   1.0.217 maxima were 2.986/1.724 ms, but its checkpoint reads add profiling
-   overhead. Compare matching scenes with profiling both off and on.
-4. Toggle Active, change profiles, recycle units, cross zones and enter/leave
-   restricted combat contexts. Verify native restoration and no writes through
-   stale ownership/access/context. Unknown appearance remains for retry.
-
-The finalizer is bounded and preserves error/reentry behavior. It does not add
-fonts, classification, scheduling or full styles; native acceptance is pending.
-
-
-## 1.0.219 diagnostic cleanup and normal play
-
-The 94.4-second 1.0.218 report showed no appearance drift or reconciliation
-repair fallback across 4,686 checks, and no checkpoint failures across 11,534
-samples. The finalizer caught 660 color resets at completion. Runtime update
-and Urgent refresh maxima were 4.728 and 2.951 ms. This supersedes the pending
-confirmation above for that tested scene.
-
-1. Install 1.0.219, reload, and play normally with profiling off. Check that
-   background names remain grey and inside labels have no duplicate native name.
-2. Verify target/mouseover changes, bar visibility, cast/threat updates, profile
-   changes, unit recycling, zone transitions and restricted combat contexts.
-3. Toggle Active to verify native restoration. If flicker or hitches return,
-   capture a report with Name drift, Appearance finalization and runtime timings.
-
-The temporary checkpoint instrumentation is removed; the validated completion
-fix remains. Broader normal-play acceptance is still pending.
+Reviewed for 1.0.220 on 2026-10-08. All 21 local smoke suites pass. Targeted crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open. The runtime fix remains in 1.0.219 and 1.0.220 after temporary diagnostics were removed.
+
+Local UI stubs do not establish actual rendering, native permissions, secure CVar behavior or Midnight secret-value safety. Record addon version, client build, date, scene, profile, activity and observed result for client checks. Leave an item open until observed in game. Historical plans describe their original releases; this checklist replaces instructions to exercise removed controls or repeatedly install intermediate diagnostic builds.
+
+## Recorded live evidence
+
+| Build/report | Observation | Scope |
+| --- | --- | --- |
+| 1.0.213 | No reported geometry drift or reconciliation full-style fallback; broad refresh maxima around 20 ms | One reported scene; justified per-plate global scheduling |
+| 1.0.214 | Runtime/Urgent maxima 5.323/3.198 ms; color/opacity drift remained | Unmatched recording; no exact FPS gain established |
+| 1.0.217, 118.4 seconds | Appearance already wrong after cached/artwork completion | Located failing operation boundaries; exact native writer unconfirmed |
+| 1.0.218, 94.4 seconds | 4,686 reconciliation checks with no reported appearance drift or repair fallback; 11,534 checkpoints with no failures; 660 color finalizations | Crowded-scene convergence confirmed; Runtime/Urgent maxima 4.728/2.951 ms |
+| 1.0.219 | Temporary checkpoints/audit hooks removed; validated fixes retained; 21 smoke suites passed | Broader client acceptance pending |
+
+These runs are not matched benchmarks. Inclusive timing rows overlap and must not be summed; separately reported maxima do not prove a shared callback. Memory deltas do not prove a leak. Earlier failed attempts and detailed versioned observations remain in the [follow-up record](reconciliation-stall-plan.md), [profiling guide](profiling.md) and [changelog](../../CHANGELOG.md).
+
+## Next step: normal play with profiling off
+
+- [ ] Install the current inner `SimpleNameplates` folder using the README instructions and confirm the About version. Play normally with profiling off; observe grey background names and inside labels without duplicate native text or visible hitches.
+- [ ] Change target/mouseover, enter/leave combat, move out of range/back, recycle plates and change zones. Verify current names/colors remain stable and no stale labels reappear.
+- [ ] Gain/lose threat; start, interrupt and finish casts/channels. Check immediate affected-unit updates, name space, pulse and title substitution.
+- [ ] Change profiles/fonts/size/width/gradients and toggle global Active off/on. Verify priority plates update immediately, background plates settle promptly over subsequent frames, and native presentation restores when disabled.
+- [ ] Check sanctuary, eligible PvP/duel and restricted combat contexts, including deferred restoration while styling stays disabled. Record Lua, taint or protected-action errors.
+
+Capture a complete current-build report if flicker or hitches return. Additional scheduler tuning or diagnostics requires a reproduced unresolved problem; another routine screenshot is not required just to continue normal play.
+
+## Settings foundation and page layout
+
+- [ ] With Details/Plater and standalone Details Framework disabled, log in/reload and open About, Profiles, Appearance, Colors and TRP3. Confirm one registration, correct page order and scrolling. Repeat with an external DF embedder and record the selected DF minor version.
+- [ ] Check headings, wrapping, switches, disabled labels, swatches, sliders, dropdowns and info-link spacing at narrow/normal widths and different UI scales. Test content growing/shrinking and wheel/scrollbar operation.
+- [ ] Verify `/snp` and `/snp appearance` open Appearance; profiles/colors/trp3/about routes open their pages. Settings commands refuse combat opening; debug/perf commands remain available during combat.
+- [ ] About reads the installed `.toc` version; the copy-source link and three read-only reference swatches work and never open editable pickers.
+- [ ] Profiles' global Active switch reflects setup suspension while consent is pending, successful Apply and enable, refusal and failed/deferred writes without requiring a page reopen.
+
+## Profiles, saved data and edit lifecycle
+
+- [ ] Fresh install creates Default and High Contrast, selects Default, and uses documented factory values. Load valid existing schema-2 data and verify recognized preferences/ledgers survive; malformed or unknown fields are discarded individually regardless of schema marker.
+- [ ] Select different account-wide profiles on two characters; verify independent assignments across reload/logout and shared edits wherever that profile is selected.
+- [ ] Create/copy/rename/delete profiles, including long names and many entries. Copies are independent; rename updates assignments; deletion falls back to Default. Default cannot be renamed/deleted; High Contrast deletion/rename survives reload, and bundled restore recreates it without changing custom profiles or globals.
+- [ ] Open Copy/Rename/Delete, then change selection or replace the captured object before accepting. Stale confirmations do nothing and request reopening; normal unchanged-target actions work. Test bundled restore with missing/replaced targets.
+- [ ] Preview/accept/cancel RGB colors. Switch profiles, reset Colors, hide the page and open another swatch during drafts. Rollback stays with the original current target; retired callbacks cannot undo a reset or affect a later edit. Test with RP Emote Menu's actual picker enabled; neither addon closes or edits the other's session.
+- [ ] Type slider values and test Enter/Escape, focus loss, page hide, profile switching and Appearance reset during previews. Check 8–36 points/step 1 and 80–150% width/step 5 without stale rollback.
+- [ ] A legacy cast-style string is used only when a valid `interruptibleHighlight` boolean is absent: `NONE` disables, other strings enable the pulse; the selector field is discarded. Legacy category modes remain stored but do not affect rendering.
+
+## Current Colors controls and reset scopes
+
+- [ ] All six Health Bar switches follow the selected profile; On shows a supported bar in both combat states, Off shows its name/title without a bar. Verify first-match priority and no category Active/Inactive or Hide controls.
+- [ ] Factory bars are On for the first five categories and Off for NPC - Background. Background-name dimming defaults On; On is grey #999999 and Off white #FFFFFF, with matching subtitles, inside/above/no-bar. Bar colors and threat styling are independent.
+- [ ] Cast highlighting is one pulsing border with a profile Active switch beside its color. Inactive disables it. There is no effect dropdown, individual color Reset button or glow-library requirement.
+- [ ] Reset all colors restores the selected profile's factory palette, bars On except Background, background dimming On, cast activation Off, and gradients On for Default/custom or Off for High Contrast. It preserves appearance/threat settings, selection, global styling, critter hiding and TRP3. Internal legacy category modes reset to active without affecting rendering.
+- [ ] Appearance reset restores selected-profile fonts/rendering/size/placement/width and threat On, plus global critter hiding Off. It preserves Colors preferences, global Active, TRP3 and selection. Bundled restore has the separate scope described above.
+
+## Fonts, geometry, gradients and native labels
+
+- [ ] Compare Slug Off/On with built-in/SharedMedia fonts at several UI scales. All styled names, titles, native health/threat/cast labels keep thin solid outlines with no extra glyph copies or shadows.
+- [ ] Default/custom names use Friz Quadrata, size 18, Inside placement and width 120%; High Contrast uses Above placement. Verify saved choices remain authoritative and reset returns profile defaults. Threat defaults to Arial Narrow at name size; TRP3 titles use name size minus two and NPC subtitles 80%.
+- [ ] Open long font lists, select absent saved fonts and register providers late. Choices survive reload/copy; unavailable faces use Arial Narrow temporarily and resume when available. Sanctuary matching changes only the name/title face, using the localized world font.
+- [ ] Inside names keep full size; bars leave four units above/three below. Native health labels and threat form the documented right-hand chain with three-unit gaps. Appearance changes, native label show/hide and rounded geometry converge without endless repair; switching Above or disabling restores captured dimensions/anchors.
+- [ ] Known Retail restricted-anchor layouts size correctly without requiring readable GetPoint; unsupported layouts remain untouched. Test modern/classic layouts and different UI scales without Lua/secret-value errors.
+- [ ] Full-health preview shows Sample and illustrative 255% threat. Gradients fade from 80% black at the left to clear at 95% full width, with the last 5% clear. Damage/heal clips the fixed tint to native remaining fill without rescaling, depleted-area tint or bright edge. Threat outlines remain unchanged at every health level; cast bars remain flat.
+- [ ] Decorative bar edges/absorb overflow glow are suppressed; shield fill, heal prediction, icons, shields, target/mouseover treatment and classification visibility remain intact. Disable styling and verify native artwork/text baselines restore, including retired/replaced regions.
+
+## Casts, threat, NPC subtitles and TRP3
+
+- [ ] Observe interruptible/non-interruptible casts and channels with pulse Active/Inactive, including changing interruptibility mid-cast and cast start/stop/interruption. Preserve native shield/spell/target information, modern/classic support and geometry-independent anchoring.
+- [ ] Reuse bars/icons/plates and temporarily block access. Old icons cannot control the current effect; missing callbacks recover using current state when access returns.
+- [ ] Threat displays WoW's scaled percentage when supported, passes secret values only to the supported formatter and stays blank if unavailable/rejected. It does not pin at raw 255%. Threat appearing/disappearing updates name space promptly.
+- [ ] NPC service subtitles resolve from supported structured/unit tooltips and bounded caches; test unambiguous name fallback, conflicting titles and unreadable data. Titles fit configured bar width even without a bar and disappear during active/unknown cast visibility, returning when safe after the cast.
+- [ ] With TRP3 installed/absent and its master switch Off/On, test cached RP names, short/full titles, OOC marker, missing-field fallback and 32/20/48-character limits. Dependent options preserve saved choices while disabled. TRP3 callbacks update content through the next runtime batch.
+
+## Classification, context, setup and restoration
+
+- [ ] Test all six priorities: attacks on the player/controlled units, aggressive NPCs, eligible PvP opponents, directional Neutral attackability, Friendly players, interaction-evidenced NPCs and fallback Background. Titles/friendliness alone do not prove usefulness; unknown identity is not confirmed NPC identity.
+- [ ] Compare same/opposite-faction players in sanctuary, eligible PvP and same-faction duels. Readable attack permission is authoritative; flags/faction/desired War Mode alone cannot promote a player. Targeting a friendly unit does not make it Attacking.
+- [ ] Test zone/subzone and instance transitions (including shared/faction sanctuary boundaries), combat entry/exit and styling disabled. Debug context preserves faction, desired/active War Mode, flags, lockdown and unknowns; named locations are not hardcoded permissions.
+- [ ] Startup compatibility requests only documented visibility settings with consent, skipping unreadable/unsupported CVars. Originals are per-character; failed writes/restores retain backups, and combat restrictions defer safely. Profile changes do not change plate-visibility CVars.
+- [ ] Global critter/companion hiding captures/restores its own supported CVar. Legacy replacement records are restoration-only; experimental replacement and Behavior routes remain absent. Friendly class-color CVars are read-only.
+- [ ] Disable styling while frames are forbidden/restricted; restore when access returns while still disabled. Recycled plates receive current-unit presentation and fresh replacement-region baselines, without clearing another entity's text or restoring obsolete cast visibility.
+- [ ] Debug target/mouseover distinguishes missing from inaccessible plates, shows relevant identity/same-name candidates and subtitle evidence, and creates no effects/hooks. The documented opposite-faction nonattackable sanctuary world-label limitation remains unresolved; do not treat missing frames as a solved configuration problem or generalize to untested entities.
+
+## Profiling and performance acceptance
+
+- [ ] After login/reload profiling is Off and report has no session. Start/stop/report in and out of combat, while disabled and without a target. Duplicate start preserves the running session; stopped readings freeze; a new session clears counters and reload clears all results.
+- [ ] If investigating a regression or quantifying improvement, record matched quiet/crowded/combat routes with similar durations/settings/activity, three repeats and profiling Off/On. Capture all timing/reason rows with consecutive screenshots and actual visible FPS/hitches separately. Compare only equivalent timing definitions.
+- [ ] Current reports include per-plate Reconciliation, Runtime update, Urgent refresh, Periodic work, Plate discovery and observed reason rows. Broad Global refresh measures discovery/enqueueing plus immediate priority work; Global plate refresh measures one plate visit. Removed appearance checkpoints/origin rows are not expected on 1.0.219+.
+- [ ] Verify current/previous target/mouseover/interaction and explicit unit updates stay prompt while broad background settings/context work settles through the shared four-job/one-millisecond cooperative budget. Check fairness, recycling, errors and deferred restoration; no continually growing visible backlog.
+- [ ] Unknown properties remain unknown and use elapsed retry eligibility from 0.25–4 seconds, without blocking independent readable repairs. Native cast hooks/events bypass backoff. One atomic job and immediate priority work can exceed the periodic time target; do not tune it from a single unmatched maximum.
+
+Acceptance remains partial until the applicable client checks above are recorded. Passing smoke suites or one converged scene does not close unobserved settings, restoration, combat or secure-behavior checks.

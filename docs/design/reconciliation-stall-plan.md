@@ -1,5 +1,7 @@
 # Reconciliation stalls: follow-up plan
 
+Reviewed for 1.0.220 on 2026-10-08. The versioned investigations below are historical evidence, not requests to reinstall each diagnostic release. Use the current build and the [normal-play checklist](live-wow-verification.md). All targeted fixes are implemented; extra slow-call/queue-age instrumentation remains conditional on a reproduced unresolved stall.
+
 ## Goal and status
 
 Reduce noticeable nameplate hitches while preserving prompt names, colors, threat,
@@ -13,13 +15,13 @@ The user confirmed 1.0.206 and supplied a complete 65.1-second report plus a
 recording showing several background NPC names flashing grey/white. All 3,521
 reconciliation jobs reported native-font drift; name hooks caused 372 cache
 fallbacks. Reconciliation peaked at 4.718 ms and Runtime update at 25.563 ms.
-These confirm current-build behavior, but are not three matched baseline runs.
+These confirmed 1.0.206 behavior at that stage, but are not three matched baseline runs.
 
 1.0.207 repairs direct native name appearance setters, normalizes font comparison
 and adds component/write/cache-reason counters and Urgent refresh timing. Native
 frame options apply font objects and text height outside UpdateName, exposing a
-missing immediate repair path. The exact source of the live color writes and
-font disagreement still requires the next report. Legitimate cache fallbacks and
+missing immediate repair path. At that stage the live color writes and
+font disagreement still required another report; later versioned findings below supersede this open investigation. Legitimate cache fallbacks and
 scheduler limits are retained. Bounded slow-call history/queue-age diagnostics
 from phase 6 remain conditional if these focused changes do not resolve stalls.
 
@@ -65,7 +67,7 @@ overlap; never add them as total addon CPU. Memory fell from 370,531.2 to
 | Location | Relevant behavior |
 | --- | --- |
 | `Nameplates.lua: RuntimeUpdate` | Flushes urgent work, discovers plates, runs the shared periodic budget |
-| `Nameplates.lua: FlushQueuedRefreshes / RefreshAll` | Coalesces events but can update all visible plates before the periodic budget |
+| `Nameplates.lua: FlushQueuedRefreshes / RefreshAll` | Coalesces requests; broad global work queues per-plate jobs, while explicit units/current and previous priority plates remain immediate |
 | `Nameplates.lua: DiscoverPlates` | Snapshots the native list every 0.25 seconds; queue bookkeeping is outside the periodic budget |
 | `Nameplates.lua: ReconcileNames` | Validates current assignment, repairs pending artwork/title visibility, checks drift and applies selective repair or full fallback |
 | `PeriodicWork.lua: Drain` | At most four jobs per frame; one-millisecond elapsed target checked after each atomic job |
@@ -74,9 +76,9 @@ overlap; never add them as total addon CPU. Memory fell from 370,531.2 to
 | `Profiler.lua` | Optional inclusive timing rows and bounded reason counters; no measurement clocks or records while disabled |
 
 A cooperative budget cannot interrupt a single slow UI call. A 91 ms job can
-therefore exceed the one-millisecond target. Urgent all-plate refreshes and
-discovery can also exceed it because they run outside that budget. These are
-candidate paths, not established causes.
+therefore exceed the one-millisecond target. Immediate priority refreshes and
+discovery can also exceed it because they run outside that budget. Since 1.0.214, broad global plate work shares the scheduler budget. These are
+candidate paths, not established causes of any future stall.
 
 ## Phase 5 — Confirm the build and establish a matched baseline
 
@@ -240,9 +242,9 @@ that limited conclusion rather than declaring every possible stall fixed.
 - [x] Phase 5: confirm the installed version and collect a complete current-build report.
 - [ ] Complete the repeated matched profiling-off/on recordings.
 - [x] Implement targeted font comparison/appearance repairs and diagnostic reasons in 1.0.207.
-- [ ] Verify those repairs in WoW with the same scene and another complete report.
-- [ ] Phase 6: add targeted diagnostics only if the current build still stalls.
-- [ ] Phase 7: implement and validate the measured cause.
+- [x] Verify targeted repairs with subsequent confirmed-build reports; appearance convergence is recorded for the 1.0.218 scene.
+- [x] Phase 6: add focused diagnostic reasons/checkpoints to locate the remaining appearance reset; remove temporary checkpoints in 1.0.219. Additional slow-call/backlog instrumentation remains conditional.
+- [x] Phase 7: implement the measured geometry, visibility, global-batch and appearance-completion fixes; targeted scene validation is recorded below.
 - [ ] Phase 8: complete client acceptance and record results.
 
 ## Follow-up from the 1.0.207 recording
@@ -473,3 +475,9 @@ scheduling are added. All 21 suites pass, including regressions failing against
 the prior visibility ordering and artwork path. Checkpoint drift and repeated
 reconciliation counts are the next live convergence gates; the exact native
 writer and native acceptance remain unconfirmed.
+
+### 1.0.219–1.0.220: targeted convergence and documentation cleanup
+
+The 94.4-second 1.0.218 report records 4,686 reconciliation checks with no reported appearance drift or repair fallback, and 11,534 checkpoints with no failures. The finalizer caught 660 color resets at completion. Runtime update/Urgent refresh maxima were 4.728/2.951 ms. This confirms convergence in that crowded scene; the runs are not matched FPS benchmarks and do not identify every native writer.
+
+Version 1.0.219 removes temporary checkpoint reads, Show audits, origin counters, cache audit fields and session tokens while retaining the bounded finalizer, appearance hooks, deferred repair and ordinary profiling. Version 1.0.220 aligns documentation and the Colors reset explanation with those existing behaviors. All 21 smoke suites pass. Phase 8 remains open for normal play, combat/context transitions, settings/native restoration and profiling-off behavior. Do not change the scheduler budget or add further diagnostics without new evidence.

@@ -1,5 +1,7 @@
 # RP Emote Menu / Simple Nameplates standardization
 
+Documentation reviewed for 1.0.220 on 2026-10-08. Shared settings contracts are unchanged; native settings/picker coexistence acceptance remains open. Current Simple Nameplates control inventory and reset scopes are in [settings architecture](settings-architecture.md) and [saved data](saved-data-model.md).
+
 Use common conventions where the purpose is the same; preserve addon-specific behavior and practical control layouts. Keep the embedded libraries and each addon's scroll backend.
 
 ## Phase 1 — About and visual conventions (implemented)

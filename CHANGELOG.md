@@ -1,5 +1,14 @@
 # Changelog
 
+Entries describe their recorded releases; later fixes and the current guides supersede older controls, defaults and pending investigations.
+
+## 1.0.220
+
+* Reviews all repository documentation against the current source. Corrects category Health Bar ownership/defaults, background-name dimming, cast pulse activation, saved compatibility conversion, reset scopes, load order, broad-refresh scheduling and removed library references.
+* Replaces obsolete live checks with a current acceptance matrix; preserves the versioned investigation history and records 1.0.218 convergence without claiming an exact FPS improvement or complete native acceptance. Marks earlier implementation/conversion plans as historical and links current authoritative guides.
+* Corrects the Colors reset explanation: gradients reset On for Default/custom profiles and Off for High Contrast. Documentation/help text and version metadata only; runtime behavior and schema remain unchanged.
+* All 21 local smoke suites, documentation-link checks and whitespace checks pass. Broader normal-play, settings, combat/context and native secure acceptance remain open.
+
 ## 1.0.219
 
 * Removes the temporary appearance checkpoint reads, native Show audit hook, cached audit fields, origin counters and profiler session tokens introduced in 1.0.217. Retains the validated appearance finalizer, setter hooks, deferred repairs and ordinary profiling counters.

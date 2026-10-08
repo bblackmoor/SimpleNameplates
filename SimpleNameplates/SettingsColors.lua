@@ -162,7 +162,7 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Restores health bars to On except NPC - Background, background-name dimming to On, gradients to Off, and cast highlight to Inactive.")
+        "Restores health bars to On except NPC - Background, background-name dimming to On, gradients to On for Default/custom profiles or Off for High Contrast, and cast highlight to Inactive.")
     AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
@@ -179,6 +179,7 @@ local function CreateColorsPanel()
     return panel
 end
 addon.SettingsPanels.Colors = CreateColorsPanel
+
 
 
 

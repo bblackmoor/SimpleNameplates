@@ -1,8 +1,10 @@
 # World-context and entity-presentation runtime refactor
 
+Historical implementation record, reviewed for 1.0.220 on 2026-10-08. Version-specific defaults, controls, paths and unchecked phase items below describe those releases; they are not current instructions. Use [settings architecture](settings-architecture.md), [saved data](saved-data-model.md), [runtime evaluation](evaluation-overview.md) and [live verification](live-wow-verification.md) for current behavior and acceptance. Category activation controls, the Behavior page, experimental replacement, glyph copies and glow selectors have been removed. Current controls use profile Health Bar preferences and a cast pulse Active switch.
+
 Status: phases 1–4 implemented through 1.0.106; experimental replacement removed in 1.0.105; phase 5 client verification pending. This follows the completed original settings refactor and is a separate five-phase sequence.
 
-Current behavior supersedes the historical combat-dependent bar/title rules below: since 1.0.162 all ordinary Active accessible plates show available health bars in both combat states, and native casts/channels replace titles below the bar. Profiling added in 1.0.163 is optional and session-only. See [runtime evaluation](evaluation-overview.md) and [profiling](profiling.md) for current contracts.
+Current behavior supersedes the historical combat-dependent bar/title rules below: ordinary accessible plates follow their profile Health Bar preferences in both combat states (first five on, Background off by default), and native casts/channels replace titles below the bar. Legacy category Active/Inactive values do not gate styling. Profiling added in 1.0.163 is optional and session-only. See [runtime evaluation](evaluation-overview.md) and [profiling](profiling.md) for current contracts.
 
 ## Baseline and accepted rules
 

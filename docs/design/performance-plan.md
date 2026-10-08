@@ -1,5 +1,7 @@
 # Nearby-entity performance: four phases
 
+Implementation history, reviewed for 1.0.220 on 2026-10-08. All four original code phases and the measured follow-up fixes are implemented. The 1.0.218 crowded-scene report confirms appearance convergence; 1.0.219 removes temporary diagnostics. Broader normal-play acceptance and matched FPS/profiling-off/on comparisons remain open. Phase-specific descriptions below retain their original timing definitions and acceptance status; later findings supersede them. See [the follow-up record](reconciliation-stall-plan.md) and [current live checklist](live-wow-verification.md).
+
 ## Baseline and scope
 
 The 2026-10-06 live report recorded 119.6 seconds: 8,454 full-styling calls
@@ -159,6 +161,6 @@ the [profiling guide](profiling.md) defines counter and timing interpretation.
 The [reconciliation stall plan](reconciliation-stall-plan.md) defines phases 5–8:
 verify the installed build, collect matched complete reports, instrument remaining
 stalls if necessary, fix the measured cause and complete native acceptance. The
-new screenshot lacks the current profiler rows/counters, so it does not establish
-post-phase-4 performance. Reconciliation averages across the old all-plate and
+first October 8 screenshot lacked current profiler rows/counters and did not establish
+post-phase-4 performance; subsequent confirmed-build reports are recorded in the follow-up plan. The latest 1.0.218 report confirms convergence in its tested scene, with broader acceptance still open. Reconciliation averages across the old all-plate and
 new per-plate definitions are not directly comparable.

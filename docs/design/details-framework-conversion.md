@@ -1,15 +1,17 @@
 # Details Framework settings conversion
 
-Current status (1.0.163): phases 1–6 repository work is complete; all 18 smoke
+Historical implementation record, reviewed for 1.0.220 on 2026-10-08. Version-specific defaults, controls, paths and unchecked phase items below describe those releases; they are not current instructions. Use [settings architecture](settings-architecture.md), [saved data](saved-data-model.md), [runtime evaluation](evaluation-overview.md) and [live verification](live-wow-verification.md) for current behavior and acceptance. Category activation controls, the Behavior page, experimental replacement, glyph copies and glow selectors have been removed. Current controls use profile Health Bar preferences and a cast pulse Active switch.
+
+Conversion completion recorded at 1.0.163: phases 1–6 repository work is complete; all 18 smoke
 suites pass. Final in-game verification remains pending. The baseline and earlier
 phase notes below describe their recorded releases, not the current widget inventory.
 
 Phase 1 completed on 2026-10-04 against Simple Nameplates 1.0.149,
 commit `80f8dad348c0d87497a9db6b3dd6b7437ab57c87`. This document records
-current source behavior and the implementation sequence for ChatGPT to follow.
+the source behavior and implementation sequence at that historical baseline.
 Phase 1 adds documentation only; the accompanying release is 1.0.150.
 
-This is the authoritative settings baseline for this conversion. Earlier
+This was the settings baseline for that completed conversion; current ownership and controls are documented in settings-architecture.md and saved-data-model.md. Earlier
 settings/runtime design documents describe previous iterations and must not
 be used to recreate removed controls or change current ownership.
 
@@ -29,7 +31,7 @@ found in the workspace during this baseline inspection.
 
 ## Source inventory
 
-| Module | Current responsibility | Conversion treatment |
+| Module | Baseline responsibility (1.0.149) | Conversion treatment |
 | --- | --- | --- |
 | `SettingsControls.lua` | Scrollable canvas, measured description reflow, setting rows, thumb switches, info links, action buttons, refresh helper | Retain layout initially; introduce a separate widget adapter before deleting helpers |
 | `SettingsColors.lua` | Six color rows/global switches, RGB picker apply/cancel, per-color resets, effect selector, whole-page reset | First page to convert |
@@ -47,7 +49,7 @@ Page order is About, Profiles, Appearance, Colors, TRP3. `/snp` and
 `/snp about`, and diagnostic routes remain. There is no Behavior page/route.
 Settings cannot open through these commands during combat. Diagnostic and `/snp perf start|stop|report` commands remain available; profiling is session-only and has no settings widget.
 
-## Behavior to preserve
+## Historical baseline behavior to preserve during conversion
 
 | Setting/group | Ownership and factory value | Required behavior |
 | --- | --- | --- |
@@ -90,7 +92,7 @@ The shipped code places Reset all colors and Reset settings near the top,
 before their controls. Preserve this placement rather than following stale
 prose claiming all section actions belong at the bottom. Actions never share
 heading rows. Labels precede controls, followed by related reset/info links.
-Current reference measurements: control column 340 UI units (Profiles selector
+Historical baseline reference measurements: control column 340 UI units (Profiles selector
 184), switch 44×20, swatch 26×26, related controls 8 units apart, info link gap
 10, setting rows 32 high with 6 below. Dropdowns are 190 wide, sliders 180 wide.
 Preserve comfortable spacing and wrapped-description reflow rather than

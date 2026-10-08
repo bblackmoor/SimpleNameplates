@@ -1,5 +1,7 @@
 # Shared settings conventions
 
+Documentation reviewed for 1.0.220 on 2026-10-08. Shared settings contracts are unchanged; native settings/picker coexistence acceptance remains open. Current Simple Nameplates control inventory and reset scopes are in [settings architecture](settings-architecture.md) and [saved data](saved-data-model.md).
+
 Current conventions for RP Emote Menu and Simple Nameplates after the four standardization phases. Each repository keeps this document and the contract harness in sync when their shared contract changes; there is no shared runtime dependency.
 
 ## Names and boundaries

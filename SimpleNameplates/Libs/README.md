@@ -1,8 +1,8 @@
 # Bundled libraries
 
-LibCustomGlow-1.0, minor revision 25, from https://github.com/Stanzilla/LibCustomGlow/blob/master/LibCustomGlow-1.0.lua.
-Upstream source blob: `c7a328ade1d9a4a026d704d812a0250ebd373212`.
-MIT license retained in `LibCustomGlow-1.0/LICENSE`, including upstream attribution in the source.
+Reviewed for 1.0.220 on 2026-10-08 against the repository and `.toc` load chain.
+
+LibCustomGlow is no longer bundled or loaded. Cast highlighting uses the addon's own geometry-independent pulsing border in `CastHighlight.lua`.
 
 LibStub 2 (upstream revision 103), from https://github.com/lua-wow/LibStub/blob/master/LibStub.lua.
 Upstream source blob: `7e9b5cd15277d750ef2f106bca3999c306044f03`.

@@ -1,10 +1,10 @@
 # Blizzard settings and sanctuary plate availability
 
-Reviewed 2026-10-02 for v1.0.118. These source findings establish the setup controls, not a fix for every game-engine visibility decision.
+Pinned source review recorded 2026-10-02 for v1.0.118; documentation checked against the addon for 1.0.220 on 2026-10-08. No new external source or client verification is claimed. These source findings establish the setup controls, not a fix for every game-engine visibility decision.
 
 ## Verified settings
 
-Blizzard's current [Nameplates settings definition](https://github.com/Gethe/wow-ui-source/blob/09b9db7948abc9b9648dedaab51eb0cf3ee67b31/Interface/AddOns/Blizzard_SettingsDefinitions_Frame/Nameplates.lua) maps the controls as follows:
+The pinned Blizzard [Nameplates settings definition](https://github.com/Gethe/wow-ui-source/blob/09b9db7948abc9b9648dedaab51eb0cf3ee67b31/Interface/AddOns/Blizzard_SettingsDefinitions_Frame/Nameplates.lua) maps the controls as follows:
 
 | Control | CVar | Setup value |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ Blizzard's current [Nameplates settings definition](https://github.com/Gethe/wow
 
 The [unit-frame implementation](https://github.com/Gethe/wow-ui-source/blob/09b9db7948abc9b9648dedaab51eb0cf3ee67b31/Interface/AddOns/Blizzard_NamePlates/Blizzard_NamePlateUnitFrame.lua) shows that Only Show Names changes bars, auras, classification, anchors, and hit testing on an existing friendly-player frame. Turning it off lets Simple Nameplates manage bars itself; it does not establish that a missing sanctuary plate will be created. Widget-only mode is a separate property, explaining why a widget-only NPC plate must suppress actor text while preserving its widgets.
 
-These files are the current public UI-source mirror, not proof that every engine behavior or deployed client build is identical.
+These files are pinned snapshots of the public UI-source mirror, not proof that every engine behavior or deployed client build is identical.
 
 ## Plater comparison
 

@@ -1,5 +1,7 @@
 # Simple Nameplates staged refactor plan
 
+Historical implementation record, reviewed for 1.0.220 on 2026-10-08. Version-specific defaults, controls, paths and unchecked phase items below describe those releases; they are not current instructions. Use [settings architecture](settings-architecture.md), [saved data](saved-data-model.md), [runtime evaluation](evaluation-overview.md) and [live verification](live-wow-verification.md) for current behavior and acceptance. Category activation controls, the Behavior page, experimental replacement, glyph copies and glow selectors have been removed. Current controls use profile Health Bar preferences and a cast pulse Active switch.
+
 Status: Phases 0–6 repository work implemented; live WoW checks remain open. The version-2 saved-data shape is unchanged.
 
 The subsequent world-context/runtime work has its own [five-phase plan](runtime-refactor-plan.md); its phase 1 is now implemented.

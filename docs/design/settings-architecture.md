@@ -1,6 +1,6 @@
 # Settings and runtime architecture
 
-Current as of 1.0.205. Settings conversion and runtime module work are implemented; live WoW checks remain open. Saved data stays schema 2, with global behavior and account-wide appearance profiles selected per character. Earlier phase history is preserved in the [original implementation plan](implementation-plan.md), [runtime refactor plan](runtime-refactor-plan.md) and [Details Framework conversion record](details-framework-conversion.md).
+Reviewed for 1.0.220 on 2026-10-08. Settings conversion and runtime module work are implemented; live WoW checks remain open. Saved data stays schema 2, with global behavior and account-wide appearance profiles selected per character. Earlier phase history is preserved in the [original implementation plan](implementation-plan.md), [runtime refactor plan](runtime-refactor-plan.md) and [Details Framework conversion record](details-framework-conversion.md).
 
 ## Settings ownership and pages
 
@@ -11,12 +11,12 @@ The pages are About, Profiles, Appearance, Colors and TRP3, in that order. All u
 | About | Metadata, source link, commands, known presentation limits and read-only native-label swatches |
 | Profiles | Account-wide profile management and the global styling Active switch |
 | Appearance | Profile fonts, Slug rendering, name size/placement, health-bar width and threat display; global critter/companion hiding |
-| Colors | Six profile priority colors, profile cast color/effect and six profile Health Bar switches, a profile gradient toggle and full-health preview |
+| Colors | Six profile priority colors, profile cast color/Active switch and six profile Health Bar switches, background-name dimming, a profile gradient toggle and full-health preview |
 | TRP3 | Global integration and RP-name/title/OOC preferences |
 
 Visible pages refresh their selected-profile controls immediately; hidden pages reread on show. Profile switching cancels active previews before changing selection and refreshes plates. Native profile dialogs capture name and object identity at opening and reject acceptance after selection changes or same-name replacement. Database mutations cancel affected drafts before switching or replacing their targets.
 
-Reset settings on Appearance restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors, cast effect None, gradients On for Default/custom profiles or Off for High Contrast, and Health Bar preferences On except NPC - Background. There are no individual color reset buttons. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
+Reset settings on Appearance restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors, cast highlighting off, background dimming on, gradients On for Default/custom profiles or Off for High Contrast, and Health Bar preferences On except NPC - Background. There are no individual color reset buttons. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
 
 ## Current source ownership
 
@@ -32,10 +32,11 @@ Reset settings on Appearance restores profile appearance and threat display plus
 | `Database.lua` | Schema-2 field validation, profiles, character selection and scoped settings access |
 | `TRP3.lua` | Optional cached RP integration with normal-name fallback |
 | `EntityFacts.lua` / `NameplateClassification.lua` | Safe observations and six-category first-match priority |
-| `PresentationCapabilities.lua` / `PresentationRules.lua` | Frame access and uniform Active presentation policy |
+| `PresentationCapabilities.lua` / `PresentationRules.lua` | Frame access and profile Health Bar presentation policy |
 | `PeriodicWork.lua` | Fair due-time scheduler, shared job/time budgets and elapsed-time retry clock |
 | `FontRendering.lua` | Shared thin solid outline flags for all styled plate text |
-| `NameplateFrames.lua` | Region access, original bar artwork/width and flat-fill styling |
+| `NameplateFrames.lua` | Region access, native geometry/restoration baselines, restricted-anchor fallback and flat-fill artwork |
+| `HealthGradient.lua` | Fixed 80%-black to clear-at-95% tint clipped by the native fill |
 | `NPCTitles.lua` | Safe structured-tooltip subtitle resolution and bounded session caches |
 | `NameplateText.lua` | Names/titles, placement, bar-height padding, cast/title visibility and cached repair |
 | `NameplateThreat.lua` | Secret-safe formatted threat percentage; blank when unavailable |
@@ -62,11 +63,11 @@ Classification determines priority color. Every ordinary accessible plate shows 
 
 WorldContext reads game APIs only on refresh events; its Get operation returns the cache. Presentation and repair paths assess frame access before inspecting or writing regions. Unknown and secret observations remain distinct from false. Threat percentages use the supported text formatter without addon arithmetic on secret values.
 
-Queued refresh flags merge per unit and across all-plate requests, then run from a detached batch in the per-frame callback. Ordinary Blizzard name/color hooks use focused repair paths; invalid cached presentation falls back to full styling. Restoration, cast and pending unit/plate retries share a scheduler budget with per-plate reconciliation: at most four jobs per frame with a one-millisecond target checked between jobs. List discovery runs every 0.25 seconds; served plates become due again after 0.25 seconds. Events remain ahead of routine work and restoration continues while styling is disabled. Reconciliation shares its lookup assessment through observation/repair, writes only readable differences and reuses native-label observations for changed layout. Unknown properties use elapsed-time retry deadlines of 0.25–4 seconds without blocking readable checks; unchanged plates receive no repair writes. It does not routinely reclassify every visible entity; structural invalidation can fall back to full styling. Profiling measures periodic slices, native-list discovery and individual plate jobs; it does not change scheduling settings.
+Queued refresh flags merge per unit and across all-plate requests, then run from a detached batch in the per-frame callback. Ordinary Blizzard name/color hooks use focused repair paths; invalid cached presentation falls back to full styling. Broad global refreshes, restoration, cast and pending unit/plate retries share a scheduler budget with per-plate reconciliation: at most four jobs per frame with a one-millisecond target checked between jobs. List discovery runs every 0.25 seconds; served plates become due again after 0.25 seconds. Explicit unit work and current/previous target, mouseover and interaction plates remain immediate; broad global work is coalesced into fresh per-plate jobs. Background settings/context updates settle over several frames. Restoration continues while styling is disabled. Reconciliation shares its lookup assessment through observation/repair, writes only readable differences and reuses native-label observations for changed layout. Unknown properties use elapsed-time retry deadlines of 0.25–4 seconds without blocking readable checks; unchanged plates receive no repair writes. It does not routinely reclassify every visible entity; structural invalidation can fall back to full styling. Profiling measures periodic slices, native-list discovery and individual plate jobs; it does not change scheduling settings.
 
 ## Load order and CVar safety
 
-The `.toc` is authoritative. Bundled libraries load first, then Defaults, FontMedia, Core, Profiler and WorldContext. ManagedNames constructs the restoration allowlist before Database validates saved records; its callbacks resolve database functions after loading. NameplateSetup also loads before Database. Runtime modules follow Database/TRP3, and settings modules follow Nameplates/Diagnostics.
+The `.toc` is authoritative. Bundled libraries load first, then Defaults, FontMedia, Core, Profiler, PeriodicWork and WorldContext. ManagedNames constructs the restoration allowlist before Database validates saved records; its callbacks resolve database functions after loading. NameplateSetup also loads before Database. Runtime modules follow Database/TRP3, and settings modules follow Nameplates/Diagnostics.
 
 Critter hiding claims only its supported world-name CVar. Legacy managed-name records are restoration-only. Approved setup changes have a separate per-character backup. Failed writes retain originals, and restricted writes/restoration defer until allowed. Friendly class-color CVars are observed without mutation. Profile switches do not change plate-visibility CVars.
 
@@ -76,4 +77,10 @@ Run all 21 smoke suites and whitespace checks using the commands in the [README]
 
 Local tests cannot establish native rendering, client frame permissions or secret-value safety. Record observations in the [live WoW checklist](live-wow-verification.md); client items remain open until observed.
 
+## Native callback completion and live status
 
+Native font/color/alpha setter hooks retain guarded notifications and repair the current cached appearance after guards release. Geometry callbacks restore configured dimensions without full styling. Known Retail restricted-anchor layouts use the native hierarchy/options and PixelUtil rather than relying on GetPoint; unsupported layouts remain untouched. Half a physical pixel tolerates dimension rounding where scale is readable, without weakening font/color comparisons.
+
+Selective repairs finish color/opacity after visibility, sizing and layout callbacks, consume pending artwork, and perform one bounded validated color/alpha finalization. Standalone artwork receives the same completion check. Fresh access, context, ownership/cache and readable GUID validation gate writes; unknown observations remain for reconciliation. The finalizer adds no classification, name-font/layout work, scheduling or full styles.
+
+The 1.0.218 crowded-scene report confirms appearance convergence in that scene. Version 1.0.219 removed temporary checkpoint/audit reads and retained the fixes. All 21 local smoke suites passed for that cleanup; broader normal-play, secure behavior and settings acceptance remain open in the live checklist.

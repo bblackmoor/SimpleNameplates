@@ -1,5 +1,7 @@
 # Phase 1: existing behavior and integration checks
 
+Historical implementation record, reviewed for 1.0.220 on 2026-10-08. Version-specific defaults, controls, paths and unchecked phase items below describe those releases; they are not current instructions. Use [settings architecture](settings-architecture.md), [saved data](saved-data-model.md), [runtime evaluation](evaluation-overview.md) and [live verification](live-wow-verification.md) for current behavior and acceptance. Category activation controls, the Behavior page, experimental replacement, glyph copies and glow selectors have been removed. Current controls use profile Health Bar preferences and a cast pulse Active switch.
+
 Status: Core smoke checks implemented and run; live WoW checks remain pending. This is characterization only. No runtime Lua or saved-data schema changed.
 
 ## Automated Core behavior

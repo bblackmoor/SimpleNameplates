@@ -1,6 +1,6 @@
 # Onscreen entity evaluation
 
-Updated 2026-10-06 for 1.0.205. This document describes the actual runtime order. It does not propose a different tree or change classification behavior.
+Reviewed 2026-10-08 for 1.0.220. This document describes the actual runtime order. It does not propose a different tree or change classification behavior.
 
 ## Runtime entry and frame checks
 
@@ -10,7 +10,7 @@ Startup checks setting compatibility before normal styling. Events, queued refre
 2. Return while that frame is being restored, or if its readable unit token is not a `nameplateN` token.
 3. If the frame belongs to a different original unit, restore it and inspect accessibility again. Return if restoration or access is unavailable.
 4. Collect entity facts and classify them using the tree below.
-5. Resolve context, color, category mode, and presentation policy using the presentation tree below.
+5. Resolve context, color, profile Health Bar preference, and presentation policy using the presentation tree below.
 6. For a non-style decision, request restoration and return. For a change into or out of text suppression, restore the prior presentation first.
 7. Capture original values and save the selected state/decision. A widget-only decision suppresses actor text and returns.
 8. Apply ordinary bar/indicator visibility, name/title styling, supported health-bar color, threat text, and cast highlighting, in that order.
@@ -34,8 +34,8 @@ flowchart TD
     D -->|No or unknown| E{"Player character?"}
     E -->|Yes| F["Friendly"]
     E -->|No or unknown| G{"Useful NPC interaction evidence?"}
-    G -->|Yes| U["Useful"]
-    G -->|No or unknown| R["Otherwise / Useless"]
+    G -->|Yes| U["NPC - Interactive"]
+    G -->|No or unknown| R["NPC - Background"]
 ```
 
 | Order | Test | Category |
@@ -45,8 +45,8 @@ flowchart TD
 | 3 | Aggressive confirmed NPC | Hostile |
 | 4 | Can attack you | Neutral |
 | 5 | Player character | Friendly |
-| 6 | Useful NPC interaction evidence | Useful |
-| 7 | No earlier test matched | Useless |
+| 6 | Useful NPC interaction evidence | NPC - Interactive (`useful`) |
+| 7 | No earlier test matched | NPC - Background (`useless`) |
 
 A PC means an actual player character, not its pet, guardian, or minion. Player control and ownership remain separate facts. An eligible player-controlled PvP opponent can therefore enter Hostile without being a PC. Unknown identity must not become a confirmed NPC merely because the PC test is unreadable.
 
@@ -72,15 +72,15 @@ flowchart TD
 | Context | Color after classification |
 | --- | --- |
 | Any danger category | Its danger color, including in sanctuary |
-| Sanctuary, same-faction Friendly PC | Shared Friendly color; green by default |
-| Useful category, any context | Shared Useful color; light grey by default |
-| Useless category, any context | Shared Useless color; medium grey by default |
+| Sanctuary, same-faction Friendly PC | Shared Friendly color; blue (`#0000FF`) by default |
+| NPC - Interactive, any context | Shared Interactive color; green (`#00FF00`) by default |
+| NPC - Background, any context | Shared Background bar color; medium grey (`#999999`) by default |
 | Sanctuary, opposite-faction PC | Existing category color if an accessible plate exists; native overhead label otherwise |
 | Other or unknown context/identity | Existing category color; no inferred sanctuary override |
 
 After the presentation decision, `NameplateText` chooses the effective name/title font. In sanctuary with the profile's `matchSanctuaryFont` enabled, it reads the localized `SystemFont_World` face (Friz Quadrata fallback); otherwise it uses the selected profile Name font. The same face reaches floating names, inside-bar names, and NPC/TRP3 titles. Only the face changes. Cached style repair checks that the effective face still matches before reusing a cached decision.
 
-For ordinary plates, show available health bars only when the category's profile Health Bar preference is on, in every combat state. Color the bar by priority and keep its name white; a disabled or missing health bar uses a colored floating name. NPC service subtitles and optional TRP3 long titles sit below the health bar, or directly below the name with a one-unit gap when the bar is off or unavailable. An active native cast/channel hides that title; native cast OnShow/OnHide hooks update visibility immediately, and unreadable transitions retry during reconciliation. Disabled styling restores native presentation. No health values are fabricated.
+For ordinary plates, show available health bars only when the category's profile Health Bar preference is on, in every combat state. Color the bar by priority and keep ordinary names white; a disabled or missing health bar uses the priority color for a floating name. Background names are the exception: their profile dimming setting selects grey (#999999) or white, including inside bars; their subtitles share that shade. The first five Health Bar preferences default on and Background defaults off. Retained global category modes do not gate styling. NPC service subtitles and optional TRP3 long titles sit below the health bar, or directly below the name with a one-unit gap when the bar is off or unavailable. An active native cast/channel hides that title; native cast OnShow/OnHide hooks update visibility immediately, and unreadable transitions retry during reconciliation. Disabled styling restores native presentation. No health values are fabricated.
 
 Startup setting compatibility is checked before enabling styling; it is a prerequisite, not another entity category. The [known presentation limits in the README](../../README.md#known-presentation-limits) and in-game About notes record entity types and world contexts where classification succeeds but no matching accessible frame is supplied. Individual character names are irrelevant to these limits. Missing frames must never be reported as a solved settings problem.
 
@@ -110,14 +110,14 @@ Structural invalidation falls back to full styling. Assessments persist only for
 one operation and renew after restoration or native artwork callbacks. Text
 setup/layout/restoration helpers also accept their caller's assessment.
 
-Unreadable properties are unknown, with independent retries backing off to from
+Unreadable properties are unknown, with independent retries backing off from
 0.25 seconds to four seconds; they neither establish drift nor stop other checks. Pending
 unknown cast visibility keeps titles hidden and backs off similarly, while native
 cast hooks and events remain immediate. Unchanged plates make no repair writes.
-Phase 4 puts reconciliation and deferred restoration/cast/unit/plate retries
+The scheduler puts broad global refreshes, reconciliation and deferred restoration/cast/unit/plate retries
 under one due-time scheduler: at most four jobs per frame with a one-millisecond
 cooperative target. Native list discovery occurs every 0.25 seconds; plate jobs
-are due again 0.25 seconds after service. Urgent event queues run first; routine
+are due again 0.25 seconds after service. Explicit unit work and current/previous target, mouseover and interaction updates run immediately; broad global requests enqueue fresh per-plate jobs. Urgent event queues run first; routine
 backlog can extend service intervals. Removed/recycled assignments, full refreshes
 and disabling styling cancel stale routine work. Restoration stays eligible
 while disabled and refreshes only the recovered unit when active. Retry deadlines
@@ -130,3 +130,9 @@ use elapsed time instead of visit counts. See the [performance plan](performance
 ## Fixed health gradients
 
 `HealthGradient.lua` fades from 80% black at the left edge to clear at 95% of the full health-bar width; the final 5% stays clear. A nearest-filtered rectangular mask anchored to the native fill clips the overlay without health arithmetic; shrinking health never rescales the tint. All styled text uses thin solid black outlines with gradients on or off. There are no glyph underlayers, health-threshold curves or health-event text-layer updates. Restoration hides all owned gradients, including retired bars.
+
+## Finish native callback work
+
+Native geometry/show-hide callbacks can reset appearance during a repair. Cached selective work finishes structural changes and pending artwork before planned color/opacity writes. A bounded finalizer checks completed color/alpha after selective repair and standalone artwork, using fresh access and current cache/context/ownership/readable GUID validation. It repairs readable differences through the existing appearance hooks; unknown values remain for retry. Color recovery includes required native opacity, while alpha-only recovery does not rewrite colors. This finalizer does not reclassify, rewrite name fonts/layout, enqueue timers or perform full styling.
+
+Direct font/color/alpha setters also use guarded cached repair. Dimension recovery uses the known Retail hierarchy for restricted anchors and readable pixel-scale tolerance. Equivalent font filename spelling or flag order does not establish drift. Version 1.0.218 confirmed convergence in the recorded crowded scene; 1.0.219 removed temporary appearance audit instrumentation. Broader native acceptance remains on the live checklist.
