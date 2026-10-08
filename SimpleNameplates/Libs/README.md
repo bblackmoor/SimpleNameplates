@@ -2,7 +2,7 @@
 
 Reviewed for 1.0.221 on 2026-10-08 against the repository and `.toc` load chain.
 
-LibCustomGlow is no longer bundled or loaded. Cast highlighting retains the addon's own pulse and uses the already-bundled DF `CreateFullBorder`, `CreateBorderWithSpread`, `CreateAnts` and `CreateGlowOverlay` for its effect dropdown. No new dependency is added. The empty upstream `CreateBorderSolid` stub is not exposed. Marching ants uses a Blizzard sheet with an owned compatibility animator, avoiding dependence on a removed `AnimateTexCoords` global. Glow initialization reads only fixed owned-frame dimensions before anchoring to native cast geometry.
+LibCustomGlow is no longer bundled or loaded. Cast highlighting uses addon-owned four-edge borders for Pulsing border and Solid border; neither effect uses DF border/glow constructors. Both anchor directly to the native cast bar without reading its dimensions. Details Framework remains bundled for settings widgets.
 
 LibStub 2 (upstream revision 103), from https://github.com/lua-wow/LibStub/blob/master/LibStub.lua.
 Upstream source blob: `7e9b5cd15277d750ef2f106bca3999c306044f03`.

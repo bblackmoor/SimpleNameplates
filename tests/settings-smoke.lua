@@ -158,11 +158,10 @@ local ns = {
     GetInterruptibleHighlightEnabled = function() return castEnabled end,
     SetInterruptibleHighlightEnabled = function(value) castEnabled = value end,
     CAST_EFFECT_OPTIONS = {{value = "PULSE", label = "Pulsing border"}},
-    CAST_EFFECT_BY_VALUE = {PULSE = "Pulsing border", SOLID = "Solid border", SOFT = "Soft border", ANTS = "Marching ants", GLOW = "Spell-alert glow"},
-    CAST_ADVANCED_CONTROLS = {PULSE = {}, SOLID = {}, SOFT = {}, ANTS = {}, GLOW = {}},
-    GetCastAdvancedSetting = function() return nil end,
-    SetCastAdvancedSetting = function() end,
-    ResetCastAdvanced = function() end,
+    CAST_EFFECT_BY_VALUE = {PULSE = "Pulsing border", SOLID = "Solid border", },
+    CAST_BORDER_CONTROLS = {PULSE = {}, SOLID = {}},
+    GetCastBorderSetting = function() return nil end,
+    SetCastBorderSetting = function() end,
     GetInterruptibleEffect = function() return "PULSE" end,
     SetInterruptibleEffect = function() end,
     ResetAllColors = function()
@@ -204,11 +203,11 @@ end
 loadSettings()
 assert(ns.RegisterSettingsPanels, "settings registration API")
 ns.RegisterSettingsPanels()
-equal(#categories, 6, "About and five subcategories")
-equal(table.concat({categories[1].name,categories[2].name,categories[3].name,categories[4].name,categories[5].name,categories[6].name}, ","),
-    "Simple Nameplates,Profiles,Appearance,Colors,Advanced,TRP3", "tab order")
+equal(#categories, 5, "About and four subcategories")
+equal(table.concat({categories[1].name,categories[2].name,categories[3].name,categories[4].name,categories[5].name}, ","),
+    "Simple Nameplates,Profiles,Appearance,Colors,TRP3", "tab order")
 ns.RegisterSettingsPanels()
-equal(#categories, 6, "one-time registration")
+equal(#categories, 5, "one-time registration")
 equal(SLASH_SNP1, "/snp", "slash registration")
 local debugUnits = {}
 ns.DebugUnit = function(unit) debugUnits[#debugUnits + 1] = unit end
@@ -225,7 +224,7 @@ local debugCount = #debugUnits
 SlashCmdList.SNP("debug invalid")
 equal(#debugUnits, debugCount, "invalid diagnostic unit is not inspected")
 
-for _, route in ipairs({{"",3},{"about",1},{"profiles",2},{"appearance",3},{"colors",4},{"advanced",5},{"trp3",6}}) do
+for _, route in ipairs({{"",3},{"about",1},{"profiles",2},{"appearance",3},{"colors",4},{"trp3",5}}) do
     SlashCmdList.SNP(route[1])
     equal(opened[#opened], route[2], "route " .. route[1])
 end

@@ -1,6 +1,6 @@
 # Simple Nameplates
 
-Documentation reviewed for 1.0.223 (2026-10-08). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
+Documentation reviewed for 1.0.224 (2026-10-08). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
 
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
@@ -84,10 +84,9 @@ The settings pages are organized by purpose. Changes apply immediately and are s
 | Profiles | Select, create, copy, rename, delete, and restore profiles; global Active switch | `/snp profiles` |
 | Appearance | Fonts, sizing, name placement, threat display, global critter/companion visibility, and Reset settings | `/snp appearance` or `/snp` |
 | Colors | Profile colors, Health Bar switches, background-name dimming, gradients/preview, cast Active switch/effect dropdown/preview, and Reset all colors | `/snp colors` |
-| Advanced | Experimental per-effect thickness, timing, opacity, spread, extension, and movement; preview and reset | `/snp advanced` |
 | TRP3 | All global RP-name, title, and OOC options | `/snp trp3` |
 
-Appearance and Colors each have a compact Selected profile control; management actions are on Profiles. On Profiles, the selector sits farther left with an Active/Inactive switch immediately to its right. This switch enables styling globally, including the startup compatibility review. Appearance's **Reset settings** and Colors' **Reset all colors** sit directly below their selectors. Health Bar switches sit beside the six category color swatches on Colors and apply to the selected profile. Individual color reset buttons and category Active switches have been removed. The cast-highlight **Active** switch sits beside its color; Inactive turns highlighting off for the selected profile. The **Effect** dropdown selects Pulsing border, Solid border, Soft border, Marching ants or Spell-alert glow. The labeled preview demonstrates the selected effect even while Inactive; it does not detect a real cast. Advanced exposes independent profile settings and previews for all five effects. Its Reset advanced effects button restores their original parameters without changing Colors' effect selection, Active switch or color. Dash length/spacing are fixed by the marching-ants sprite sheet; Blizzard controls spell-alert animation speed and intrinsic texture thickness. Combat disables edits. Changing profiles selects that profile's Health Bar preferences.
+Appearance and Colors each have a compact Selected profile control; management actions are on Profiles. On Profiles, the selector sits farther left with an Active/Inactive switch immediately to its right. This switch enables styling globally, including the startup compatibility review. Appearance's **Reset settings** and Colors' **Reset all colors** sit directly below their selectors. Health Bar switches sit beside the six category color swatches on Colors and apply to the selected profile. Individual color reset buttons and category Active switches have been removed. The cast-highlight **Active** switch sits beside its color; Inactive turns highlighting off for the selected profile. The **Effect** dropdown selects Pulsing border or Solid border. Both share the Border thickness slider (default 4 on all four edges), anchored directly to the cast bar with zero inset. Fade in and Fade out control the pulse (default 0.2 seconds each); pulse opacity remains fixed at 35–100%. The labeled preview demonstrates the selected effect even while Inactive; it does not detect a real cast. These controls are on Colors; the Advanced page and other effects have been removed. Reset all colors restores thickness and timing as well. Combat disables edits. Changing profiles selects that profile's Health Bar preferences.
 
 Profiles are shared account-wide, while each character remembers its active profile. **Create** starts with factory-default appearance settings; **Copy** duplicates the complete active profile. Profiles can be renamed and deleted, except **Default**, which is the permanent fallback. Deleting a profile moves characters assigned to it back to Default.
 
@@ -145,7 +144,7 @@ Each field has its own toggle. To keep nameplates readable, roleplaying names ar
 
 Look-and-feel settings are stored in named appearance profiles: priority colors, cast-highlight color, Active state and selected effect, Health Bar preferences, background-name dimming, gradients, fonts, sizing, placement, and threat display. Global settings cover styling enablement, critter/companion visibility, and TRP3 preferences. Legacy category modes remain stored but do not affect presentation. Each character selects an account-wide profile.
 
-Saved settings are validated individually in their current locations. Recognized valid values are retained regardless of the saved schema marker; invalid and unknown settings are silently discarded, with defaults supplying missing values. The current category keys are `attacking`, `hostile`, `neutral`, `friendly`, `useful`, and `useless`. Obsolete category fields are discarded; valid current fields and unrelated settings remain. The retired `interruptibleCastStyle` is a compatibility exception: when no valid `interruptibleHighlight` boolean exists, a saved string other than `NONE` enables the pulse; `NONE` disables it. The validated profile no longer stores the old selector. Other obsolete settings are discarded without renaming or relocation.
+Saved settings are validated individually in their current locations. Recognized valid values are retained regardless of the saved schema marker; invalid and unknown settings are silently discarded, with defaults supplying missing values. The current category keys are `attacking`, `hostile`, `neutral`, `friendly`, `useful`, and `useless`. Obsolete category fields are discarded; valid current fields and unrelated settings remain. The retired `interruptibleCastStyle` is discarded without conversion. Only valid current values are imported; invalid, missing and removed values use defaults. The shared thickness and pulse timing retain their existing saved locations; solid-specific and other retired parameters are discarded.
 
 ## About and Diagnostics
 
@@ -214,7 +213,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Bundled libraries
 
-Cast highlighting retains the addon-owned pulse and uses the already-bundled Details Framework for Solid border, Soft border, Marching ants and Spell-alert glow. Use **Active** and the **Effect** dropdown on Colors. Constructors receive owned frames; the glow is initialized with known dimensions before anchoring, without reading native cast geometry. Missing library methods/templates fall back to the pulse and report the reason in debug; no extra library is installed.
+Cast highlighting uses addon-owned four-edge borders for Pulsing border and Solid border. Both anchor directly to the native cast bar without reading its dimensions. Color, Active, effect, shared thickness and pulse fade times are on Colors. Cast effects do not require library border/glow constructors.
 
 LibSharedMedia and CallbackHandler supply the shared font registry and provider-change notifications. External font packs are optional; solid bar fills have no texture selector.
 

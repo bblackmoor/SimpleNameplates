@@ -50,7 +50,7 @@ Capture a complete current-build report if flicker or hitches return. Additional
 
 - [ ] All six Health Bar switches follow the selected profile; On shows a supported bar in both combat states, Off shows its name/title without a bar. Verify first-match priority and no category Active/Inactive or Hide controls.
 - [ ] Factory bars are On for the first five categories and Off for NPC - Background. Background-name dimming defaults On; On is grey #999999 and Off white #FFFFFF, with matching subtitles, inside/above/no-bar. Bar colors and threat styling are independent.
-- [ ] Cast highlighting has a profile Active switch beside its color plus an Effect dropdown: Pulsing border, Solid border, Soft border, Marching ants and Spell-alert glow. The labeled preview demonstrates the effect even while Inactive; actual enemy highlighting requires Active and interruptibility. No individual color Reset button or new library requirement exists.
+- [ ] Cast highlighting has a profile Active switch beside its color plus an Effect dropdown: Pulsing border and Solid border, shared Border thickness (default 4), and pulse Fade in/Fade out (default 0.2 seconds each). The labeled preview demonstrates the effect even while Inactive; actual enemy highlighting requires Active and interruptibility. No individual color Reset button or new library requirement exists.
 - [ ] Reset all colors restores the selected profile's factory palette, bars On except Background, background dimming On, cast activation Off, effect Pulsing border, and gradients On for Default/custom or Off for High Contrast. It preserves appearance/threat settings, selection, global styling, critter hiding and TRP3. Internal legacy category modes reset to active without affecting rendering.
 - [ ] Appearance reset restores selected-profile fonts/rendering/size/placement/width and threat On, plus global critter hiding Off. It preserves Colors preferences, global Active, TRP3 and selection. Bundled restore has the separate scope described above.
 
@@ -93,3 +93,5 @@ Capture a complete current-build report if flicker or hitches return. Additional
 See [the repeatable cast test](cast-effect-testing.md) for enemy selection, preview versus detection checks and a targeted debug capture.
 
 Acceptance remains partial until the applicable client checks above are recorded. Passing smoke suites or one converged scene does not close unobserved settings, restoration, combat or secure-behavior checks.
+
+- [ ] Advanced is absent. Both border effects align with the cast bar at zero inset; all four edges use the shared thickness. Colors reset restores thickness 4 and fades 0.2 seconds. Removed saved effects/parameters are discarded, without conversion; valid remaining values survive reload.

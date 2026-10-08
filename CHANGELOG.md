@@ -1,3 +1,10 @@
+## 1.0.224 — 2026-10-08
+
+- Removed Soft border, Marching ants, Spell-alert glow, their settings, and the Advanced page/routes.
+- Colors now contains a shared Border thickness slider (default 4 on all sides) and pulse Fade in/Fade out (0.2 seconds each). Both remaining effects use four edges anchored directly to the cast bar, with zero inset/offset; solid has full opacity and pulse ranges from 35% to 100%.
+- Imports valid current values in place, discards removed/invalid settings, and supplies defaults for the rest. Removed the legacy cast-style activation conversion. Colors reset restores border defaults.
+- Updated renderer, saved-data, settings and combat cancellation coverage. Live-client alignment and appearance verification remain pending.
+
 ## 1.0.223 — 2026-10-08
 
 - Added a profile-scoped Advanced tab with sliders and switches for five cast effects: pulse thickness/inset/opacity/timing, solid thickness/extension/distance, three-layer soft border spread/opacity/visibility, marching-ants speed/distance/frame count/opacity, and spell-alert extent/position/opacity.

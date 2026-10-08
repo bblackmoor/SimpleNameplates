@@ -155,13 +155,13 @@ local castRow = Row("Interruptible cast highlight")
 local cast = Control(castRow, "color")
 local castToggle = Control(castRow, "switch")
 local effectDropdown = Control(Row("Effect"), "dropdown")
-assert(#effectDropdown.MyObject.func() == 5, "all implemented border/glow choices exposed")
+assert(#effectDropdown.MyObject.func() == 2, "only pulse and solid exposed")
 local effectRefreshes = refreshes
 for _, option in ipairs(effectDropdown.MyObject.func()) do
     option.onclick(nil, nil, option.value)
     assert(ns.GetInterruptibleEffect() == option.value, "effect selection saved")
 end
-assert(refreshes == effectRefreshes + 5, "one plate refresh per effect change")
+assert(refreshes == effectRefreshes + 2, "one plate refresh per effect change")
 assert(not ns.GetInterruptibleHighlightEnabled(), "effect choice does not enable Active")
 assert(castToggle.point[2]:GetText() == "Active" and castToggle.point[4] == 8)
 for _, enabled in ipairs({true, false, true}) do

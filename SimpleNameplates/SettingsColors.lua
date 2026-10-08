@@ -42,6 +42,42 @@ local function AddCastHighlightSwitch(context, row, swatch)
     end
 end
 
+local function AddCastBorderControls(context)
+    for _, effect in ipairs({"PULSE"}) do
+        for _, definition in ipairs(addon.CAST_BORDER_CONTROLS[effect]) do
+            local key = definition.key
+            local block = CreateFrame("Frame", nil, context.content)
+            block.LayoutFullWidth = true
+            context.layout:Add(block, 24, 48, 6)
+            local label = block:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+            label:SetPoint("TOPLEFT", 0, -12)
+            label:SetText(definition.label)
+            local amount = block:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+            amount:SetPoint("TOPLEFT", UI.CONTROL_X + 188, -12)
+            local slider = Widgets.CreateSlider(block, definition.min, definition.max, definition.step, function(value)
+                amount:SetText(string.format("%g", value) .. definition.suffix)
+                if value == addon.GetCastBorderSetting(effect, key) then return end
+                addon.SetCastBorderSetting(effect, key, value)
+                if not context.canceling then RefreshContext(context); RefreshNameplates() end
+            end)
+            slider:SetPoint("TOPLEFT", block, "TOPLEFT", UI.CONTROL_X, -10)
+            slider:GetFrame():SetHeight(18)
+            if slider.widget.amt then slider.widget.amt:Hide() end
+            for _, endpoint in ipairs({{definition.min, "LEFT"}, {definition.max, "RIGHT"}}) do
+                local caption = block:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+                caption:SetText(string.format("%g", endpoint[1]))
+                caption:SetPoint("TOP"..endpoint[2], slider:GetFrame(), "BOTTOM"..endpoint[2], 0, -2)
+            end
+            context.sliders[#context.sliders + 1] = slider
+            context.refreshers[#context.refreshers + 1] = function()
+                local value = addon.GetCastBorderSetting(effect, key)
+                slider:SetValue(value)
+                amount:SetText(string.format("%g", value) .. definition.suffix)
+            end
+        end
+    end
+end
+
 local function AddCastEffectControl(context)
     local _, dropdown = UI.CreateDropdownRow(context.content, context.layout, "Effect",
         function() return addon.CAST_EFFECT_OPTIONS end, function(value)
@@ -53,6 +89,7 @@ local function AddCastEffectControl(context)
         local value = addon.GetInterruptibleEffect()
         dropdown:SetValue(value, addon.CAST_EFFECT_BY_VALUE[value])
     end
+    AddCastBorderControls(context)
     local row = UI.CreateSettingRow(context.content, context.layout, "Effect preview")
     local preview = CreateFrame("StatusBar", nil, row)
     preview:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
@@ -176,7 +213,21 @@ end
 local function CreateColorsPanel()
     local panel, content, layout = UI.CreateScrollablePanel("Colors")
     UI.AddTitle(content, layout, "Colors")
-    local context = {content = content, layout = layout, refreshers = {}}
+    local context = {content = content, layout = layout, refreshers = {}, sliders = {}}
+    local function CancelBorderEdits(quiet)
+        context.canceling = true
+        local changed = false
+        Widgets.CancelEdits(function()
+            for _, slider in ipairs(context.sliders) do
+                local old = slider:GetValue()
+                slider:CancelCombatEdit()
+                if old ~= slider:GetValue() then changed = true end
+            end
+        end)
+        context.canceling = false
+        if changed and not quiet then RefreshNameplates() end
+    end
+    addon.CancelCastBorderEdits = CancelBorderEdits
     local function Refresh()
         RefreshContext(context)
     end
@@ -189,7 +240,7 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Restores health bars to On except NPC - Background, background-name dimming to On, gradients to On for Default/custom profiles or Off for High Contrast, and cast highlight to Inactive with Pulsing border.")
+        "Restores health bars to On except NPC - Background, background-name dimming to On, gradients to On for Default/custom profiles or Off for High Contrast, and cast highlight to Inactive with Pulsing border, border thickness to 4, and pulse fade times to 0.2 seconds.")
     AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
@@ -202,6 +253,7 @@ local function CreateColorsPanel()
     panel.Refresh = Refresh
     panel:SetScript("OnShow", panel.Refresh)
     panel:SetScript("OnHide", function()
+        CancelBorderEdits()
         UI.CancelColorEdit()
         if addon.CastHighlight then addon.CastHighlight.StopPreview(context.preview) end
     end)

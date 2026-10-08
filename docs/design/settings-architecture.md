@@ -87,7 +87,7 @@ The 1.0.218 crowded-scene report confirms appearance convergence in that scene. 
 
 ## Interruptible effects (1.0.221)
 
-Colors now has an independent profile Effect dropdown and a labeled rendering preview. Pulsing border uses the existing owned renderer; Solid border, Soft border, Marching ants and Spell-alert glow use the bundled Details Framework. Constructors do not read native cast dimensions; unavailable renderer methods/templates fall back to pulse with a diagnostic reason. Direct icon/shield Show/Hide and cast-bar visibility changes refresh detection, hidden casts gate explicit events, and unknown active state retries conservatively. Debug shows the resolved state/source, selected/active renderer and fallback error. These paths have local regression coverage; actual cast and visual acceptance remains open. See [cast-effect testing](cast-effect-testing.md).
+Colors has a profile Effect dropdown with Pulsing border and Solid border, one shared Border thickness slider (default 4), pulse Fade in and Fade out (0.2 seconds each), and a labeled preview. Both use addon-owned four-edge borders anchored directly to the cast bar at zero inset. Pulse opacity is fixed at 35–100%; solid opacity is 100%. Advanced and all other effects/controls are removed. Direct icon/shield Show/Hide and cast-bar visibility changes refresh detection, hidden casts gate explicit events, and unknown active state retries conservatively. Actual cast and visual acceptance remains open. See [cast-effect testing](cast-effect-testing.md).
 
 ## Combat settings guard (1.0.222)
 

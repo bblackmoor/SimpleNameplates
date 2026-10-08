@@ -56,7 +56,7 @@ Profiling introduced in 1.0.163 is session-only. It adds no fields to `SimpleNam
 | Six `priorityColors`, `effectColors.interruptible` | Profile | Appearance colors |
 | `appearance.nameFont`, `nameSize`, `threatFont`, `namePlacement`, `matchSanctuaryFont`, `useSlugRendering`, `healthBarWidth` | Profile | Text and layout |
 | `showThreat`, `interruptibleHighlight` | Profile | Threat visibility (default on) and cast highlight activation (default off) |
-| `interruptibleEffect` | Profile | `PULSE` (default), `SOLID`, `SOFT`, `ANTS` or `GLOW`; independent of Active |
+| `interruptibleEffect` | Profile | `PULSE` (default) or `SOLID`; independent of Active |
 | `gradients`, `dimBackgroundNames` | Profile | Gradient default on for Default/custom and off for High Contrast; background-name dimming default on |
 | `profileKeys` | Account-wide character selection map | Independent Profile choice per character |
 | `global.managedNameCVarOriginals` | Internal restoration ledger | Original critter and legacy managed values, retained until restored |
@@ -89,7 +89,7 @@ Health bars default On for the first five categories and Off for NPC - Backgroun
 
 ## Compatibility exception and reset scope
 
-Validation gives a valid boolean `interruptibleHighlight` precedence. Otherwise, a legacy string `interruptibleCastStyle` enables the pulse unless it equals `NONE`. The old field is discarded after validation; it does not select the new effect dropdown. `interruptibleEffect` defaults to `PULSE` when missing/invalid, survives copies/reloads and Appearance reset, and resets to `PULSE` with Colors. The Active switch remains independently off by default. This is a specific compatibility conversion, not a general migration system.
+Validation imports only valid current values. `interruptibleCastStyle` is discarded without conversion. Removed effect selections default to `PULSE`; `interruptibleHighlight` defaults off unless a valid boolean is saved. The existing `castAdvanced.PULSE.thickness`, `fadeIn`, and `fadeOut` locations retain valid values without renaming or relocation. Thickness is now shared by both effects (default 4); fades default to 0.2 seconds. Other `castAdvanced` fields are discarded. Non-finite, out-of-range, wrong-type or missing border values use defaults rather than clamping. Colors reset restores these parameters; Appearance reset preserves them.
 
 Reset all colors restores the selected profile's six priority colors, cast color, cast activation (off), cast effect (Pulsing border), health-bar defaults, background dimming (on) and gradient default. High Contrast uses its factory palette and gradient off; Default and custom profiles use factory Default values. It also resets retained global category modes to active internally; rendering ignores those modes. It preserves profile selection, appearance/threat settings, styling enablement, critter hiding and TRP3.
 

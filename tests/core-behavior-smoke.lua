@@ -62,17 +62,17 @@ equal(widthNS.GetAppearanceSetting("healthBarWidth"), 120, "Appearance reset res
 -- Cast activation is profile-specific, survives reload, and resets with Colors.
 local effectNS = fresh()
 equal(effectNS.GetInterruptibleEffect(), "PULSE", "effect defaults pulse")
-effectNS.SetInterruptibleEffect("GLOW")
+effectNS.SetInterruptibleEffect("SOLID")
 equal(effectNS.GetInterruptibleHighlightEnabled(), false, "highlight defaults off")
 effectNS.SetInterruptibleHighlightEnabled(true)
 effectNS.CopyActiveProfile("Pulse cast bars")
 effectNS = loadCore()
-equal(effectNS.GetInterruptibleEffect(), "GLOW", "copied effect survives reload")
+equal(effectNS.GetInterruptibleEffect(), "SOLID", "copied effect survives reload")
 effectNS.SetInterruptibleEffect("invalid")
-equal(effectNS.GetInterruptibleEffect(), "GLOW", "invalid effect setter ignored")
+equal(effectNS.GetInterruptibleEffect(), "SOLID", "invalid effect setter ignored")
 equal(effectNS.GetInterruptibleHighlightEnabled(), true, "copied activation survives reload")
 effectNS.ResetAppearance()
-equal(effectNS.GetInterruptibleEffect(), "GLOW", "Appearance reset preserves effect")
+equal(effectNS.GetInterruptibleEffect(), "SOLID", "Appearance reset preserves effect")
 equal(effectNS.GetInterruptibleHighlightEnabled(), true, "Appearance reset preserves activation")
 effectNS.ResetAllColors()
 equal(effectNS.GetInterruptibleEffect(), "PULSE", "Colors reset restores pulse")
@@ -80,17 +80,42 @@ effectNS.EnsureDB().profiles[effectNS.GetActiveProfileName()].interruptibleEffec
 effectNS = loadCore()
 equal(effectNS.GetInterruptibleEffect(), "PULSE", "invalid saved effect defaults pulse")
 equal(effectNS.GetInterruptibleHighlightEnabled(), false, "Colors reset disables highlight")
--- Retired style settings supply activation only when the current switch is absent.
+-- Retired style settings are discarded without supplying activation.
 for _, legacy in ipairs({{true, "PIXEL", true}, {false, "PROC", false},
-    {nil, "NONE", false}, {nil, "PIXEL", true}, {nil, "AUTOCAST", true},
-    {nil, "BUTTON", true}, {nil, "PROC", true}}) do
+    {nil, "NONE", false}, {nil, "PIXEL", false}, {nil, "AUTOCAST", false},
+    {nil, "BUTTON", false}, {nil, "PROC", false}}) do
     effectNS = fresh()
     local profile = effectNS.EnsureDB().profiles.Default
     profile.interruptibleHighlight, profile.interruptibleCastStyle = legacy[1], legacy[2]
     effectNS = loadCore()
-    equal(effectNS.GetInterruptibleHighlightEnabled(), legacy[3], "legacy activation preserved")
+    equal(effectNS.GetInterruptibleHighlightEnabled(), legacy[3], "current activation retained or defaulted")
     equal(effectNS.EnsureDB().profiles.Default.interruptibleCastStyle, nil, "retired style removed")
 end
+
+-- Border settings keep valid values in place and discard every retired setting.
+local borders = fresh()
+equal(borders.GetCastBorderSetting("PULSE", "thickness"), 4, "shared thickness default")
+equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.2, "fade-in default")
+equal(borders.GetCastBorderSetting("PULSE", "fadeOut"), 0.2, "fade-out default")
+local saved = borders.EnsureDB().profiles.Default
+saved.castAdvanced = {PULSE = {thickness=7, fadeIn=0.55, fadeOut=99, inset=3, lowAlpha=0.8},
+    SOLID={thickness=2}, SOFT={thickness=8}, ANTS={frames=11}, GLOW={offsetX=5}}
+saved.interruptibleEffect = "ANTS"
+borders = loadCore()
+equal(borders.GetInterruptibleEffect(), "PULSE", "removed selection defaults")
+equal(borders.GetCastBorderSetting("PULSE", "thickness"), 7, "valid thickness retained")
+equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.55, "valid timing retained")
+equal(borders.GetCastBorderSetting("PULSE", "fadeOut"), 0.2, "out-of-range timing defaults")
+local retained = borders.EnsureDB().profiles.Default.castAdvanced
+for _, key in ipairs({"SOLID", "SOFT", "ANTS", "GLOW"}) do equal(retained[key], nil, "obsolete controls discarded") end
+equal(retained.PULSE.inset, nil, "inset discarded")
+equal(retained.PULSE.lowAlpha, nil, "opacity discarded")
+borders.CopyActiveProfile("Borders")
+borders = loadCore()
+equal(borders.GetCastBorderSetting("PULSE", "thickness"), 7, "shared setting survives copy/reload")
+borders.ResetAllColors()
+equal(borders.GetCastBorderSetting("PULSE", "thickness"), 4, "Colors reset thickness")
+equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.2, "Colors reset fade")
 
 -- Background dimming validation and persistence.
 local dim = fresh()

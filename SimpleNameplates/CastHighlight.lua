@@ -64,217 +64,48 @@ end
 
 
 local function Parameter(effect, key, fallback)
-    local getter = ns.GetCastAdvancedSetting
+    local getter = ns.GetCastBorderSetting
     local value = getter and getter(effect, key)
     if value ~= nil then return value end
     return fallback
 end
 
-local function Reanchor(frame, parent, distance)
-    frame:ClearAllPoints()
-    frame:SetPoint("TOPLEFT", parent, "TOPLEFT", -distance, distance)
-    frame:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", distance, -distance)
-end
-
-local function ConfigurePulse(h)
-    local thick = Parameter("PULSE", "thickness", 4)
-    local inset = Parameter("PULSE", "inset", 2)
-    local low = Parameter("PULSE", "lowAlpha", 0.35)
-    local high = Parameter("PULSE", "highAlpha", 1)
-    local fadeOut = Parameter("PULSE", "fadeOut", 0.55)
-    local fadeIn = Parameter("PULSE", "fadeIn", 0.55)
-    local signature = table.concat({thick, inset, low, high, fadeOut, fadeIn}, ":")
+local function ConfigureBorder(h, effect)
+    local thickness = Parameter("PULSE", "thickness", 4)
+    local top, bottom, left, right = unpack(h.border)
+    top:SetHeight(thickness)
+    bottom:SetHeight(thickness)
+    left:SetWidth(thickness)
+    right:SetWidth(thickness)
+    if effect ~= "PULSE" then return end
+    local fadeOut = Parameter("PULSE", "fadeOut", 0.2)
+    local fadeIn = Parameter("PULSE", "fadeIn", 0.2)
+    local signature = table.concat({fadeOut, fadeIn}, ":")
     if h.pulseConfig == signature then return end
     h.pulseConfig = signature
-    local top, bottom, left, right = unpack(h.border)
-    for _, edge in ipairs(h.border) do edge:ClearAllPoints() end
-    top:SetPoint("TOPLEFT", h.frame, "TOPLEFT", inset, -inset)
-    top:SetPoint("TOPRIGHT", h.frame, "TOPRIGHT", -inset, -inset)
-    top:SetHeight(thick)
-    bottom:SetPoint("BOTTOMLEFT", h.frame, "BOTTOMLEFT", inset, inset)
-    bottom:SetPoint("BOTTOMRIGHT", h.frame, "BOTTOMRIGHT", -inset, inset)
-    bottom:SetHeight(thick)
-    left:SetPoint("TOPLEFT", h.frame, "TOPLEFT", inset, -inset)
-    left:SetPoint("BOTTOMLEFT", h.frame, "BOTTOMLEFT", inset, inset)
-    left:SetWidth(thick)
-    right:SetPoint("TOPRIGHT", h.frame, "TOPRIGHT", -inset, -inset)
-    right:SetPoint("BOTTOMRIGHT", h.frame, "BOTTOMRIGHT", -inset, inset)
-    right:SetWidth(thick)
     h.pulse:Stop()
-    h.fadeOut:SetFromAlpha(high)
-    h.fadeOut:SetToAlpha(low)
     h.fadeOut:SetDuration(fadeOut)
-    h.fadeIn:SetFromAlpha(low)
-    h.fadeIn:SetToAlpha(high)
     h.fadeIn:SetDuration(fadeIn)
 end
 
 local function StopRenderer(highlight)
-    if highlight.pulse then highlight.pulse:Stop() end
-    if highlight.frame then highlight.frame:SetAlpha(1) end
-    for _, edge in ipairs(highlight.border or {}) do edge:Hide() end
-    for _, renderer in pairs(highlight.renderers or {}) do
-        if renderer.Stop then renderer:Stop() end
-        if renderer.ProcLoop then renderer.ProcLoop:Stop() end
-        renderer:Hide()
-    end
-    for _, host in pairs(highlight.effectHosts or {}) do host:Hide() end
-end
-
-local function FrameworkRenderer(highlight, effect)
-    highlight.renderers = highlight.renderers or {}
-    if highlight.renderers[effect] then return highlight.renderers[effect] end
-    if highlight.failedEffects and highlight.failedEffects[effect] then error(highlight.failedEffects[effect]) end
-    local df = LibStub and LibStub:GetLibrary("DetailsFramework-1.0", true)
-    if not df then error("Details Framework unavailable") end
-    -- Track a hidden construction host before calling library code, so a
-    -- partially failing constructor cannot leave visible child regions behind.
-    local layer = CreateFrame("Frame", nil, highlight.frame)
-    layer:SetAllPoints(highlight.frame)
-    layer:SetFrameLevel(highlight.frame:GetFrameLevel() + 1)
-    layer:Hide()
-    highlight.effectHosts = highlight.effectHosts or {}
-    highlight.effectHosts[effect] = layer
-    local renderer
-    if effect == "SOLID" then
-        renderer = df:CreateFullBorder(nil, layer)
-        renderer:SetIgnoreParentScale(false)
-        renderer:SetBorderSizes(2, 2, 2, 2)
-        renderer:UpdateSizes()
-    elseif effect == "SOFT" then
-        renderer = layer
-        df:CreateBorderWithSpread(renderer, 1, 0.55, 0.2, 2, 0)
-    elseif effect == "ANTS" then
-        renderer = df:CreateAnts(layer, {
-            Texture = "Interface\\SpellActivationOverlay\\IconAlertAnts",
-            TextureWidth = 256, TextureHeight = 256,
-            TexturePartsWidth = 48, TexturePartsHeight = 48, AmountParts = 22,
-        }, -3, 3, 3, -3)
-        -- DF's helper calls AnimateTexCoords, absent on some Midnight clients.
-        -- Animate only this owned sheet; never read native cast dimensions.
-        renderer:SetScript("OnUpdate", function(self, elapsed)
-            self.elapsed = (self.elapsed or 0) + elapsed
-            local index = math.floor(self.elapsed / (self.frameTime or 0.025)) % (self.frameCount or 22)
-            local left, top = (index % 5) * 48 / 256, math.floor(index / 5) * 48 / 256
-            self.Texture:SetTexCoord(left, left + 48 / 256, top, top + 48 / 256)
-        end)
-    elseif effect == "GLOW" then
-        -- The framework sizes its alert using parent:GetSize(). Seed a separate
-        -- owned frame with known dimensions before anchoring it to the bar.
-        if type(DoesTemplateExist) ~= "function"
-            or not (DoesTemplateExist("ActionButtonSpellAlertTemplate")
-                or DoesTemplateExist("ActionBarButtonSpellActivationAlert")) then
-            error("Spell-alert template unavailable")
-        end
-        local host = CreateFrame("Frame", nil, layer)
-        host:SetSize(160, 20)
-        renderer = df:CreateGlowOverlay(host)
-        host:SetAllPoints(layer)
-        renderer:ClearAllPoints()
-        renderer:SetPoint("TOPLEFT", highlight.frame, "TOPLEFT", -8, 8)
-        renderer:SetPoint("BOTTOMRIGHT", highlight.frame, "BOTTOMRIGHT", 8, -8)
-        if renderer.ProcStartFlipbook then
-            renderer.ProcStartFlipbook:ClearAllPoints()
-            renderer.ProcStartFlipbook:SetAllPoints(renderer)
-        end
-        if not renderer.animIn and not renderer.ProcStartAnim then
-            renderer:Hide()
-            error("Spell-alert animation unavailable")
-        end
-    end
-    if not renderer then error("Unknown effect") end
-    renderer:SetFrameLevel(highlight.frame:GetFrameLevel() + 1)
-    renderer:Hide()
-    highlight.renderers[effect] = renderer
-    return renderer
-end
-
-
-local function ConfigureLibraryEffect(h, effect, renderer)
-    local controls = ns.CAST_ADVANCED_CONTROLS and ns.CAST_ADVANCED_CONTROLS[effect]
-    local values = {}
-    if controls then
-        for _, control in ipairs(controls) do
-            values[#values + 1] = tostring(Parameter(effect, control.key, control.default))
-        end
-    end
-    local signature = table.concat(values, ":")
-    if renderer.SNPConfiguration == signature then return end
-    renderer.SNPConfiguration = signature
-    local layer = h.effectHosts[effect]
-    if effect == "SOLID" then
-        Reanchor(renderer, layer, Parameter("SOLID", "distance", 0))
-        renderer:SetBorderSizes(Parameter("SOLID", "thickness", 2),
-            Parameter("SOLID", "minPixels", 2), Parameter("SOLID", "upward", 2),
-            Parameter("SOLID", "upwardMin", 2))
-        renderer:UpdateSizes()
-    elseif effect == "SOFT" then
-        Reanchor(layer, h.frame, Parameter("SOFT", "spread", 0))
-        local size = Parameter("SOFT", "thickness", 2)
-        for _, group in ipairs({layer.Borders.Layer1, layer.Borders.Layer2, layer.Borders.Layer3}) do
-            for i, texture in ipairs(group) do
-                if i == 1 or i == 3 then texture:SetWidth(size)
-                else texture:SetHeight(size) end
-            end
-        end
-        layer:SetBorderAlpha(Parameter("SOFT", "alpha1", 1),
-            Parameter("SOFT", "alpha2", 0.55), Parameter("SOFT", "alpha3", 0.2))
-        layer:SetLayerVisibility(Parameter("SOFT", "layer1", true),
-            Parameter("SOFT", "layer2", true), Parameter("SOFT", "layer3", true))
-    elseif effect == "ANTS" then
-        local d = Parameter("ANTS", "distance", 3)
-        renderer:SetOffset(-d, d, d, -d)
-        renderer.frameTime = Parameter("ANTS", "frameTime", 0.025)
-        renderer.frameCount = Parameter("ANTS", "frames", 22)
-    elseif effect == "GLOW" then
-        local x = Parameter("GLOW", "expandX", 8)
-        local y = Parameter("GLOW", "expandY", 8)
-        local dx = Parameter("GLOW", "offsetX", 0)
-        local dy = Parameter("GLOW", "offsetY", 0)
-        renderer:ClearAllPoints()
-        renderer:SetPoint("TOPLEFT", h.frame, "TOPLEFT", dx-x, dy+y)
-        renderer:SetPoint("BOTTOMRIGHT", h.frame, "BOTTOMRIGHT", dx+x, dy-y)
-        if renderer.ProcStartFlipbook then
-            renderer.ProcStartFlipbook:ClearAllPoints()
-            renderer.ProcStartFlipbook:SetAllPoints(renderer)
-        end
-    end
+    highlight.pulse:Stop()
+    highlight.frame:SetAlpha(1)
+    for _, edge in ipairs(highlight.border) do edge:Hide() end
 end
 
 local function ApplyRenderer(highlight)
     local effect = highlight.previewEffect or (ns.GetInterruptibleEffect and ns.GetInterruptibleEffect()) or "PULSE"
+    if effect ~= "SOLID" then effect = "PULSE" end
     if highlight.activeEffect ~= effect then StopRenderer(highlight) end
-    highlight.activeEffect, highlight.rendererError = effect, nil
+    highlight.activeEffect = effect
+    ConfigureBorder(highlight, effect)
     local r, g, b = EffectColor("interruptible")
-    if effect ~= "PULSE" then
-        local ok, err = pcall(function()
-            local renderer = FrameworkRenderer(highlight, effect)
-            ConfigureLibraryEffect(highlight, effect, renderer)
-            if effect == "SOLID" then renderer:SetVertexColor(r, g, b, 1)
-            elseif effect == "SOFT" then renderer:SetBorderColor(r, g, b)
-            elseif effect == "ANTS" then renderer.Texture:SetVertexColor(r, g, b, Parameter("ANTS", "opacity", 1))
-            else renderer:SetColor({r, g, b, Parameter("GLOW", "antsAlpha", 1)},
-                {r, g, b, Parameter("GLOW", "glowAlpha", 1)}) end
-            highlight.effectHosts[effect]:Show()
-            local wasShown = renderer:IsShown()
-            renderer:Show()
-            if renderer.Play and not wasShown then renderer:Play() end
-        end)
-        if ok then return end
-        StopRenderer(highlight)
-        highlight.rendererError = tostring(err)
-        highlight.failedEffects = highlight.failedEffects or {}
-        highlight.failedEffects[effect] = highlight.rendererError
-        -- Keep an obvious indicator if a winning external DF copy or the
-        -- client's template lacks the requested effect. Diagnostics explains it.
-        highlight.activeEffect = "PULSE"
-    end
-    ConfigurePulse(highlight)
     for _, edge in ipairs(highlight.border) do
         edge:SetColorTexture(r, g, b, 1)
         edge:Show()
     end
-    if not highlight.pulse:IsPlaying() then highlight.pulse:Play() end
+    if effect == "PULSE" and not highlight.pulse:IsPlaying() then highlight.pulse:Play() end
 end
 
 -- Midnight can make IsInterruptable() secret. Blizzard has already consumed that
@@ -386,8 +217,8 @@ end
 
 local function CreateHighlight(castBar, owner, healthBar)
     local overlay = CreateFrame("Frame", nil, castBar)
-    overlay:SetPoint("TOPLEFT", castBar, "TOPLEFT", -5, 5)
-    overlay:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 5, -5)
+    overlay:SetPoint("TOPLEFT", castBar, "TOPLEFT", 0, 0)
+    overlay:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 0, 0)
     local highestFrameLevel = castBar:GetFrameLevel()
     if healthBar then highestFrameLevel = math.max(highestFrameLevel, healthBar:GetFrameLevel()) end
     overlay:SetFrameLevel(highestFrameLevel + 20)
@@ -397,18 +228,18 @@ local function CreateHighlight(castBar, owner, healthBar)
         castBar = castBar,
         owner = owner,
         frame = overlay,
-        border = CreateBorder(overlay, 2, 4),
+        border = CreateBorder(overlay, 0, 4),
     }
     local pulse = overlay:CreateAnimationGroup()
     local fadeOut = pulse:CreateAnimation("Alpha")
     fadeOut:SetFromAlpha(1)
     fadeOut:SetToAlpha(0.35)
-    fadeOut:SetDuration(0.55)
+    fadeOut:SetDuration(0.2)
     fadeOut:SetOrder(1)
     local fadeIn = pulse:CreateAnimation("Alpha")
     fadeIn:SetFromAlpha(0.35)
     fadeIn:SetToAlpha(1)
-    fadeIn:SetDuration(0.55)
+    fadeIn:SetDuration(0.2)
     fadeIn:SetOrder(2)
     pulse:SetLooping("REPEAT")
     highlight.pulse, highlight.fadeOut, highlight.fadeIn = pulse, fadeOut, fadeIn

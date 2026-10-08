@@ -9,7 +9,7 @@ Use a **Kobold Geomancer in or around Jasperlode Mine, Elwynn Forest**, east of 
 1. Open `/snp colors` and select the profile used by this character. Under Cast highlight color, turn **Active** on, choose **Solid border** initially, and use a bright color. Confirm the labeled **Effect preview** shows that border. The preview runs even while Inactive and does not classify a real cast.
 2. Configure the effect before engaging: combat disables settings changes and cancels unfinished edits. Find one Geomancer, keep its enemy nameplate visible and stay within cast range. At high level, engage without damaging it if possible (a taunt, if available); stop attacks and dismiss attacking pets/minions so it survives. Stay out of melee reach while allowing it to cast.
 3. Let one Fireball finish. Watch the small nameplate cast bar beneath its health bar. Repeat and interrupt another Fireball with your actual interrupt to confirm that particular cast can be interrupted. A stun or displacement alone does not establish interruptibility.
-4. Leave combat before changing the selected effect. Repeat with the other effects: Pulsing border, Soft border, Marching ants and Spell-alert glow. The indicator should stop at cast end/interruption, hide for noninterruptible casts, and remain absent while Active is off. Switching profiles changes both activation and effect.
+4. Leave combat before changing the selected effect. Repeat with Pulsing border. The indicator should stop at cast end/interruption, hide for noninterruptible casts, and remain absent while Active is off. Switching profiles changes both activation and effect.
 5. If the preview works but the real cast has no effect, target the caster and capture `/snp debug` **while the cast is running**. A keybound macro helps capture the short cast:
 
 ```text
@@ -22,10 +22,9 @@ Include the Interruptible highlight line, Presentation access and cast-bar avail
 
 | Observation | What to check next |
 | --- | --- |
-| No effect in preview | Selected renderer, library/template availability, color and UI scale |
+| No effect in preview | Selected effect, color, thickness and UI scale |
 | Preview works, real effect absent | Active for the selected profile, accessible nameplate cast bar, running cast, resolved state/source and native icon/shield hooks |
 | Debug says interruptibility unavailable | Capture during a longer active cast; unknown state retries rather than claiming the cast is interruptible |
-| Renderer differs from selection | Debug renderer error; unavailable DF method/template falls back to the pulse |
 | Target-frame bar glows nowhere | The effect belongs to the separate enemy nameplate cast bar |
 
 ## Implementation and acceptance
@@ -33,11 +32,8 @@ Include the Interruptible highlight line, Presentation access and cast-bar avail
 | Choice | Implementation |
 | --- | --- |
 | Pulsing border | Existing addon-owned four-edge alpha animation |
-| Solid border | Bundled DF `CreateFullBorder` |
-| Soft border | Bundled DF `CreateBorderWithSpread` |
-| Marching ants | Bundled DF `CreateAnts` plus owned sprite animation for clients without AnimateTexCoords |
-| Spell-alert glow | Bundled DF `CreateGlowOverlay`, using the native alert template supported by the running client |
+| Solid border | Addon-owned four-edge static border |
 
-The upstream `CreateBorderSolid` is empty and is not offered. No LibCustomGlow, Details or Plater installation is required. Library constructors receive owned frames; glow dimensions are initialized from a fixed owned frame before anchoring, without reading secret native cast dimensions. Requested renderers are cached, failed construction does not repeat each update, and unavailable effects fall back to pulse with a diagnostic reason.
+Both effects use one Border thickness control, default 4 on every side, with zero inset and offset from the cast bar. Pulse Fade in and Fade out default to 0.2 seconds each, with fixed 35–100% opacity and no hold interval. Solid remains at full opacity. Verify these controls on Colors and the absence of Advanced. Valid saved shared thickness and pulse timing stay in their existing locations; retired fields are discarded without conversion. No library effect constructor or native cast-dimension read is needed.
 
 SetShown, direct Show/Hide and cast-bar visibility callbacks refresh the current highlight. A hidden bar suppresses explicit event state; an unreadable active state retries. Explicit interruptibility-change events remain authoritative, and casts are never classified solely from the preview. Validate casts/channels, modern/classic layouts, recycled bars/icons, temporary access loss, disabling styling and profile/color/effect changes in game. The callback regressions do not prove the cause of every previous missing live highlight.

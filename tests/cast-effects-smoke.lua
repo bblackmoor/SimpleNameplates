@@ -17,24 +17,8 @@ function methods:Hide()
     if self.scripts.OnHide then self.scripts.OnHide(self) end
 end
 function methods:SetShown(value) if value then self:Show() else self:Hide() end end
-local nativeCreate = CreateFrame
-local templateAvailable = true
-function DoesTemplateExist() return templateAvailable end
-function CreateFrame(kind, name, parent, template)
-    local frame = nativeCreate(kind, name, parent, template)
-    if template == "ActionButtonSpellAlertTemplate" then
-        frame.ProcStartAnim = frame:CreateAnimationGroup()
-        frame.ProcLoop = frame:CreateAnimationGroup()
-        frame.ProcStartFlipbook = frame:CreateTexture()
-        frame.ProcLoopFlipbook = frame:CreateTexture()
-        local a, b, c = frame.ProcStartAnim:CreateAnimation(), frame.ProcStartAnim:CreateAnimation(), frame.ProcStartAnim:CreateAnimation()
-        local loop = frame.ProcLoop:CreateAnimation()
-        function frame.ProcStartAnim:GetAnimations() return a, b, c end
-        function frame.ProcLoop:GetAnimations() return loop end
-    end
-    return frame
-end
-dofile("tests/details-framework-loader.lua")("Libs/DetailsFramework/load.xml")
+function methods:SetDuration(value) self.duration = value end
+function methods:SetAlpha(value) self.alpha = value end
 local enabled, effect = true, "PULSE"
 local custom = {}
 local function Param(name, key) return custom[name] and custom[name][key] end
@@ -45,7 +29,7 @@ local ns = {
     GetStylingEnabled = function() return enabled end,
     GetInterruptibleHighlightEnabled = function() return enabled end,
     GetInterruptibleEffect = function() return effect end,
-    GetCastAdvancedSetting = Param,
+    GetCastBorderSetting = Param,
     EffectColor = function() return 0.2, 0.8, 1 end,
     PresentationCapabilities = {
         CanAccessFrame = function() return true end,
@@ -62,56 +46,42 @@ local owner = {unit = "nameplate1", castBar = CreateFrame("StatusBar"), SNPPrese
 owner.castBar.Icon = CreateFrame("Frame", nil, owner.castBar)
 owner.castBar.GetSize = function() error("native cast geometry read") end
 local function Update() ns.CastHighlight.UpdateInterruptibleHighlight(owner, {}, owner.SNPPresentation) end
-for _, style in ipairs({"PULSE", "SOLID", "SOFT", "ANTS", "GLOW"}) do
+local h
+for _, style in ipairs({"PULSE", "SOLID", "PULSE", "SOLID"}) do
     effect = style; Update()
-    local h = owner.SNPInterruptibleHighlight
-    assert(h.frame:IsShown() and h.activeEffect == style and not h.rendererError, style.." renders")
-    if style ~= "PULSE" then
-        assert(not h.pulse:IsPlaying(), "library effect stops pulse")
-        assert(h.renderers[style]:IsShown())
+    h = owner.SNPInterruptibleHighlight
+    assert(h.frame:IsShown() and h.activeEffect == style, style.." renders")
+    assert(h.pulse:IsPlaying() == (style == "PULSE"), "only pulse animates")
+    assert(h.border[1].height == 4 and h.border[2].height == 4)
+    assert(h.border[3].width == 4 and h.border[4].width == 4, "side thickness matches")
+    for _, point in pairs(h.frame.points) do
+        assert(point[2] == owner.castBar and point[4] == 0 and point[5] == 0, "cast bar alignment")
     end
-    if style == "ANTS" then
-        AnimateTexCoords = nil
-        h.renderers.ANTS:GetScript("OnUpdate")(h.renderers.ANTS, 0.1)
-        assert(h.renderers.ANTS.Texture.texcoord, "owned sprite animation works without removed global")
+    for _, edge in ipairs(h.border) do
+        for _, point in pairs(edge.points) do assert(point[4] == 0 and point[5] == 0, "zero inset") end
     end
+    assert(h.fadeIn.duration == 0.2 and h.fadeOut.duration == 0.2)
     local count = #ui.objects; Update()
-    assert(#ui.objects == count, "same effect reuses library frames")
+    assert(#ui.objects == count, "same effect reuses regions")
 end
-local h = owner.SNPInterruptibleHighlight
-custom.PULSE = {thickness = 7, inset = 1, lowAlpha = 0.2, highAlpha = 0.9, fadeOut = 0.4, fadeIn = 0.7}
-effect = "PULSE"; Update()
-assert(h.pulseConfig and h.pulseConfig:find("0.4", 1, true) and h.pulseConfig:find("0.7", 1, true))
-custom.SOLID = {thickness = 5, minPixels = 2, upward = 3, upwardMin = 2, distance = 2}
-effect = "SOLID"; Update()
-assert(h.renderers.SOLID.borderSize == 5)
-custom.ANTS = {frameTime = 0.05, distance = 5, opacity = 0.6, frames = 11}
-effect = "ANTS"; Update()
-assert(h.renderers.ANTS.frameTime == 0.05 and h.renderers.ANTS.frameCount == 11)
-custom.GLOW = {expandX = 14, expandY = 9, offsetX = 2, offsetY = 1, antsAlpha = 0.75, glowAlpha = 0.65}
-effect = "GLOW"; Update()
-assert(h.renderers.GLOW.SNPConfiguration and h.renderers.GLOW:IsShown())
+custom.PULSE = {thickness = 7, fadeOut = 0.4, fadeIn = 0.7}
+for _, style in ipairs({"PULSE", "SOLID"}) do
+    effect = style; Update()
+    assert(h.border[1].height == 7 and h.border[3].width == 7, "shared thickness")
+end
+assert(h.fadeOut.duration == 0.4 and h.fadeIn.duration == 0.7)
+assert(h.frame.alpha == 1, "solid restores full opacity")
 enabled = false; Update()
-assert(not h.frame:IsShown())
-for _, renderer in pairs(h.renderers) do assert(not renderer:IsShown()) end
-assert(not h.renderers.GLOW.ProcStartAnim:IsPlaying() and not h.renderers.GLOW.ProcLoop:IsPlaying())
-enabled = true
-effect = "SOLID"; Update()
-assert(h.renderers.SOLID:IsShown() and not h.renderers.GLOW:IsShown(), "switch retires old glow")
+assert(not h.frame:IsShown() and not h.pulse:IsPlaying())
+enabled = true; Update()
 ns.CastHighlight.RecordSpellcastEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE", "nameplate1"); Update()
-assert(not h.frame:IsShown(), "noninterruptible state hides any selected effect")
+assert(not h.frame:IsShown(), "noninterruptible hides selected effect")
 local preview = CreateFrame("StatusBar")
-effect = "ANTS"; enabled = false
+effect = "PULSE"; enabled = false
 ns.CastHighlight.UpdatePreview(preview)
-assert(preview.SNPCastPreview.activeEffect == "ANTS", "preview independent of Active and real cast state")
+assert(preview.SNPCastPreview.activeEffect == "PULSE", "preview independent of Active")
+effect = "SOLID"; ns.CastHighlight.UpdatePreview(preview)
+assert(not preview.SNPCastPreview.pulse:IsPlaying(), "preview stops pulse on selection change")
 ns.CastHighlight.StopPreview(preview)
 assert(not preview.SNPCastPreview.frame:IsShown())
--- Missing native alert templates visibly fall back once without frame churn.
-local fallback = CreateFrame("StatusBar")
-templateAvailable = false; effect = "GLOW"
-ns.CastHighlight.UpdatePreview(fallback)
-assert(fallback.SNPCastPreview.activeEffect == "PULSE" and fallback.SNPCastPreview.rendererError)
-local count = #ui.objects
-ns.CastHighlight.UpdatePreview(fallback)
-assert(#ui.objects == count, "failed renderer does not allocate each update")
-print("Bundled cast effects smoke: passed")
+print("Cast border effects smoke: passed")
