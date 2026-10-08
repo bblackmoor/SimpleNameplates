@@ -64,6 +64,7 @@ After the timing rows, the same chat report prints one short row for each observ
 | Focused requests | Name hook, health-color hook or data-update entries, including guarded/inaccessible attempts |
 | Focused outcomes | Updated, guarded, inaccessible, native/restored, restoration pending, failed, or invalid-cache/presentation-change fallback |
 | Name drift | First observed readable mismatch or structural invalidation for a plate in each pass; simultaneous mismatches repair together but are not enumerated |
+| Name size drift | From 1.0.209: observed -> requested dimensions and anchor count for every readable bar/container size mismatch; at most eight distinct samples plus an overflow row per session |
 | Reconciliation repairs | Successful cached repair versus a full-style fallback request; a fallback request does not establish that full styling succeeded |
 | Font drift components | Readable face, size and/or flag differences; multiple components can count for one drift repair |
 | Focused cache invalidation | Specific reason for a focused path falling back, including initialization, context/settings, region replacement and identity |

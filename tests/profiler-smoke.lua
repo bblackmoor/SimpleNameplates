@@ -23,6 +23,7 @@ local parent = p.Wrap("Parent", function(...) local result = Pack(child(...)); n
 local result = Pack(parent(nil, marker, false, nil))
 assert(result.n == 4 and result[2] == marker and result[3] == false)
 p.Count("Disabled", "ignored")
+p.SizeSample("barWidth", 140, 168, {})
 assert(clockReads == 0 and memoryReads == 0 and updates == 0, "disabled path performs no measurement")
 p.Command("report"); Contains("No profiling session")
 p.Command("start")
@@ -35,6 +36,13 @@ p.Count("Styling requests", "name hook")
 p.Count("Styling requests", "name hook")
 p.Count("Styling requests", "health-color hook")
 p.Count("Name drift", "native font")
+local pointReads = 0
+ns.PresentationCapabilities = {ReadRegion = function() pointReads = pointReads + 1; return 2 end}
+p.SizeSample("barWidth", 140, 168, {})
+p.SizeSample("barWidth", 140, 168, {})
+for value = 1, 20 do p.SizeSample("barHeight", value, 25, {}) end
+p.SizeSample("barWidth", 0/0, 168, {})
+assert(pointReads == 22, "invalid numeric samples do not inspect regions")
 assert(clockReads == beforeCounters, "reason counters do not read clocks")
 p.Command("report")
 Contains("Parent: 1 calls; 5.000 ms total; 5.000 ms average; 5.000 ms longest")
@@ -42,6 +50,8 @@ Contains("Child: 1 calls; 2.000 ms total")
 Contains("Styling requests: name hook = 2")
 Contains("Styling requests: health-color hook = 1")
 Contains("Name drift: native font = 1")
+Contains("Name size drift: barWidth 140.000 -> 168.000; anchors 2 = 2")
+Contains("Name size drift: additional samples = 13")
 for _, line in ipairs(output) do assert(not line:find("Disabled:", 1, true)) end
 assert(memoryReads == 1, "running reports do not scan memory")
 local failure = {}

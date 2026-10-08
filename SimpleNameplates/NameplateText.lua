@@ -377,6 +377,14 @@ local function StyleName(frame, state, context, decision, assessment)
     frame.SNPNameStyle.unitName = unitName
     frame.SNPNameStyle.presentation = decision
     frame.SNPNameStyle.healthTextSignature = healthTextSignature
+    -- Calibrate against the completed color write. Some FontString color
+    -- getters expose shared text/vertex state; grey must not be treated as
+    -- unwanted vertex tint and reset to white on every periodic visit.
+    local getter = ns.PresentationCapabilities.SafeField(name, "GetVertexColor", context)
+    local ok, r, g, b, a
+    if type(getter) == "function" then ok, r, g, b, a = pcall(getter, name) end
+    r, g, b, a = AccessibleNumber(r), AccessibleNumber(g), AccessibleNumber(b), AccessibleNumber(a)
+    frame.SNPNameStyle.vertexColor = ok and r and g and b and a and {r, g, b, a} or nil
     InstallNameAppearanceHooks(frame, name, context)
 end
 
@@ -508,7 +516,12 @@ local function CachedNameHasDrifted(frame, context, assessment)
     local function Check(key, region, method, desired, label)
         if desired == nil then return end
         local actual = Observe(expected, key, region, method, context)
-        if Different(actual, desired) then Add(key, desired, label) end
+        if Different(actual, desired) then
+            Add(key, desired, label)
+            if key == "barWidth" or key == "barHeight" or key == "containerWidth" or key == "containerHeight" then
+                ns.Profiler.SizeSample(key, actual, desired, region)
+            end
+        end
         return actual
     end
     if expected.suppressed then
@@ -564,7 +577,9 @@ local function CachedNameHasDrifted(frame, context, assessment)
     local r, g, b = Observe(expected, "color", name, "GetTextColor", context, 3)
     if Different(r, expected.r) or Different(g, expected.g) or Different(b, expected.b) then Add("color", true, "text color") end
     r, g, b, flags = Observe(expected, "vertex", name, "GetVertexColor", context, 4)
-    if Different(r, 1) or Different(g, 1) or Different(b, 1) or Different(flags, 1) then Add("vertex", true, "vertex color") end
+    local vertex = expected.vertexColor
+    if vertex and (Different(r, vertex[1]) or Different(g, vertex[2])
+        or Different(b, vertex[3]) or Different(flags, vertex[4])) then Add("vertex", true, "vertex color") end
     r, g, b, flags = Observe(expected, "shadow", name, "GetShadowColor", context, 4)
     if Different(r, 0) or Different(g, 0) or Different(b, 0) or Different(flags, 0) then Add("shadow", true, "shadow color") end
     r, g = Observe(expected, "shadowOffset", name, "GetShadowOffset", context, 2)
@@ -601,7 +616,9 @@ local function RepairCachedName(frame, context, assessment, plan)
         if plan.text ~= nil then name:SetText(plan.text) end
         if plan.font then name:SetFont(expected.font, expected.size, expected.flags) end
         if plan.vertex then name:SetVertexColor(1, 1, 1, 1) end
-        if plan.color then name:SetTextColor(expected.r, expected.g, expected.b, 1) end
+        -- Always finish a vertex repair with the intended text color, including
+        -- implementations where the two setters affect the same color state.
+        if plan.color or plan.vertex then name:SetTextColor(expected.r, expected.g, expected.b, 1) end
         if plan.shadow then name:SetShadowColor(0, 0, 0, 0) end
         if plan.shadowOffset then name:SetShadowOffset(0, 0) end
         if plan.alpha ~= nil then name:SetAlpha(plan.alpha) end

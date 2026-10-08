@@ -27,6 +27,23 @@ local function Count(group, reason)
     if not counters then counters = {}; active.counters[group] = counters end
     counters[reason] = (counters[reason] or 0) + 1
 end
+-- Bounded numeric samples distinguish rounding from ineffective size writes.
+-- Formatting and sample tables are confined to an active profiling session.
+local function SizeSample(label, actual, desired, region)
+    if not active then return end
+    actual, desired = Finite(actual), Finite(desired)
+    if not actual or not desired then return end
+    local points = ns.AccessibleNumber(ns.PresentationCapabilities.ReadRegion(region, "GetNumPoints"))
+    local reason = ("%s %.3f -> %.3f; anchors %s"):format(label, actual, desired, points or "unknown")
+    local samples = active.counters["Name size drift"]
+    if not samples then samples = {}; active.counters["Name size drift"] = samples end
+    if not samples[reason] then
+        local count = 0
+        for _ in pairs(samples) do count = count + 1 end
+        if count >= 8 then reason = "additional samples" end
+    end
+    samples[reason] = (samples[reason] or 0) + 1
+end
 local function Wrap(label, callback)
     return function(...)
         local session = active
@@ -115,4 +132,4 @@ local function Command(argument)
     elseif argument == "report" or argument == "" then Report()
     else Say("/snp perf start | stop | report") end
 end
-ns.Profiler = {Wrap = Wrap, Count = Count, Command = Command}
+ns.Profiler = {Wrap = Wrap, Count = Count, SizeSample = SizeSample, Command = Command}

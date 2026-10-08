@@ -260,3 +260,21 @@ CompactUnitFrame hooks before requesting full styling. Native anchor updates can
 still cause real drift, but one repair should converge. Font and scheduler behavior
 remain as in 1.0.207. Native acceptance remains open: verify blinking, geometry
 drift counts and initialization fallbacks in a matched recording.
+
+## Follow-up from the 1.0.208 report
+
+Blinking persists in the 74.6-second recording. All 3,680 reconciliation jobs
+repair: 3,626 first report bar width and 54 bar height. Vertex appearance writes
+number 501. This disproves size convergence in the reported scene; the report
+does not identify the actual dimensions or establish a particular native writer.
+
+A new stub regression exposes a separate deterministic bug: with shared
+text/vertex color state, reconciliation considers configured grey to be unwanted
+vertex tint and writes white without always reapplying grey. It fails on 1.0.208.
+1.0.209 calibrates the completed vertex getter and always finishes vertex repair
+with the configured text color. Tests cover shared and independent color models;
+the client must still establish whether this explains its visible blinking.
+
+Size repairs are unchanged. Bounded Name size drift samples now include actual
+and desired dimensions and anchor count. Collect these before selecting another
+geometry change; do not equate the earlier anchor-model test with client proof.

@@ -1964,7 +1964,7 @@ local function CheckSelectiveReconciliation()
     Reconcile(); Only({}, "unchanged pending title")
     name.text = "Native overwritten"; Reconcile(); Only({["name.SetText"] = 1}, "native text only")
     name.r = 0.2; Reconcile(); Only({["name.SetTextColor"] = 1}, "native color only")
-    name.vg = 0.2; Reconcile(); Only({["name.SetVertexColor"] = 1}, "native vertex only")
+    name.vg = 0.2; Reconcile(); Only({["name.SetVertexColor"] = 1, ["name.SetTextColor"] = 1}, "native vertex repair finishes with intended color")
     name.flags = "THICKOUTLINE"; Reconcile(); Only({["name.SetFont"] = 1}, "native font only")
     name.shadowX = 1; Reconcile(); Only({["name.SetShadowOffset"] = 1}, "shadow offset only")
     name.shown = false; Reconcile(); Only({["name.SetShown"] = 1}, "visibility only")
@@ -2413,6 +2413,36 @@ do
     local report = table.concat(lines, "\n")
     assert(not report:find("Full styling:", 1, true), "non-nameplate hooks avoid full-style fallback")
     assert(report:find("Focused outcomes: not a nameplate = 2", 1, true))
+end
+
+-- A FontString implementation can expose text/vertex color through shared
+-- state. Reconciliation must never leave the neutral white write as its color.
+do
+    local frame = Region()
+    frame.unit, frame.name, frame.healthBar, frame.HealthBarsContainer = "nameplate10", Region(), Region(), Region()
+    local name = frame.name
+    name:SetFont("Native", 10, "")
+    function name:SetTextColor(r, g, b, a) self.r, self.g, self.b, self.a = r, g, b, a or 1 end
+    function name:SetVertexColor(...) self:SetTextColor(...) end
+    function name:GetVertexColor() return self.r, self.g, self.b, self.a end
+    stylingEnabled, categoryMode, showBar, dimBackground = true, "active", false, true
+    appearance.namePlacement, appearance.healthBarWidth = "ABOVE", 100
+    unit = {reaction = 5}
+    UnitGUID = function() return "Creature-SharedColor" end
+    local cap, context = ns.PresentationCapabilities, ns.WorldContext.Get()
+    ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+    local drifted, _, plan = ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context))
+    if drifted then ns.NameplateText.RepairCachedName(frame, context, cap.InspectFrame(frame, context), plan) end
+    equal(name.r, 153 / 255, "shared-color reconciliation cannot whiten a background name")
+    assert(not ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)),
+        "configured shared color is stable, not perpetual vertex drift")
+    name:SetVertexColor(1, 1, 1, 1)
+    drifted, _, plan = ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context))
+    assert(drifted and plan.vertex and plan.color, "external shared-color write is detected")
+    assert(ns.NameplateText.RepairCachedName(frame, context, cap.InspectFrame(frame, context), plan))
+    equal(name.r, 153 / 255, "external shared-color white returns to grey")
+    assert(not ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)),
+        "shared-color repair converges")
 end
 
 print("Nameplates smoke: passed")

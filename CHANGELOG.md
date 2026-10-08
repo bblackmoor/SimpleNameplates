@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.209
+
+* Fixes a reproduced grey-to-white reconciliation path: a vertex-color repair now always finishes with the configured text color. Calibrates the expected vertex getter after styling instead of assuming a separate white channel, so shared text/vertex color state does not create perpetual false drift. Classification and background dimming rules are unchanged. Live blinking acceptance remains pending.
+* Adds a regression that fails on 1.0.208 when a FontString exposes shared text/vertex color state, plus convergence checks for external color changes. Retains coverage for independent color channels.
+* Adds bounded, opt-in Name size drift samples showing observed/requested dimensions and anchor count. The new 74.6-second live report still repairs dimensions on all 3,680 reconciliation jobs; the prior sizing change did not resolve that loop. Size behavior remains unchanged pending these measurements.
+
 ## 1.0.208
 
 * Fixes a remaining immediate name-color repair gap: native bar visibility or geometry no longer vetoes cached grey/color repair. Current access, assignment/identity, context and presentation are still checked. Native confirmation of the reported blinking remains pending.

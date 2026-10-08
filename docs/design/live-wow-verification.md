@@ -182,3 +182,16 @@ All four performance code phases are implemented. Live FPS, rendering, secure ac
   on every job; native resets may require real one-time repairs. Inspect
   not-initialized fallbacks separately from the not-a-nameplate outcome.
 - [ ] Check combat/restricted/recycled bars and restoration for Lua/taint errors.
+
+## 1.0.209 color-channel follow-up
+
+- [ ] Verify the installed version is 1.0.209 and reload. With dimming enabled,
+  observe Silvermoon Resident and Enchanted Broom stationary, then target/hover
+  and move. Names should remain grey. Repeat with profiling off.
+- [ ] Toggle dimming off/on and styling off/on; confirm white/grey and native
+  restoration. Check useful NPCs and hostile units retain their configured colors.
+- [ ] If blinking persists, record a short video and a complete one-minute perf
+  report, including Name size drift samples, Name appearance writes and Name drift.
+  The size loop remains unresolved; these samples separate readable size deltas
+  from anchor counts without changing repair behavior.
+- [ ] Check combat, restricted and recycled plates for Lua/taint errors.
