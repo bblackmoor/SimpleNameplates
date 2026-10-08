@@ -172,6 +172,7 @@ local function FlushQueuedRefreshes()
     if work then RefreshAll(work, units) end
     for unit, flags in pairs(units) do RefreshUnit(unit, "unit refresh", flags) end
 end
+FlushQueuedRefreshes = ns.Profiler.Wrap("Urgent refresh", FlushQueuedRefreshes)
 
 local function HandlePlayerLogin()
     ns.EnsureDB()

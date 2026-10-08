@@ -285,6 +285,9 @@ local function ApplyBarArtwork(frame, assessment, context)
     local ok, err = pcall(ApplyArtwork, frame, assessment, context)
     frame.SNPApplyingArtwork = nil
     if not ok then error(err, 0) end
+    if not frame.SNPApplyingStyle and ns.NameplateText then
+        ns.NameplateText.RepairPendingNameAppearance(frame)
+    end
 end
 
 local unpackValues = unpack or table.unpack

@@ -126,6 +126,7 @@ local function ApplySimpleStyle(frame, context, reason)
         ns.Profiler.Count("Styling outcomes", "failed")
         error(result, 0)
     end
+    Text.RepairPendingNameAppearance(frame)
     ns.Profiler.Count("Styling outcomes", result or "deferred or native")
 end
 
@@ -136,34 +137,37 @@ ApplySimpleStyle = ns.Profiler.Wrap("Full styling", ApplySimpleStyle)
 -- work/restoration instead of borrowing a prior access decision.
 local function PresentationIsCurrent(frame, assessment, context)
     local decision, expected = frame.SNPPresentation, frame.SNPNameStyle
-    if not decision or not expected or not frame.SNPState or Restore.IsPending(frame)
-        or decision.action ~= "style" or decision.contextRevision ~= context.revision
-        or frame.SNPOriginalUnit ~= ns.AccessibleValue(frame.unit)
-        or frame.SNPOriginalName ~= assessment.name
-        or frame.SNPOriginalHealthBar ~= assessment.healthBar
-        or frame.SNPOriginalHealthBarsContainer ~= frame.HealthBarsContainer
-        or frame.SNPStyledCastBar ~= assessment.castBar
-        or expected.presentation ~= decision or not SettingsAreCurrent(frame) then return false end
+    if not decision or not expected or not frame.SNPState then return false, "not initialized" end
+    if Restore.IsPending(frame) then return false, "restoration pending" end
+    if decision.action ~= "style" then return false, "presentation action" end
+    if decision.contextRevision ~= context.revision then return false, "context revision" end
+    if frame.SNPOriginalUnit ~= ns.AccessibleValue(frame.unit) then return false, "unit assignment" end
+    if frame.SNPOriginalName ~= assessment.name then return false, "name region replaced" end
+    if frame.SNPOriginalHealthBar ~= assessment.healthBar then return false, "health bar replaced" end
+    if frame.SNPOriginalHealthBarsContainer ~= frame.HealthBarsContainer then return false, "container replaced" end
+    if frame.SNPStyledCastBar ~= assessment.castBar then return false, "cast bar replaced" end
+    if expected.presentation ~= decision then return false, "presentation cache" end
+    if not SettingsAreCurrent(frame) then return false, "settings changed" end
     if not decision.suppressText then
         if expected.name ~= assessment.name or expected.bar ~= assessment.healthBar
-            or expected.font ~= Text.NameFontPath(context)
+            or not ns.FontPathMatches(expected.font, Text.NameFontPath(context))
             or (expected.inside and (not frame.SNPInsideName
-                or frame.SNPInsideNameBar ~= assessment.healthBar)) then return false end
+                or frame.SNPInsideNameBar ~= assessment.healthBar)) then return false, "name cache" end
         local showBar = assessment.hasHealthBar == true and ns.GetHealthBarEnabled(frame.SNPState) ~= false
-        if decision.showHealthBar ~= showBar then return false end
+        if decision.showHealthBar ~= showBar then return false, "health-bar preference" end
     end
     local unit = ns.AccessibleValue(frame.unit)
-    if type(unit) ~= "string" or not unit:match("^nameplate%d+$") then return false end
+    if type(unit) ~= "string" or not unit:match("^nameplate%d+$") then return false, "unit token" end
     if UnitGUID then
         local ok, value = pcall(UnitGUID, unit)
         local guid = ok and ns.AccessibleValue(value)
         local previous = frame.SNPEntityFacts and frame.SNPEntityFacts.guid
-        if type(guid) == "string" and type(previous) == "string" and guid ~= previous then return false end
+        if type(guid) == "string" and type(previous) == "string" and guid ~= previous then return false, "unit identity" end
     end
     if UnitNameplateShowsWidgetsOnly then
         local ok, value = pcall(UnitNameplateShowsWidgetsOnly, unit)
         local widgetsOnly = ok and ns.AccessibleBoolean(value)
-        if type(widgetsOnly) == "boolean" and widgetsOnly ~= (decision.suppressText == true) then return false end
+        if type(widgetsOnly) == "boolean" and widgetsOnly ~= (decision.suppressText == true) then return false, "widget mode" end
     end
     return true
 end
@@ -256,8 +260,10 @@ local function FocusedUpdate(frame, context, work, kind)
         ns.Profiler.Count("Focused outcomes", restored and "native/restored" or "restoration pending")
         return
     end
-    if not PresentationIsCurrent(frame, assessment, context) then
+    local current, reason = PresentationIsCurrent(frame, assessment, context)
+    if not current then
         ns.Profiler.Count("Focused outcomes", "invalid-cache fallback")
+        ns.Profiler.Count("Focused cache invalidation", reason)
         return ApplySimpleStyle(frame, context, kind .. " fallback")
     end
     frame.SNPApplyingStyle = true
@@ -280,6 +286,7 @@ local function FocusedUpdate(frame, context, work, kind)
         local current = Cap.InspectFrame(frame, context)
         if current.canAccess then ns.NameplateFrames.ApplyBarArtwork(frame, current, context) end
     end
+    Text.RepairPendingNameAppearance(frame)
     ns.Profiler.Count("Focused outcomes", "updated")
 end
 

@@ -8,6 +8,7 @@ local PriorityColorForState, FontPath = ns.PriorityColorForState, ns.FontPath
 local GetAppearanceSetting, GetTRP3Setting = ns.GetAppearanceSetting, ns.GetTRP3Setting
 local GetHealthBar = ns.NameplateFrames.GetHealthBar
 local GetCastBar = ns.NameplateFrames.GetCastBar
+local InstallNameAppearanceHooks
 
 local function NameFontPath(context)
     if context.sanctuary == true and GetAppearanceSetting("matchSanctuaryFont") == true then
@@ -372,6 +373,7 @@ local function StyleName(frame, state, context, decision, assessment)
     frame.SNPNameStyle.unitName = unitName
     frame.SNPNameStyle.presentation = decision
     frame.SNPNameStyle.healthTextSignature = healthTextSignature
+    InstallNameAppearanceHooks(frame, name, context)
 end
 
 -- Focused native-name repair. No classification, profile lookup, bar artwork
@@ -438,7 +440,7 @@ local function CacheIsCurrent(frame, expected, context, assessment)
     end
     if expected.suppressed then return true end
     if expected.flags ~= ns.FontFlags() then return false, "font flags setting" end
-    if expected.font ~= NameFontPath(context) then return false, "font setting" end
+    if not ns.FontPathMatches(expected.font, NameFontPath(context)) then return false, "font setting" end
     if expected.bar ~= assessment.healthBar then return false, "health bar replaced" end
     if frame.SNPOriginalVisibility
         and frame.SNPOriginalHealthBarsContainer ~= frame.HealthBarsContainer then return false, "container replaced" end
@@ -515,7 +517,15 @@ local function CachedNameHasDrifted(frame, context, assessment)
     Check("shown", name, "IsShown", true, "name hidden")
     Check("text", name, "GetText", AccessibleValue(expected.text), "native name text")
     local font, size, flags = Observe(expected, "font", name, "GetFont", context, 3)
-    if Different(font, expected.font) or Different(size, expected.size) or Different(flags, expected.flags) then Add("font", true, "native font") end
+    local faceDrift = font ~= nil and not ns.FontPathMatches(font, expected.font)
+    local sizeDrift = Different(size, expected.size)
+    local flagsDrift = flags ~= nil and not ns.FontFlagsMatch(flags, expected.flags)
+    if faceDrift or sizeDrift or flagsDrift then
+        Add("font", true, "native font")
+        if faceDrift then ns.Profiler.Count("Font drift components", "face") end
+        if sizeDrift then ns.Profiler.Count("Font drift components", "size") end
+        if flagsDrift then ns.Profiler.Count("Font drift components", "flags") end
+    end
     Check("barHeight", expected.bar, "GetHeight", expected.barHeight, "bar height")
     if frame.HealthBarsContainer then Check("containerHeight", frame.HealthBarsContainer, "GetHeight", expected.barHeight, "container height") end
     local barWidth = Check("barWidth", expected.bar, "GetWidth", expected.barWidth, "bar width")
@@ -620,7 +630,73 @@ local function RepairCachedName(frame, context, assessment, plan)
     end)
     frame.SNPApplyingStyle = nil
     if not ok then error(err, 0) end
+    if ns.NameplateText then ns.NameplateText.RepairPendingNameAppearance(frame) end
     return true
+end
+
+-- Native frame options write font objects/text height outside UpdateName, and
+-- other native paths can recolor the FontString directly. Repair only the
+-- overwritten appearance before it is drawn; never classify or fully restyle
+-- from a setter hook. Own writes/restoration exit before any assessment.
+local appearanceHookOwners = setmetatable({}, {__mode = "k"})
+local appearanceHookRepair = setmetatable({}, {__mode = "k"})
+InstallNameAppearanceHooks = function(frame, name, context)
+    if not hooksecurefunc or appearanceHookOwners[name] then return end
+    appearanceHookOwners[name] = frame
+    for _, method in ipairs({"SetFont", "SetFontObject", "SetTextHeight", "SetTextColor", "SetVertexColor"}) do
+        if type(ns.PresentationCapabilities.SafeField(name, method, context)) == "function" then
+            local function Repair()
+                local cap = ns.PresentationCapabilities
+                local current = GetContext()
+                if cap.ObjectStatus(frame, current) ~= "accessible" then return end
+                if frame.SNPRestoring or frame.SNPRepairingNameAppearance or not ns.GetStylingEnabled() then return end
+                if frame.SNPApplyingStyle or frame.SNPApplyingArtwork then
+                    -- The addon never calls these two setters itself. Native
+                    -- writes nested inside its UI callbacks must survive guards.
+                    if method == "SetFontObject" or method == "SetTextHeight" then
+                        frame.SNPNameAppearancePending = true
+                    end
+                    return
+                end
+                local expected = frame.SNPNameStyle
+                if not expected or expected.suppressed or expected.name ~= name
+                    or expected.unit ~= AccessibleValue(frame.unit)
+                    or frame.SNPOriginalUnit ~= expected.unit then return end
+                if UnitGUID then
+                    local ok, value = pcall(UnitGUID, expected.unit)
+                    local guid = ok and AccessibleValue(value)
+                    local previous = frame.SNPEntityFacts and frame.SNPEntityFacts.guid
+                    if type(guid) == "string" and type(previous) == "string" and guid ~= previous then return end
+                end
+                local assessment = cap.InspectFrame(frame, current)
+                if not assessment.canAccess or assessment.name ~= name
+                    or not CacheIsCurrent(frame, expected, current, assessment) then return end
+                ns.Profiler.Count("Name appearance writes", method)
+                frame.SNPRepairingNameAppearance = true
+                local ok, err = pcall(function()
+                    if method == "SetFont" or method == "SetFontObject" or method == "SetTextHeight" then
+                        name:SetFont(expected.font, expected.size, expected.flags)
+                        -- FontObject changes can also replace colors/shadows.
+                        name:SetShadowColor(0, 0, 0, 0)
+                        name:SetShadowOffset(0, 0)
+                    end
+                    name:SetVertexColor(1, 1, 1, 1)
+                    name:SetTextColor(expected.r, expected.g, expected.b, 1)
+                end)
+                frame.SNPRepairingNameAppearance = nil
+                if not ok then error(err, 0) end
+            end
+            if method == "SetFont" then appearanceHookRepair[name] = Repair end
+            hooksecurefunc(name, method, Repair)
+        end
+    end
+end
+
+local function RepairPendingNameAppearance(frame)
+    if not frame.SNPNameAppearancePending then return end
+    frame.SNPNameAppearancePending = nil
+    local repair = appearanceHookRepair[frame.name]
+    if repair then repair() end
 end
 
 
@@ -629,6 +705,7 @@ CachedNameHasDrifted = ns.Profiler.Wrap("Name drift check", CachedNameHasDrifted
 RepairCachedName = ns.Profiler.Wrap("Text repair", RepairCachedName)
 
 ns.NameplateText = {
+    RepairPendingNameAppearance = RepairPendingNameAppearance,
     NameFontPath = NameFontPath,
     RepairNameOnly = RepairNameOnly,
     UpdateNameLayout = ns.Profiler.Wrap("Name layout update", UpdateNameLayout),

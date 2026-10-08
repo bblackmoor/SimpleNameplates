@@ -159,6 +159,13 @@ Failed frame restorations release their temporary styling guard and remain queue
 
 `Diagnostics.lua` owns read-only context and targeted-unit reporting. `/snp debug` reports the cached world context even without a target, keeping unknown values distinct from false. With a target, it reports presentation access status and observed health-bar visibility; missing nameplates do not establish whether Blizzard world names are displayed. Diagnostics inspects existing cast effects without creating frames or hooks. Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting priority category, category mode, display treatment, color, nameplate availability. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the current spell icon's visibility hook was installed, and the highlight is currently shown. The winning classification rule and its entity facts are reported together, followed by the presentation rule, action/reason, requested health-bar state, and title permission. Configured styling is distinguished from observed visibility; disabled styling reports Blizzard presentation. Restricted Midnight values are identified rather than inspected.
 
+Direct native name font-object, text-height and color setters also repair the
+cached appearance immediately, with access/identity checks and reentry guards.
+Equivalent font filename spellings and flag order do not cause periodic drift.
+The profiler distinguishes font components, cache invalidation reasons and
+external appearance writes, and measures urgent event refreshes separately.
+Native verification of background-name flashing remains pending.
+
 Ordinary Blizzard name/color updates use focused repairs. Queued events merge classification, name/title, threat, cast and layout work per plate; a threat label appearing or disappearing adjusts the name space. Full styling is reserved for setup, settings/context changes, changed presentation structure and invalid cached state. TRP3 callbacks update content through the next queued runtime batch.
 
 Name reconciliation shares an access assessment within each scan operation and repairs only observed differences in text, font, shadows, color, visibility and dimensions. Unchanged plates receive no repair writes; changed health-label chains receive layout updates. Restricted properties are unknown, with elapsed-time retry delays backing off from 0.25 seconds to four seconds while independent readable differences still repair. Unknown cast visibility keeps titles hidden; native cast hooks and events remain immediate. Missed cast-icon callbacks are retried when access returns using the current plate decision and icon visibility. Routine reconciliation and deferred restoration/cast/unit/plate retries share at most four jobs per frame with a one-millisecond target checked between jobs. Plates become due again after 0.25 seconds; heavy queues can extend service intervals. Urgent event updates run before this budget, and restoration remains eligible while styling is disabled.
@@ -243,5 +250,3 @@ Licensed under the GNU General Public License v3.0 (GPL-3.0):
 https://www.gnu.org/licenses/gpl-3.0.en.html
 
 Source: https://github.com/bblackmoor/SimpleNameplates
-
-

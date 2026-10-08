@@ -7,9 +7,20 @@ cast highlighting, title substitution and restoration. This is a follow-up to th
 [four completed code phases](performance-plan.md), numbered phases 5–8 so the
 earlier work remains distinguishable.
 
-Status: planning only. No follow-up instrumentation, scheduler tuning or runtime
-fix is implemented by this documentation commit. Runtime behavior remains that
-of 1.0.205; 1.0.206 adds this plan and documentation links.
+Status: targeted follow-up implemented in 1.0.207; native acceptance pending.
+The user confirmed 1.0.206 and supplied a complete 65.1-second report plus a
+recording showing several background NPC names flashing grey/white. All 3,521
+reconciliation jobs reported native-font drift; name hooks caused 372 cache
+fallbacks. Reconciliation peaked at 4.718 ms and Runtime update at 25.563 ms.
+These confirm current-build behavior, but are not three matched baseline runs.
+
+1.0.207 repairs direct native name appearance setters, normalizes font comparison
+and adds component/write/cache-reason counters and Urgent refresh timing. Native
+frame options apply font objects and text height outside UpdateName, exposing a
+missing immediate repair path. The exact source of the live color writes and
+font disagreement still requires the next report. Legitimate cache fallbacks and
+scheduler limits are retained. Bounded slow-call history/queue-age diagnostics
+from phase 6 remain conditional if these focused changes do not resolve stalls.
 
 ## First finding: verify the installed build
 
@@ -225,7 +236,10 @@ that limited conclusion rather than declaring every possible stall fixed.
 
 - [x] Inspect current main and document the report/build ambiguity.
 - [x] Save this follow-up plan with links from the existing documentation.
-- [ ] Phase 5: confirm the installed version and collect matched complete reports.
+- [x] Phase 5: confirm the installed version and collect a complete current-build report.
+- [ ] Complete the repeated matched profiling-off/on recordings.
+- [x] Implement targeted font comparison/appearance repairs and diagnostic reasons in 1.0.207.
+- [ ] Verify those repairs in WoW with the same scene and another complete report.
 - [ ] Phase 6: add targeted diagnostics only if the current build still stalls.
 - [ ] Phase 7: implement and validate the measured cause.
 - [ ] Phase 8: complete client acceptance and record results.

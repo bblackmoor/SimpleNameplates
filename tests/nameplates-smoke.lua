@@ -16,7 +16,7 @@ function CreateFrame(kind)
     return frame
 end
 function hooksecurefunc(name, callback, objectCallback)
-    hooks[#hooks + 1] = { name = name, callback = objectCallback or callback }
+    hooks[#hooks + 1] = { name = name, method = objectCallback and callback, callback = objectCallback or callback }
 end
 function CompactUnitFrame_UpdateHealthColor() end
 function CompactUnitFrame_UpdateName() end
@@ -186,6 +186,8 @@ local function Region()
     function region:SetFormattedText(format, value) self.text = format:format(value) end
     function region:SetFont(font, size, flags) self.font, self.size, self.flags = font, size, flags end
     function region:GetFont() return self.font, self.size, self.flags end
+    function region:SetFontObject() self:SetFont("Native object", 10, ""); self:SetTextColor(1, 1, 1) end
+    function region:SetTextHeight(value) self.size = value end
     function region:SetTextColor(r, g, b) self.r, self.g, self.b = r, g, b end
     function region:GetTextColor() return self.r, self.g, self.b end
     function region:SetVertexColor(r, g, b, a) self.vr, self.vg, self.vb, self.va = r, g, b, a end
@@ -2244,6 +2246,106 @@ local function CheckBoundedRuntime()
     work.Clear("reconciliation")
 end
 CheckBoundedRuntime()
+end
+
+-- Native setters outside CompactUnitFrame_UpdateName must not leave a white
+-- frame between routine jobs. Exercise real post-hook recursion, not a timer.
+do
+    stylingEnabled, categoryMode, showBar, dimBackground = true, "active", false, true
+    appearance.namePlacement, appearance.nameFont, appearance.nameSize = "ABOVE", "ARIALN", 18
+    appearance.useSlugRendering, appearance.matchSanctuaryFont = true, false
+    unit = {reaction = 5, names = {nameplate1 = "Background citizen"}}
+    UnitGUID = function() return "Creature-Appearance" end
+    UnitNameplateShowsWidgetsOnly = function() return false end
+    ns.TRP3, trp3Options = nil, {}
+    plateFrame.unit = "nameplate1"
+    C_NamePlate.GetNamePlateForUnit = function() return plate end
+    C_NamePlate.GetNamePlates = function() return {plate} end
+    ns.RefreshAll()
+    local name, expected = plateFrame.name, plateFrame.SNPNameStyle
+    local originals, callbacks = {}, {}
+    for _, hook in ipairs(hooks) do
+        if hook.name == name and hook.method then callbacks[hook.method] = hook.callback end
+    end
+    local depth, maximum = 0, 0
+    for method, callback in pairs(callbacks) do
+        local original = name[method]
+        originals[method] = original
+        name[method] = function(self, ...)
+            depth = depth + 1; maximum = math.max(maximum, depth)
+            assert(depth < 6, "appearance hook recursion bounded")
+            local result = original(self, ...)
+            callback(self)
+            depth = depth - 1
+            return result
+        end
+    end
+    assert(callbacks.SetFontObject and callbacks.SetTextHeight and callbacks.SetTextColor)
+    local lines, savedPrint = {}, print
+    print = function(line) lines[#lines + 1] = line end
+    ns.Profiler.Command("start")
+    name:SetTextColor(1, 1, 1)
+    equal(name.r, 153 / 255, "direct native white immediately repaired")
+    name:SetVertexColor(0.2, 0.3, 0.4, 1)
+    equal(name.vr, 1, "direct native tint immediately repaired")
+    name:SetFontObject("SystemFont_NamePlate")
+    equal(name.font, expected.font, "native font object immediately repaired")
+    equal(name.r, 153 / 255, "font object cannot leave white color")
+    name:SetTextHeight(64)
+    equal(name.size, 18, "native text height immediately repaired")
+    name:SetFont("Different face", 11, "THICKOUTLINE")
+    equal(name.flags, expected.flags, "direct font flags immediately repaired")
+    plateFrame.SNPApplyingStyle = true
+    name:SetFontObject("Native during callback")
+    assert(plateFrame.SNPNameAppearancePending, "guarded native font-object write survives")
+    plateFrame.SNPApplyingStyle = nil
+    ns.NameplateText.RepairPendingNameAppearance(plateFrame)
+    equal(name.font, expected.font, "pending native appearance repaired after guard")
+    equal(name.r, 153 / 255, "pending native white repaired after guard")
+    assert(not plateFrame.SNPNameAppearancePending)
+    ns.Profiler.Command("stop"); ns.Profiler.Command("report")
+    print = savedPrint
+    local report = table.concat(lines, "\n")
+    assert(not report:find("Full styling:", 1, true) and not report:find("Classification:", 1, true)
+        and not report:find("Bar artwork:", 1, true), "setter repair avoids broad work")
+    assert(report:find("Name appearance writes: SetFontObject =", 1, true))
+    assert(maximum <= 3 and not plateFrame.SNPRepairingNameAppearance, "reentry guard released")
+
+    -- A semantically identical native GetFont result causes no repeated repair.
+    local getter = name.GetFont
+    name.GetFont = function() return expected.font:gsub("\\", "/"):lower(), expected.size, "outline, SLUG" end
+    local cap, context = ns.PresentationCapabilities, ns.WorldContext.Get()
+    assert(not ns.NameplateText.CachedNameHasDrifted(plateFrame, context, cap.InspectFrame(plateFrame, context)),
+        "normalized path and flag order are not font drift")
+    name.GetFont = function() return expected.font, expected.size, "SLUG,THICKOUTLINE" end
+    local drifted, reason = ns.NameplateText.CachedNameHasDrifted(plateFrame, context, cap.InspectFrame(plateFrame, context))
+    assert(drifted and reason == "native font", "different outline remains genuine drift")
+    name.GetFont = getter
+
+    -- Restoration/disabled/recycled/inaccessible names retain native control.
+    plateFrame.SNPRestoring = true; name:SetTextColor(1, 1, 1)
+    equal(name.r, 1, "restoration bypasses appearance repair")
+    plateFrame.SNPRestoring = nil
+    stylingEnabled = false; name:SetTextColor(0.8, 0.8, 0.8)
+    equal(name.r, 0.8, "disabled styling bypasses appearance repair")
+    stylingEnabled = true
+    plateFrame.unit = "nameplate2"; name:SetTextColor(1, 1, 1)
+    equal(name.r, 1, "reassigned unit bypasses cached appearance")
+    plateFrame.unit = "nameplate1"
+    UnitGUID = function() return "Creature-Recycled" end
+    name:SetTextColor(0.7, 0.7, 0.7)
+    equal(name.r, 0.7, "same-token new identity bypasses cached appearance")
+    UnitGUID = function() return "Creature-Appearance" end
+    name.IsForbidden = function() return true end; name:SetTextColor(1, 1, 1)
+    equal(name.r, 1, "inaccessible region bypasses appearance repair")
+    name.IsForbidden = nil
+    local setColor = originals.SetTextColor
+    local failure = {}
+    name.SetTextColor = function() error(failure) end
+    local ok, err = pcall(callbacks.SetFontObject)
+    assert(not ok and err == failure and not plateFrame.SNPRepairingNameAppearance, "failed setter releases guard")
+    name.SetTextColor = setColor
+    for method, original in pairs(originals) do name[method] = original end
 end
 
 print("Nameplates smoke: passed")

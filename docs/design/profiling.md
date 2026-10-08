@@ -31,6 +31,7 @@ Rows appear in descending total elapsed time, with call count, total millisecond
 | NPC title lookup | Title resolution, including cache and tooltip paths when used |
 | Text repair | Selective cached-name repair attempts; direct calls may return without writing |
 | Runtime update | The per-frame callback: elapsed clock, urgent queued refreshes, periodic native-list discovery and the shared routine-work budget |
+| Urgent refresh | The detached urgent event batch, including focused/all-plate updates before the routine budget; idle calls also count |
 | Periodic work | The scheduler slice, including bounded reconciliation/restoration/cast/unit/plate jobs; idle calls are also counted |
 | Plate discovery | Native visible-list snapshot and Lua queue membership bookkeeping, normally every 0.25 seconds while enabled |
 | Reconciliation | One current plate job for pending artwork/title visibility and cached-name drift; due again 0.25 seconds after service, with later service possible under load |
@@ -64,6 +65,9 @@ After the timing rows, the same chat report prints one short row for each observ
 | Focused outcomes | Updated, guarded, inaccessible, native/restored, restoration pending, failed, or invalid-cache/presentation-change fallback |
 | Name drift | First observed readable mismatch or structural invalidation for a plate in each pass; simultaneous mismatches repair together but are not enumerated |
 | Reconciliation repairs | Successful cached repair versus a full-style fallback request; a fallback request does not establish that full styling succeeded |
+| Font drift components | Readable face, size and/or flag differences; multiple components can count for one drift repair |
+| Focused cache invalidation | Specific reason for a focused path falling back, including initialization, context/settings, region replacement and identity |
+| Name appearance writes | External native name setters repaired immediately from the cache; addon/restoration writes do not count |
 | Periodic jobs | Attempted jobs by group: reconciliation, restoration frame/plate, cast retry and unit/plate retry; includes guarded/blocked/no-write jobs |
 | Periodic limits | Slices stopped by job count or time target, plus discarded stale plate assignments; count/time reasons can overlap |
 
@@ -101,3 +105,13 @@ installed version, capture the entire report with consecutive screenshots and
 run matched profiling-off/on recordings before tuning the scheduler. A current
 runtime report includes Periodic work whenever Runtime update runs; missing new
 rows and counters warrant checking installation and screenshot coverage first.
+
+From 1.0.207, name appearance setter hooks repair font/color updates that bypass
+CompactUnitFrame_UpdateName before rendering. They use fresh access and current
+assignment/identity checks, avoid full styling and skip addon writes/restoration.
+Font comparison ignores filename slash/case and flag ordering/duplicates, while
+retaining real differences. Component counters report face, size and flags
+separately. Urgent refresh is inclusive within Runtime update and outside the
+routine scheduler target. Cache invalidation reasons distinguish legitimate
+initialization from recurring failures; their counts do not prove every fallback
+is unnecessary. The next native report must verify flashing and remaining costs.

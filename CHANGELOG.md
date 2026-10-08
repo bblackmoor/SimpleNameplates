@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.207
+
+* Repairs direct native name font, font-object, text-height, text-color and vertex-color writes immediately using the current cached appearance. Background names retain their intended grey without waiting for periodic reconciliation; category rules remain unchanged. Setter hooks avoid classification, layout and full styling, skip addon writes/restoration, and validate access, assignment and readable identity. Native confirmation of the reported flashing remains pending.
+* Compares font paths without slash/case differences and font flags as unordered token sets. Equivalent native getter results no longer create repeated font drift; different faces, sizes and outline/rendering flags still repair.
+* Adds font-drift component counters, explicit focused-cache invalidation reasons, direct name-appearance write counters and an inclusive Urgent refresh timing row. Legitimate structural fallbacks remain; the next report can identify their actual reasons. Scheduler limits are unchanged.
+* Adds regression coverage for direct native appearance writes, recursion/error guards, normalized font getters, distinct outlines, disabled/restoring/inaccessible regions and recycled identity.
+
 ## 1.0.206
 
 * Adds a detailed reconciliation-stall follow-up plan (phases 5–8), with build verification, matched screenshot recordings, conditional diagnostics, measured fixes and live acceptance gates.

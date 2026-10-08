@@ -156,3 +156,17 @@ Phase 3 is implemented; native performance, rendering and secure acceptance rema
 - [ ] Record errors/taint and compare profiling off/on. The time target is cooperative and cannot preempt one expensive UI operation. Heavy queues or low FPS can extend intervals and service after retry deadlines; record visible lag before choosing a different budget.
 
 All four performance code phases are implemented. Live FPS, rendering, secure acceptance and budget tuning remain open; no native result is inferred from local stubs.
+
+## 1.0.207 background-name flashing follow-up
+
+- [ ] With background-name dimming on, observe Silvermoon Resident, Enchanted
+  Broom and other ambient NPCs while stationary; names and subtitles stay grey.
+- [ ] Turn dimming off and verify white names; toggle styling off and verify
+  native colors/fonts restore. Target/mouseover, move and enter/exit combat.
+- [ ] Confirm configured face/size, thin outline and optional SLUG rendering
+  survive native frame-option updates and plate recycling without Lua/taint errors.
+- [ ] Repeat the prior one-minute scene with a complete perf report. Inspect
+  Font drift components, Name appearance writes, Focused cache invalidation and
+  Urgent refresh. Continuous equivalent-font repairs should stop; real writes
+  may still occur and be repaired immediately. Record actual FPS with profiling
+  off/on and any remaining 16.7+ ms runtime callbacks.
