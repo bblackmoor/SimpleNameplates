@@ -4,11 +4,15 @@ local GetContext = ns.WorldContext.Get
 local AccessibleBoolean = ns.AccessibleBoolean
 local UnitName = UnitName
 local AccessibleNumber, AccessibleValue = ns.AccessibleNumber, ns.AccessibleValue
+local function AppearanceNumber(value)
+    value = AccessibleNumber(value)
+    if value and value == value and value ~= math.huge and value ~= -math.huge then return value end
+end
 local PriorityColorForState, FontPath = ns.PriorityColorForState, ns.FontPath
 local GetAppearanceSetting, GetTRP3Setting = ns.GetAppearanceSetting, ns.GetTRP3Setting
 local GetHealthBar = ns.NameplateFrames.GetHealthBar
 local GetCastBar = ns.NameplateFrames.GetCastBar
-local InstallNameAppearanceHooks, AuditNameAppearance
+local InstallNameAppearanceHooks, AuditNameAppearance, FinishCachedAppearance
 
 local function NameFontPath(context)
     if context.sanctuary == true and GetAppearanceSetting("matchSanctuaryFont") == true then
@@ -490,11 +494,7 @@ AuditNameAppearance = function(frame, phase, sourceName)
         local getter = cap.SafeField(name, method, context)
         if type(getter) ~= "function" then return end
         local ok, r, g, b = pcall(getter, name)
-        local function Number(value)
-            value = AccessibleNumber(value)
-            if value and value == value and value ~= math.huge and value ~= -math.huge then return value end
-        end
-        if ok then return Number(r), Number(g), Number(b) end
+        if ok then return AppearanceNumber(r), AppearanceNumber(g), AppearanceNumber(b) end
     end
     local alpha = Read("GetAlpha")
     local desired = (expected.suppressed or expected.inside) and 0 or 1
@@ -712,13 +712,8 @@ local function RepairCachedName(frame, context, assessment, plan)
     local ok, err = pcall(function()
         if plan.text ~= nil then name:SetText(plan.text) end
         if plan.font then name:SetFont(expected.font, expected.size, expected.flags) end
-        if plan.vertex then name:SetVertexColor(1, 1, 1, 1) end
-        -- Always finish a vertex repair with the intended text color, including
-        -- implementations where the two setters affect the same color state.
-        if plan.color or plan.vertex then name:SetTextColor(expected.r, expected.g, expected.b, 1) end
         if plan.shadow then name:SetShadowColor(0, 0, 0, 0) end
         if plan.shadowOffset then name:SetShadowOffset(0, 0) end
-        if plan.alpha ~= nil then name:SetAlpha(plan.alpha) end
         if plan.shown ~= nil then name:SetShown(plan.shown) end
         if plan.containerShown ~= nil then ns.NameplateFrames.SetShownSafe(plan.container, plan.containerShown, context) end
         if plan.barShown ~= nil then ns.NameplateFrames.SetShownSafe(plan.bar, plan.barShown, context) end
@@ -749,10 +744,25 @@ local function RepairCachedName(frame, context, assessment, plan)
             end
             expected.rightRegion, expected.healthTextSignature = rightRegion, signature
         end
+        -- Visibility/layout callbacks can replace appearance without invoking
+        -- Lua setters. Finish planned appearance writes after those callbacks.
+        if plan.vertex then name:SetVertexColor(1, 1, 1, 1) end
+        if plan.color or plan.vertex then name:SetTextColor(expected.r, expected.g, expected.b, 1) end
+        if plan.alpha ~= nil then name:SetAlpha(plan.alpha)
+        elseif plan.color or plan.vertex then
+            local desired = expected.inside and 0 or 1
+            local alpha = AppearanceNumber(ns.PresentationCapabilities.ReadRegion(name, "GetAlpha", context))
+            if Different(alpha, desired) then name:SetAlpha(desired) end
+        end
     end)
     frame.SNPApplyingStyle = nil
     if not ok then error(err, 0) end
+    if frame.SNPArtworkPending then
+        local current = ns.PresentationCapabilities.InspectFrame(frame, context)
+        if current.canAccess then ns.NameplateFrames.ApplyBarArtwork(frame, current, context) end
+    end
     if ns.NameplateText then ns.NameplateText.RepairPendingNameAppearance(frame) end
+    FinishCachedAppearance(frame, context)
     AuditNameAppearance(frame, "cached repair")
     return true
 end
@@ -921,11 +931,65 @@ local function RepairPendingNameAppearance(frame)
 end
 
 
+-- One bounded appearance recovery after standalone structural/artwork work.
+-- No fonts, classification, layout, timers or full styling. Unknown values
+-- remain for reconciliation; readable resets must not survive completion.
+FinishCachedAppearance = function(frame, context)
+    local current = GetContext()
+    if context and context.revision ~= current.revision then return end
+    context = current
+    local cap = ns.PresentationCapabilities
+    local assessment = cap.InspectFrame(frame, context)
+    if not assessment.canAccess or frame.SNPRestoring or frame.SNPApplyingStyle
+        or frame.SNPApplyingArtwork or frame.SNPRepairingNameAppearance
+        or frame.SNPFinishingNameAppearance or not ns.GetStylingEnabled() then return end
+    local expected, name = frame.SNPNameStyle, assessment.name
+    if not expected or frame.SNPOriginalUnit ~= expected.unit
+        or not CacheIsCurrent(frame, expected, context, assessment) then return end
+    if UnitGUID then
+        local ok, guid = pcall(UnitGUID, expected.unit)
+        guid = ok and AccessibleValue(guid)
+        local previous = frame.SNPEntityFacts and frame.SNPEntityFacts.guid
+        if type(guid) == "string" and type(previous) == "string" and guid ~= previous then return end
+    end
+    local colorChanged
+    if not expected.suppressed then
+        local r, g, b = Observe(expected, "color", name, "GetTextColor", context, 3)
+        colorChanged = Different(AppearanceNumber(r), expected.r)
+            or Different(AppearanceNumber(g), expected.g) or Different(AppearanceNumber(b), expected.b)
+        local vr, vg, vb, va = Observe(expected, "vertex", name, "GetVertexColor", context, 4)
+        local vertex = expected.vertexColor
+        if vertex then
+            colorChanged = colorChanged or Different(AppearanceNumber(vr), vertex[1])
+                or Different(AppearanceNumber(vg), vertex[2]) or Different(AppearanceNumber(vb), vertex[3])
+                or Different(AppearanceNumber(va), vertex[4])
+        end
+    end
+    local desired = (expected.suppressed or expected.inside) and 0 or 1
+    local alpha = Observe(expected, "alpha", name, "GetAlpha", context)
+    local alphaChanged = Different(AppearanceNumber(alpha), desired)
+    if not colorChanged and not alphaChanged then return end
+    frame.SNPFinishingNameAppearance = true
+    local ok, err = pcall(function()
+        if colorChanged and appearanceColorRepair[name] then
+            ns.Profiler.Count("Appearance finalization", "color")
+            appearanceColorRepair[name]() -- Validates identity/access again before writing.
+        elseif alphaChanged and appearanceAlphaRepair[name] then
+            ns.Profiler.Count("Appearance finalization", "alpha")
+            appearanceAlphaRepair[name]()
+        end
+    end)
+    frame.SNPFinishingNameAppearance = nil
+    if not ok then error(err, 0) end
+end
+
+
 StyleName = ns.Profiler.Wrap("Name/title styling", StyleName)
 CachedNameHasDrifted = ns.Profiler.Wrap("Name drift check", CachedNameHasDrifted)
 RepairCachedName = ns.Profiler.Wrap("Text repair", RepairCachedName)
 
 ns.NameplateText = {
+    FinishCachedAppearance = FinishCachedAppearance,
     AuditNameAppearance = AuditNameAppearance,
     RepairBarGeometry = RepairBarGeometry,
     RepairPendingNameAppearance = RepairPendingNameAppearance,

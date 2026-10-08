@@ -226,3 +226,24 @@ This instrumentation adds reads and Access assessment timings while profiling
 is active. Compare visible behavior and profiling off/on; timing differences
 between instrumentation versions are not exact performance gains. Read-only
 checks do not add repairs, scheduling jobs, timers or forced garbage collection.
+
+
+## Complete appearance after selective/artwork work (1.0.218)
+
+Appearance finalization: color/alpha counts readable mismatches submitted to
+validated cached-appearance recovery after standalone artwork or selective
+repair. It is one bounded attempt, not a loop. Color recovery finishes with the
+required alpha; an alpha-only mismatch does not rewrite colors. No name fonts,
+classification, layout, timers or full restyling are part of that finalizer.
+
+Selective repair now performs planned color/opacity writes after structural
+callbacks and consumes pending artwork before reporting completion. The final
+check uses fresh access/current context, ownership/cache and readable GUID
+validation. Unknown/non-finite observations are not proof of mismatch and stay
+subject to reconciliation retry. Converged state requires no extra setters.
+
+The checkpoints still describe completed state, now after finalization. In the
+next report, compare Appearance checkpoint drift, Name color/alpha origin,
+Name drift and Appearance finalization rows. A finalization count means the
+completion path observed a reset; successful live convergence still requires
+few/no repeated completed-state mismatches and correct visible rendering.

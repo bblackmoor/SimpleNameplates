@@ -419,3 +419,33 @@ assume a new native writer or modify repairs based on those observations.
 
 Checkpoint reads add profiling overhead. The existing reconciliation recovery
 remains responsible for color/alpha changes until their source is confirmed.
+
+
+## Selective/artwork completion fix (1.0.218)
+
+The 118.4-second 1.0.217 report records 551 white-to-grey first mismatches,
+all already present after cached repair, and 170 alpha observations present
+there. Artwork/cached-repair checkpoints each show 618 color and 185 alpha
+failures. No full-style/name-hook checkpoint failures appear. This locates
+operation boundaries; it does not by itself identify the native writer.
+
+Version 1.0.218 finishes planned appearance after structural callbacks, consumes
+pending artwork during selective repair and makes one validated cached color/
+alpha recovery after standalone artwork. Regression fixtures reproduce raw
+native callback resets that bypass Lua setter hooks and converge with the fix.
+
+1. Install 1.0.218 and reload in the same scene. Verify grey background names
+   stay grey, with no duplicate native names behind inside labels during
+   target/mouseover changes, native bar show/hide and artwork updates.
+2. Capture approximately one minute, including Appearance checkpoint drift,
+   Appearance finalization, Name color/alpha origin and Name drift rows. Compare
+   completed-operation failures and repeated reconciliation repair counts.
+3. Include Runtime update/Urgent refresh maxima and Periodic jobs/limits. The
+   1.0.217 maxima were 2.986/1.724 ms, but its checkpoint reads add profiling
+   overhead. Compare matching scenes with profiling both off and on.
+4. Toggle Active, change profiles, recycle units, cross zones and enter/leave
+   restricted combat contexts. Verify native restoration and no writes through
+   stale ownership/access/context. Unknown appearance remains for retry.
+
+The finalizer is bounded and preserves error/reentry behavior. It does not add
+fonts, classification, scheduling or full styles; native acceptance is pending.

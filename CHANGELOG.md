@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.218
+
+* Finishes selective color/vertex/alpha writes after visibility, dimensions and label layout callbacks. Color repair also restores native opacity if a readable post-color alpha differs. Consumes pending artwork before selective repair reports completion, so trailing artwork cannot silently undo that repair.
+* Adds one bounded cached-appearance finalization after standalone artwork and selective repair. Fresh access/cache/context/ownership/readable GUID checks gate recovery through the existing validated color or alpha hook; it performs no name font writes, classification, layout, timers or full styling. Unknown/non-finite observations remain for reconciliation. Converged appearance needs no extra setters; color recovery includes alpha and alpha-only recovery avoids color writes. Error/reentry guards are released on failure.
+* Adds Appearance finalization: color/alpha counters. Retains the profiling-only completed-state checkpoints so the next live report can verify the operation now ends with the intended appearance. Scheduler budgets are unchanged.
+* Records the 118.4-second 1.0.217 report: all 551 white-to-grey color first mismatches were present after cached repair; 170 alpha observations were present after cached repair. Artwork/cached-repair checkpoints each recorded 618 color and 185 alpha failures, with no reported full-style/name-hook checkpoint failures. Runtime update/Urgent refresh maxima were 2.986/1.724 ms. These locate failed operation boundaries, not the exact native writer; live confirmation of this fix remains pending.
+* All 21 smoke suites pass. A visibility-callback regression fails against 1.0.217, and an independent artwork-reset regression fails with the old artwork completion path. Tests cover pending-artwork convergence, alpha-only and no-op recovery, unknown/non-finite observations, disabled/restoring/forbidden/recycled/stale-context sources and failed-write guard recovery.
+
 ## 1.0.217
 
 * Adds profiling-only, read-only native-name appearance checkpoints after full/focused updates, cached repair, standalone artwork, appearance setter repair and native Show calls. Each uses fresh access, current cache/context/ownership and readable GUID checks; guarded, restoring, disabled, inaccessible or stale-source calls are skipped. They observe completed text RGB and native alpha without applying another repair.

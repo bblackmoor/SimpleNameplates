@@ -2976,4 +2976,113 @@ do
     print = savedPrint
 end
 
+-- Selective appearance must survive visibility callbacks and artwork work.
+do
+    stylingEnabled, categoryMode, showBar, dimBackground = true, "active", true, true
+    appearance.namePlacement, appearance.nameFont, appearance.nameSize = "INSIDE", "ARIALN", 18
+    unit = {reaction = 5, names = {nameplate701 = "Finalization citizen"}}
+    UnitGUID = function() return "Creature-Finalization" end
+    UnitNameplateShowsWidgetsOnly = function() return false end
+    ns.TRP3, trp3Options = nil, {}
+    local frame, bar, label = Region(), Region(), Region()
+    frame.unit, frame.name, frame.healthBar = "nameplate701", Region(), bar
+    frame.HealthBarsContainer = Region(); frame.HealthBarsContainer.healthBar = bar
+    label.font, label.size, label.flags = "Native health font", 12, ""
+    bar.Text = label
+    local plate = {UnitFrame = frame}
+    C_NamePlate.GetNamePlateForUnit = function() return plate end
+    C_NamePlate.GetNamePlates = function() return {plate} end
+    local resetColor, resetAlpha = true, true
+    local labelFont = label.SetFont
+    label.SetFont = function(self, ...)
+        labelFont(self, ...)
+        -- Native callback raw state deliberately bypasses Lua setter hooks.
+        if resetColor then frame.name.r, frame.name.g, frame.name.b = 1, 1, 1 end
+        if resetAlpha then frame.name.alpha = 1 end
+    end
+    ns.NameplatePresentation.ApplySimpleStyle(frame)
+    local name, expected, text, cap, context = frame.name, frame.SNPNameStyle,
+        ns.NameplateText, ns.PresentationCapabilities, ns.WorldContext.Get()
+    assert(expected.inside)
+    equal(name.r, 153 / 255, "full style establishes dim native appearance")
+    equal(name.alpha, 0, "full style conceals native inside name")
+    local fontWrites, colorWrites, alphaWrites = 0, 0, 0
+    local fontSetter, colorSetter, alphaSetter = name.SetFont, name.SetTextColor, name.SetAlpha
+    name.SetFont = function(self, ...) fontWrites = fontWrites + 1; return fontSetter(self, ...) end
+    name.SetTextColor = function(self, ...) colorWrites = colorWrites + 1; return colorSetter(self, ...) end
+    name.SetAlpha = function(self, ...) alphaWrites = alphaWrites + 1; return alphaSetter(self, ...) end
+    local shownSetter = name.SetShown
+    name.SetShown = function(self, shown)
+        shownSetter(self, shown)
+        if shown then self.r, self.g, self.b, self.alpha = 1, 1, 1, 1 end
+    end
+    name.shown, name.r, name.g, name.b, name.alpha = false, 1, 1, 1, 1
+    local assessment = cap.InspectFrame(frame, context)
+    local drifted, _, plan = text.CachedNameHasDrifted(frame, context, assessment)
+    assert(drifted and plan.shown and plan.color and plan.alpha == 0)
+    assert(text.RepairCachedName(frame, context, assessment, plan))
+    equal(name.r, expected.r, "selective color survives raw visibility callback")
+    equal(name.alpha, 0, "selective alpha survives raw visibility callback")
+    equal(fontWrites, 0, "visibility repair does not rewrite native name font")
+    name.SetShown = shownSetter
+    -- An independent artwork update may reset the name via native callbacks.
+    ns.NameplateFrames.ApplyBarArtwork(frame, cap.InspectFrame(frame, context), context)
+    equal(name.r, expected.r, "standalone artwork cannot finish with a white background name")
+    equal(name.alpha, 0, "standalone artwork cannot expose native inside name")
+    equal(fontWrites, 0, "artwork finalization avoids name font writes")
+    resetColor = false
+    local colors = colorWrites
+    ns.NameplateFrames.ApplyBarArtwork(frame, cap.InspectFrame(frame, context), context)
+    equal(name.alpha, 0, "alpha-only artwork callback repaired")
+    equal(colorWrites, colors, "alpha-only finalization avoids color writes")
+    resetAlpha = false
+    colors = colorWrites; local alphas = alphaWrites
+    ns.NameplateFrames.ApplyBarArtwork(frame, cap.InspectFrame(frame, context), context)
+    equal(colorWrites, colors, "converged artwork has no extra color write")
+    equal(alphaWrites, alphas, "converged artwork has no extra alpha write")
+    -- Pending artwork is consumed before cached repair declares completion.
+    resetColor, resetAlpha = true, true
+    name.r, name.g, name.b = 1, 1, 1
+    assessment = cap.InspectFrame(frame, context)
+    drifted, _, plan = text.CachedNameHasDrifted(frame, context, assessment)
+    assert(drifted and plan.color)
+    frame.SNPArtworkPending = true
+    assert(text.RepairCachedName(frame, context, assessment, plan))
+    assert(not frame.SNPArtworkPending, "selective repair drains pending artwork")
+    equal(name.r, expected.r, "pending artwork cannot undo selective color")
+    equal(name.alpha, 0, "pending artwork cannot undo selective alpha")
+    assert(not text.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)), "combined repair converges")
+    -- Finalization is bounded and conservative when evidence/access is absent.
+    local colorGet, vertexGet, alphaGet = name.GetTextColor, name.GetVertexColor, name.GetAlpha
+    name.GetTextColor = function() return {}, {}, {} end
+    name.GetVertexColor = function() return {}, {}, {}, {} end
+    name.GetAlpha = function() return 0/0 end
+    colors, alphas = colorWrites, alphaWrites
+    text.FinishCachedAppearance(frame, context)
+    equal(colorWrites, colors, "unknown final color not guessed")
+    equal(alphaWrites, alphas, "unknown final alpha not guessed")
+    name.GetTextColor, name.GetVertexColor, name.GetAlpha = colorGet, vertexGet, alphaGet
+    expected.unknownReads = nil
+    name.r, name.g, name.b, name.alpha = 1, 1, 1, 1
+    stylingEnabled = false; text.FinishCachedAppearance(frame, context); stylingEnabled = true
+    frame.SNPRestoring = true; text.FinishCachedAppearance(frame, context); frame.SNPRestoring = nil
+    name.IsForbidden = function() return true end; text.FinishCachedAppearance(frame, context); name.IsForbidden = nil
+    UnitGUID = function() return "Creature-Recycled" end; text.FinishCachedAppearance(frame, context)
+    UnitGUID = function() return "Creature-Finalization" end
+    local revision = frame.SNPPresentation.contextRevision
+    frame.SNPPresentation.contextRevision = -1; text.FinishCachedAppearance(frame, context)
+    frame.SNPPresentation.contextRevision = revision
+    equal(colorWrites, colors, "invalid finalization performs no color writes")
+    equal(alphaWrites, alphas, "invalid finalization performs no alpha writes")
+    -- A native write failure releases the bounded finalization/appearance guards.
+    local failure = {}
+    name.SetTextColor = function() error(failure) end
+    local ok, err = pcall(text.FinishCachedAppearance, frame, context)
+    assert(not ok and err == failure and not frame.SNPFinishingNameAppearance
+        and not frame.SNPRepairingNameAppearance, "failed finalization releases guards and preserves error")
+    name.SetTextColor = colorSetter
+    text.FinishCachedAppearance(frame, context)
+    equal(name.r, expected.r, "failed finalization can recover")
+end
+
 print("Nameplates smoke: passed")

@@ -457,3 +457,18 @@ separate. Session tokens and rebuilt intent invalidate old results without
 retaining profiling tables. All 21 smoke suites pass. This is a diagnostic
 follow-up; rendering repairs, scheduler budgets and profiling-off behavior are
 unchanged. Live boundary attribution and native acceptance remain pending.
+
+
+### 1.0.218: finish selective/artwork appearance
+
+The 118.4-second 1.0.217 report finds all 551 color first mismatches already
+wrong after cached repair. Artwork/cached checkpoints each record 618 color
+and 185 alpha failures, without reported full-style/name-hook failures.
+Selective appearance writes now follow structural callbacks and pending artwork
+is consumed before completion. Standalone artwork and selective repair finish
+with one access/context/ownership/GUID-validated cached appearance recovery for
+readable color/alpha differences. No name fonts, classification, layout or new
+scheduling are added. All 21 suites pass, including regressions failing against
+the prior visibility ordering and artwork path. Checkpoint drift and repeated
+reconciliation counts are the next live convergence gates; the exact native
+writer and native acceptance remain unconfirmed.
