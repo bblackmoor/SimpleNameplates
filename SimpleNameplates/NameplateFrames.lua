@@ -411,6 +411,7 @@ local function ApplyBarArtwork(frame, assessment, context)
     if not frame.SNPApplyingStyle and ns.NameplateText then
         if ns.NameplatePresentation then ns.NameplatePresentation.RepairPendingGeometry(frame) end
         ns.NameplateText.RepairPendingNameAppearance(frame)
+        ns.NameplateText.AuditNameAppearance(frame, "artwork")
     end
 end
 

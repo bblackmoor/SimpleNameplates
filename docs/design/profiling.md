@@ -191,3 +191,38 @@ assessments on one fixed synthetic frame. The 1.0.215/current comparison gave
 WoW's memory attribution, allocator and GC behavior differ. This is evidence
 of less temporary allocation, not a live retained-memory or leak measurement.
 The addon itself does not pause or force GC.
+
+
+## Appearance timing checkpoints (1.0.217)
+
+During profiling, Appearance checkpoints: sampled counts validated observations
+of completed native text RGB and alpha. Checkpoints run after full style,
+focused name/health-color/data updates, cached repair, standalone artwork,
+font/color/alpha setter repair and unguarded native Show. The latter is a
+post-hook on the method call; it does not necessarily mean visibility changed.
+Guarded Show calls are skipped and observed at the enclosing update boundary.
+
+Appearance checkpoint drift reports the boundary and component already wrong
+there, for example full style: color. Appearance checkpoint unreadable means
+the component was unknown, not matched. Name color origin / Name alpha origin
+classify reconciliation observations using the last checkpoint in the current
+profiling session:
+
+| Reason | Meaning |
+| --- | --- |
+| after verified `<boundary>` | The component matched at that checkpoint and differs now |
+| present after `<boundary>` | The component was already wrong when that checkpoint ran |
+| checkpoint unavailable | No current-session readable checkpoint of the current intent |
+
+These are timing boundaries, not causal attribution to that operation. An early
+native Show mismatch may be corrected by a later name hook. Checkpoint drift
+counters retain that observation; origin uses the latest checkpoint. Rebuilding
+the cached presentation or starting a new session invalidates older evidence.
+Fresh access/context/assignment/source/GUID validation gates observation. A
+frame cache stores an opaque token and scalar results, not profiling tables or
+histories. Disabled checkpoints do no inspections or UI reads.
+
+This instrumentation adds reads and Access assessment timings while profiling
+is active. Compare visible behavior and profiling off/on; timing differences
+between instrumentation versions are not exact performance gains. Read-only
+checks do not add repairs, scheduling jobs, timers or forced garbage collection.

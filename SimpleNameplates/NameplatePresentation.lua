@@ -130,6 +130,7 @@ local function ApplySimpleStyle(frame, context, reason)
     end
     RepairPendingGeometry(frame)
     Text.RepairPendingNameAppearance(frame)
+    Text.AuditNameAppearance(frame, "full style")
     ns.Profiler.Count("Styling outcomes", result or "deferred or native")
 end
 
@@ -298,6 +299,7 @@ local function FocusedUpdate(frame, context, work, kind)
     end
     RepairPendingGeometry(frame)
     Text.RepairPendingNameAppearance(frame)
+    Text.AuditNameAppearance(frame, kind)
     ns.Profiler.Count("Focused outcomes", "updated")
 end
 

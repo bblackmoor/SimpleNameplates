@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.217
+
+* Adds profiling-only, read-only native-name appearance checkpoints after full/focused updates, cached repair, standalone artwork, appearance setter repair and native Show calls. Each uses fresh access, current cache/context/ownership and readable GUID checks; guarded, restoring, disabled, inaccessible or stale-source calls are skipped. They observe completed text RGB and native alpha without applying another repair.
+* Adds Appearance checkpoints, Appearance checkpoint drift/unreadable, and Name color/alpha origin rows. Reconciliation now distinguishes mismatch present at the last checkpoint from mismatch after a verified checkpoint, or unavailable evidence. Unreadable/non-finite values are unknown. These checkpoints narrow timing boundaries, not the exact engine writer.
+* Uses a small opaque per-session token rather than retaining profiling records from frame caches. Restarts and rebuilt presentation intent invalidate previous observations. Disabled checkpoints return before frame inspection, UI reads or measurement allocations. Profiling overhead increases while enabled; scheduler/repair behavior is unchanged.
+* Records the 1.0.216 report: all 504 sampled text-color mismatches were white (1.000/1.000/1.000) versus intended background grey (0.600/0.600/0.600), with 131 native-alpha first mismatches. Runtime update/Urgent refresh maxima were 4.231/1.976 ms; memory increased 61,646.8 KiB versus 299,053.5 KiB in the previous report. No alpha/deferred appearance counter appeared. Runs are not matched benchmarks and do not prove the native writer or a retained-memory leak.
+* All 21 smoke suites pass. Coverage exercises native Show callbacks, complete full/focused update boundaries, post-update resets, read-only observation, unknown/non-finite values, disabled measurement work, stale/recycled/forbidden/restoring/guarded sources and session restart/token isolation. Native diagnosis remains pending.
+
 ## 1.0.216
 
 * Repairs direct native SetAlpha writes against the current cached presentation, retaining guarded alpha notifications for readable checks after styling/artwork completes. Inside and widget-only native names remain concealed; above-bar names remain opaque. Appearance color/font repairs now finish with the required native-name opacity after color setters. Identity, context, access, disabled styling and restoration checks still gate writes; restoration clears pending alpha.

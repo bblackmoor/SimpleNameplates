@@ -388,3 +388,34 @@ large live memory delta still does not establish a retained-memory leak.
 4. Compare memory over matched runs and with profiling off/on. The Lua fixture
    measures temporary allocation with GC paused; it cannot establish the size
    of a live leak or retained memory. Rendering/taint acceptance remains native.
+
+
+## Locate the remaining appearance reset (1.0.217)
+
+The 1.0.216 report shows 504 text-color first mismatches, all sampled as white
+(1.000/1.000/1.000) versus intended grey (0.600/0.600/0.600), plus 131 native
+alpha first mismatches. No SetAlpha or deferred appearance repair row appears.
+Runtime update/Urgent refresh maxima are 4.231/1.976 ms; memory change is
+61,646.8 KiB, compared with 299,053.5 KiB in the previous report. The smaller
+increase supports reduced allocation pressure; these are not matched runs.
+
+Version 1.0.217 observes completed appearance while profiling. It does not
+assume a new native writer or modify repairs based on those observations.
+
+1. Install 1.0.217, reload and profile approximately one minute in the same scene.
+2. Capture Appearance checkpoints, Appearance checkpoint drift/unreadable,
+   Name color origin, Name alpha origin, Name color drift and Name drift rows.
+   Use multiple screenshots if necessary to include the new rows and maxima.
+3. A present after full style/name hook result means appearance was already
+   wrong at that completed boundary. An after verified result means it changed
+   between that checkpoint and reconciliation. These identify intervals; they
+   do not prove which engine call performed the write.
+4. Include native Show/font repair checkpoint results if present. Guarded Show
+   is covered by the enclosing completed update; no mismatch counter means no
+   recorded readable mismatch, not proof that the method never ran.
+5. Verify profiling-off behavior is unchanged, plus disable/restoration,
+   restricted combat plates, widget-only plates and recycled units. Checkpoints
+   perform fresh access validation and never repair or schedule additional work.
+
+Checkpoint reads add profiling overhead. The existing reconciliation recovery
+remains responsible for color/alpha changes until their source is confirmed.

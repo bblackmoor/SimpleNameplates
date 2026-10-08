@@ -89,7 +89,7 @@ local function Start()
     local memory = Memory()
     local started = Clock()
     if not started then Say("Profiling requires a readable precise timer."); return end
-    active = {started = started, memoryStart = memory, stats = {}, counters = {}}
+    active = {started = started, memoryStart = memory, stats = {}, counters = {}, token = {}}
     last = active
     Say("Profiling started. Use /snp perf stop, then /snp perf report.")
 end
@@ -149,4 +149,6 @@ local function Command(argument)
     elseif argument == "report" or argument == "" then Report()
     else Say("/snp perf start | stop | report") end
 end
-ns.Profiler = {Wrap = Wrap, Count = Count, SizeSample = SizeSample, ColorSample = ColorSample, Command = Command}
+-- The token is opaque to consumers and distinguishes restarted sessions.
+local function SessionToken() return active and active.token end
+ns.Profiler = {SessionToken = SessionToken, Wrap = Wrap, Count = Count, SizeSample = SizeSample, ColorSample = ColorSample, Command = Command}

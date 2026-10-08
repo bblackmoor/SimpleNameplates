@@ -443,3 +443,17 @@ field reads reuse one callback rather than allocating a closure per read;
 All 21 suites pass, including regressions for direct alpha and opacity after
 color writes. Live timing, opacity, color and retained-memory confirmation
 remain open; scheduler budgets and reconciliation recovery are unchanged.
+
+
+### 1.0.217: identify appearance reset boundaries
+
+The 1.0.216 report identifies 504 white-to-grey native text mismatches and
+131 native-alpha first mismatches, without SetAlpha/deferred repair counters.
+The remaining writer is still unconfirmed. Profiling-only checkpoints now
+observe completed full/focused updates, cached/artwork/appearance repairs and
+unguarded native Show. Reconciliation origins distinguish already wrong at the
+last checkpoint from changed after verified state, with unknown evidence kept
+separate. Session tokens and rebuilt intent invalidate old results without
+retaining profiling tables. All 21 smoke suites pass. This is a diagnostic
+follow-up; rendering repairs, scheduler budgets and profiling-off behavior are
+unchanged. Live boundary attribution and native acceptance remain pending.
