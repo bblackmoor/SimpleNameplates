@@ -379,3 +379,38 @@ The urgent-refresh maximum was 19.472 ms and global-refresh maximum was
 19.566 ms. These separate maxima do not prove simultaneous occurrence.
 Broad refresh batches remain a candidate; this patch does not change the
 scheduler or claim that the urgent spike is resolved.
+
+
+## Bounded global refreshes (1.0.214)
+
+The 95.3-second 1.0.213 report shows no reported width/height drift or
+reconciliation full-style fallback. It has 571 full styles, 501 cached repairs
+and 440 text-color-first mismatches. Its urgent/global maxima are
+20.085/20.080 ms. The close maxima support global batches as a candidate;
+they do not prove simultaneous occurrence.
+
+Global refreshes now enqueue per-plate jobs in the existing shared scheduler.
+Current and previous target/mouseover/interaction plates and explicitly queued
+unit work bypass that backlog. Settings and background plate updates therefore
+settle over several frames. The count/time limits are unchanged and cannot
+interrupt one running job or bound the separate immediate priority work.
+
+1. Install 1.0.214 and reload. Keep the same crowded scene and settings.
+2. Change target/mouseover, update threat and trigger casts. Verify immediate
+   category/name/threat/cast/title responses on affected units.
+3. Change a profile/font/width setting. Verify the priority plates update
+   immediately and background plates settle promptly over subsequent frames.
+4. Move out of range, recycle plates, cross a zone boundary, and toggle Active.
+   Verify no stale names, delayed writes to departed plates or disabled styling.
+5. Record about one minute and include Runtime update, Urgent refresh, Global
+   refresh, Global plate refresh, Periodic work/jobs/limits, Styling requests
+   and Reconciliation repairs. Compare urgent/runtime maxima and visible hitches.
+   Individual scheduled global jobs may exceed the one-millisecond target.
+6. Include Name drift rows. The text-color repair investigation remains open;
+   do not treat this batching patch as a fix for those 440 prior mismatches.
+
+Global refresh timings now measure snapshot/enqueueing and immediate priority
+work, not a complete synchronous all-plate styling pass. Global plate refresh
+measures one deferred or immediate plate operation. These inclusive rows
+overlap and must not be added together. Broad refresh latency, fairness and
+native secure behavior remain live acceptance gates.

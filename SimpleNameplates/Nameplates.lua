@@ -23,6 +23,14 @@ end
 local pendingUnits = {}
 local removedUnits = {}
 local unitGenerations = {}
+local globalWork = {}
+local globalEpoch = 0
+local previousPriorityPlates = {}
+local function ClearGlobalWork()
+    Periodic.Clear("global refresh")
+    globalWork = {}
+    globalEpoch = globalEpoch + 1
+end
 local pendingPlates = setmetatable({}, {__mode = "k"})
 local CachedNameHasDrifted, RepairCachedName =
     ns.NameplateText.CachedNameHasDrifted, ns.NameplateText.RepairCachedName
@@ -70,6 +78,12 @@ RefreshUnit = function(unit, reason, work)
     local frame, _, plate = GetUnitFrame(unit, context)
     local assigned = frame and ns.AccessibleValue(Cap.SafeField(frame, "unit", context))
     if frame and assigned == unit then
+        local queued = globalWork[plate]
+        if queued and (queued.unit == nil or queued.unit == unit) then
+            work = MergeWork(work, queued.work)
+            globalWork[plate] = nil
+            Periodic.Cancel("global refresh", plate)
+        end
         knownFrames[unit], knownPlates[unit], pendingUnits[unit] = frame, plate, nil
         Periodic.Cancel("unit retry", unit)
         if work.full and (reason == "initial plate" or reason == "late plate") then
@@ -79,39 +93,93 @@ RefreshUnit = function(unit, reason, work)
     else pendingUnits[unit] = work; DeferUnit(unit) end
 end
 
+local function RefreshGlobalPlate(plate)
+    local request = globalWork[plate]
+    if not request or not GetStylingEnabled() then return end
+    local context = WorldContext.Get()
+    local frame = Cap.SafeField(plate, "UnitFrame", context)
+    local unit = ns.AccessibleValue(Cap.SafeField(frame, "unit", context))
+    if type(unit) ~= "string" then return 0.25 end
+    if removedUnits[unit] or (request.unit and (request.unit ~= unit
+        or request.generation ~= unitGenerations[unit])) then
+        globalWork[plate] = nil; return
+    end
+    local ok, current = pcall(C_NamePlate.GetNamePlateForUnit, unit)
+    current = ok and ns.AccessibleValue(current)
+    if not current then return 0.25 end
+    if current ~= plate then globalWork[plate] = nil; return end
+    if request.guid and UnitGUID then
+        local guidOK, guid = pcall(UnitGUID, unit)
+        guid = guidOK and ns.AccessibleValue(guid)
+        if type(guid) == "string" and guid ~= request.guid then globalWork[plate] = nil; return end
+    end
+    pendingPlates[plate] = nil
+    Periodic.Cancel("plate retry", plate)
+    -- Detach before writes so synchronous callbacks can retain newer work.
+    local flags = request.work
+    if Periodic.Has("global refresh", plate) then Periodic.Cancel("global refresh", plate) end
+    globalWork[plate] = nil
+    ns.Profiler.Count("Global refresh plates", flags.full and "full" or "focused")
+    local applied, err = pcall(RefreshUnit, unit, "global refresh", flags)
+    if not applied then
+        local newer = globalWork[plate]
+        if newer and newer.unit == request.unit and newer.generation == request.generation then
+            MergeWork(newer.work, flags)
+        elseif not newer and request.epoch == globalEpoch and not removedUnits[unit]
+            and (not request.unit or request.generation == unitGenerations[unit]) and GetStylingEnabled() then
+            globalWork[plate] = request
+        end
+        if globalWork[plate] then Periodic.Schedule("global refresh", plate, RefreshGlobalPlate, 0.25) end
+        error(err, 0)
+    end
+end
+RefreshGlobalPlate = ns.Profiler.Wrap("Global plate refresh", RefreshGlobalPlate)
+
 local function RefreshAll(work, queuedUnits)
     if not GetStylingEnabled() then return end
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     work = work or fullWork
-    if work.full then ResetReconciliation() end
+    if work.full then ResetReconciliation(); ClearGlobalWork() end
     local context = WorldContext.Get()
+    local priority, currentPriorities = {}, {}
+    for plate in pairs(previousPriorityPlates) do priority[plate] = true end
+    for _, token in ipairs({"target", "mouseover", "softinteract"}) do
+        local ok, plate = pcall(C_NamePlate.GetNamePlateForUnit, token)
+        plate = ok and ns.AccessibleValue(plate)
+        if plate then priority[plate], currentPriorities[plate] = true, true end
+    end
+    previousPriorityPlates = currentPriorities
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
-        ns.Profiler.Count("Global refresh plates", work.full and "full" or "focused")
-        local frame = GetFrameFromPlate(plate, context)
-        if frame then
-            local unit = ns.AccessibleValue(frame.unit)
-            local currentWork = work
-            if type(unit) == "string" then
-                knownFrames[unit], knownPlates[unit], removedUnits[unit] = frame, plate, nil
-                local pending = pendingUnits[unit]
-                if queuedUnits and queuedUnits[unit] then
-                    pending = MergeWork(pending or {}, queuedUnits[unit])
-                    queuedUnits[unit] = nil
-                end
-                if pending then currentWork = MergeWork(pending, work) end
-                pendingUnits[unit] = nil
-                Periodic.Cancel("unit retry", unit)
+        local frame = Cap.SafeField(plate, "UnitFrame", context)
+        local unit = ns.AccessibleValue(Cap.SafeField(frame, "unit", context))
+        if type(unit) ~= "string" then unit = nil end
+        if unit then removedUnits[unit] = nil end
+        local request = globalWork[plate]
+        if not request or request.unit ~= unit or request.generation ~= (unit and unitGenerations[unit]) then
+            local guid
+            if unit and UnitGUID then
+                local ok, value = pcall(UnitGUID, unit)
+                value = ok and ns.AccessibleValue(value)
+                if type(value) == "string" then guid = value end
             end
-            pendingPlates[plate] = nil
-            Periodic.Cancel("plate retry", plate)
-            if currentWork.full then ApplySimpleStyle(frame, context, "refresh all")
-            else UpdateData(frame, context, currentWork) end
-        else pendingPlates[plate] = true; DeferPlate(plate) end
+            request = {unit = unit, generation = unit and unitGenerations[unit], guid = guid,
+                epoch = globalEpoch, work = {}}
+            globalWork[plate] = request
+        end
+        MergeWork(request.work, work)
+        local urgent = unit and queuedUnits and queuedUnits[unit]
+        if urgent then MergeWork(request.work, urgent); queuedUnits[unit] = nil end
+        if priority[plate] or urgent then RefreshGlobalPlate(plate)
+        else Periodic.Schedule("global refresh", plate, RefreshGlobalPlate) end
+        -- If an immediate priority lookup was temporarily inaccessible, retry
+        -- through the same bounded queue rather than losing the request.
+        if globalWork[plate] then Periodic.Schedule("global refresh", plate, RefreshGlobalPlate) end
     end
 end
 RefreshAll = ns.Profiler.Wrap("Global refresh", RefreshAll)
 
 local function RestoreAll()
+    ClearGlobalWork()
     ResetReconciliation()
     if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
     local context = WorldContext.Get()
@@ -163,7 +231,7 @@ local function QueueUnitRefresh(unit, event)
 end
 
 local function QueueRefreshAll(reason, work)
-    if not work or work.full then ResetReconciliation() end
+    if not work or work.full then ResetReconciliation(); ClearGlobalWork() end
     ns.Profiler.Count("Queued global refresh", reason or "settings or callback")
     allWork = MergeWork(allWork or {}, work or fullWork)
 end
@@ -234,6 +302,8 @@ local function CleanupRemovedNameplate(unit)
     if ns.CastHighlight and ns.CastHighlight.ClearUnit then ns.CastHighlight.ClearUnit(unit, frame) end
     local plate = knownPlates[unit]
     if plate then
+        Periodic.Cancel("global refresh", plate)
+        globalWork[plate] = nil
         Periodic.Cancel("reconciliation", plate)
         Periodic.Cancel("plate retry", plate)
         pendingPlates[plate], reconcilePlates[plate] = nil, nil
@@ -363,6 +433,12 @@ local function DiscoverPlates()
             reconcilePlates[plate] = nil
         end
     end
+    for plate in pairs(globalWork) do
+        if not present[plate] then
+            Periodic.Cancel("global refresh", plate)
+            globalWork[plate] = nil
+        end
+    end
     for unit in pairs(pendingUnits) do DeferUnit(unit) end
     for plate in pairs(pendingPlates) do
         if present[plate] then DeferPlate(plate)
@@ -377,6 +453,7 @@ local function RuntimeUpdate(_, elapsed)
     if enabled ~= wasEnabled then
         ResetReconciliation()
         if not enabled then
+            ClearGlobalWork()
             Periodic.Clear("unit retry"); Periodic.Clear("plate retry")
         end
         wasEnabled = enabled
@@ -402,7 +479,7 @@ ns.RefreshRestoredNameplate = function(frame)
     end
 end
 ns.QueueNameplateRefresh = QueueRefreshAll
-ns.RefreshAll = function() RefreshAll() end
+ns.RefreshAll = function() QueueRefreshAll("direct request") end
 ns.RefreshNameplateData = function(work) QueueRefreshAll("TRP3 callback", work) end
 ns.RestoreAll = RestoreAll
 ns.StateForUnit = StateForUnit

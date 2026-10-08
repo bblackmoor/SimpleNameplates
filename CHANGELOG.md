@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.214
+
+* Moves broad global refreshes (including settings, callbacks and login passes) into per-plate jobs sharing the existing four-job/one-millisecond cooperative scheduler. Current and previous target/mouseover/interaction plates and explicit unit requests remain immediate. A running plate operation cannot be interrupted; immediate priority work is outside the periodic budget.
+* Coalesces full/focused global work, merges pending global flags into immediate unit updates and cancels duplicate jobs. Each deferred job reads fresh context/access and validates assignment, unit generation, native lookup and readable GUID. Removal, missing snapshot entries, disable and newer full refreshes cancel stale work. Failed writes retain flags and the original error for bounded retries.
+* Adds Global plate refresh timing and Periodic jobs: global refresh counters. Global refresh now times discovery/enqueueing plus immediate priority work, rather than styling every plate synchronously. Global refresh plates still counts actual full/focused visits.
+* Records 1.0.213 live confirmation: no reported geometry drift or reconciliation full-style fallbacks; 571 full styling calls and 501 cached repairs over 95.3 seconds. Urgent/global maxima were 20.085/20.080 ms. Broad batches are the next measured target; this patch still needs live timing confirmation. The 440 text-color reconciliation repairs remain a separate investigation.
+* All 21 smoke suites pass. New and updated regressions cover pacing, convergence, current/previous target priority, unit/global merging, stale GUIDs, removal/snapshot cancellation, disable and error recovery. The paced-settings regression fails against 1.0.213.
+
 ## 1.0.213
 
 * Treats readable native health-bar/container visibility differences as selective repair work rather than invalid cache identity. Reconciliation can restore bar, container and inside-name visibility together without classification, font writes, name/title styling or full restyling. Unknown visibility remains subject to the existing retry backoff; identity, context, region and access checks are retained.

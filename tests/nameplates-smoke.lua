@@ -103,7 +103,12 @@ end
 -- Retired category-disable fixtures exercise the global restoration path.
 local runtimeRefresh = ns.RefreshAll
 ns.RefreshAll = function()
-    if categoryMode == "inactive" then ns.RestoreAll() else runtimeRefresh() end
+    if categoryMode == "inactive" then ns.RestoreAll() else
+        runtimeRefresh()
+        -- Characterization fixtures settle queued global work explicitly.
+        frames[1].scripts.OnUpdate(frames[1], 0.001)
+        for _ = 1, 30 do ns.PeriodicWork.Run() end
+    end
 end
 equal(#frames, 1, "one event frame")
 local events = frames[1]
@@ -2189,17 +2194,22 @@ local function CheckBoundedRuntime()
     assert(not repairs[retiredToken], "departed queued owner performs no later text writes")
     equal(recycled.SNPInsideName.text, "Immediate RP", "stale scan cannot overwrite recycled content")
 
-    -- Settings invalidate routine work; the urgent refresh establishes new caches.
+    -- Broad settings/context refreshes now share the bounded scheduler.
     appearance.nameSize = 22
     ns.QueueNameplateRefresh("phase 4 settings regression")
     assert(not work.Has("reconciliation", byUnit.nameplate116), "full refresh cancels the old cycle")
     events.scripts.OnUpdate(events, 0.001)
-    for _, frame in pairs(framesByUnit) do equal(frame.SNPInsideName.size, 22, "settings refresh does not wait behind budget") end
+    local changed = 0
+    for _, frame in pairs(framesByUnit) do if frame.SNPInsideName.size == 22 then changed = changed + 1 end end
+    assert(changed > 0 and changed <= 4, "broad settings refresh is paced within one frame")
+    for _ = 1, 12 do events.scripts.OnUpdate(events, 0.001) end
+    for _, frame in pairs(framesByUnit) do equal(frame.SNPInsideName.size, 22, "bounded settings refresh reaches every plate") end
     local oldRevision = ns.WorldContext.Get().revision
     C_PvP = {GetZonePVPInfo = function() return "contested", false end}
     events.scripts.OnEvent(events, "ZONE_CHANGED_NEW_AREA")
     assert(ns.WorldContext.Get().revision > oldRevision, "context fixture changed revision")
     events.scripts.OnUpdate(events, 0.001)
+    for _ = 1, 12 do events.scripts.OnUpdate(events, 0.001) end
     for _, frame in pairs(framesByUnit) do
         equal(frame.SNPPresentation.contextRevision, ns.WorldContext.Get().revision, "jobs/settings use fresh context")
     end
@@ -2656,6 +2666,105 @@ do
     assert(not bar.shown, "native hide repair respects disabled styling")
     stylingEnabled = true
     assert(ns.NameplateRestoration.Request(frame, context), "visibility repair preserves restoration")
+end
+
+-- Global fan-out must be bounded while priority/unit work bypasses its backlog.
+do
+    local scheduler, savedClock = ns.PeriodicWork, GetTimePreciseSec
+    GetTimePreciseSec = function() return 0 end
+    for _, group in ipairs({"global refresh", "reconciliation", "restoration frame", "restoration plate",
+        "cast retry", "unit retry", "plate retry"}) do scheduler.Clear(group) end
+    local savedList, savedLookup = C_NamePlate.GetNamePlates, C_NamePlate.GetNamePlateForUnit
+    local list, byUnit, guid = {}, {}, {}
+    local priority
+    C_NamePlate.GetNamePlates = function() return list end
+    C_NamePlate.GetNamePlateForUnit = function(token)
+        if token == "target" then return priority end
+        return byUnit[token]
+    end
+    unit = {reaction = 3, names = {}}
+    UnitGUID = function(token) return guid[token] end
+    ns.TRP3, trp3Options = nil, {}
+    stylingEnabled, categoryMode, showBar, dimBackground = true, "active", true, false
+    appearance.namePlacement, appearance.nameSize, appearance.healthBarWidth = "ABOVE", 18, 100
+    for index = 1, 12 do
+        local token, frame = "nameplate" .. (300 + index), Region()
+        frame.unit, frame.name, frame.healthBar, frame.HealthBarsContainer = token, Region(), Region(), Region()
+        frame.name:SetFont("Native", 10, ""); frame.name:SetTextColor(1, 1, 1)
+        frame.name:SetVertexColor(1, 1, 1, 1); frame.name:SetText("Native")
+        list[index], unit.names[token], guid[token] = {UnitFrame = frame}, "Global " .. index, "Creature-Global-" .. index
+        byUnit[token] = list[index]
+    end
+    ns.RefreshAll() -- Characterization wrapper explicitly settles initialization.
+    local savedCount, served = ns.Profiler.Count, 0
+    ns.Profiler.Count = function(group, reason)
+        if group == "Global refresh plates" then served = served + 1 end
+        savedCount(group, reason)
+    end
+    local function Frame() served = 0; events.scripts.OnUpdate(events, 0.001); return served end
+    local function Settle()
+        for _ = 1, 30 do assert(Frame() <= 4, "deferred global jobs obey shared cap") end
+    end
+    appearance.nameSize = 22; ns.QueueNameplateRefresh("crowded global test")
+    assert(Frame() <= 4, "global fan-out does not style every plate immediately")
+    assert(scheduler.Has("global refresh", list[12]), "global tail remains queued")
+    -- Merge a focused global callback and immediate unit name event into an
+    -- older full request, consuming it once instead of updating it twice.
+    unit.names.nameplate312 = "Urgent global name"
+    ns.RefreshNameplateData({name = true})
+    events.scripts.OnEvent(events, "UNIT_NAME_UPDATE", "nameplate312")
+    Frame()
+    equal(list[12].UnitFrame.name.text, "Urgent global name", "unit event bypasses global backlog")
+    equal(list[12].UnitFrame.name.size, 22, "unit update consumes pending full settings work")
+    assert(not scheduler.Has("global refresh", list[12]), "consumed unit work cancels duplicate global job")
+    Settle()
+    for _, plate in ipairs(list) do equal(plate.UnitFrame.name.size, 22, "all coalesced global requests converge") end
+    -- Current and previous target plates refresh ahead of the bounded tail.
+    priority = list[12]; appearance.nameSize = 24; ns.QueueNameplateRefresh("target priority")
+    assert(Frame() <= 5, "one target plus four deferred jobs is bounded")
+    equal(priority.UnitFrame.name.size, 24, "current target updates immediately")
+    Settle()
+    local oldPriority = priority; priority = list[11]
+    appearance.nameSize = 26; ns.QueueNameplateRefresh("previous target priority")
+    assert(Frame() <= 6, "two priority plates plus deferred jobs remain limited")
+    equal(oldPriority.UnitFrame.name.size, 26, "previous target updates immediately")
+    equal(priority.UnitFrame.name.size, 26, "new target updates immediately")
+    Settle(); priority = nil
+    -- A missing removal event is still caught by assignment/GUID validation.
+    appearance.nameSize = 28; ns.QueueNameplateRefresh("stale global work")
+    Frame()
+    local stale = list[10]; local originalSize = stale.UnitFrame.name.size
+    guid[stale.UnitFrame.unit] = "Creature-Recycled-Same-Token"
+    Settle()
+    equal(stale.UnitFrame.name.size, originalSize, "stale global GUID performs no writes")
+    -- A failed native write preserves the error, pending flags and retry job.
+    local failedPlate, failure = list[9], {}
+    local setter = failedPlate.UnitFrame.name.SetFont
+    failedPlate.UnitFrame.name.SetFont = function() error(failure) end
+    appearance.nameSize = 29; ns.QueueNameplateRefresh("failed global write")
+    local failed
+    for _ = 1, 8 do
+        local ok, err = pcall(Frame)
+        if not ok then assert(err == failure, "global retry retains original error"); failed = true; break end
+    end
+    assert(failed and scheduler.Has("global refresh", failedPlate), "failed global job remains queued")
+    assert(not failedPlate.UnitFrame.SNPApplyingStyle, "failed global write releases style guard")
+    failedPlate.UnitFrame.name.SetFont = setter
+    events.scripts.OnUpdate(events, 0.25); Settle()
+    equal(failedPlate.UnitFrame.name.size, 29, "failed global job retries its original work")
+    -- Removal cancels its deferred record. Disabled styling cancels all work.
+    appearance.nameSize = 30; ns.QueueNameplateRefresh("departed global work")
+    Frame()
+    events.scripts.OnEvent(events, "NAME_PLATE_UNIT_REMOVED", "nameplate310")
+    assert(not scheduler.Has("global refresh", stale), "unit removal cancels deferred global refresh")
+    local departed = list[9]; table.remove(list, 9)
+    events.scripts.OnUpdate(events, 0.25)
+    assert(not scheduler.Has("global refresh", departed), "snapshot cancels departed global work without a removal event")
+    stylingEnabled = false; ns.RestoreAll()
+    for _, plate in ipairs(list) do assert(not scheduler.Has("global refresh", plate), "disable clears global backlog") end
+    stylingEnabled = true
+    ns.Profiler.Count, GetTimePreciseSec = savedCount, savedClock
+    C_NamePlate.GetNamePlates, C_NamePlate.GetNamePlateForUnit = savedList, savedLookup
 end
 
 print("Nameplates smoke: passed")

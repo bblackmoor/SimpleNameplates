@@ -149,3 +149,13 @@ request a cached repair instead of a full-style fallback. Native bar OnHide
 also uses `Geometry hook repair` for current visibility and dimensions.
 Compare Reconciliation repairs and Styling requests to distinguish selective
 visibility recovery from actual cache invalidation.
+
+
+Version 1.0.214 changes `Global refresh` to snapshot/enqueueing plus immediate
+priority work. `Global plate refresh` times one plate operation; `Periodic jobs:
+global refresh` counts deferred scheduler service, sharing the existing four
+jobs/one-millisecond target with reconciliation and retries. `Global refresh
+plates` counts actual full/focused visits, and Styling requests identifies
+`global refresh`. Target/mouseover/interaction and explicit unit work can run
+outside the periodic budget. Compare runtime/urgent maxima and completion
+latency; old and new Global refresh averages measure different operations.
