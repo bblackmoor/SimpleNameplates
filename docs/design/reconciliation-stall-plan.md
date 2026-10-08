@@ -293,3 +293,28 @@ after successful preparation. 1.0.210 adds bounded preparation reason counters
 without changing geometry. Capture these together with size samples before
 selecting a further sizing fix. NPC color acceptance is confirmed for this scene;
 the size loop and broader performance acceptance remain open.
+
+
+## Restricted anchor sizing follow-up (1.0.211)
+
+The 84.4-second 1.0.210 report recorded 10,436 `point getter failed`
+preparations and cached repairs on all 3,806 reconciliation jobs. Widths
+remained near 258 instead of 309 with two anchors. Urgent refresh reached
+25.932 ms; that separate timing remains unresolved.
+
+1. Install 1.0.211 and reload. Retain the 120% health-bar width and inside-name settings.
+2. Verify bar width and name height, NPC grey colors, cast/title substitution and threat text.
+3. Record a similar one-minute run with `/snp perf start`, `/snp perf stop`, then `/snp perf report`.
+4. Include Bar anchor preparation, Name drift, Name size drift and Urgent refresh rows.
+   Expect `released native restricted anchors` at setup or a native reset, followed by
+   stable geometry rather than a cached repair on every check. Repeated release still
+   requires investigation of native resets.
+5. Reset width to 100% and move the name above the bar, then disable styling. Verify native
+   anchoring returns. Repeat with Blizzard classic and modern bar styles and a different UI scale.
+
+The patch derives the known native bar/container anchors from Blizzard
+`NamePlateUnitFrameMixin:UpdateAnchors` inputs and writes them through PixelUtil.
+It avoids GetPoint when IsAnchoringRestricted reports true and uses the same
+validated fallback if the getter throws. Unsupported hierarchies remain untouched.
+Smoke coverage models the failed getter, restoration and convergence; it cannot
+establish native secure behavior or prove the runtime spike is fixed.

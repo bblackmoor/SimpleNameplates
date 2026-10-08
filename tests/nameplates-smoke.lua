@@ -2415,6 +2415,78 @@ do
     assert(report:find("Focused outcomes: not a nameplate = 2", 1, true))
 end
 
+-- Retail nameplate dimensions are readable while GetPoint throws. Exercise
+-- both IsAnchoringRestricted and clients without that predicate, modern and
+-- classic offsets, native resets, restoration and unsupported hierarchies.
+do
+    local savedSetup, savedPixel = NamePlateSetupOptions, PixelUtil
+    PixelUtil = {SetPoint = function(region, ...) region:SetPoint(...) end}
+    for _, classic in ipairs({false, true}) do
+        for _, predicate in ipairs({false, true}) do
+            NamePlateSetupOptions = {useClassicHealthBar = classic, horizontalScale = 2,
+                verticalScale = 2, castBarToHealthBarSpacing = 4}
+            local frame, container, bar, cast = Region(), Region(), Region(), Region()
+            frame.unit, frame.name, frame.HealthBarsContainer, frame.healthBar = "nameplate9", Region(), container, bar
+            frame.CastBarsContainer, container.healthBar = cast, bar
+            frame.UpdateAnchors = function() end
+            frame.name:SetFont("Native", 10, "")
+            frame.name:SetTextColor(1, 1, 1); frame.name:SetVertexColor(1, 1, 1, 1)
+            frame.name:SetText("Restricted anchors")
+            local function NativeAnchors()
+                container.points = {{"BOTTOMLEFT", cast, "TOPLEFT", 0, 4}, {"BOTTOMRIGHT", cast, "TOPRIGHT", 0, 4}}
+                bar.points = {{"TOPLEFT", container, "TOPLEFT", classic and 7 or 0, classic and 1 or 0},
+                    {"BOTTOMRIGHT", container, "BOTTOMRIGHT", classic and -41.5 or 0, classic and 1 or 0}}
+            end
+            NativeAnchors()
+            local getters = 0
+            for _, region in ipairs({bar, container}) do
+                function region:GetPoint() getters = getters + 1; error("Can't measure restricted regions") end
+                if predicate then region.IsAnchoringRestricted = function() return true end end
+                function region:GetWidth() return #self.points > 1 and 140 or self.width end
+                function region:GetHeight() return #self.points > 1 and 20 or self.height end
+            end
+            stylingEnabled, categoryMode, showBar, dimBackground = true, "active", true, false
+            threatEnabled, threatPercent = false, nil
+            appearance.namePlacement, appearance.nameSize, appearance.healthBarWidth = "INSIDE", 18, 120
+            appearance.useSlugRendering = false
+            unit = {reaction = 3}; UnitGUID = function() return "Creature-Restricted-Anchors" end
+            local context, cap = ns.WorldContext.Get(), ns.PresentationCapabilities
+            ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+            equal(bar:GetWidth(), 168, "unreadable anchors reach configured bar width")
+            equal(container:GetWidth(), 168, "unreadable anchors reach configured container width")
+            equal(bar:GetHeight(), 25, "unreadable anchors reach configured height")
+            assert(not ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)),
+                "unreadable anchor sizing converges")
+            NativeAnchors()
+            local drift, reason, plan = ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context))
+            assert(drift and ns.NameplateText.RepairCachedName(frame, context, cap.InspectFrame(frame, context), plan))
+            assert(not ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)),
+                "unreadable anchor reset converges after one repair")
+            if predicate then equal(getters, 0, "restricted predicate avoids positional getter") end
+            assert(ns.NameplateRestoration.Request(frame, context))
+            equal(#bar.points, 2, "unreadable native bar anchors restored")
+            equal(#container.points, 2, "unreadable native container anchors restored")
+            equal(container.points[1][2], cast, "native cast-relative hierarchy restored")
+            equal(container.points[1][5], 4, "native cast spacing restored")
+            equal(bar.points[1][4], classic and 7 or 0, "native left inset restored")
+            equal(bar.points[2][4], classic and -41.5 or 0, "native right inset restored")
+            equal(bar.points[1][5], classic and 1 or 0, "native vertical offset restored")
+            equal(bar:GetWidth(), 140, "unreadable native width restored")
+            equal(bar:GetHeight(), 20, "unreadable native height restored")
+            ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+            appearance.namePlacement, appearance.healthBarWidth = "ABOVE", 100
+            ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+            equal(#bar.points, 2, "default sizing restores unreadable anchors")
+            equal(bar:GetWidth(), 140, "default sizing restores unreadable width")
+            NativeAnchors(); frame.UpdateAnchors = nil
+            local before = bar.points
+            assert(not ns.NameplateFrames.PrepareBarSize(frame, bar, context), "unknown unreadable layout rejected")
+            equal(bar.points, before, "unknown unreadable anchors untouched")
+        end
+    end
+    NamePlateSetupOptions, PixelUtil = savedSetup, savedPixel
+end
+
 -- A FontString implementation can expose text/vertex color through shared
 -- state. Reconciliation must never leave the neutral white write as its color.
 do

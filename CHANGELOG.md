@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.211
+
+* Fixes anchor preparation on Retail nameplates whose GetPoint cannot be queried. Uses the known Blizzard HealthBarsContainer/CastBarsContainer hierarchy and NamePlateSetupOptions with PixelUtil to release opposing anchors and restore native modern/classic offsets. IsAnchoringRestricted bypasses GetPoint; a failed getter can use the same validated layout fallback. Unknown hierarchies remain untouched.
+* Adds regressions for throwing GetPoint, restriction predicates, width/height convergence, native anchor resets, classic offsets, full restoration, default sizing and unsupported layouts. The regression fails on 1.0.210.
+* Records the 84.4-second 1.0.210 live report: 10,436 point-getter failures and 3,806 cached reconciliation repairs. Native sizing and runtime timing acceptance remain pending; scheduler limits and name-color rules are unchanged.
+
 ## 1.0.210
 
 * Adds opt-in Bar anchor preparation counters explaining successful anchor release or a skipped preparation: unreadable count/point/offset/relative frame, inaccessible relative frame, differing relatives, unsupported layout or unreadable height. Geometry writes and the scheduler are unchanged; the next live report can distinguish preparation skips from repeated native anchor resets.

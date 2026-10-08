@@ -126,3 +126,10 @@ restoration baseline. The next recording should check whether repeated width and
 height drift stops and whether background names stay grey during native bar
 visibility changes. A current cached color is repaired independently of those
 mutable layout properties.
+
+
+In 1.0.211, `Bar anchor preparation: released native restricted anchors`
+identifies sizing using the known Retail hierarchy without positional getters.
+`restricted layout unsupported` leaves an unknown restricted hierarchy untouched.
+A successful release should be followed by stable dimensions; repeated releases
+can indicate Blizzard is resetting anchors. See the live verification checklist.

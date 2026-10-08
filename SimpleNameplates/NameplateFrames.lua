@@ -35,19 +35,65 @@ local function AnchorPreparationResult(ready, reason)
     return ready, reason
 end
 
+-- GetPoint is unavailable on anchor-restricted nameplate regions. For the
+-- current Retail hierarchy, derive anchors from Blizzard's UpdateAnchors
+-- inputs instead. PixelUtil preserves the native rounding and UI scale.
+local function NativeSizePoints(frame, region, context)
+    local setup = ns.AccessibleValue(NamePlateSetupOptions)
+    local pixelPoint = PixelUtil and PixelUtil.SetPoint
+    if not setup or type(pixelPoint) ~= "function"
+        or type(Capabilities.SafeField(frame, "UpdateAnchors", context)) ~= "function" then return end
+    local container = Capabilities.SafeField(frame, "HealthBarsContainer", context)
+    local bar = Capabilities.SafeField(container, "healthBar", context)
+    local points
+    if region == container then
+        local cast = Capabilities.SafeField(frame, "CastBarsContainer", context)
+        local spacing = ns.AccessibleNumber(setup.castBarToHealthBarSpacing)
+        if Capabilities.ObjectStatus(cast, context) ~= "accessible" or spacing == nil then return end
+        points = {{"BOTTOMLEFT", cast, "TOPLEFT", 0, spacing},
+            {"BOTTOMRIGHT", cast, "TOPRIGHT", 0, spacing}}
+    elseif region == bar then
+        if Capabilities.ObjectStatus(container, context) ~= "accessible" then return end
+        local classic = ns.AccessibleBoolean(setup.useClassicHealthBar)
+        if classic == nil then return end
+        local left, right, y = 0, 0, 0
+        if classic then
+            local horizontal = ns.AccessibleNumber(setup.horizontalScale)
+            local vertical = ns.AccessibleNumber(setup.verticalScale)
+            if horizontal == nil or vertical == nil then return end
+            left, right, y = 3.5 * horizontal, -20.75 * horizontal, 0.5 * vertical
+        end
+        points = {{"TOPLEFT", container, "TOPLEFT", left, y},
+            {"BOTTOMRIGHT", container, "BOTTOMRIGHT", right, y}}
+    end
+    if points then points.pixelPoint = pixelPoint end
+    return points
+end
+
 local function PrepareBarSize(frame, region, context)
     local count = ns.AccessibleNumber(Capabilities.ReadRegion(region, "GetNumPoints", context))
     if not count then return AnchorPreparationResult(false, "anchor count unreadable") end
     if count < 2 then return AnchorPreparationResult(true, "already unconstrained") end
     if count ~= 2 then return AnchorPreparationResult(false, "unsupported anchor count") end
+    local restricted = ns.AccessibleBoolean(Capabilities.ReadRegion(region, "IsAnchoringRestricted", context))
+    local points = restricted == true and NativeSizePoints(frame, region, context) or nil
+    if restricted == true and not points then
+        return AnchorPreparationResult(false, "restricted layout unsupported")
+    end
     local getter = Capabilities.SafeField(region, "GetPoint", context)
-    if type(getter) ~= "function" then return AnchorPreparationResult(false, "point getter unavailable") end
-    local points = {}
-    for index = 1, count do
+    if not points and type(getter) ~= "function" then return AnchorPreparationResult(false, "point getter unavailable") end
+    local native = points ~= nil
+    points = points or {}
+    for index = 1, native and 0 or count do
         local ok, point, relative, relativePoint, x, y = pcall(getter, region, index)
         point, relative, relativePoint = ns.AccessibleValue(point), ns.AccessibleValue(relative), ns.AccessibleValue(relativePoint)
         x, y = ns.AccessibleNumber(x), ns.AccessibleNumber(y)
-        if not ok then return AnchorPreparationResult(false, "point getter failed") end
+        if not ok then
+            points = NativeSizePoints(frame, region, context)
+            if not points then return AnchorPreparationResult(false, "point getter failed") end
+            native = true
+            break
+        end
         if type(point) ~= "string" or type(relativePoint) ~= "string" then
             return AnchorPreparationResult(false, "point labels unreadable")
         end
@@ -74,9 +120,13 @@ local function PrepareBarSize(frame, region, context)
     frame.SNPOriginalSizeAnchors = frame.SNPOriginalSizeAnchors or {}
     if not frame.SNPOriginalSizeAnchors[region] then frame.SNPOriginalSizeAnchors[region] = points end
     region:ClearAllPoints()
-    region:SetPoint(Center(first[1]), first[2], Center(first[3]), (first[4] + last[4]) / 2, first[5])
+    if points.pixelPoint then
+        points.pixelPoint(region, Center(first[1]), first[2], Center(first[3]), (first[4] + last[4]) / 2, first[5])
+    else
+        region:SetPoint(Center(first[1]), first[2], Center(first[3]), (first[4] + last[4]) / 2, first[5])
+    end
     region:SetHeight(height)
-    return AnchorPreparationResult(true, "released opposing anchors")
+    return AnchorPreparationResult(true, native and "released native restricted anchors" or "released opposing anchors")
 end
 
 local function RestoreSizeAnchors(frame, context)
@@ -89,7 +139,8 @@ local function RestoreSizeAnchors(frame, context)
             if Capabilities.ObjectStatus(point[2], context) ~= "accessible" then
                 error("Bar relative anchor is temporarily inaccessible")
             end
-            region:SetPoint((unpack or table.unpack)(point))
+            if points.pixelPoint then points.pixelPoint(region, (unpack or table.unpack)(point))
+            else region:SetPoint((unpack or table.unpack)(point)) end
         end
     end
     frame.SNPOriginalSizeAnchors = nil
