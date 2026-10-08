@@ -62,6 +62,53 @@ local function CreateBorder(parent, inset, thickness)
     return {top, bottom, left, right}
 end
 
+
+local function Parameter(effect, key, fallback)
+    local getter = ns.GetCastAdvancedSetting
+    local value = getter and getter(effect, key)
+    if value ~= nil then return value end
+    return fallback
+end
+
+local function Reanchor(frame, parent, distance)
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", parent, "TOPLEFT", -distance, distance)
+    frame:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", distance, -distance)
+end
+
+local function ConfigurePulse(h)
+    local thick = Parameter("PULSE", "thickness", 4)
+    local inset = Parameter("PULSE", "inset", 2)
+    local low = Parameter("PULSE", "lowAlpha", 0.35)
+    local high = Parameter("PULSE", "highAlpha", 1)
+    local fadeOut = Parameter("PULSE", "fadeOut", 0.55)
+    local fadeIn = Parameter("PULSE", "fadeIn", 0.55)
+    local signature = table.concat({thick, inset, low, high, fadeOut, fadeIn}, ":")
+    if h.pulseConfig == signature then return end
+    h.pulseConfig = signature
+    local top, bottom, left, right = unpack(h.border)
+    for _, edge in ipairs(h.border) do edge:ClearAllPoints() end
+    top:SetPoint("TOPLEFT", h.frame, "TOPLEFT", inset, -inset)
+    top:SetPoint("TOPRIGHT", h.frame, "TOPRIGHT", -inset, -inset)
+    top:SetHeight(thick)
+    bottom:SetPoint("BOTTOMLEFT", h.frame, "BOTTOMLEFT", inset, inset)
+    bottom:SetPoint("BOTTOMRIGHT", h.frame, "BOTTOMRIGHT", -inset, inset)
+    bottom:SetHeight(thick)
+    left:SetPoint("TOPLEFT", h.frame, "TOPLEFT", inset, -inset)
+    left:SetPoint("BOTTOMLEFT", h.frame, "BOTTOMLEFT", inset, inset)
+    left:SetWidth(thick)
+    right:SetPoint("TOPRIGHT", h.frame, "TOPRIGHT", -inset, -inset)
+    right:SetPoint("BOTTOMRIGHT", h.frame, "BOTTOMRIGHT", -inset, inset)
+    right:SetWidth(thick)
+    h.pulse:Stop()
+    h.fadeOut:SetFromAlpha(high)
+    h.fadeOut:SetToAlpha(low)
+    h.fadeOut:SetDuration(fadeOut)
+    h.fadeIn:SetFromAlpha(low)
+    h.fadeIn:SetToAlpha(high)
+    h.fadeIn:SetDuration(fadeIn)
+end
+
 local function StopRenderer(highlight)
     if highlight.pulse then highlight.pulse:Stop() end
     if highlight.frame then highlight.frame:SetAlpha(1) end
@@ -107,7 +154,7 @@ local function FrameworkRenderer(highlight, effect)
         -- Animate only this owned sheet; never read native cast dimensions.
         renderer:SetScript("OnUpdate", function(self, elapsed)
             self.elapsed = (self.elapsed or 0) + elapsed
-            local index = math.floor(self.elapsed / 0.025) % 22
+            local index = math.floor(self.elapsed / (self.frameTime or 0.025)) % (self.frameCount or 22)
             local left, top = (index % 5) * 48 / 256, math.floor(index / 5) * 48 / 256
             self.Texture:SetTexCoord(left, left + 48 / 256, top, top + 48 / 256)
         end)
@@ -142,18 +189,72 @@ local function FrameworkRenderer(highlight, effect)
     return renderer
 end
 
+
+local function ConfigureLibraryEffect(h, effect, renderer)
+    local controls = ns.CAST_ADVANCED_CONTROLS and ns.CAST_ADVANCED_CONTROLS[effect]
+    local values = {}
+    if controls then
+        for _, control in ipairs(controls) do
+            values[#values + 1] = tostring(Parameter(effect, control.key, control.default))
+        end
+    end
+    local signature = table.concat(values, ":")
+    if renderer.SNPConfiguration == signature then return end
+    renderer.SNPConfiguration = signature
+    local layer = h.effectHosts[effect]
+    if effect == "SOLID" then
+        Reanchor(renderer, layer, Parameter("SOLID", "distance", 0))
+        renderer:SetBorderSizes(Parameter("SOLID", "thickness", 2),
+            Parameter("SOLID", "minPixels", 2), Parameter("SOLID", "upward", 2),
+            Parameter("SOLID", "upwardMin", 2))
+        renderer:UpdateSizes()
+    elseif effect == "SOFT" then
+        Reanchor(layer, h.frame, Parameter("SOFT", "spread", 0))
+        local size = Parameter("SOFT", "thickness", 2)
+        for _, group in ipairs({layer.Borders.Layer1, layer.Borders.Layer2, layer.Borders.Layer3}) do
+            for i, texture in ipairs(group) do
+                if i == 1 or i == 3 then texture:SetWidth(size)
+                else texture:SetHeight(size) end
+            end
+        end
+        layer:SetBorderAlpha(Parameter("SOFT", "alpha1", 1),
+            Parameter("SOFT", "alpha2", 0.55), Parameter("SOFT", "alpha3", 0.2))
+        layer:SetLayerVisibility(Parameter("SOFT", "layer1", true),
+            Parameter("SOFT", "layer2", true), Parameter("SOFT", "layer3", true))
+    elseif effect == "ANTS" then
+        local d = Parameter("ANTS", "distance", 3)
+        renderer:SetOffset(-d, d, d, -d)
+        renderer.frameTime = Parameter("ANTS", "frameTime", 0.025)
+        renderer.frameCount = Parameter("ANTS", "frames", 22)
+    elseif effect == "GLOW" then
+        local x = Parameter("GLOW", "expandX", 8)
+        local y = Parameter("GLOW", "expandY", 8)
+        local dx = Parameter("GLOW", "offsetX", 0)
+        local dy = Parameter("GLOW", "offsetY", 0)
+        renderer:ClearAllPoints()
+        renderer:SetPoint("TOPLEFT", h.frame, "TOPLEFT", dx-x, dy+y)
+        renderer:SetPoint("BOTTOMRIGHT", h.frame, "BOTTOMRIGHT", dx+x, dy-y)
+        if renderer.ProcStartFlipbook then
+            renderer.ProcStartFlipbook:ClearAllPoints()
+            renderer.ProcStartFlipbook:SetAllPoints(renderer)
+        end
+    end
+end
+
 local function ApplyRenderer(highlight)
-    local effect = ns.GetInterruptibleEffect and ns.GetInterruptibleEffect() or "PULSE"
+    local effect = highlight.previewEffect or (ns.GetInterruptibleEffect and ns.GetInterruptibleEffect()) or "PULSE"
     if highlight.activeEffect ~= effect then StopRenderer(highlight) end
     highlight.activeEffect, highlight.rendererError = effect, nil
     local r, g, b = EffectColor("interruptible")
     if effect ~= "PULSE" then
         local ok, err = pcall(function()
             local renderer = FrameworkRenderer(highlight, effect)
+            ConfigureLibraryEffect(highlight, effect, renderer)
             if effect == "SOLID" then renderer:SetVertexColor(r, g, b, 1)
-            elseif effect == "SOFT" then renderer:SetBorderColor(r, g, b); renderer:SetBorderAlpha(1, 0.55, 0.2)
-            elseif effect == "ANTS" then renderer.Texture:SetVertexColor(r, g, b, 1)
-            else renderer:SetColor({r, g, b, 1}, {r, g, b, 1}) end
+            elseif effect == "SOFT" then renderer:SetBorderColor(r, g, b)
+            elseif effect == "ANTS" then renderer.Texture:SetVertexColor(r, g, b, Parameter("ANTS", "opacity", 1))
+            else renderer:SetColor({r, g, b, Parameter("GLOW", "antsAlpha", 1)},
+                {r, g, b, Parameter("GLOW", "glowAlpha", 1)}) end
             highlight.effectHosts[effect]:Show()
             local wasShown = renderer:IsShown()
             renderer:Show()
@@ -168,6 +269,7 @@ local function ApplyRenderer(highlight)
         -- client's template lacks the requested effect. Diagnostics explains it.
         highlight.activeEffect = "PULSE"
     end
+    ConfigurePulse(highlight)
     for _, edge in ipairs(highlight.border) do
         edge:SetColorTexture(r, g, b, 1)
         edge:Show()
@@ -309,7 +411,7 @@ local function CreateHighlight(castBar, owner, healthBar)
     fadeIn:SetDuration(0.55)
     fadeIn:SetOrder(2)
     pulse:SetLooping("REPEAT")
-    highlight.pulse = pulse
+    highlight.pulse, highlight.fadeOut, highlight.fadeIn = pulse, fadeOut, fadeIn
 
     overlay:SetScript("OnShow", function() ApplyRenderer(highlight) end)
     overlay:SetScript("OnHide", function() StopRenderer(highlight) end)
@@ -380,8 +482,9 @@ ns.CastHighlight = {
     UpdateInterruptibleHighlight = UpdateInterruptibleHighlight,
     RecordSpellcastEvent = RecordSpellcastEvent,
     ClearUnit = ClearUnit,
-    UpdatePreview = function(bar)
+    UpdatePreview = function(bar, effect)
         if not bar.SNPCastPreview then bar.SNPCastPreview = CreateHighlight(bar) end
+        bar.SNPCastPreview.previewEffect = effect
         bar.SNPCastPreview.frame:Show()
         ApplyRenderer(bar.SNPCastPreview)
     end,
