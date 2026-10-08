@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.210
+
+* Adds opt-in Bar anchor preparation counters explaining successful anchor release or a skipped preparation: unreadable count/point/offset/relative frame, inaccessible relative frame, differing relatives, unsupported layout or unreadable height. Geometry writes and the scheduler are unchanged; the next live report can distinguish preparation skips from repeated native anchor resets.
+* Records live confirmation that 1.0.209 stopped NPC blinking. The new 83.8-second report still shows a cached repair on all 3,565 reconciliation jobs: widths near 258 remain below the requested 309, with two anchors present. Size-loop acceptance remains open.
+
 ## 1.0.209
 
 * Fixes a reproduced grey-to-white reconciliation path: a vertex-color repair now always finishes with the configured text color. Calibrates the expected vertex getter after styling instead of assuming a separate white channel, so shared text/vertex color state does not create perpetual false drift. Classification and background dimming rules are unchanged. Live blinking acceptance remains pending.

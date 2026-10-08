@@ -30,37 +30,53 @@ end
 
 -- Opposite native anchors determine dimensions even after SetWidth/SetHeight.
 -- Preserve their baseline and use a single centered anchor while sizing a bar.
+local function AnchorPreparationResult(ready, reason)
+    ns.Profiler.Count("Bar anchor preparation", reason)
+    return ready, reason
+end
+
 local function PrepareBarSize(frame, region, context)
     local count = ns.AccessibleNumber(Capabilities.ReadRegion(region, "GetNumPoints", context))
-    if not count or count < 2 then return end
+    if not count then return AnchorPreparationResult(false, "anchor count unreadable") end
+    if count < 2 then return AnchorPreparationResult(true, "already unconstrained") end
+    if count ~= 2 then return AnchorPreparationResult(false, "unsupported anchor count") end
     local getter = Capabilities.SafeField(region, "GetPoint", context)
-    if type(getter) ~= "function" then return end
+    if type(getter) ~= "function" then return AnchorPreparationResult(false, "point getter unavailable") end
     local points = {}
     for index = 1, count do
         local ok, point, relative, relativePoint, x, y = pcall(getter, region, index)
         point, relative, relativePoint = ns.AccessibleValue(point), ns.AccessibleValue(relative), ns.AccessibleValue(relativePoint)
         x, y = ns.AccessibleNumber(x), ns.AccessibleNumber(y)
-        if not ok or type(point) ~= "string" or type(relativePoint) ~= "string"
-            or not relative or x == nil or y == nil
-            or Capabilities.ObjectStatus(relative, context) ~= "accessible" then return end
+        if not ok then return AnchorPreparationResult(false, "point getter failed") end
+        if type(point) ~= "string" or type(relativePoint) ~= "string" then
+            return AnchorPreparationResult(false, "point labels unreadable")
+        end
+        if not relative then return AnchorPreparationResult(false, "relative frame unreadable") end
+        if x == nil or y == nil then return AnchorPreparationResult(false, "point offsets unreadable") end
+        if Capabilities.ObjectStatus(relative, context) ~= "accessible" then
+            return AnchorPreparationResult(false, "relative frame inaccessible")
+        end
         points[index] = {point, relative, relativePoint, x, y}
     end
     local first, last = points[1], points[#points]
-    if #points ~= 2 or first[2] ~= last[2] then return end
+    if first[2] ~= last[2] then return AnchorPreparationResult(false, "different relative frames") end
     local function Center(point)
         local centered = point:gsub("LEFT", ""):gsub("RIGHT", "")
         return centered == "" and "CENTER" or centered
     end
     -- Only take ownership of recognizable native corner/edge pairs.
     if not ((first[1]:find("LEFT") and last[1]:find("RIGHT"))
-        or (first[1]:find("RIGHT") and last[1]:find("LEFT"))) then return end
+        or (first[1]:find("RIGHT") and last[1]:find("LEFT"))) then
+        return AnchorPreparationResult(false, "unsupported edge pair")
+    end
     local height = ns.AccessibleNumber(Capabilities.ReadRegion(region, "GetHeight", context))
-    if not height then return end
+    if not height then return AnchorPreparationResult(false, "height unreadable") end
     frame.SNPOriginalSizeAnchors = frame.SNPOriginalSizeAnchors or {}
     if not frame.SNPOriginalSizeAnchors[region] then frame.SNPOriginalSizeAnchors[region] = points end
     region:ClearAllPoints()
     region:SetPoint(Center(first[1]), first[2], Center(first[3]), (first[4] + last[4]) / 2, first[5])
     region:SetHeight(height)
+    return AnchorPreparationResult(true, "released opposing anchors")
 end
 
 local function RestoreSizeAnchors(frame, context)

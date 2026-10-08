@@ -278,3 +278,18 @@ the client must still establish whether this explains its visible blinking.
 Size repairs are unchanged. Bounded Name size drift samples now include actual
 and desired dimensions and anchor count. Collect these before selecting another
 geometry change; do not equate the earlier anchor-model test with client proof.
+
+## Live result from 1.0.209
+
+The user confirms NPC blinking stopped. The 83.8-second report still has 3,565
+cached repairs for 3,565 reconciliation jobs: 3,516 first report width and 49
+height. Width samples are 257.961/257.962 -> 309.288 for bar and container, with
+two anchors. Heights include 25.108 -> 25.000 and 28.971 -> 25.000, also with two
+anchors. Runtime peaks at 31.644 ms; Urgent refresh peaks at 30.450 ms.
+
+Native source uses the opposing anchors already modeled by the sizing test. The
+report cannot distinguish inaccessible/unsupported point data from native resets
+after successful preparation. 1.0.210 adds bounded preparation reason counters
+without changing geometry. Capture these together with size samples before
+selecting a further sizing fix. NPC color acceptance is confirmed for this scene;
+the size loop and broader performance acceptance remain open.

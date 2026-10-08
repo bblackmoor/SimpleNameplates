@@ -185,6 +185,9 @@ All four performance code phases are implemented. Live FPS, rendering, secure ac
 
 ## 1.0.209 color-channel follow-up
 
+Live result: user confirmed that blinking stopped in the Silvermoon scene on
+October 8. Broader color/restoration checks below remain separate acceptance work.
+
 - [ ] Verify the installed version is 1.0.209 and reload. With dimming enabled,
   observe Silvermoon Resident and Enchanted Broom stationary, then target/hover
   and move. Names should remain grey. Repeat with profiling off.
@@ -195,3 +198,11 @@ All four performance code phases are implemented. Live FPS, rendering, secure ac
   The size loop remains unresolved; these samples separate readable size deltas
   from anchor counts without changing repair behavior.
 - [ ] Check combat, restricted and recycled plates for Lua/taint errors.
+
+## 1.0.210 size-loop diagnosis
+
+- [ ] In the same scene and with the same appearance settings, capture about one
+  minute of profiling. Include Bar anchor preparation and Name size drift rows.
+- [ ] Determine whether repeated two-anchor drift follows successful preparation
+  (`released opposing anchors`) or a specific skip reason. Do not change width,
+  UI scale or addon settings during this comparison.
