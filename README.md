@@ -210,6 +210,11 @@ See [library provenance](SimpleNameplates/Libs/README.md) and run
 
 ## Development
 
+The [reconciliation stall plan](docs/design/reconciliation-stall-plan.md) provides
+follow-up phases 5–8 and step-by-step client recordings. Confirm the installed
+build before comparing older all-plate and current per-plate reconciliation data.
+
+
 The [shared settings conventions](docs/design/settings-conventions.md) describe the completed four-phase standardization, contract coverage, optional tests with both addons, and pending native acceptance.
 
 The [settings conversion plan](docs/design/details-framework-conversion.md) records the completed Details Framework code conversion and cleanup. The [original refactor plan](docs/design/implementation-plan.md) and [runtime plan](docs/design/runtime-refactor-plan.md) retain earlier implementation history. Saved data remains schema 2 with global behavior and appearance profiles.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.206
+
+* Adds a detailed reconciliation-stall follow-up plan (phases 5–8), with build verification, matched screenshot recordings, conditional diagnostics, measured fixes and live acceptance gates.
+* Records that the October 8 screenshot lacks current profiler rows/counters and does not confirm post-phase-4 performance. Older all-plate reconciliation averages cannot be compared directly with current per-plate averages.
+* Links the plan from README, the original performance plan and the profiling guide. Documentation only; runtime behavior remains unchanged from 1.0.205.
+
 ## 1.0.205
 
 * Implements performance phase 4 of 4: routine per-plate reconciliation, deferred restoration, cast recovery and pending unit/plate retries share a fair scheduler with at most four jobs per frame and a one-millisecond cooperative time target. A native list snapshot discovers plates every 0.25 seconds; each served plate becomes due again after 0.25 seconds.

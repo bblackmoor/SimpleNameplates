@@ -153,3 +153,12 @@ Run `texlua` on each `tests/*-smoke.lua` and `git diff --check` after each phase
 The suite uses UI stubs and cannot establish native secure behavior or rendering.
 The [live checklist](live-wow-verification.md) retains pending client acceptance;
 the [profiling guide](profiling.md) defines counter and timing interpretation.
+
+## Follow-up after the October 8 report
+
+The [reconciliation stall plan](reconciliation-stall-plan.md) defines phases 5–8:
+verify the installed build, collect matched complete reports, instrument remaining
+stalls if necessary, fix the measured cause and complete native acceptance. The
+new screenshot lacks the current profiler rows/counters, so it does not establish
+post-phase-4 performance. Reconciliation averages across the old all-plate and
+new per-plate definitions are not directly comparable.

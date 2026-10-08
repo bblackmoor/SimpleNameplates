@@ -93,3 +93,11 @@ These are aggregate addon readings, not allocations by function. They can includ
 
 `tests/profiler-smoke.lua` checks deterministic nested timings, lifecycle, disabled measurement work, return/error preservation, missing timer and failed memory APIs, counter reset/freeze and the disabled counter path. Runtime and settings smoke suites check the actual hooks and combat command routing. Native timing, rendering and secret-value/taint checks remain on the [live WoW checklist](live-wow-verification.md).
 
+
+## Follow-up for long stalls
+
+Use the [reconciliation stall plan](reconciliation-stall-plan.md) to confirm the
+installed version, capture the entire report with consecutive screenshots and
+run matched profiling-off/on recordings before tuning the scheduler. A current
+runtime report includes Periodic work whenever Runtime update runs; missing new
+rows and counters warrant checking installation and screenshot coverage first.
