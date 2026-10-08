@@ -164,6 +164,10 @@ cached appearance immediately, with access/identity checks and reentry guards.
 Equivalent font filename spellings and flag order do not cause periodic drift.
 The profiler distinguishes font components, cache invalidation reasons and
 external appearance writes, and measures urgent event refreshes separately.
+Cached color repair remains eligible during native bar visibility changes.
+Configured dimensions release opposing native anchors while preserving their
+restoration baseline; unchanged geometry should no longer trigger repeated repair.
+Global repair hooks skip unrelated raid/party or cleared-unit frames.
 Native verification of background-name flashing remains pending.
 
 Ordinary Blizzard name/color updates use focused repairs. Queued events merge classification, name/title, threat, cast and layout work per plate; a threat label appearing or disappearing adjusts the name space. Full styling is reserved for setup, settings/context changes, changed presentation structure and invalid cached state. TRP3 callbacks update content through the next queued runtime batch.

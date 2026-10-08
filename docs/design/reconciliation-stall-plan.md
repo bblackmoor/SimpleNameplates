@@ -243,3 +243,20 @@ that limited conclusion rather than declaring every possible stall fixed.
 - [ ] Phase 6: add targeted diagnostics only if the current build still stalls.
 - [ ] Phase 7: implement and validate the measured cause.
 - [ ] Phase 8: complete client acceptance and record results.
+
+## Follow-up from the 1.0.207 recording
+
+The 103.4-second report no longer lists native-font drift, but blinking persists.
+All 5,382 reconciliation jobs repair: 5,277 first report bar width and 105 bar
+height. Name appearance writes include 1,393 vertex-color repairs. All 1,302
+focused cache invalidations report not initialized. Urgent refresh peaks at
+24.939 ms within the 26.268 ms runtime maximum; aggregate maxima do not establish
+that they are the same callback.
+
+1.0.208 repairs cached colors without requiring native bar visibility to already
+match. It makes requested dimensions effective by releasing opposing native
+anchors while retaining their restoration baseline, and filters unrelated global
+CompactUnitFrame hooks before requesting full styling. Native anchor updates can
+still cause real drift, but one repair should converge. Font and scheduler behavior
+remain as in 1.0.207. Native acceptance remains open: verify blinking, geometry
+drift counts and initialization fallbacks in a matched recording.

@@ -28,6 +28,57 @@ local function SetShownSafe(region, shown, context)
     if shown then region:Show() else region:Hide() end
 end
 
+-- Opposite native anchors determine dimensions even after SetWidth/SetHeight.
+-- Preserve their baseline and use a single centered anchor while sizing a bar.
+local function PrepareBarSize(frame, region, context)
+    local count = ns.AccessibleNumber(Capabilities.ReadRegion(region, "GetNumPoints", context))
+    if not count or count < 2 then return end
+    local getter = Capabilities.SafeField(region, "GetPoint", context)
+    if type(getter) ~= "function" then return end
+    local points = {}
+    for index = 1, count do
+        local ok, point, relative, relativePoint, x, y = pcall(getter, region, index)
+        point, relative, relativePoint = ns.AccessibleValue(point), ns.AccessibleValue(relative), ns.AccessibleValue(relativePoint)
+        x, y = ns.AccessibleNumber(x), ns.AccessibleNumber(y)
+        if not ok or type(point) ~= "string" or type(relativePoint) ~= "string"
+            or not relative or x == nil or y == nil
+            or Capabilities.ObjectStatus(relative, context) ~= "accessible" then return end
+        points[index] = {point, relative, relativePoint, x, y}
+    end
+    local first, last = points[1], points[#points]
+    if #points ~= 2 or first[2] ~= last[2] then return end
+    local function Center(point)
+        local centered = point:gsub("LEFT", ""):gsub("RIGHT", "")
+        return centered == "" and "CENTER" or centered
+    end
+    -- Only take ownership of recognizable native corner/edge pairs.
+    if not ((first[1]:find("LEFT") and last[1]:find("RIGHT"))
+        or (first[1]:find("RIGHT") and last[1]:find("LEFT"))) then return end
+    local height = ns.AccessibleNumber(Capabilities.ReadRegion(region, "GetHeight", context))
+    if not height then return end
+    frame.SNPOriginalSizeAnchors = frame.SNPOriginalSizeAnchors or {}
+    if not frame.SNPOriginalSizeAnchors[region] then frame.SNPOriginalSizeAnchors[region] = points end
+    region:ClearAllPoints()
+    region:SetPoint(Center(first[1]), first[2], Center(first[3]), (first[4] + last[4]) / 2, first[5])
+    region:SetHeight(height)
+end
+
+local function RestoreSizeAnchors(frame, context)
+    for region, points in pairs(frame.SNPOriginalSizeAnchors or {}) do
+        if Capabilities.ObjectStatus(region, context) ~= "accessible" then
+            error("Bar anchor restoration is temporarily inaccessible")
+        end
+        region:ClearAllPoints()
+        for _, point in ipairs(points) do
+            if Capabilities.ObjectStatus(point[2], context) ~= "accessible" then
+                error("Bar relative anchor is temporarily inaccessible")
+            end
+            region:SetPoint((unpack or table.unpack)(point))
+        end
+    end
+    frame.SNPOriginalSizeAnchors = nil
+end
+
 local function RestoreBarWidth(frame, assessment)
     local bar = frame.SNPOriginalHealthBar or assessment.healthBar
     local container = frame.SNPOriginalHealthBarsContainer or frame.HealthBarsContainer
@@ -43,7 +94,11 @@ end
 
 local function ApplyBarWidth(frame, assessment, context)
     local percent = ns.GetAppearanceSetting("healthBarWidth") or 100
-    if percent == 100 then RestoreBarWidth(frame, assessment); return end
+    if percent == 100 then
+        RestoreBarWidth(frame, assessment)
+        RestoreSizeAnchors(frame, context)
+        return
+    end
     for _, item in ipairs({
         {assessment.healthBar, "SNPOriginalBarWidth", "SNPBarWidth"},
         {frame.HealthBarsContainer, "SNPOriginalContainerWidth", "SNPContainerWidth"},
@@ -55,6 +110,7 @@ local function ApplyBarWidth(frame, assessment, context)
         end
         if region and frame[originalKey] then
             frame[expectedKey] = frame[originalKey] * percent / 100
+            PrepareBarSize(frame, region, context)
             region:SetWidth(frame[expectedKey])
         end
     end
@@ -336,6 +392,7 @@ LayoutHealthText = ns.Profiler.Wrap("Health text layout", LayoutHealthText)
 ApplyBarArtwork = ns.Profiler.Wrap("Bar artwork", ApplyBarArtwork)
 
 ns.NameplateFrames = {
+    PrepareBarSize = PrepareBarSize, RestoreSizeAnchors = RestoreSizeAnchors,
     ApplyBarWidth = ApplyBarWidth, RestoreBarWidth = RestoreBarWidth,
     LayoutHealthText = LayoutHealthText, GetHealthTextInsetRegion = GetHealthTextInsetRegion,
     ApplyBarArtwork = ApplyBarArtwork, RestoreBarArtwork = RestoreBarArtwork,

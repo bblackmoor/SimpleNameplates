@@ -115,3 +115,12 @@ separately. Urgent refresh is inclusive within Runtime update and outside the
 routine scheduler target. Cache invalidation reasons distinguish legitimate
 initialization from recurring failures; their counts do not prove every fallback
 is unnecessary. The next native report must verify flashing and remaining costs.
+
+From 1.0.208, the focused outcome `not a nameplate` identifies global native
+hooks for raid/party or cleared-unit frames, which no longer request full
+styling. Native nameplate initialization remains a legitimate cache fallback.
+Bar dimension repairs now release opposing native anchors while preserving their
+restoration baseline. The next recording should check whether repeated width and
+height drift stops and whether background names stay grey during native bar
+visibility changes. A current cached color is repaired independently of those
+mutable layout properties.

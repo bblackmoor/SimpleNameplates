@@ -128,6 +128,7 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     Text.RestoreOriginalBarHeight(frame, assessment.healthBar, context, assessment)
     ns.NameplateFrames.RestoreBarArtwork(frame, context)
     ns.NameplateFrames.RestoreBarWidth(frame, assessment)
+    ns.NameplateFrames.RestoreSizeAnchors(frame, context)
     local original = frame.SNPOriginalVisibility or {}
     for _, key in ipairs(visibilityKeys) do
         local region = frame[key]

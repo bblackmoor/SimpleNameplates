@@ -2286,6 +2286,10 @@ do
     ns.Profiler.Command("start")
     name:SetTextColor(1, 1, 1)
     equal(name.r, 153 / 255, "direct native white immediately repaired")
+    plateFrame.healthBar.shown = true
+    name:SetTextColor(1, 1, 1)
+    equal(name.r, 153 / 255, "native bar visibility does not veto immediate grey repair")
+    plateFrame.healthBar.shown = false
     name:SetVertexColor(0.2, 0.3, 0.4, 1)
     equal(name.vr, 1, "direct native tint immediately repaired")
     name:SetFontObject("SystemFont_NamePlate")
@@ -2346,6 +2350,69 @@ do
     assert(not ok and err == failure and not plateFrame.SNPRepairingNameAppearance, "failed setter releases guard")
     name.SetTextColor = setColor
     for method, original in pairs(originals) do name[method] = original end
+end
+
+-- Native corner anchors override explicit sizes. Model this layout behavior,
+-- then verify settings and reconciliation converge instead of rewriting forever.
+do
+    local frame, container, bar, parent = Region(), Region(), Region(), Region()
+    frame.unit, frame.name, frame.HealthBarsContainer, frame.healthBar = "nameplate9", Region(), container, bar
+    frame.name:SetFont("Native", 10, "")
+    frame.name:SetTextColor(1, 1, 1)
+    frame.name:SetVertexColor(1, 1, 1, 1)
+    frame.name:SetText("Anchored native")
+    local originalWidth, originalHeight = 140, 20
+    local function NativeAnchors()
+        container.points = {{"BOTTOMLEFT", parent, "TOPLEFT", 0, 4}, {"BOTTOMRIGHT", parent, "TOPRIGHT", 0, 4}}
+        bar.points = {{"TOPLEFT", container, "TOPLEFT", 0, 0}, {"BOTTOMRIGHT", container, "BOTTOMRIGHT", 0, 0}}
+    end
+    NativeAnchors()
+    for _, region in ipairs({container, bar}) do
+        function region:GetWidth() return #self.points > 1 and originalWidth or self.width end
+        function region:GetHeight() return #self.points > 1 and originalHeight or self.height end
+    end
+    stylingEnabled, categoryMode, showBar, dimBackground = true, "active", true, false
+    threatEnabled, threatPercent = false, nil
+    appearance.namePlacement, appearance.nameSize, appearance.healthBarWidth = "INSIDE", 18, 120
+    appearance.useSlugRendering = false
+    unit = {reaction = 3}
+    UnitGUID = function() return "Creature-Anchored" end
+    local context, cap = ns.WorldContext.Get(), ns.PresentationCapabilities
+    ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+    equal(bar:GetWidth(), 168, "anchored bar reaches configured width")
+    equal(container:GetWidth(), 168, "anchored container reaches configured width")
+    equal(bar:GetHeight(), 25, "anchored bar fits inside name")
+    local drifted = ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context))
+    assert(not drifted, "sized anchored plate converges")
+    NativeAnchors()
+    local reason, plan
+    drifted, reason, plan = ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context))
+    assert(drifted, "native anchor reset causes genuine dimension drift")
+    assert(ns.NameplateText.RepairCachedName(frame, context, cap.InspectFrame(frame, context), plan))
+    assert(not ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)),
+        "one geometry repair converges after native reset")
+    assert(ns.NameplateRestoration.Request(frame, context))
+    equal(#bar.points, 2, "native bar anchors restored")
+    equal(#container.points, 2, "native container anchors restored")
+    equal(container.points[1][5], 4, "native vertical offset restored")
+    equal(bar:GetWidth(), 140, "native width restored")
+    equal(bar:GetHeight(), 20, "native height restored")
+    ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+    appearance.namePlacement, appearance.healthBarWidth = "ABOVE", 100
+    ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+    equal(#bar.points, 2, "default width and height restore native anchoring")
+    equal(bar:GetWidth(), 140, "default-width setting restores native width")
+
+    -- Global CompactUnitFrame hooks must not fully style raid/party frames.
+    local lines, savedPrint = {}, print
+    print = function(line) lines[#lines + 1] = line end
+    ns.Profiler.Command("start")
+    frame.unit = "raid1"; hooks[2].callback(frame); hooks[1].callback(frame)
+    ns.Profiler.Command("stop"); ns.Profiler.Command("report")
+    print = savedPrint
+    local report = table.concat(lines, "\n")
+    assert(not report:find("Full styling:", 1, true), "non-nameplate hooks avoid full-style fallback")
+    assert(report:find("Focused outcomes: not a nameplate = 2", 1, true))
 end
 
 print("Nameplates smoke: passed")

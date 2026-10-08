@@ -227,8 +227,12 @@ local function ApplyConfiguredBarHeight(frame, state, bar, baseNameSize, context
 
     local insideNameSize = baseNameSize
     local barHeight = InsideBarHeight(frame, insideNameSize)
+    ns.NameplateFrames.PrepareBarSize(frame, bar, context)
     bar:SetHeight(barHeight)
-    if container then container:SetHeight(barHeight) end
+    if container then
+        ns.NameplateFrames.PrepareBarSize(frame, container, context)
+        container:SetHeight(barHeight)
+    end
     return inside, insideNameSize
 end
 
@@ -602,6 +606,8 @@ local function RepairCachedName(frame, context, assessment, plan)
         if plan.shadowOffset then name:SetShadowOffset(0, 0) end
         if plan.alpha ~= nil then name:SetAlpha(plan.alpha) end
         if plan.shown ~= nil then name:SetShown(plan.shown) end
+        if plan.barHeight or plan.barWidth then ns.NameplateFrames.PrepareBarSize(frame, plan.bar, context) end
+        if plan.containerHeight or plan.containerWidth then ns.NameplateFrames.PrepareBarSize(frame, plan.container, context) end
         if plan.barHeight then plan.bar:SetHeight(plan.barHeight) end
         if plan.containerHeight then plan.container:SetHeight(plan.containerHeight) end
         if plan.barWidth then plan.bar:SetWidth(plan.barWidth) end
@@ -669,8 +675,15 @@ InstallNameAppearanceHooks = function(frame, name, context)
                     if type(guid) == "string" and type(previous) == "string" and guid ~= previous then return end
                 end
                 local assessment = cap.InspectFrame(frame, current)
+                local decision = frame.SNPPresentation
+                -- A native bar-visibility/geometry change must not veto color
+                -- repair. Validate ownership/presentation, not mutable layout.
                 if not assessment.canAccess or assessment.name ~= name
-                    or not CacheIsCurrent(frame, expected, current, assessment) then return end
+                    or expected.bar ~= assessment.healthBar
+                    or not decision or decision.action ~= "style"
+                    or expected.presentation ~= decision
+                    or decision.contextRevision ~= current.revision
+                    or ns.NameplateRestoration.IsPending(frame) then return end
                 ns.Profiler.Count("Name appearance writes", method)
                 frame.SNPRepairingNameAppearance = true
                 local ok, err = pcall(function()

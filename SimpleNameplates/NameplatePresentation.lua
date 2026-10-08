@@ -250,6 +250,13 @@ end
 local function FocusedUpdate(frame, context, work, kind)
     context = context or GetContext()
     ns.Profiler.Count("Focused requests", kind)
+    -- CompactUnitFrame hooks also service raid/party frames and cleared native
+    -- frames. They are not pending nameplates and must not request styling.
+    local unit = ns.AccessibleValue(Cap.SafeField(frame, "unit", context))
+    if type(unit) ~= "string" or not unit:match("^nameplate%d+$") then
+        ns.Profiler.Count("Focused outcomes", "not a nameplate")
+        return
+    end
     local assessment = Cap.InspectFrame(frame, context)
     if not assessment.canAccess then ns.Profiler.Count("Focused outcomes", "inaccessible"); return end
     if frame.SNPRestoring or frame.SNPApplyingStyle or frame.SNPApplyingArtwork then

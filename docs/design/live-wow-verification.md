@@ -170,3 +170,15 @@ All four performance code phases are implemented. Live FPS, rendering, secure ac
   Urgent refresh. Continuous equivalent-font repairs should stop; real writes
   may still occur and be repaired immediately. Record actual FPS with profiling
   off/on and any remaining 16.7+ ms runtime callbacks.
+
+## 1.0.208 sizing and color follow-up
+
+- [ ] In the same Silvermoon scene, observe background NPC names while stationary,
+  targeting, hovering and moving; no grey/white flashing.
+- [ ] Set health-bar width above/below 100%; confirm bars resize around their
+  native center and inside names retain sufficient vertical space. Reset width
+  and use above-bar names; native anchors restore. Toggle styling off/on.
+- [ ] Capture a full one-minute report. Bar-width/height drift should not recur
+  on every job; native resets may require real one-time repairs. Inspect
+  not-initialized fallbacks separately from the not-a-nameplate outcome.
+- [ ] Check combat/restricted/recycled bars and restoration for Lua/taint errors.

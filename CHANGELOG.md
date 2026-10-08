@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.208
+
+* Fixes a remaining immediate name-color repair gap: native bar visibility or geometry no longer vetoes cached grey/color repair. Current access, assignment/identity, context and presentation are still checked. Native confirmation of the reported blinking remains pending.
+* Makes configured health-bar width and inside-name height effective on native bars with two opposing anchors. Captures the original corner/edge anchors, uses a centered single anchor while sizing, and restores native anchors at default sizing or full restoration. Reconciliation reapplies sizing after native anchor resets and converges instead of endlessly writing ineffective dimensions. Restricted or unrecognized anchor layouts remain untouched.
+* Ignores raid/party and cleared-unit frames in global CompactUnitFrame repair hooks instead of treating them as uninitialized nameplates. Genuine nameplate initialization still falls back safely.
+* Adds regressions for color repair during native visibility changes, anchor-constrained sizing, convergence after native resets, original-anchor restoration and unrelated-frame hooks.
+
 ## 1.0.207
 
 * Repairs direct native name font, font-object, text-height, text-color and vertex-color writes immediately using the current cached appearance. Background names retain their intended grey without waiting for periodic reconciliation; category rules remain unchanged. Setter hooks avoid classification, layout and full styling, skip addon writes/restoration, and validate access, assignment and readable identity. Native confirmation of the reported flashing remains pending.
