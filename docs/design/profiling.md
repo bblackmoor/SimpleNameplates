@@ -159,3 +159,35 @@ plates` counts actual full/focused visits, and Styling requests identifies
 `global refresh`. Target/mouseover/interaction and explicit unit work can run
 outside the periodic budget. Compare runtime/urgent maxima and completion
 latency; old and new Global refresh averages measure different operations.
+
+
+## Native opacity and color samples (1.0.216)
+
+Name appearance writes now includes SetAlpha when a validated native opacity
+write is serviced immediately. Name appearance deferred: alpha repair counts
+readable mismatches retained while styling/artwork guards were active. Converged
+own alpha writes produce no follow-up setter. Appearance font/color recovery
+finishes with native alpha zero for inside names, or one for above-bar names;
+widget-only suppression remains zero. Existing reconciliation stays as recovery
+for changes that do not pass through a hooked Lua setter.
+
+Name color drift captures up to eight distinct readable RGB transitions, plus
+an additional samples counter. It records actual -> cached intended color for
+text-color drift even if another mismatch is first in the Name drift row. It
+contains no unit identity and ignores unreadable/non-finite components. Samples
+are session-only and do no formatting when profiling is disabled. Include these
+rows in the next screenshot to identify which actual colors replace the cache.
+
+For a manual allocation comparison, run from the repository root:
+
+```sh
+texlua tests/capabilities-allocation-benchmark.lua
+texlua tests/capabilities-allocation-benchmark.lua path/to/older/PresentationCapabilities.lua
+```
+
+This pauses GC only in the standalone test process and repeats 10,000 access
+assessments on one fixed synthetic frame. The 1.0.215/current comparison gave
+65,079.8/12,579.8 KiB under texlua, about 81% less allocation for that fixture.
+WoW's memory attribution, allocator and GC behavior differ. This is evidence
+of less temporary allocation, not a live retained-memory or leak measurement.
+The addon itself does not pause or force GC.

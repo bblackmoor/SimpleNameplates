@@ -356,3 +356,35 @@ path explains every live mismatch. Scheduler budgets are unchanged.
    it does not claim a confirmed fix for that remaining visibility drift.
 4. Toggle Active, recycle plates and cross a zone boundary. Verify native
    restoration and no stale cached colors on reassigned units.
+
+
+## Native opacity recovery and allocation pressure (1.0.216)
+
+The latest 1.0.215 screenshot shows Runtime update/Urgent refresh maxima of
+4.493/2.372 ms. The split counter identifies 162 native-alpha mismatches and
+no reported addon inside-label visibility drift. Text color remains at 525;
+no deferred-color repair counter appears. There are 687 cached repairs and
+no reported geometry drift or reconciliation full-style fallback. The cropped
+report does not provide an elapsed duration, so counts are not normalized rates.
+
+Version 1.0.216 hooks native SetAlpha and checks pending guarded alpha changes.
+Font/color appearance recovery now finishes with the native name's required
+opacity. Tests reproduce direct alpha drift and a color setter replacing alpha;
+they do not prove the writer of every live mismatch. Bounded RGB samples will
+help identify the unresolved color changes. Removing temporary field-read
+closures also reduces synthetic assessment allocations by about 81%; the
+large live memory delta still does not establish a retained-memory leak.
+
+1. Install 1.0.216 and reload. Check dim background names, inside labels and
+   above-bar names while changing target/mouseover and bar/profile settings.
+   Verify no duplicate native names appear behind the inside label.
+2. Capture a minute in the same scene. Include Name appearance writes/deferred,
+   Name drift, Name color drift, Runtime update, Urgent refresh and memory rows.
+   A missing counter means no recorded occurrence, not proof that the writer
+   can never occur. Include a second screenshot if the report exceeds chat.
+3. Toggle Active, recycle plates, enter/leave combat and change zones. Verify
+   native opacity is restored when disabled, with no writes to stale/restricted
+   units or disruption of widget-only plates.
+4. Compare memory over matched runs and with profiling off/on. The Lua fixture
+   measures temporary allocation with GC paused; it cannot establish the size
+   of a live leak or retained memory. Rendering/taint acceptance remains native.

@@ -427,3 +427,19 @@ Version 1.0.215 checks retained notifications on guard release, avoiding font
 writes and redundant recovery after converged own writes. All 21 suites pass;
 live contribution is unconfirmed. The visibility counter is split into native
 alpha and addon-label visibility to guide the next investigation.
+
+
+### 1.0.216: opacity recovery and allocation pressure
+
+The latest 1.0.215 report holds Runtime update/Urgent refresh maxima to
+4.493/2.372 ms. Its 162 inside native name alpha first mismatches identify
+native opacity, not addon inside-label visibility; text color remains at 525.
+Version 1.0.216 adds validated immediate/pending alpha repair and makes all
+appearance color/font repair finish with required native opacity. RGB samples
+are bounded during profiling to diagnose the remaining color source. Safe
+field reads reuse one callback rather than allocating a closure per read;
+10,000 synthetic assessments with GC paused allocate 12,579.8 KiB versus
+65,079.8 KiB in 1.0.215. This is allocation pressure, not a proven live leak.
+All 21 suites pass, including regressions for direct alpha and opacity after
+color writes. Live timing, opacity, color and retained-memory confirmation
+remain open; scheduler budgets and reconciliation recovery are unchanged.

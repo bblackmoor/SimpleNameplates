@@ -8,10 +8,12 @@ local function Inaccessible(value)
         or (canaccessvalue and not canaccessvalue(value))
 end
 
+local function ReadField(object, key) return object[key] end
+
 local function Field(object, key)
     if Inaccessible(object) then return nil, false end
     if object == nil then return nil end
-    local ok, value = pcall(function() return object[key] end)
+    local ok, value = pcall(ReadField, object, key)
     if ok and not Inaccessible(value) then return AccessibleValue(value), true end
     return nil, false
 end

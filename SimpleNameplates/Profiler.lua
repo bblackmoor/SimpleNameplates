@@ -44,6 +44,23 @@ local function SizeSample(label, actual, desired, region)
     end
     samples[reason] = (samples[reason] or 0) + 1
 end
+-- Bounded readable RGB samples diagnose drift without unit identifiers.
+local function ColorSample(r, g, b, desiredR, desiredG, desiredB)
+    if not active then return end
+    r, g, b = Finite(r), Finite(g), Finite(b)
+    desiredR, desiredG, desiredB = Finite(desiredR), Finite(desiredG), Finite(desiredB)
+    if not r or not g or not b or not desiredR or not desiredG or not desiredB then return end
+    local reason = ("%.3f/%.3f/%.3f -> %.3f/%.3f/%.3f")
+        :format(r, g, b, desiredR, desiredG, desiredB)
+    local samples = active.counters["Name color drift"]
+    if not samples then samples = {}; active.counters["Name color drift"] = samples end
+    if not samples[reason] then
+        local count = 0
+        for _ in pairs(samples) do count = count + 1 end
+        if count >= 8 then reason = "additional samples" end
+    end
+    samples[reason] = (samples[reason] or 0) + 1
+end
 local function Wrap(label, callback)
     return function(...)
         local session = active
@@ -132,4 +149,4 @@ local function Command(argument)
     elseif argument == "report" or argument == "" then Report()
     else Say("/snp perf start | stop | report") end
 end
-ns.Profiler = {Wrap = Wrap, Count = Count, SizeSample = SizeSample, Command = Command}
+ns.Profiler = {Wrap = Wrap, Count = Count, SizeSample = SizeSample, ColorSample = ColorSample, Command = Command}

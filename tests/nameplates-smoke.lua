@@ -2362,6 +2362,35 @@ do
     equal(fontWrites, 0, "nested visibility color repair avoids fonts")
     name.SetShown, name.SetFont = shownSetter, fontSetter
 
+    name:SetAlpha(0.2)
+    equal(name.alpha, 1, "above-bar native name immediately restores opacity")
+    plateFrame.SNPApplyingStyle = true
+    name:SetAlpha(0.2)
+    assert(plateFrame.SNPNameAlphaPending, "guarded native alpha retained")
+    plateFrame.SNPApplyingStyle = nil
+    ns.NameplateText.RepairPendingNameAppearance(plateFrame)
+    equal(name.alpha, 1, "guarded alpha repaired after style")
+    plateFrame.SNPApplyingArtwork = true
+    name:SetAlpha(1)
+    plateFrame.SNPApplyingArtwork = nil
+    local alphaSetter, alphaCalls = name.SetAlpha, 0
+    name.SetAlpha = function(self, ...) alphaCalls = alphaCalls + 1; return alphaSetter(self, ...) end
+    ns.NameplateText.RepairPendingNameAppearance(plateFrame)
+    equal(alphaCalls, 0, "converged own opacity needs no extra write")
+    name.SetAlpha = alphaSetter
+    assert(not plateFrame.SNPNameAlphaPending, "pending alpha cleared")
+    plateFrame.SNPRestoring = true; name:SetAlpha(0.3)
+    equal(name.alpha, 0.3, "restoration retains native opacity")
+    plateFrame.SNPRestoring = nil
+    stylingEnabled = false; name:SetAlpha(0.4)
+    equal(name.alpha, 0.4, "disable retains native opacity")
+    stylingEnabled = true
+    plateFrame.unit = "nameplate2"; name:SetAlpha(0.5)
+    equal(name.alpha, 0.5, "reassigned native opacity not overwritten")
+    plateFrame.unit = "nameplate1"
+    name.IsForbidden = function() return true end; name:SetAlpha(0.6)
+    equal(name.alpha, 0.6, "forbidden native opacity not overwritten")
+    name.IsForbidden = nil; name:SetAlpha(1)
     ns.Profiler.Command("stop"); ns.Profiler.Command("report")
     print = savedPrint
     local report = table.concat(lines, "\n")
@@ -2405,6 +2434,39 @@ do
     local ok, err = pcall(callbacks.SetFontObject)
     assert(not ok and err == failure and not plateFrame.SNPRepairingNameAppearance, "failed setter releases guard")
     name.SetTextColor = setColor
+    -- Model a color setter that also overwrites opacity. Appearance hooks
+    -- must finish with native alpha zero while the addon inside label is shown.
+    showBar, appearance.namePlacement = true, "INSIDE"
+    ns.RefreshAll()
+    expected = plateFrame.SNPNameStyle
+    assert(expected.inside, "inside-name fixture")
+    local vertexSetter = name.SetVertexColor
+    name.SetVertexColor = function(self, ...)
+        self.alpha = 1
+        return vertexSetter(self, ...)
+    end
+    name:SetVertexColor(0.2, 0.3, 0.4, 1)
+    equal(name.alpha, 0, "appearance color repair finishes by concealing native inside name")
+    equal(name.r, expected.r, "inside native color still restored")
+    equal(plateFrame.SNPInsideName.shown, true, "addon inside label remains shown")
+    name:SetAlpha(1)
+    equal(name.alpha, 0, "direct native opacity cannot expose duplicate inside name")
+    plateFrame.SNPApplyingArtwork = true; name:SetAlpha(1)
+    plateFrame.SNPApplyingArtwork = nil
+    ns.NameplateText.RepairPendingNameAppearance(plateFrame)
+    equal(name.alpha, 0, "guarded inside opacity repaired")
+    name.SetVertexColor = vertexSetter
+    UnitGUID = function() return "Creature-Recycled" end; name:SetAlpha(0.8)
+    equal(name.alpha, 0.8, "same-token recycled alpha retains native control")
+    UnitGUID = function() return "Creature-Appearance" end
+    UnitNameplateShowsWidgetsOnly = function() return true end
+    ns.RefreshAll()
+    assert(plateFrame.SNPNameStyle.suppressed)
+    name:SetAlpha(1)
+    equal(name.alpha, 0, "widget-only cached presentation immediately repairs opacity")
+    UnitNameplateShowsWidgetsOnly = function() return false end
+    showBar, appearance.namePlacement = false, "ABOVE"
+    ns.RefreshAll()
     for method, original in pairs(originals) do name[method] = original end
 end
 

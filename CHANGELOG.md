@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.216
+
+* Repairs direct native SetAlpha writes against the current cached presentation, retaining guarded alpha notifications for readable checks after styling/artwork completes. Inside and widget-only native names remain concealed; above-bar names remain opaque. Appearance color/font repairs now finish with the required native-name opacity after color setters. Identity, context, access, disabled styling and restoration checks still gate writes; restoration clears pending alpha.
+* Adds at most eight distinct readable Name color drift RGB samples plus an overflow counter during profiling. These diagnose the unresolved live color changes without unit identities, unrestricted reads or formatting while profiling is disabled.
+* Removes the per-field temporary closure from conservative access checks, preserving pcall error handling and secret/forbidden/protected checks. The manual capabilities allocation benchmark reports 65,079.8 -> 12,579.8 KiB allocated for 10,000 simulated assessments with GC paused under texlua (about 81% less). This measures allocation pressure in that fixture, not live WoW retained memory or a proven leak.
+* Records the latest 1.0.215 report: Runtime update maximum 4.493 ms, Urgent refresh maximum 2.372 ms, 525 text-color and 162 inside native name alpha first mismatches, 687 cached repairs and no reported geometry drift or reconciliation full-style fallback. No deferred-color counter was reported; the remaining text-color source is unconfirmed.
+* All 21 smoke suites pass. Direct-opacity regression fails against 1.0.215; a second regression fails if post-color opacity restoration is removed. Coverage includes guarded and converged writes, inside/above/widget presentation, recycled/disabled/forbidden/restoring frames and bounded profiler color samples. Native confirmation remains pending.
+
 ## 1.0.215
 
 * Retains native text/vertex color writes made while styling or artwork guards are active. On guard release, checks the completed readable color against the current cache and repairs a mismatch through the existing identity/access/restoration-validated appearance hook. Converged addon writes require no extra setters; color-only recovery does not rewrite fonts. Restoration clears the pending color flag.
