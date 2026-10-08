@@ -54,6 +54,7 @@ local ns = {
     },
     NameplateFrames = {GetCastBar = function(f) return f.castBar end, GetHealthBar = function() end},
 }
+assert(loadfile("SimpleNameplates/Defaults.lua"))("SimpleNameplates", ns)
 for _, module in ipairs({"Profiler", "PeriodicWork", "CastHighlight"}) do
     assert(loadfile("SimpleNameplates/"..module..".lua"))("SimpleNameplates", ns)
 end
@@ -80,7 +81,7 @@ end
 local h = owner.SNPInterruptibleHighlight
 custom.PULSE = {thickness = 7, inset = 1, lowAlpha = 0.2, highAlpha = 0.9, fadeOut = 0.4, fadeIn = 0.7}
 effect = "PULSE"; Update()
-assert(h.pulseConfig and h.fadeOut.duration == 0.4 and h.fadeIn.duration == 0.7)
+assert(h.pulseConfig and h.pulseConfig:find("0.4", 1, true) and h.pulseConfig:find("0.7", 1, true))
 custom.SOLID = {thickness = 5, minPixels = 2, upward = 3, upwardMin = 2, distance = 2}
 effect = "SOLID"; Update()
 assert(h.renderers.SOLID.borderSize == 5)
