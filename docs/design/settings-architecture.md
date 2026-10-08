@@ -1,6 +1,6 @@
 # Settings and runtime architecture
 
-Reviewed for 1.0.220 on 2026-10-08. Settings conversion and runtime module work are implemented; live WoW checks remain open. Saved data stays schema 2, with global behavior and account-wide appearance profiles selected per character. Earlier phase history is preserved in the [original implementation plan](implementation-plan.md), [runtime refactor plan](runtime-refactor-plan.md) and [Details Framework conversion record](details-framework-conversion.md).
+Reviewed for 1.0.221 on 2026-10-08. Settings conversion and runtime module work are implemented; live WoW checks remain open. Saved data stays schema 2, with global behavior and account-wide appearance profiles selected per character. Earlier phase history is preserved in the [original implementation plan](implementation-plan.md), [runtime refactor plan](runtime-refactor-plan.md) and [Details Framework conversion record](details-framework-conversion.md).
 
 ## Settings ownership and pages
 
@@ -11,12 +11,12 @@ The pages are About, Profiles, Appearance, Colors and TRP3, in that order. All u
 | About | Metadata, source link, commands, known presentation limits and read-only native-label swatches |
 | Profiles | Account-wide profile management and the global styling Active switch |
 | Appearance | Profile fonts, Slug rendering, name size/placement, health-bar width and threat display; global critter/companion hiding |
-| Colors | Six profile priority colors, profile cast color/Active switch and six profile Health Bar switches, background-name dimming, a profile gradient toggle and full-health preview |
+| Colors | Six profile priority colors, profile cast color/Active switch/effect dropdown/preview and six profile Health Bar switches, background-name dimming, a profile gradient toggle and full-health preview |
 | TRP3 | Global integration and RP-name/title/OOC preferences |
 
 Visible pages refresh their selected-profile controls immediately; hidden pages reread on show. Profile switching cancels active previews before changing selection and refreshes plates. Native profile dialogs capture name and object identity at opening and reject acceptance after selection changes or same-name replacement. Database mutations cancel affected drafts before switching or replacing their targets.
 
-Reset settings on Appearance restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors, cast highlighting off, background dimming on, gradients On for Default/custom profiles or Off for High Contrast, and Health Bar preferences On except NPC - Background. There are no individual color reset buttons. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
+Reset settings on Appearance restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors, cast highlighting off and effect Pulsing border, background dimming on, gradients On for Default/custom profiles or Off for High Contrast, and Health Bar preferences On except NPC - Background. There are no individual color reset buttons. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
 
 ## Current source ownership
 
@@ -40,7 +40,7 @@ Reset settings on Appearance restores profile appearance and threat display plus
 | `NPCTitles.lua` | Safe structured-tooltip subtitle resolution and bounded session caches |
 | `NameplateText.lua` | Names/titles, placement, bar-height padding, cast/title visibility and cached repair |
 | `NameplateThreat.lua` | Secret-safe formatted threat percentage; blank when unavailable |
-| `CastHighlight.lua` | Interruptible-cast pulse and visibility/icon lifecycle |
+| `CastHighlight.lua` | Interruptible border/glow selection, DF renderer lifecycle, preview and native bar/icon/shield hooks |
 | `NameplateRestoration.lua` | Original presentation restoration and deferred cleanup/retries |
 | `NameplatePresentation.lua` | Full styling, focused native name/health-color repairs and data updates |
 | `Nameplates.lua` | Single event frame, secure hooks, urgent refresh queues, periodic discovery and per-plate reconciliation |
@@ -73,7 +73,7 @@ Critter hiding claims only its supported world-name CVar. Legacy managed-name re
 
 ## Verification
 
-Run all 21 smoke suites and whitespace checks using the commands in the [README](../../README.md#development). They cover real bundled libraries under UI stubs, saved-field validation, profile/reset scopes, previews/dialogs, context/access gates, uniform presentation, cast/title transitions, restoration, secret-safe formatting, lifecycle and reachable upvalue limits. Profiling has deterministic timing and actual runtime/slash coverage.
+Run all 22 smoke suites and whitespace checks using the commands in the [README](../../README.md#development). They cover real bundled libraries under UI stubs, saved-field validation, profile/reset scopes, previews/dialogs, context/access gates, uniform presentation, cast/title transitions, restoration, secret-safe formatting, lifecycle and reachable upvalue limits. Profiling has deterministic timing and actual runtime/slash coverage.
 
 Local tests cannot establish native rendering, client frame permissions or secret-value safety. Record observations in the [live WoW checklist](live-wow-verification.md); client items remain open until observed.
 
@@ -84,3 +84,7 @@ Native font/color/alpha setter hooks retain guarded notifications and repair the
 Selective repairs finish color/opacity after visibility, sizing and layout callbacks, consume pending artwork, and perform one bounded validated color/alpha finalization. Standalone artwork receives the same completion check. Fresh access, context, ownership/cache and readable GUID validation gate writes; unknown observations remain for reconciliation. The finalizer adds no classification, name-font/layout work, scheduling or full styles.
 
 The 1.0.218 crowded-scene report confirms appearance convergence in that scene. Version 1.0.219 removed temporary checkpoint/audit reads and retained the fixes. All 21 local smoke suites passed for that cleanup; broader normal-play, secure behavior and settings acceptance remain open in the live checklist.
+
+## Interruptible effects (1.0.221)
+
+Colors now has an independent profile Effect dropdown and a labeled rendering preview. Pulsing border uses the existing owned renderer; Solid border, Soft border, Marching ants and Spell-alert glow use the bundled Details Framework. Constructors do not read native cast dimensions; unavailable renderer methods/templates fall back to pulse with a diagnostic reason. Direct icon/shield Show/Hide and cast-bar visibility changes refresh detection, hidden casts gate explicit events, and unknown active state retries conservatively. Debug shows the resolved state/source, selected/active renderer and fallback error. These paths have local regression coverage; actual cast and visual acceptance remains open. See [cast-effect testing](cast-effect-testing.md).

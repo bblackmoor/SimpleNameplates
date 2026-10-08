@@ -99,5 +99,16 @@ ns.Defaults = {
     stylingEnabled = DEFAULT_STYLING_ENABLED,
     showThreat = DEFAULT_SHOW_THREAT,
     interruptibleHighlight = false,
+    interruptibleEffect = "PULSE",
     hideCritterCompanionNames = DEFAULT_HIDE_CRITTER_COMPANION_NAMES,
 }
+ns.CAST_EFFECT_OPTIONS = {
+    {value = "PULSE", label = "Pulsing border"},
+    {value = "SOLID", label = "Solid border"},
+    {value = "SOFT", label = "Soft border"},
+    {value = "ANTS", label = "Marching ants"},
+    {value = "GLOW", label = "Spell-alert glow"},
+}
+ns.CAST_EFFECT_BY_VALUE = {}
+for _, option in ipairs(ns.CAST_EFFECT_OPTIONS) do ns.CAST_EFFECT_BY_VALUE[option.value] = option.label end
+

@@ -1,6 +1,6 @@
 # Onscreen entity evaluation
 
-Reviewed 2026-10-08 for 1.0.220. This document describes the actual runtime order. It does not propose a different tree or change classification behavior.
+Reviewed 2026-10-08 for 1.0.221. This document describes the actual runtime order. It does not propose a different tree or change classification behavior.
 
 ## Runtime entry and frame checks
 
@@ -136,3 +136,7 @@ use elapsed time instead of visit counts. See the [performance plan](performance
 Native geometry/show-hide callbacks can reset appearance during a repair. Cached selective work finishes structural changes and pending artwork before planned color/opacity writes. A bounded finalizer checks completed color/alpha after selective repair and standalone artwork, using fresh access and current cache/context/ownership/readable GUID validation. It repairs readable differences through the existing appearance hooks; unknown values remain for retry. Color recovery includes required native opacity, while alpha-only recovery does not rewrite colors. This finalizer does not reclassify, rewrite name fonts/layout, enqueue timers or perform full styling.
 
 Direct font/color/alpha setters also use guarded cached repair. Dimension recovery uses the known Retail hierarchy for restricted anchors and readable pixel-scale tolerance. Equivalent font filename spelling or flag order does not establish drift. Version 1.0.218 confirmed convergence in the recorded crowded scene; 1.0.219 removed temporary appearance audit instrumentation. Broader native acceptance remains on the live checklist.
+
+## Interruptible effects (1.0.221)
+
+Colors now has an independent profile Effect dropdown and a labeled rendering preview. Pulsing border uses the existing owned renderer; Solid border, Soft border, Marching ants and Spell-alert glow use the bundled Details Framework. Constructors do not read native cast dimensions; unavailable renderer methods/templates fall back to pulse with a diagnostic reason. Direct icon/shield Show/Hide and cast-bar visibility changes refresh detection, hidden casts gate explicit events, and unknown active state retries conservatively. Debug shows the resolved state/source, selected/active renderer and fallback error. These paths have local regression coverage; actual cast and visual acceptance remains open. See [cast-effect testing](cast-effect-testing.md).

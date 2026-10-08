@@ -1,6 +1,6 @@
 # Saved data model
 
-Reviewed for 1.0.220 on 2026-10-08. Status: implemented version-2 schema. Simple Nameplates uses Global behavior and appearance Profiles, with no separate Theme layer.
+Reviewed for 1.0.221 on 2026-10-08. Status: implemented version-2 schema. Simple Nameplates uses Global behavior and appearance Profiles, with no separate Theme layer.
 
 ## Why two scopes are sufficient
 
@@ -27,7 +27,7 @@ SimpleNameplatesDB = {
                     appearance = { ... }, healthBars = { attacking = true, hostile = true,
                         neutral = true, friendly = true, useful = true, useless = false },
                     showThreat = true, gradients = true, dimBackgroundNames = true,
-                    interruptibleHighlight = false },
+                    interruptibleHighlight = false, interruptibleEffect = "PULSE" },
         ["High Contrast"] = { ... },
     },
     profileKeys = { ["Player-GUID"] = "Default" },
@@ -55,7 +55,8 @@ Profiling introduced in 1.0.163 is session-only. It adds no fields to `SimpleNam
 | `trp3.enabled`, `useRoleplayingName`, `showShortTitle`, `showFullTitle`, `showOOC` | Global | TRP3 integration and display policy |
 | Six `priorityColors`, `effectColors.interruptible` | Profile | Appearance colors |
 | `appearance.nameFont`, `nameSize`, `threatFont`, `namePlacement`, `matchSanctuaryFont`, `useSlugRendering`, `healthBarWidth` | Profile | Text and layout |
-| `showThreat`, `interruptibleHighlight` | Profile | Threat visibility (default on) and cast pulse activation (default off) |
+| `showThreat`, `interruptibleHighlight` | Profile | Threat visibility (default on) and cast highlight activation (default off) |
+| `interruptibleEffect` | Profile | `PULSE` (default), `SOLID`, `SOFT`, `ANTS` or `GLOW`; independent of Active |
 | `gradients`, `dimBackgroundNames` | Profile | Gradient default on for Default/custom and off for High Contrast; background-name dimming default on |
 | `profileKeys` | Account-wide character selection map | Independent Profile choice per character |
 | `global.managedNameCVarOriginals` | Internal restoration ledger | Original critter and legacy managed values, retained until restored |
@@ -88,8 +89,8 @@ Health bars default On for the first five categories and Off for NPC - Backgroun
 
 ## Compatibility exception and reset scope
 
-Validation gives a valid boolean `interruptibleHighlight` precedence. Otherwise, a legacy string `interruptibleCastStyle` enables the pulse unless it equals `NONE`. The old field is discarded after validation; no glow selector remains. This is a specific compatibility conversion, not a general migration system.
+Validation gives a valid boolean `interruptibleHighlight` precedence. Otherwise, a legacy string `interruptibleCastStyle` enables the pulse unless it equals `NONE`. The old field is discarded after validation; it does not select the new effect dropdown. `interruptibleEffect` defaults to `PULSE` when missing/invalid, survives copies/reloads and Appearance reset, and resets to `PULSE` with Colors. The Active switch remains independently off by default. This is a specific compatibility conversion, not a general migration system.
 
-Reset all colors restores the selected profile's six priority colors, cast color, cast activation (off), health-bar defaults, background dimming (on) and gradient default. High Contrast uses its factory palette and gradient off; Default and custom profiles use factory Default values. It also resets retained global category modes to active internally; rendering ignores those modes. It preserves profile selection, appearance/threat settings, styling enablement, critter hiding and TRP3.
+Reset all colors restores the selected profile's six priority colors, cast color, cast activation (off), cast effect (Pulsing border), health-bar defaults, background dimming (on) and gradient default. High Contrast uses its factory palette and gradient off; Default and custom profiles use factory Default values. It also resets retained global category modes to active internally; rendering ignores those modes. It preserves profile selection, appearance/threat settings, styling enablement, critter hiding and TRP3.
 
 Reset settings on Appearance restores that profile's appearance defaults and threat on, plus global critter hiding off. It preserves all Colors preferences, styling enablement, TRP3 and selection. Restore bundled profiles replaces Default/High Contrast while preserving custom profiles and globals.

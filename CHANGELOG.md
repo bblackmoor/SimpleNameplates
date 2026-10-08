@@ -2,6 +2,13 @@
 
 Entries describe their recorded releases; later fixes and the current guides supersede older controls, defaults and pending investigations.
 
+## 1.0.221
+
+* Adds a profile Effect dropdown on Colors: Pulsing border, Solid border, Soft border, Marching ants and Spell-alert glow. Keeps the separate Active switch and adds a labeled always-demonstrative preview to separate renderer checks from real cast detection. Effect copies/reloads and survives Appearance reset; Colors reset restores pulse without enabling Active.
+* Uses the existing Details Framework border/ants/glow constructors without adding dependencies or inspecting native cast dimensions. Unavailable renderers/templates visibly fall back to pulse and expose the reason in debug. Owned ants animation handles Midnight clients lacking AnimateTexCoords; effects stop/reuse on disable, cast end and selection changes.
+* Covers native icon/shield SetShown/Show/Hide and cast-bar visibility callbacks. Hidden cast bars gate explicit event state; unknown initial interruptibility retries without assuming an interruptible cast. This fixes reproduced callback gaps, not a proven explanation of every missing live highlight.
+* Expands targeted diagnostics and adds a repeatable enemy/preview test guide. All 22 local smoke suites pass, including actual bundled DF effect construction, lifecycle/fallback, native callback recovery, saved defaults and Colors selection/reset. In-game verification remains pending.
+
 ## 1.0.220
 
 * Reviews all repository documentation against the current source. Corrects category Health Bar ownership/defaults, background-name dimming, cast pulse activation, saved compatibility conversion, reset scopes, load order, broad-refresh scheduling and removed library references.

@@ -154,6 +154,15 @@ panel.Refresh()
 local castRow = Row("Interruptible cast highlight")
 local cast = Control(castRow, "color")
 local castToggle = Control(castRow, "switch")
+local effectDropdown = Control(Row("Effect"), "dropdown")
+assert(#effectDropdown.MyObject.func() == 5, "all implemented border/glow choices exposed")
+local effectRefreshes = refreshes
+for _, option in ipairs(effectDropdown.MyObject.func()) do
+    option.onclick(nil, nil, option.value)
+    assert(ns.GetInterruptibleEffect() == option.value, "effect selection saved")
+end
+assert(refreshes == effectRefreshes + 5, "one plate refresh per effect change")
+assert(not ns.GetInterruptibleHighlightEnabled(), "effect choice does not enable Active")
 assert(castToggle.point[2]:GetText() == "Active" and castToggle.point[4] == 8)
 for _, enabled in ipairs({true, false, true}) do
     local before = refreshes
@@ -195,6 +204,7 @@ assert(resetAll.point[5] > castRow.point[5], "whole-page reset remains above con
 local before = refreshes
 Click(resetAll)
 assert(refreshes == before + 1 and not ns.GetInterruptibleHighlightEnabled())
+assert(ns.GetInterruptibleEffect() == "PULSE", "Colors reset restores effect default")
 assert(ns.GetTRP3Enabled() and Snapshot(ns.EnsureDB().profiles.Default) == preservedDefault)
 assert(ns.GetActiveProfileName() == "High Contrast")
 for _, case in ipairs(cases) do
@@ -322,5 +332,6 @@ for _, case in ipairs({
     ColorPickerFrame:Hide() -- Simulate native Cancel hiding after its callback.
 end
 print("PASS stale swatches preserve current saved priority and effect RGB")
+
 
 

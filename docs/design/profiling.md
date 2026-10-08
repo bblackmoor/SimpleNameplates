@@ -1,6 +1,6 @@
 # Runtime profiling
 
-Current guide reviewed for 1.0.220 on 2026-10-08. Ordinary timing/reason counters remain; temporary 1.0.217–1.0.218 appearance checkpoints and origin rows are removed. Normal play with profiling off is the next verification step; capture a complete report if flicker or hitches return.
+Current guide reviewed for 1.0.221 on 2026-10-08. Ordinary timing/reason counters remain; temporary 1.0.217–1.0.218 appearance checkpoints and origin rows are removed. Normal play with profiling off is the next verification step; capture a complete report if flicker or hitches return.
 
 Available since 1.0.163. Profiling is an optional diagnostic, off by default. It helps identify frequent or expensive runtime paths before changing them; enabling it does not make the addon faster.
 
@@ -269,3 +269,7 @@ Name drift/reconciliation counters remain available when profiling is enabled.
 The working bounded finalizer and appearance hooks remain active during normal
 play. First verify visible behavior with profiling off; capture another report
 if drift, flicker or hitches return. No forced garbage collection is added.
+
+## Interruptible effects (1.0.221)
+
+Colors now has an independent profile Effect dropdown and a labeled rendering preview. Pulsing border uses the existing owned renderer; Solid border, Soft border, Marching ants and Spell-alert glow use the bundled Details Framework. Constructors do not read native cast dimensions; unavailable renderer methods/templates fall back to pulse with a diagnostic reason. Direct icon/shield Show/Hide and cast-bar visibility changes refresh detection, hidden casts gate explicit events, and unknown active state retries conservatively. Debug shows the resolved state/source, selected/active renderer and fallback error. These paths have local regression coverage; actual cast and visual acceptance remains open. See [cast-effect testing](cast-effect-testing.md).

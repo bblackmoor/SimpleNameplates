@@ -214,6 +214,11 @@ local function DebugPresentation(assessment, context)
         .. (GetInterruptibleHighlightEnabled() and "yes" or "no")
         .. "; cast icon found " .. (icon and "yes" or "no")
         .. "; hook installed " .. (hookInstalled and "yes" or "no")
+        .. "; effect " .. (ns.GetInterruptibleEffect and ns.GetInterruptibleEffect() or "PULSE")
+        .. "; resolved interruptible " .. DebugBoolean(Capabilities.SafeField(highlight, "interruptibleState", context))
+        .. "; source " .. DebugValue(Capabilities.SafeField(highlight, "interruptibleSource", context))
+        .. "; renderer " .. DebugValue(Capabilities.SafeField(highlight, "activeEffect", context))
+        .. "; renderer error " .. (Capabilities.SafeField(highlight, "rendererError", context) or "(none)")
         .. "; highlight shown " .. DebugRegionValue(overlay, "IsShown", "boolean", context))
 end
 
@@ -322,3 +327,4 @@ end
 
 
 ns.DebugUnit = DebugUnit
+

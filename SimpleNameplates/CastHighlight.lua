@@ -1,4 +1,4 @@
--- Simple Nameplates: Blizzard-driven interruptible-cast pulse highlight.
+-- Simple Nameplates: Blizzard-driven interruptible cast effects.
 local _, ns = ...
 local Capabilities = ns.PresentationCapabilities
 local CanAccessFrame = Capabilities.CanAccessFrame
@@ -66,10 +66,108 @@ local function StopRenderer(highlight)
     if highlight.pulse then highlight.pulse:Stop() end
     if highlight.frame then highlight.frame:SetAlpha(1) end
     for _, edge in ipairs(highlight.border or {}) do edge:Hide() end
+    for _, renderer in pairs(highlight.renderers or {}) do
+        if renderer.Stop then renderer:Stop() end
+        if renderer.ProcLoop then renderer.ProcLoop:Stop() end
+        renderer:Hide()
+    end
+    for _, host in pairs(highlight.effectHosts or {}) do host:Hide() end
+end
+
+local function FrameworkRenderer(highlight, effect)
+    highlight.renderers = highlight.renderers or {}
+    if highlight.renderers[effect] then return highlight.renderers[effect] end
+    if highlight.failedEffects and highlight.failedEffects[effect] then error(highlight.failedEffects[effect]) end
+    local df = LibStub and LibStub:GetLibrary("DetailsFramework-1.0", true)
+    if not df then error("Details Framework unavailable") end
+    -- Track a hidden construction host before calling library code, so a
+    -- partially failing constructor cannot leave visible child regions behind.
+    local layer = CreateFrame("Frame", nil, highlight.frame)
+    layer:SetAllPoints(highlight.frame)
+    layer:SetFrameLevel(highlight.frame:GetFrameLevel() + 1)
+    layer:Hide()
+    highlight.effectHosts = highlight.effectHosts or {}
+    highlight.effectHosts[effect] = layer
+    local renderer
+    if effect == "SOLID" then
+        renderer = df:CreateFullBorder(nil, layer)
+        renderer:SetIgnoreParentScale(false)
+        renderer:SetBorderSizes(2, 2, 2, 2)
+        renderer:UpdateSizes()
+    elseif effect == "SOFT" then
+        renderer = layer
+        df:CreateBorderWithSpread(renderer, 1, 0.55, 0.2, 2, 0)
+    elseif effect == "ANTS" then
+        renderer = df:CreateAnts(layer, {
+            Texture = "Interface\\SpellActivationOverlay\\IconAlertAnts",
+            TextureWidth = 256, TextureHeight = 256,
+            TexturePartsWidth = 48, TexturePartsHeight = 48, AmountParts = 22,
+        }, -3, 3, 3, -3)
+        -- DF's helper calls AnimateTexCoords, absent on some Midnight clients.
+        -- Animate only this owned sheet; never read native cast dimensions.
+        renderer:SetScript("OnUpdate", function(self, elapsed)
+            self.elapsed = (self.elapsed or 0) + elapsed
+            local index = math.floor(self.elapsed / 0.025) % 22
+            local left, top = (index % 5) * 48 / 256, math.floor(index / 5) * 48 / 256
+            self.Texture:SetTexCoord(left, left + 48 / 256, top, top + 48 / 256)
+        end)
+    elseif effect == "GLOW" then
+        -- The framework sizes its alert using parent:GetSize(). Seed a separate
+        -- owned frame with known dimensions before anchoring it to the bar.
+        if type(DoesTemplateExist) ~= "function"
+            or not (DoesTemplateExist("ActionButtonSpellAlertTemplate")
+                or DoesTemplateExist("ActionBarButtonSpellActivationAlert")) then
+            error("Spell-alert template unavailable")
+        end
+        local host = CreateFrame("Frame", nil, layer)
+        host:SetSize(160, 20)
+        renderer = df:CreateGlowOverlay(host)
+        host:SetAllPoints(layer)
+        renderer:ClearAllPoints()
+        renderer:SetPoint("TOPLEFT", highlight.frame, "TOPLEFT", -8, 8)
+        renderer:SetPoint("BOTTOMRIGHT", highlight.frame, "BOTTOMRIGHT", 8, -8)
+        if renderer.ProcStartFlipbook then
+            renderer.ProcStartFlipbook:ClearAllPoints()
+            renderer.ProcStartFlipbook:SetAllPoints(renderer)
+        end
+        if not renderer.animIn and not renderer.ProcStartAnim then
+            renderer:Hide()
+            error("Spell-alert animation unavailable")
+        end
+    end
+    if not renderer then error("Unknown effect") end
+    renderer:SetFrameLevel(highlight.frame:GetFrameLevel() + 1)
+    renderer:Hide()
+    highlight.renderers[effect] = renderer
+    return renderer
 end
 
 local function ApplyRenderer(highlight)
+    local effect = ns.GetInterruptibleEffect and ns.GetInterruptibleEffect() or "PULSE"
+    if highlight.activeEffect ~= effect then StopRenderer(highlight) end
+    highlight.activeEffect, highlight.rendererError = effect, nil
     local r, g, b = EffectColor("interruptible")
+    if effect ~= "PULSE" then
+        local ok, err = pcall(function()
+            local renderer = FrameworkRenderer(highlight, effect)
+            if effect == "SOLID" then renderer:SetVertexColor(r, g, b, 1)
+            elseif effect == "SOFT" then renderer:SetBorderColor(r, g, b); renderer:SetBorderAlpha(1, 0.55, 0.2)
+            elseif effect == "ANTS" then renderer.Texture:SetVertexColor(r, g, b, 1)
+            else renderer:SetColor({r, g, b, 1}, {r, g, b, 1}) end
+            highlight.effectHosts[effect]:Show()
+            local wasShown = renderer:IsShown()
+            renderer:Show()
+            if renderer.Play and not wasShown then renderer:Play() end
+        end)
+        if ok then return end
+        StopRenderer(highlight)
+        highlight.rendererError = tostring(err)
+        highlight.failedEffects = highlight.failedEffects or {}
+        highlight.failedEffects[effect] = highlight.rendererError
+        -- Keep an obvious indicator if a winning external DF copy or the
+        -- client's template lacks the requested effect. Diagnostics explains it.
+        highlight.activeEffect = "PULSE"
+    end
     for _, edge in ipairs(highlight.border) do
         edge:SetColorTexture(r, g, b, 1)
         edge:Show()
@@ -100,6 +198,9 @@ local function NativeInterruptibleState(highlight, context)
 end
 
 local function ResolvedInterruptibleState(highlight, context)
+    local shown = ns.AccessibleBoolean(Capabilities.ReadRegion(highlight and highlight.castBar, "IsShown", context))
+    if shown == false then return false, "cast bar hidden" end
+    if shown == nil then return nil, "cast visibility unavailable" end
     local unit = ns.AccessibleValue(highlight and highlight.owner and highlight.owner.unit)
     if type(unit) == "string" and eventStateByUnit[unit] ~= nil then
         return eventStateByUnit[unit], "spellcast event"
@@ -125,6 +226,7 @@ local function RefreshHighlight(highlight, context, decision)
         ApplyRenderer(highlight)
     else
         highlight.frame:Hide()
+        if state == nil and highlight.owner then DeferFrame(highlight.owner) end
     end
 end
 
@@ -134,7 +236,7 @@ local function InstallRegionHook(highlight, region, registry)
     if highlight[registry][region] then return true end
 
     local overlay = highlight.frame
-    local ok = pcall(hooksecurefunc, region, "SetShown", function()
+    local function Changed()
         local context = GetContext()
         if not CanAccessFrame(highlight.owner, context) then
             DeferFrame(highlight.owner)
@@ -144,9 +246,16 @@ local function InstallRegionHook(highlight, region, registry)
         local bar = highlight.castBar
         local icon = Capabilities.SafeField(bar, "Icon", context)
         local shield = Capabilities.SafeField(bar, "BorderShield", context)
-        if region ~= icon and region ~= shield then return end
+        if region ~= bar and region ~= icon and region ~= shield then return end
         RefreshHighlight(highlight, context, highlight.owner.SNPPresentation)
-    end)
+    end
+    local ok = true
+    for _, method in ipairs({"SetShown", "Show", "Hide"}) do
+        if type(Capabilities.SafeField(region, method, GetContext())) == "function" then
+            local installed = pcall(hooksecurefunc, region, method, Changed)
+            ok = ok and installed
+        end
+    end
     if ok then highlight[registry][region] = true end
     return ok
 end
@@ -154,26 +263,29 @@ end
 local function InstallInterruptibleHighlightHooks(highlight)
     local bar = highlight and highlight.castBar
     if not bar then return end
-    InstallRegionHook(highlight, bar.Icon, "hookedIcons")
-    InstallRegionHook(highlight, bar.BorderShield, "hookedShields")
+    local context = GetContext()
+    InstallRegionHook(highlight, Capabilities.SafeField(bar, "Icon", context), "hookedIcons")
+    InstallRegionHook(highlight, Capabilities.SafeField(bar, "BorderShield", context), "hookedShields")
+    InstallRegionHook(highlight, bar, "hookedBars")
+    if not highlight.barVisibilityHooked then
+        local function Changed()
+            local context = GetContext()
+            if highlight.owner.SNPInterruptibleHighlight ~= highlight then highlight.frame:Hide(); return end
+            if not CanAccessFrame(highlight.owner, context) then DeferFrame(highlight.owner); return end
+            RefreshHighlight(highlight, context, highlight.owner.SNPPresentation)
+        end
+        local ok = pcall(function()
+            bar:HookScript("OnShow", Changed)
+            bar:HookScript("OnHide", Changed)
+        end)
+        highlight.barVisibilityHooked = ok
+    end
 end
 
-local function EnsureInterruptibleHighlight(frame, context)
-    context = context or GetContext()
-    if not CanAccessFrame(frame, context) then return end
-    local castBar = GetCastBar(frame, context)
-    if not castBar then return nil end
-    local existing = frame.SNPInterruptibleHighlight
-    if existing and existing.castBar == castBar then
-        InstallInterruptibleHighlightHooks(existing)
-        return existing
-    end
-    if existing and existing.frame then existing.frame:Hide() end
-
+local function CreateHighlight(castBar, owner, healthBar)
     local overlay = CreateFrame("Frame", nil, castBar)
     overlay:SetPoint("TOPLEFT", castBar, "TOPLEFT", -5, 5)
     overlay:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 5, -5)
-    local healthBar = GetHealthBar(frame, context)
     local highestFrameLevel = castBar:GetFrameLevel()
     if healthBar then highestFrameLevel = math.max(highestFrameLevel, healthBar:GetFrameLevel()) end
     overlay:SetFrameLevel(highestFrameLevel + 20)
@@ -181,7 +293,7 @@ local function EnsureInterruptibleHighlight(frame, context)
 
     local highlight = {
         castBar = castBar,
-        owner = frame,
+        owner = owner,
         frame = overlay,
         border = CreateBorder(overlay, 2, 4),
     }
@@ -201,6 +313,21 @@ local function EnsureInterruptibleHighlight(frame, context)
 
     overlay:SetScript("OnShow", function() ApplyRenderer(highlight) end)
     overlay:SetScript("OnHide", function() StopRenderer(highlight) end)
+    return highlight
+end
+
+local function EnsureInterruptibleHighlight(frame, context)
+    context = context or GetContext()
+    if not CanAccessFrame(frame, context) then return end
+    local castBar = GetCastBar(frame, context)
+    if not castBar then return nil end
+    local existing = frame.SNPInterruptibleHighlight
+    if existing and existing.castBar == castBar then
+        InstallInterruptibleHighlightHooks(existing)
+        return existing
+    end
+    if existing and existing.frame then existing.frame:Hide() end
+    local highlight = CreateHighlight(castBar, frame, GetHealthBar(frame, context))
     frame.SNPInterruptibleHighlight = highlight
     InstallInterruptibleHighlightHooks(highlight)
     return highlight
@@ -253,4 +380,13 @@ ns.CastHighlight = {
     UpdateInterruptibleHighlight = UpdateInterruptibleHighlight,
     RecordSpellcastEvent = RecordSpellcastEvent,
     ClearUnit = ClearUnit,
+    UpdatePreview = function(bar)
+        if not bar.SNPCastPreview then bar.SNPCastPreview = CreateHighlight(bar) end
+        bar.SNPCastPreview.frame:Show()
+        ApplyRenderer(bar.SNPCastPreview)
+    end,
+    StopPreview = function(bar)
+        if bar and bar.SNPCastPreview then bar.SNPCastPreview.frame:Hide() end
+    end,
 }
+

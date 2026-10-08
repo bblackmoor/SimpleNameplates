@@ -14,6 +14,10 @@ local function Region(parent)
     function r:SetFrameLevel(v) self.level = v end
     function r:GetFrameLevel() return self.level end
     function r:SetScript(key, callback) self.scripts[key] = callback end
+    function r:HookScript(key, callback)
+        local original = self.scripts[key]
+        self.scripts[key] = function(...) if original then original(...) end; callback(...) end
+    end
     r.IsShown = NativeIsShown
     function r:SetShown(value)
         if self.shown == value then return end
@@ -95,8 +99,8 @@ equal(highlight.frame.shown, true, "modern visible icon means interruptible")
 assert(highlight.pulse:IsPlaying(), "pulse starts")
 equal(#highlight.border, 4, "four-edge pulse border")
 equal(highlight.border[1].color[2], 1, "profile color applied")
-assert(frame.castBar.Icon.hookCount == 1, "icon visibility hook installed")
-assert(frame.castBar.BorderShield.hookCount == 1, "shield visibility hook installed")
+assert(frame.castBar.Icon.hookCount == 3, "all icon visibility hooks installed")
+assert(frame.castBar.BorderShield.hookCount == 3, "all shield visibility hooks installed")
 
 frame.castBar.Icon:SetShown(false)
 equal(highlight.frame.shown, false, "modern hidden icon means uninterruptible")
@@ -167,5 +171,42 @@ equal(highlight.frame.shown, false, "disable hides pulse")
 assert(not highlight.pulse:IsPlaying(), "disable stops pulse")
 
 ns.CastHighlight.ClearUnit("nameplate1")
+
+-- Native cast visibility gates explicit events as well as visual fallback.
+enabled = true
+frame.castBar.Icon.IsShown = NativeIsShown
+frame.castBar.BorderShield.IsShown = NativeIsShown
+frame.castBar.Icon.shown = true
+frame.castBar.shown = true
+ns.CastHighlight.RecordSpellcastEvent("UNIT_SPELLCAST_INTERRUPTIBLE", "nameplate1")
+Update()
+assert(highlight.frame.shown)
+frame.castBar:Hide()
+assert(not highlight.frame.shown and not highlight.pulse:IsPlaying(), "bar hide stops explicit-event effect")
+frame.castBar:Show()
+assert(highlight.frame.shown, "bar show catches initial visibility transition")
+
+-- Native Show/Hide need not dispatch through SetShown; their method hooks work.
+local direct = {unit = "nameplate2", castBar = Region(), SNPPresentation = {showCastBar = true}}
+direct.castBar.Icon = Region(direct.castBar)
+direct.castBar.HideIconWhenNotInterruptible = true
+direct.castBar.Icon.Show = function(self) self.shown = true end
+direct.castBar.Icon.Hide = function(self) self.shown = false end
+ns.CastHighlight.UpdateInterruptibleHighlight(direct, {}, direct.SNPPresentation)
+local directHighlight = direct.SNPInterruptibleHighlight
+direct.castBar.Icon:Hide()
+assert(not directHighlight.frame.shown, "direct native Hide repaired")
+direct.castBar.Icon:Show()
+assert(directHighlight.frame.shown, "direct native Show repaired")
+local hooks = direct.castBar.Icon.hookCount
+ns.CastHighlight.UpdateInterruptibleHighlight(direct, {}, direct.SNPPresentation)
+assert(direct.castBar.Icon.hookCount == hooks, "repeated setup does not duplicate hooks")
+direct.castBar.Icon.IsShown = function() return nil end
+ns.CastHighlight.UpdateInterruptibleHighlight(direct, {}, direct.SNPPresentation)
+assert(not directHighlight.frame.shown, "unknown state does not fabricate interruptibility")
+direct.castBar.Icon.IsShown = NativeIsShown
+ns.PeriodicWork.Advance(0.25); ns.PeriodicWork.Run()
+assert(directHighlight.frame.shown, "unknown visual state recovers without new event")
 print("Cast pulse integration smoke: passed")
+
 

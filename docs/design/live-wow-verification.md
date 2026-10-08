@@ -1,6 +1,6 @@
 # Live WoW integration verification
 
-Reviewed for 1.0.220 on 2026-10-08. All 21 local smoke suites pass. Targeted crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open. The runtime fix remains in 1.0.219 and 1.0.220 after temporary diagnostics were removed.
+Reviewed for 1.0.221 on 2026-10-08. All 22 local smoke suites pass. Version 1.0.221 adds DF border/glow choices, a labeled preview and native visibility-hook recovery; live cast detection/rendering acceptance remains open. Targeted crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open. The runtime fix remains in 1.0.219 and 1.0.220 after temporary diagnostics were removed.
 
 Local UI stubs do not establish actual rendering, native permissions, secure CVar behavior or Midnight secret-value safety. Record addon version, client build, date, scene, profile, activity and observed result for client checks. Leave an item open until observed in game. Historical plans describe their original releases; this checklist replaces instructions to exercise removed controls or repeatedly install intermediate diagnostic builds.
 
@@ -48,8 +48,8 @@ Capture a complete current-build report if flicker or hitches return. Additional
 
 - [ ] All six Health Bar switches follow the selected profile; On shows a supported bar in both combat states, Off shows its name/title without a bar. Verify first-match priority and no category Active/Inactive or Hide controls.
 - [ ] Factory bars are On for the first five categories and Off for NPC - Background. Background-name dimming defaults On; On is grey #999999 and Off white #FFFFFF, with matching subtitles, inside/above/no-bar. Bar colors and threat styling are independent.
-- [ ] Cast highlighting is one pulsing border with a profile Active switch beside its color. Inactive disables it. There is no effect dropdown, individual color Reset button or glow-library requirement.
-- [ ] Reset all colors restores the selected profile's factory palette, bars On except Background, background dimming On, cast activation Off, and gradients On for Default/custom or Off for High Contrast. It preserves appearance/threat settings, selection, global styling, critter hiding and TRP3. Internal legacy category modes reset to active without affecting rendering.
+- [ ] Cast highlighting has a profile Active switch beside its color plus an Effect dropdown: Pulsing border, Solid border, Soft border, Marching ants and Spell-alert glow. The labeled preview demonstrates the effect even while Inactive; actual enemy highlighting requires Active and interruptibility. No individual color Reset button or new library requirement exists.
+- [ ] Reset all colors restores the selected profile's factory palette, bars On except Background, background dimming On, cast activation Off, effect Pulsing border, and gradients On for Default/custom or Off for High Contrast. It preserves appearance/threat settings, selection, global styling, critter hiding and TRP3. Internal legacy category modes reset to active without affecting rendering.
 - [ ] Appearance reset restores selected-profile fonts/rendering/size/placement/width and threat On, plus global critter hiding Off. It preserves Colors preferences, global Active, TRP3 and selection. Bundled restore has the separate scope described above.
 
 ## Fonts, geometry, gradients and native labels
@@ -64,7 +64,7 @@ Capture a complete current-build report if flicker or hitches return. Additional
 
 ## Casts, threat, NPC subtitles and TRP3
 
-- [ ] Observe interruptible/non-interruptible casts and channels with pulse Active/Inactive, including changing interruptibility mid-cast and cast start/stop/interruption. Preserve native shield/spell/target information, modern/classic support and geometry-independent anchoring.
+- [ ] Observe interruptible/non-interruptible casts and channels with each effect Active/Inactive, including changing interruptibility mid-cast and cast start/stop/interruption. Preserve native shield/spell/target information, modern/classic support and geometry-independent anchoring. Check direct icon/shield Show/Hide, native cast-bar show/hide and initially unreadable visibility. Missing renderer methods/templates should fall back to the pulse with a debug reason, without frame churn.
 - [ ] Reuse bars/icons/plates and temporarily block access. Old icons cannot control the current effect; missing callbacks recover using current state when access returns.
 - [ ] Threat displays WoW's scaled percentage when supported, passes secret values only to the supported formatter and stays blank if unavailable/rejected. It does not pin at raw 255%. Threat appearing/disappearing updates name space promptly.
 - [ ] NPC service subtitles resolve from supported structured/unit tooltips and bounded caches; test unambiguous name fallback, conflicting titles and unreadable data. Titles fit configured bar width even without a bar and disappear during active/unknown cast visibility, returning when safe after the cast.
@@ -87,5 +87,7 @@ Capture a complete current-build report if flicker or hitches return. Additional
 - [ ] Current reports include per-plate Reconciliation, Runtime update, Urgent refresh, Periodic work, Plate discovery and observed reason rows. Broad Global refresh measures discovery/enqueueing plus immediate priority work; Global plate refresh measures one plate visit. Removed appearance checkpoints/origin rows are not expected on 1.0.219+.
 - [ ] Verify current/previous target/mouseover/interaction and explicit unit updates stay prompt while broad background settings/context work settles through the shared four-job/one-millisecond cooperative budget. Check fairness, recycling, errors and deferred restoration; no continually growing visible backlog.
 - [ ] Unknown properties remain unknown and use elapsed retry eligibility from 0.25–4 seconds, without blocking independent readable repairs. Native cast hooks/events bypass backoff. One atomic job and immediate priority work can exceed the periodic time target; do not tune it from a single unmatched maximum.
+
+See [the repeatable cast test](cast-effect-testing.md) for enemy selection, preview versus detection checks and a targeted debug capture.
 
 Acceptance remains partial until the applicable client checks above are recorded. Passing smoke suites or one converged scene does not close unobserved settings, restoration, combat or secure-behavior checks.

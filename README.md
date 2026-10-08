@@ -1,6 +1,6 @@
 # Simple Nameplates
 
-Documentation reviewed for 1.0.220 (2026-10-08). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
+Documentation reviewed for 1.0.221 (2026-10-08). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
 
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
@@ -64,7 +64,7 @@ NPC subtitles such as `<Voidforge Steward>` are read first from structured GUID 
 * Normal Blizzard cast/channel bar and spell information
 * Blizzard target scaling and highlighting; decorative bar borders are removed
 * Optional scaled threat percentage at the right side of the health bar when WoW supplies a percentage its text API can display
-* Optional pulsing border around interruptible cast bars, with a configurable solid color
+* Optional selected border or glow around interruptible cast bars, with a configurable solid color
 
 ## Global behavior
 
@@ -83,10 +83,10 @@ The settings pages are organized by purpose. Changes apply immediately and are s
 | About | Version, source, commands, presentation limits, and informational native-label swatches | `/snp about` |
 | Profiles | Select, create, copy, rename, delete, and restore profiles; global Active switch | `/snp profiles` |
 | Appearance | Fonts, sizing, name placement, threat display, global critter/companion visibility, and Reset settings | `/snp appearance` or `/snp` |
-| Colors | Profile colors, Health Bar switches, background-name dimming, gradients/preview, cast pulse Active switch, and Reset all colors | `/snp colors` |
+| Colors | Profile colors, Health Bar switches, background-name dimming, gradients/preview, cast Active switch/effect dropdown/preview, and Reset all colors | `/snp colors` |
 | TRP3 | All global RP-name, title, and OOC options | `/snp trp3` |
 
-Appearance and Colors each have a compact Selected profile control; management actions are on Profiles. On Profiles, the selector sits farther left with an Active/Inactive switch immediately to its right. This switch enables styling globally, including the startup compatibility review. Appearance's **Reset settings** and Colors' **Reset all colors** sit directly below their selectors. Health Bar switches sit beside the six category color swatches on Colors and apply to the selected profile. Individual color reset buttons and category Active switches have been removed. The cast-highlight **Active** switch sits beside its color; Inactive turns the pulse off for the selected profile. Changing profiles selects that profile's Health Bar preferences.
+Appearance and Colors each have a compact Selected profile control; management actions are on Profiles. On Profiles, the selector sits farther left with an Active/Inactive switch immediately to its right. This switch enables styling globally, including the startup compatibility review. Appearance's **Reset settings** and Colors' **Reset all colors** sit directly below their selectors. Health Bar switches sit beside the six category color swatches on Colors and apply to the selected profile. Individual color reset buttons and category Active switches have been removed. The cast-highlight **Active** switch sits beside its color; Inactive turns highlighting off for the selected profile. The **Effect** dropdown selects Pulsing border, Solid border, Soft border, Marching ants or Spell-alert glow. The labeled preview demonstrates the selected effect even while Inactive; it does not detect a real cast. Changing profiles selects that profile's Health Bar preferences.
 
 Profiles are shared account-wide, while each character remembers its active profile. **Create** starts with factory-default appearance settings; **Copy** duplicates the complete active profile. Profiles can be renamed and deleted, except **Default**, which is the permanent fallback. Deleting a profile moves characters assigned to it back to Default.
 
@@ -126,7 +126,9 @@ The selected Name font defaults to WoW's built-in **Friz Quadrata**, the threat-
 
 Styled health and cast bars use flat fills and backgrounds without native decorative borders or shaded overlays. The bright right-edge absorb overflow glow is suppressed on styled health bars; shield fill and healing predictions remain visible. Cast lookup supports both direct legacy fields and Retail's native `CastBarsContainer.castBar` layout, checking container and bar access before use. Cast spell and target labels keep their native font and size with thin outlines whether Slug is on or off, and no shadows. Cast progress, spell icons, non-interruptible shields, and Blizzard target/mouseover selection highlighting and classification-badge visibility are preserved; original artwork is restored when styling ends.
 
-About contains three informational swatches for native opposite-faction PC sanctuary labels, interactive-NPC labels, and vendor-NPC labels. These describe native labels, not blanket unalterable entity categories; separate accessible NPC plates can be styled. The optional interruptible highlight draws a pulsing colored border around Blizzard's existing cast bar; the Active switch enables or disables it. The border is anchored to the native bar and does not read cast-bar dimensions. It never calls Midnight's secrecy-wrapped `IsInterruptable()`. Blizzard's already-rendered spell-icon/shield visibility supplies the initial state at cast start; explicit interruptible/not-interruptible events then become authoritative for mid-cast changes and cast-stop events clear the pulse. Modern and Classic nameplate styles are both supported, and Blizzard's native non-interruptible shield treatment is preserved.
+About contains three informational swatches for native opposite-faction PC sanctuary labels, interactive-NPC labels, and vendor-NPC labels. These describe native labels, not blanket unalterable entity categories; separate accessible NPC plates can be styled. The optional interruptible highlight draws the selected colored border or glow around Blizzard's existing cast bar; the Active switch enables or disables it. Effect defaults to Pulsing border and resets with Colors; Appearance reset preserves it. The effect is anchored to the native bar and does not read cast-bar dimensions. It never calls Midnight's secrecy-wrapped `IsInterruptable()`. Blizzard's already-rendered spell-icon/shield visibility supplies the initial state at cast start; explicit interruptible/not-interruptible events then become authoritative for mid-cast changes and cast-stop events clear the pulse. Modern and Classic nameplate styles are both supported, and Blizzard's native non-interruptible shield treatment is preserved.
+
+For a repeatable cast test, see [interruptible-effect testing](docs/design/cast-effect-testing.md). Native icon/shield and cast-bar SetShown/Show/Hide transitions trigger recovery; unreadable initial state retries rather than being treated as interruptible.
 
 ## TRP3 Integration
 
@@ -138,7 +140,7 @@ Each field has its own toggle. To keep nameplates readable, roleplaying names ar
 
 ## Saved Settings
 
-Look-and-feel settings are stored in named appearance profiles: priority colors, cast-highlight color and Active state, Health Bar preferences, background-name dimming, gradients, fonts, sizing, placement, and threat display. Global settings cover styling enablement, critter/companion visibility, and TRP3 preferences. Legacy category modes remain stored but do not affect presentation. Each character selects an account-wide profile.
+Look-and-feel settings are stored in named appearance profiles: priority colors, cast-highlight color, Active state and selected effect, Health Bar preferences, background-name dimming, gradients, fonts, sizing, placement, and threat display. Global settings cover styling enablement, critter/companion visibility, and TRP3 preferences. Legacy category modes remain stored but do not affect presentation. Each character selects an account-wide profile.
 
 Saved settings are validated individually in their current locations. Recognized valid values are retained regardless of the saved schema marker; invalid and unknown settings are silently discarded, with defaults supplying missing values. The current category keys are `attacking`, `hostile`, `neutral`, `friendly`, `useful`, and `useless`. Obsolete category fields are discarded; valid current fields and unrelated settings remain. The retired `interruptibleCastStyle` is a compatibility exception: when no valid `interruptibleHighlight` boolean exists, a saved string other than `NONE` enables the pulse; `NONE` disables it. The validated profile no longer stores the old selector. Other obsolete settings are discarded without renaming or relocation.
 
@@ -158,7 +160,7 @@ The main **Simple Nameplates** AddOns page is an About screen showing the addon 
 
 Failed frame restorations release their temporary styling guard and remain queued for retry. Successful retries refresh addon presentation for the frame's current unit, including recycled plates. `/snp debug` reports the last restoration error while a failure remains pending; an absent blocked region is shown as `(none)`.
 
-`Diagnostics.lua` owns read-only context and targeted-unit reporting. `/snp debug` reports the cached world context even without a target, keeping unknown values distinct from false. With a target, it reports presentation access status and observed health-bar visibility; missing nameplates do not establish whether Blizzard world names are displayed. Diagnostics inspects existing cast effects without creating frames or hooks. Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting priority category, Health Bar preference, display treatment, color, nameplate availability. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, the current spell icon's visibility hook was installed, and the highlight is currently shown. The winning classification rule and its entity facts are reported together, followed by the presentation rule, action/reason, requested health-bar state, and title permission. Configured styling is distinguished from observed visibility; disabled styling reports Blizzard presentation. Restricted Midnight values are identified rather than inspected.
+`Diagnostics.lua` owns read-only context and targeted-unit reporting. `/snp debug` reports the cached world context even without a target, keeping unknown values distinct from false. With a target, it reports presentation access status and observed health-bar visibility; missing nameplates do not establish whether Blizzard world names are displayed. Diagnostics inspects existing cast effects without creating frames or hooks. Type `/snp debug` with a unit targeted to report its detected type, reaction, faction, attackability, PvP and threat information, resulting priority category, Health Bar preference, display treatment, color, nameplate availability. It also reports the name text region's shown, effective visibility, alpha, and immediate-parent state, plus whether the interruptible highlight is enabled, the target's cast bar and icon were found, visibility hooks were installed, resolved interruptibility/source, selected and active renderer, renderer errors/fallback, and whether the highlight is shown. The winning classification rule and its entity facts are reported together, followed by the presentation rule, action/reason, requested health-bar state, and title permission. Configured styling is distinguished from observed visibility; disabled styling reports Blizzard presentation. Restricted Midnight values are identified rather than inspected.
 
 Direct native name font-object, text-height and color setters also repair the
 cached appearance immediately, with access/identity checks and reentry guards.
@@ -209,7 +211,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Bundled libraries
 
-Cast highlighting uses an addon-owned pulsing border anchored to Blizzard's cast bar. Use the **Active** switch beside the cast-highlight color on Colors to enable or disable it. No cast geometry is read or passed to a glow library.
+Cast highlighting retains the addon-owned pulse and uses the already-bundled Details Framework for Solid border, Soft border, Marching ants and Spell-alert glow. Use **Active** and the **Effect** dropdown on Colors. Constructors receive owned frames; the glow is initialized with known dimensions before anchoring, without reading native cast geometry. Missing library methods/templates fall back to the pulse and report the reason in debug; no extra library is installed.
 
 LibSharedMedia and CallbackHandler supply the shared font registry and provider-change notifications. External font packs are optional; solid bar fills have no texture selector.
 
@@ -244,7 +246,7 @@ Documentation entry points:
 
 Earlier implementation/conversion plans are historical records. Their original controls, defaults and pending findings are superseded by these current guides and later recorded results.
 
-Run all 21 local smoke suites from the repository root (the verified interpreter here is LuaTeX):
+Run all 22 local smoke suites from the repository root (the verified interpreter here is LuaTeX):
 
 ```sh
 for test in tests/*-smoke.lua; do

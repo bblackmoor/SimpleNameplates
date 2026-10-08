@@ -157,6 +157,10 @@ local ns = {
     SetThreatEnabled = function(value) threatEnabled = value end,
     GetInterruptibleHighlightEnabled = function() return castEnabled end,
     SetInterruptibleHighlightEnabled = function(value) castEnabled = value end,
+    CAST_EFFECT_OPTIONS = {{value = "PULSE", label = "Pulsing border"}},
+    CAST_EFFECT_BY_VALUE = {PULSE = "Pulsing border"},
+    GetInterruptibleEffect = function() return "PULSE" end,
+    SetInterruptibleEffect = function() end,
     ResetAllColors = function()
         allColorResets = allColorResets + 1
         castEnabled = false
@@ -578,6 +582,7 @@ print("Settings smoke: passed")
 for _, item in ipairs(frames) do
     assert(item.text ~= "Replace Blizzard overhead names (experimental)", "replacement UI removed")
 end
+
 
 
 

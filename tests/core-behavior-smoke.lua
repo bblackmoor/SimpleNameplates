@@ -61,14 +61,24 @@ equal(widthNS.GetAppearanceSetting("healthBarWidth"), 120, "Appearance reset res
 
 -- Cast activation is profile-specific, survives reload, and resets with Colors.
 local effectNS = fresh()
+equal(effectNS.GetInterruptibleEffect(), "PULSE", "effect defaults pulse")
+effectNS.SetInterruptibleEffect("GLOW")
 equal(effectNS.GetInterruptibleHighlightEnabled(), false, "highlight defaults off")
 effectNS.SetInterruptibleHighlightEnabled(true)
 effectNS.CopyActiveProfile("Pulse cast bars")
 effectNS = loadCore()
+equal(effectNS.GetInterruptibleEffect(), "GLOW", "copied effect survives reload")
+effectNS.SetInterruptibleEffect("invalid")
+equal(effectNS.GetInterruptibleEffect(), "GLOW", "invalid effect setter ignored")
 equal(effectNS.GetInterruptibleHighlightEnabled(), true, "copied activation survives reload")
 effectNS.ResetAppearance()
+equal(effectNS.GetInterruptibleEffect(), "GLOW", "Appearance reset preserves effect")
 equal(effectNS.GetInterruptibleHighlightEnabled(), true, "Appearance reset preserves activation")
 effectNS.ResetAllColors()
+equal(effectNS.GetInterruptibleEffect(), "PULSE", "Colors reset restores pulse")
+effectNS.EnsureDB().profiles[effectNS.GetActiveProfileName()].interruptibleEffect = "invalid"
+effectNS = loadCore()
+equal(effectNS.GetInterruptibleEffect(), "PULSE", "invalid saved effect defaults pulse")
 equal(effectNS.GetInterruptibleHighlightEnabled(), false, "Colors reset disables highlight")
 -- Retired style settings supply activation only when the current switch is absent.
 for _, legacy in ipairs({{true, "PIXEL", true}, {false, "PROC", false},
@@ -692,5 +702,6 @@ do
 end
 
 print("Core behavior smoke: passed")
+
 
 

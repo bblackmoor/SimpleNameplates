@@ -42,6 +42,33 @@ local function AddCastHighlightSwitch(context, row, swatch)
     end
 end
 
+local function AddCastEffectControl(context)
+    local _, dropdown = UI.CreateDropdownRow(context.content, context.layout, "Effect",
+        function() return addon.CAST_EFFECT_OPTIONS end, function(value)
+            addon.SetInterruptibleEffect(value)
+            RefreshContext(context)
+            RefreshNameplates()
+        end)
+    context.refreshers[#context.refreshers + 1] = function()
+        local value = addon.GetInterruptibleEffect()
+        dropdown:SetValue(value, addon.CAST_EFFECT_BY_VALUE[value])
+    end
+    local row = UI.CreateSettingRow(context.content, context.layout, "Effect preview")
+    local preview = CreateFrame("StatusBar", nil, row)
+    preview:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
+    preview:SetSize(190, 14)
+    preview:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    preview:SetStatusBarColor(0.25, 0.25, 0.25, 1)
+    preview:SetMinMaxValues(0, 100)
+    preview:SetValue(65)
+    context.preview = preview
+    context.refreshers[#context.refreshers + 1] = function()
+        if addon.CastHighlight then addon.CastHighlight.UpdatePreview(preview) end
+    end
+    AddDescription(context.content, context.layout,
+        "Preview demonstrates the selected effect even while Inactive; it does not detect a real cast. Enable Active above to highlight interruptible enemy casts.")
+end
+
 local function CreateColorRow(context, text, displayText, getColor, setColor, state)
     local row = UI.CreateSettingRow(context.content, context.layout, text)
     local swatch = Widgets.CreateColorPicker(row, function(r, g, b)
@@ -162,7 +189,7 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Restores health bars to On except NPC - Background, background-name dimming to On, gradients to On for Default/custom profiles or Off for High Contrast, and cast highlight to Inactive.")
+        "Restores health bars to On except NPC - Background, background-name dimming to On, gradients to On for Default/custom profiles or Off for High Contrast, and cast highlight to Inactive with Pulsing border.")
     AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
@@ -171,9 +198,13 @@ local function CreateColorsPanel()
         function() return EffectColor("interruptible") end,
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end)
     AddCastHighlightSwitch(context, row, swatch)
+    AddCastEffectControl(context)
     panel.Refresh = Refresh
     panel:SetScript("OnShow", panel.Refresh)
-    panel:SetScript("OnHide", function() UI.CancelColorEdit() end)
+    panel:SetScript("OnHide", function()
+        UI.CancelColorEdit()
+        if addon.CastHighlight then addon.CastHighlight.StopPreview(context.preview) end
+    end)
     Refresh()
     layout:Finish()
     return panel

@@ -72,6 +72,7 @@ local function NewProfile(presetName)
         gradients = SavedBoolean(preset and preset.gradients, defaults.gradients),
         dimBackgroundNames = DEFAULT_DIM_BACKGROUND_NAMES,
         interruptibleHighlight = defaults.interruptibleHighlight,
+        interruptibleEffect = defaults.interruptibleEffect,
     }
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
         local color = preset and preset.priorityColors and preset.priorityColors[key] or default
@@ -128,6 +129,9 @@ local function ValidateProfileAppearance(profile, saved)
 end
 
 local function ValidateProfileToggles(profile, saved)
+    if ns.CAST_EFFECT_BY_VALUE[saved.interruptibleEffect] then
+        profile.interruptibleEffect = saved.interruptibleEffect
+    end
     local savedBars = type(saved.healthBars) == "table" and saved.healthBars or {}
     for key in pairs(DEFAULT_PRIORITY_COLORS) do
         profile.healthBars[key] = SavedBoolean(savedBars[key], DEFAULT_HEALTH_BARS[key])
@@ -539,6 +543,7 @@ local function ResetAllColors()
         profile.effectColors[key] = CopyColor(default)
     end
     profile.interruptibleHighlight = defaults.interruptibleHighlight
+    profile.interruptibleEffect = defaults.interruptibleEffect
     profile.gradients = defaults.gradients
     profile.dimBackgroundNames = DEFAULT_DIM_BACKGROUND_NAMES
     local modes = EnsureDB().global.categoryModes
@@ -602,6 +607,10 @@ ns.ResetEffectColor = ResetEffectColor
 ns.ResetAllColors = ResetAllColors
 ns.GetInterruptibleHighlightEnabled = GetInterruptibleHighlightEnabled
 ns.SetInterruptibleHighlightEnabled = SetInterruptibleHighlightEnabled
+ns.GetInterruptibleEffect = function() return ActiveProfile().interruptibleEffect end
+ns.SetInterruptibleEffect = function(value)
+    if ns.CAST_EFFECT_BY_VALUE[value] then ActiveProfile().interruptibleEffect = value end
+end
 ns.GetStylingEnabled = GetStylingEnabled
 ns.SetStylingEnabled = SetStylingEnabled
 ns.GetThreatEnabled = GetThreatEnabled
@@ -613,4 +622,5 @@ ns.GetTRP3Enabled = GetTRP3Enabled
 ns.SetTRP3Enabled = SetTRP3Enabled
 ns.GetTRP3Setting = GetTRP3Setting
 ns.SetTRP3Setting = SetTRP3Setting
+
 
