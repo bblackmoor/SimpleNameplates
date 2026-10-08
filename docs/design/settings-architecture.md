@@ -1,6 +1,6 @@
 # Settings and runtime architecture
 
-Reviewed for 1.0.221 on 2026-10-08. Settings conversion and runtime module work are implemented; live WoW checks remain open. Saved data stays schema 2, with global behavior and account-wide appearance profiles selected per character. Earlier phase history is preserved in the [original implementation plan](implementation-plan.md), [runtime refactor plan](runtime-refactor-plan.md) and [Details Framework conversion record](details-framework-conversion.md).
+Reviewed for 1.0.222 on 2026-10-08. Settings conversion and runtime module work are implemented; live WoW checks remain open. Saved data stays schema 2, with global behavior and account-wide appearance profiles selected per character. Earlier phase history is preserved in the [original implementation plan](implementation-plan.md), [runtime refactor plan](runtime-refactor-plan.md) and [Details Framework conversion record](details-framework-conversion.md).
 
 ## Settings ownership and pages
 
@@ -73,7 +73,7 @@ Critter hiding claims only its supported world-name CVar. Legacy managed-name re
 
 ## Verification
 
-Run all 22 smoke suites and whitespace checks using the commands in the [README](../../README.md#development). They cover real bundled libraries under UI stubs, saved-field validation, profile/reset scopes, previews/dialogs, context/access gates, uniform presentation, cast/title transitions, restoration, secret-safe formatting, lifecycle and reachable upvalue limits. Profiling has deterministic timing and actual runtime/slash coverage.
+Run all 23 smoke suites and whitespace checks using the commands in the [README](../../README.md#development). They cover real bundled libraries under UI stubs, saved-field validation, profile/reset scopes, previews/dialogs, context/access gates, uniform presentation, cast/title transitions, restoration, secret-safe formatting, lifecycle and reachable upvalue limits. Profiling has deterministic timing and actual runtime/slash coverage.
 
 Local tests cannot establish native rendering, client frame permissions or secret-value safety. Record observations in the [live WoW checklist](live-wow-verification.md); client items remain open until observed.
 
@@ -88,3 +88,9 @@ The 1.0.218 crowded-scene report confirms appearance convergence in that scene. 
 ## Interruptible effects (1.0.221)
 
 Colors now has an independent profile Effect dropdown and a labeled rendering preview. Pulsing border uses the existing owned renderer; Solid border, Soft border, Marching ants and Spell-alert glow use the bundled Details Framework. Constructors do not read native cast dimensions; unavailable renderer methods/templates fall back to pulse with a diagnostic reason. Direct icon/shield Show/Hide and cast-bar visibility changes refresh detection, hidden casts gate explicit events, and unknown active state retries conservatively. Debug shows the resolved state/source, selected/active renderer and fallback error. These paths have local regression coverage; actual cast and visual acceptance remains open. See [cast-effect testing](cast-effect-testing.md).
+
+## Combat settings guard (1.0.222)
+
+`SettingsControls.lua` installs one PLAYER_REGEN_DISABLED/ENABLED listener after page construction. On combat entry, `SettingsWidgets.lua` retires color/typed-slider/drag previews through a scoped rollback path, closes dropdown menus, disables the shared controls and refreshes every page from saved values. `SettingsProfileDialogs.lua` cancels owned dialogs and invalidates their data so retained acceptance callbacks remain inert after combat. Already committed edits remain saved; no cancelled session resumes on combat exit.
+
+Widget callbacks and picker/dialog entry/acceptance also check current player combat/lockdown, including before the event arrives and when controls are constructed during combat. Handles retain page-requested enablement separately from effective combat enablement, preserving protected profile actions and TRP3 dependencies. Silent refresh guards still prevent setters during page refresh. Debug/perf slash commands remain available. The `settings-combat-smoke.lua` suite exercises the actual bundled framework, rollback, menus/dialogs, retained callbacks, combat refreshes and normal editing after combat. Native timing, rendering and secure behavior remain live-client checks.

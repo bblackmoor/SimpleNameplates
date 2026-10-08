@@ -1,5 +1,6 @@
 -- Simple Nameplates: shared settings controls and layout.
 local _, addon = ...
+local settingsPages = {}
 
 local function RefreshNameplates()
     if addon.RefreshAll then addon.RefreshAll() end
@@ -78,13 +79,23 @@ local function CreateScrollablePanel(name)
         end)
         UpdateContentSize(scroll, scroll:GetWidth(), scroll:GetHeight())
     end
+    settingsPages[#settingsPages + 1] = panel
     return panel, content, layout
 end
 
 local function AddTitle(content, layout, text)
     local title = content:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetText(text)
-    return layout:Add(title, 24, 24, 8)
+    layout:Add(title, 24, 24, 8)
+    if text ~= "About" then
+        local notice = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        notice.LayoutFullWidth = true
+        notice:SetJustifyH("LEFT")
+        notice:SetTextColor(0.72, 0.72, 0.72, 1)
+        notice:SetText("Settings changes are disabled during combat; unfinished edits are cancelled.")
+        layout:Add(notice, 24, 16, 8, true)
+    end
+    return title
 end
 
 local function AddDescription(content, layout, text)
@@ -195,3 +206,25 @@ addon.SettingsUI = {
 }
 addon.SettingsPanels = {}
 
+
+
+local UI = addon.SettingsUI
+UI.IsSettingsEditable = function() return addon.SettingsWidgets.IsEditingAllowed() end
+local combatEvents
+function UI.InstallCombatGuard()
+    if combatEvents then return end
+    combatEvents = CreateFrame("Frame")
+    combatEvents:RegisterEvent("PLAYER_REGEN_DISABLED")
+    combatEvents:RegisterEvent("PLAYER_REGEN_ENABLED")
+    local function Update(locked)
+        addon.SettingsWidgets.SetCombatLocked(locked)
+        if locked and UI.CancelProfileDialogs then UI.CancelProfileDialogs() end
+        for _, panel in ipairs(settingsPages) do
+            if panel.Refresh then panel.Refresh() end
+        end
+    end
+    combatEvents:SetScript("OnEvent", function(_, event)
+        Update(event == "PLAYER_REGEN_DISABLED")
+    end)
+    Update(not UI.IsSettingsEditable())
+end

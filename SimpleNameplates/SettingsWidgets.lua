@@ -3,6 +3,19 @@
 local _, addon = ...
 local Widgets = {}
 addon.SettingsWidgets = Widgets
+local handles, combatLocked, cancellationDepth = {}, false, 0
+
+function Widgets.IsEditingAllowed()
+    return not combatLocked and not (InCombatLockdown and InCombatLockdown())
+        and not (UnitAffectingCombat and UnitAffectingCombat("player"))
+end
+
+function Widgets.CancelEdits(callback)
+    cancellationDepth = cancellationDepth + 1
+    local ok, err = pcall(callback)
+    cancellationDepth = cancellationDepth - 1
+    if not ok then error(err, 0) end
+end
 
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 local backdrop = {bgFile = WHITE, edgeFile = WHITE, edgeSize = 1}
@@ -75,7 +88,8 @@ function Handle:SetPoint(point, relative, relativePoint, x, y)
 end
 function Handle:SetEnabled(enabled)
     if enabled ~= true and self.CancelEdit then self:CancelEdit() end
-    self.enabled = enabled == true
+    self.requestedEnabled = enabled == true
+    self.enabled = self.requestedEnabled and Widgets.IsEditingAllowed()
     if self.enabled then self.widget:Enable() else self.widget:Disable() end
     -- Some DF Enable/Disable methods only set wrapper lockdown and alpha.
     if self.enabled then self.frame:Enable() else self.frame:Disable() end
@@ -92,22 +106,37 @@ function Handle:Refresh(method, ...)
     return result
 end
 local function NewHandle(widget, onChanged)
-    return setmetatable({widget = widget, frame = Widgets.GetFrame(widget),
-        refreshDepth = 0, enabled = true, onChanged = onChanged}, Handle)
+    local handle = setmetatable({widget = widget, frame = Widgets.GetFrame(widget),
+        refreshDepth = 0, enabled = true, requestedEnabled = true, onChanged = onChanged}, Handle)
+    handles[#handles + 1] = handle
+    if not Widgets.IsEditingAllowed() then handle:SetEnabled(true) end
+    return handle
 end
 local function Notify(handle, ...)
-    if handle.enabled and handle.refreshDepth == 0 and handle.onChanged then
-        handle.onChanged(...)
+    if handle.refreshDepth > 0 then return end
+    if cancellationDepth > 0 or (handle.enabled and Widgets.IsEditingAllowed()) then
+        if handle.RememberValue then handle:RememberValue(...) end
+        if handle.onChanged then handle.onChanged(...) end
+        return true
+    elseif handle.RestoreValue then
+        handle:RestoreValue()
     end
 end
 
 function Widgets.CreateSwitch(parent, onChanged)
     local handle
     local widget = Framework():CreateSwitch(Widgets.GetFrame(parent),
-        function(_, _, value) if handle then Notify(handle, value == true) end end,
+        function(_, _, value)
+            if handle then Notify(handle, value == true) end
+        end,
         false, 44, 20, nil, nil, nil, nil, nil, nil, nil, nil, switchTemplate)
     handle = NewHandle(widget, onChanged)
-    function handle:SetChecked(value) self:Refresh(self.widget.SetValue, value == true) end
+    function handle:SetChecked(value)
+        self.currentValue = value == true
+        self:Refresh(self.widget.SetValue, self.currentValue)
+    end
+    function handle:RememberValue(value) self.currentValue = value end
+    function handle:RestoreValue() self:SetChecked(self.currentValue) end
     function handle:GetChecked() return self.widget:GetValue() == true end
     return handle
 end
@@ -137,7 +166,7 @@ local function InstallSliderEditor(handle, normalize)
     end
     handle.CancelEdit = function() Finish(true) end
     handle.widget.TypeValue = function()
-        if not handle.enabled or editing then return end
+        if not handle.enabled or not Widgets.IsEditingAllowed() or editing then return end
         if not editor then
             editor = CreateFrame("EditBox", nil, handle.frame, "BackdropTemplate")
             editor:SetSize(60, 20)
@@ -183,10 +212,34 @@ function Widgets.CreateSlider(parent, minimum, maximum, step, onChanged)
     function handle:SetValue(value)
         -- Do not use DF's SetValueNoCallback: an unchanged value may leave its
         -- one-shot flag set and swallow the next user change.
-        self:Refresh(self.widget.SetValue, Normalize(value))
+        self.currentValue = Normalize(value)
+        self:Refresh(self.widget.SetValue, self.currentValue)
     end
     function handle:GetValue() return Normalize(self.widget:GetValue()) end
+    function handle:RememberValue(value) self.currentValue = value end
+    function handle:RestoreValue() self:SetValue(self.currentValue or minimum) end
     InstallSliderEditor(handle, Normalize)
+    -- Native dragging previews continuously; only an unfinished drag rolls back.
+    local dragValue
+    local onDown, onUp = handle.frame:GetScript("OnMouseDown"), handle.frame:GetScript("OnMouseUp")
+    handle.frame:SetScript("OnMouseDown", function(frame, button, ...)
+        if not handle.enabled or not Widgets.IsEditingAllowed() then return end
+        if button == "LeftButton" then dragValue = handle:GetValue() end
+        if onDown then onDown(frame, button, ...) end
+    end)
+    handle.frame:SetScript("OnMouseUp", function(frame, button, ...)
+        if button == "LeftButton" then dragValue = nil end
+        if onUp then onUp(frame, button, ...) end
+    end)
+    function handle:CancelCombatEdit()
+        self:CancelEdit()
+        self.widget.IsValueChanging = nil
+        if dragValue ~= nil then
+            local value = dragValue
+            dragValue = nil
+            self.widget:SetValue(value)
+        end
+    end
     return handle
 end
 
@@ -214,7 +267,7 @@ function Widgets.CreateDropdown(parent, optionsFunction, onChanged)
     handle = NewHandle(widget, onChanged)
     function handle:InvalidateOptions() cached = nil end
     function handle:SetValue(value, label)
-        self.value = value
+        self.value, self.currentLabel = value, label
         if label then
             -- Font labels can refresh while choices are dirty. Selected updates
             -- the DF selection/label directly, without evaluating the provider.
@@ -223,6 +276,8 @@ function Widgets.CreateDropdown(parent, optionsFunction, onChanged)
             self:Refresh(self.widget.Select, value, false, false, false)
         end
     end
+    function handle:RestoreValue() self:SetValue(self.value, self.currentLabel) end
+    function handle:CancelEdit() self.widget:Close() end
     function handle:GetValue() return self.value end
     function handle:SetLabel(text) self.widget.label:SetText(text) end
     local notify = onChanged
@@ -295,7 +350,7 @@ function Widgets.CreateColorPicker(parent, onChanged, getColor)
     widget.widget:HookScript("OnHide", function() handle:CancelEdit() end)
     -- Keep the DF swatch with Blizzard's RGB-only contract and scoped rollback.
     widget:SetClickFunction(function()
-        if not handle.enabled then return end
+        if not handle.enabled or not Widgets.IsEditingAllowed() then return end
         addon.SettingsUI.OpenColorEditor(handle, function()
             local r, g, b
             if getColor then r, g, b = getColor()
@@ -310,3 +365,20 @@ function Widgets.CreateColorPicker(parent, onChanged, getColor)
     return handle
 end
 
+
+
+-- Preserve page-specific availability (protected profiles and TRP3 dependents).
+function Widgets.SetCombatLocked(locked)
+    combatLocked = locked == true
+    if combatLocked then
+        Widgets.CancelEdits(function()
+            if addon.SettingsUI.CancelColorEdit then addon.SettingsUI.CancelColorEdit() end
+            if addon.CancelAppearanceEdits then addon.CancelAppearanceEdits() end
+            for _, handle in ipairs(handles) do
+                if handle.CancelCombatEdit then handle:CancelCombatEdit()
+                elseif handle.CancelEdit then handle:CancelEdit() end
+            end
+        end)
+    end
+    for _, handle in ipairs(handles) do handle:SetEnabled(handle.requestedEnabled) end
+end

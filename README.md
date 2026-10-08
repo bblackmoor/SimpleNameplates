@@ -1,6 +1,6 @@
 # Simple Nameplates
 
-Documentation reviewed for 1.0.221 (2026-10-08). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
+Documentation reviewed for 1.0.222 (2026-10-08). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
 
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
@@ -107,6 +107,8 @@ Appearance groups fonts, health-bar controls, and global visibility:
 | Fonts and sizing | Unit-name font, Slug rendering, shared 8–36 point name size, and sanctuary font matching |
 | Health bars | Bar width (80–150%, default 120%), name placement, and threat font/display |
 | Global visibility | Hide critter and companion names |
+
+Settings changes are disabled while your character is in combat. Entering combat cancels unfinished color-picker, typed-slider and slider-drag previews, closes dropdown menus and profile dialogs, and restores controls to committed values. Already completed changes are retained. Settings become editable again when combat ends, with normal profile and TRP3 restrictions preserved. Choose the interruptible effect before engaging a test enemy; `/snp debug` and profiling commands remain available in combat.
 
 The sections use the same saved settings in both combat states. All TRP3 options, including the global long-title switch, are together on TRP3. Long titles use the selected name size minus two (16 with the default size 18). They use the space below the health bar, or directly below the name when its bar is off or unavailable; an active cast or channel replaces them.
 
@@ -246,7 +248,7 @@ Documentation entry points:
 
 Earlier implementation/conversion plans are historical records. Their original controls, defaults and pending findings are superseded by these current guides and later recorded results.
 
-Run all 22 local smoke suites from the repository root (the verified interpreter here is LuaTeX):
+Run all 23 local smoke suites from the repository root (the verified interpreter here is LuaTeX):
 
 ```sh
 for test in tests/*-smoke.lua; do

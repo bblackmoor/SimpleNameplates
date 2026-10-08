@@ -1,3 +1,9 @@
+## 1.0.222 — 2026-10-08
+
+- Entering combat cancels unfinished RGB/typed-slider/slider-drag previews, closes dropdowns and profile dialogs, restores controls from saved values and disables settings changes across pages. Completed edits remain saved.
+- Combat exit restores normal editing while preserving profile protections and TRP3 dependencies. Retained cancelled picker/dialog callbacks remain inert; direct callbacks also check current combat/lockdown. Debug/perf remain available.
+- Added combat lifecycle coverage using actual bundled DF controls. All 23 local smoke suites pass; native client verification remains open. Updated settings and live-testing documentation.
+
 # Changelog
 
 Entries describe their recorded releases; later fixes and the current guides supersede older controls, defaults and pending investigations.

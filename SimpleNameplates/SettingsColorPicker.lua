@@ -30,6 +30,7 @@ end
 -- Profile swatches use the native RGB picker.
 -- The session captures its Profile and settings identity, never a later selection.
 function UI.OpenColorEditor(owner, getColor, applyColor)
+    if UI.IsSettingsEditable and not UI.IsSettingsEditable() then return end
     UI.CancelColorEdit()
     local color = getColor()
     local edit = {
@@ -52,7 +53,8 @@ function UI.OpenColorEditor(owner, getColor, applyColor)
         hasOpacity = false, extraInfo = edit,
         swatchFunc = function()
             if activeEdit == edit and OwnsPicker(edit)
-                and IsCurrentTarget(edit) and not edit.opening then
+                and IsCurrentTarget(edit) and not edit.opening
+                and (not UI.IsSettingsEditable or UI.IsSettingsEditable()) then
                 local r, g, b = ColorPickerFrame:GetColorRGB()
                 edit.apply({r = r, g = g, b = b})
             end
@@ -65,4 +67,5 @@ end
 function UI.InstallColorEditorOwner(owner)
     owner:HookScript("OnHide", function() UI.CancelColorEdit(owner) end)
 end
+
 

@@ -1,6 +1,6 @@
 # Live WoW integration verification
 
-Reviewed for 1.0.221 on 2026-10-08. All 22 local smoke suites pass. Version 1.0.221 adds DF border/glow choices, a labeled preview and native visibility-hook recovery; live cast detection/rendering acceptance remains open. Targeted crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open. The runtime fix remains in 1.0.219 and 1.0.220 after temporary diagnostics were removed.
+Reviewed for 1.0.222 on 2026-10-08. All 23 local smoke suites pass. Version 1.0.222 adds combat cancellation and disabling for settings edits. Version 1.0.221 adds DF border/glow choices, a labeled preview and native visibility-hook recovery; live cast detection/rendering acceptance remains open. Targeted crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open. The runtime fix remains in 1.0.219 and 1.0.220 after temporary diagnostics were removed.
 
 Local UI stubs do not establish actual rendering, native permissions, secure CVar behavior or Midnight secret-value safety. Record addon version, client build, date, scene, profile, activity and observed result for client checks. Leave an item open until observed in game. Historical plans describe their original releases; this checklist replaces instructions to exercise removed controls or repeatedly install intermediate diagnostic builds.
 
@@ -31,6 +31,8 @@ Capture a complete current-build report if flicker or hitches return. Additional
 - [ ] With Details/Plater and standalone Details Framework disabled, log in/reload and open About, Profiles, Appearance, Colors and TRP3. Confirm one registration, correct page order and scrolling. Repeat with an external DF embedder and record the selected DF minor version.
 - [ ] Check headings, wrapping, switches, disabled labels, swatches, sliders, dropdowns and info-link spacing at narrow/normal widths and different UI scales. Test content growing/shrinking and wheel/scrollbar operation.
 - [ ] Verify `/snp` and `/snp appearance` open Appearance; profiles/colors/trp3/about routes open their pages. Settings commands refuse combat opening; debug/perf commands remain available during combat.
+- [ ] Enter combat with an open color picker, typed slider editor, held slider drag, dropdown menu or profile dialog. Verify unfinished previews roll back, menus/dialogs close, current selections are restored, and all settings mutations (including resets and profile actions) are disabled. Previously committed edits remain.
+- [ ] Leave combat: controls resume their normal availability without resuming cancelled sessions; Default rename/delete and disabled TRP3 dependents remain disabled. Open the settings through the native Settings UI during combat and confirm controls cannot mutate saved values. Debug/perf remain usable.
 - [ ] About reads the installed `.toc` version; the copy-source link and three read-only reference swatches work and never open editable pickers.
 - [ ] Profiles' global Active switch reflects setup suspension while consent is pending, successful Apply and enable, refusal and failed/deferred writes without requiring a page reopen.
 

@@ -26,6 +26,7 @@ local function RegisterSettingsPanels()
     for _, page in ipairs(pageOrder) do
         panels[page.key] = addon.SettingsPanels[page.key]()
     end
+    if addon.SettingsUI and addon.SettingsUI.InstallCombatGuard then addon.SettingsUI.InstallCombatGuard() end
     rootCategory = Settings.RegisterCanvasLayoutCategory(panels.About, "Simple Nameplates")
     categories.About = rootCategory
     Settings.RegisterAddOnCategory(rootCategory)
@@ -57,5 +58,6 @@ local function RegisterSettingsPanels()
     end
 end
 addon.RegisterSettingsPanels = RegisterSettingsPanels
+
 
 
