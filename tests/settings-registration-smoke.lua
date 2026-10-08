@@ -1,7 +1,7 @@
 -- Registration preflight, retry, routing and duplicate protection.
 local addon = {MAX_CATEGORIES = 8, Database = {GetSettings = function() return {selectedCategory = 2} end}}
 assert(loadfile("SimpleNameplates/Settings.lua"))("SimpleNameplates", addon)
-local keys = {"About","Profiles","Appearance","Colors","TRP3"}
+local keys = {"About","Profiles","Appearance","Colors","Advanced","TRP3"}
 local register = addon.RegisterSettingsPanels
 local created, registered, refreshes, selected, editors = 0, {}, {}, nil, nil
 addon.SettingsPanels = {}
@@ -49,7 +49,7 @@ register()
 assert(created == #keys and #registered == #keys and registered[1] == firstRoot, "registration is idempotent")
 local opened
 Settings.OpenToCategory = function(id) opened = id end
-for _, route in ipairs({{"about", 1}, {"profiles", 2}, {"", 3}, {"colors", 4}, {"trp3", 5}}) do
+for _, route in ipairs({{"about", 1}, {"profiles", 2}, {"", 3}, {"colors", 4}, {"advanced", 5}, {"trp3", 6}}) do
     SlashCmdList.SNP(route[1]); assert(opened == route[2], "slash routing")
 end
 print("PASS settings registration preflight, retry, order, routing and duplicate protection")

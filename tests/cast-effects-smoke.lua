@@ -36,6 +36,8 @@ function CreateFrame(kind, name, parent, template)
 end
 dofile("tests/details-framework-loader.lua")("Libs/DetailsFramework/load.xml")
 local enabled, effect = true, "PULSE"
+local custom = {}
+local function Param(name, key) return custom[name] and custom[name][key] end
 local ns = {
     WorldContext = {Get = function() return {} end},
     AccessibleBoolean = function(v) if type(v) == "boolean" then return v end end,
@@ -43,6 +45,7 @@ local ns = {
     GetStylingEnabled = function() return enabled end,
     GetInterruptibleHighlightEnabled = function() return enabled end,
     GetInterruptibleEffect = function() return effect end,
+    GetCastAdvancedSetting = Param,
     EffectColor = function() return 0.2, 0.8, 1 end,
     PresentationCapabilities = {
         CanAccessFrame = function() return true end,
@@ -75,6 +78,18 @@ for _, style in ipairs({"PULSE", "SOLID", "SOFT", "ANTS", "GLOW"}) do
     assert(#ui.objects == count, "same effect reuses library frames")
 end
 local h = owner.SNPInterruptibleHighlight
+custom.PULSE = {thickness = 7, inset = 1, lowAlpha = 0.2, highAlpha = 0.9, fadeOut = 0.4, fadeIn = 0.7}
+effect = "PULSE"; Update()
+assert(h.pulseConfig and h.fadeOut.duration == 0.4 and h.fadeIn.duration == 0.7)
+custom.SOLID = {thickness = 5, minPixels = 2, upward = 3, upwardMin = 2, distance = 2}
+effect = "SOLID"; Update()
+assert(h.renderers.SOLID.borderSize == 5)
+custom.ANTS = {frameTime = 0.05, distance = 5, opacity = 0.6, frames = 11}
+effect = "ANTS"; Update()
+assert(h.renderers.ANTS.frameTime == 0.05 and h.renderers.ANTS.frameCount == 11)
+custom.GLOW = {expandX = 14, expandY = 9, offsetX = 2, offsetY = 1, antsAlpha = 0.75, glowAlpha = 0.65}
+effect = "GLOW"; Update()
+assert(h.renderers.GLOW.SNPConfiguration and h.renderers.GLOW:IsShown())
 enabled = false; Update()
 assert(not h.frame:IsShown())
 for _, renderer in pairs(h.renderers) do assert(not renderer:IsShown()) end

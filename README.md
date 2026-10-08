@@ -1,6 +1,6 @@
 # Simple Nameplates
 
-Documentation reviewed for 1.0.222 (2026-10-08). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
+Documentation reviewed for 1.0.223 (2026-10-08). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
 
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
@@ -84,9 +84,10 @@ The settings pages are organized by purpose. Changes apply immediately and are s
 | Profiles | Select, create, copy, rename, delete, and restore profiles; global Active switch | `/snp profiles` |
 | Appearance | Fonts, sizing, name placement, threat display, global critter/companion visibility, and Reset settings | `/snp appearance` or `/snp` |
 | Colors | Profile colors, Health Bar switches, background-name dimming, gradients/preview, cast Active switch/effect dropdown/preview, and Reset all colors | `/snp colors` |
+| Advanced | Experimental per-effect thickness, timing, opacity, spread, extension, and movement; preview and reset | `/snp advanced` |
 | TRP3 | All global RP-name, title, and OOC options | `/snp trp3` |
 
-Appearance and Colors each have a compact Selected profile control; management actions are on Profiles. On Profiles, the selector sits farther left with an Active/Inactive switch immediately to its right. This switch enables styling globally, including the startup compatibility review. Appearance's **Reset settings** and Colors' **Reset all colors** sit directly below their selectors. Health Bar switches sit beside the six category color swatches on Colors and apply to the selected profile. Individual color reset buttons and category Active switches have been removed. The cast-highlight **Active** switch sits beside its color; Inactive turns highlighting off for the selected profile. The **Effect** dropdown selects Pulsing border, Solid border, Soft border, Marching ants or Spell-alert glow. The labeled preview demonstrates the selected effect even while Inactive; it does not detect a real cast. Changing profiles selects that profile's Health Bar preferences.
+Appearance and Colors each have a compact Selected profile control; management actions are on Profiles. On Profiles, the selector sits farther left with an Active/Inactive switch immediately to its right. This switch enables styling globally, including the startup compatibility review. Appearance's **Reset settings** and Colors' **Reset all colors** sit directly below their selectors. Health Bar switches sit beside the six category color swatches on Colors and apply to the selected profile. Individual color reset buttons and category Active switches have been removed. The cast-highlight **Active** switch sits beside its color; Inactive turns highlighting off for the selected profile. The **Effect** dropdown selects Pulsing border, Solid border, Soft border, Marching ants or Spell-alert glow. The labeled preview demonstrates the selected effect even while Inactive; it does not detect a real cast. Advanced exposes independent profile settings and previews for all five effects. Its Reset advanced effects button restores their original parameters without changing Colors' effect selection, Active switch or color. Dash length/spacing are fixed by the marching-ants sprite sheet; Blizzard controls spell-alert animation speed and intrinsic texture thickness. Combat disables edits. Changing profiles selects that profile's Health Bar preferences.
 
 Profiles are shared account-wide, while each character remembers its active profile. **Create** starts with factory-default appearance settings; **Copy** duplicates the complete active profile. Profiles can be renamed and deleted, except **Default**, which is the permanent fallback. Deleting a profile moves characters assigned to it back to Default.
 

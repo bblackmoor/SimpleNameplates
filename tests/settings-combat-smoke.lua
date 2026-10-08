@@ -31,7 +31,7 @@ function StaticPopup_Hide(key) if popups[key] then popups[key]:Hide() end end
 local ns = {}
 for _, file in ipairs({"Defaults", "FontMedia", "Core", "ManagedNames", "Database",
     "HealthGradient", "FontRendering", "SettingsControls", "SettingsColorPicker", "SettingsWidgets",
-    "SettingsBehavior", "SettingsProfileDialogs", "SettingsProfiles", "SettingsAppearance", "SettingsColors", "SettingsTRP3"}) do
+    "SettingsBehavior", "SettingsProfileDialogs", "SettingsProfiles", "SettingsAppearance", "SettingsColors", "SettingsAdvanced", "SettingsTRP3"}) do
     assert(loadfile("SimpleNameplates/" .. file .. ".lua"))("SimpleNameplates", ns)
 end
 ns.RefreshAll = function() end
@@ -40,7 +40,7 @@ ns.PresentationCapabilities = {ObjectStatus = function() return "accessible" end
     ReadRegion = function(object, method) return object[method](object) end}
 ns.TRP3 = {Refresh = function() end, IsAvailable = function() return false end}
 ns.GetActiveProfileName()
-local panels = {ns.SettingsPanels.Profiles(), ns.SettingsPanels.Appearance(), ns.SettingsPanels.Colors(), ns.SettingsPanels.TRP3()}
+local panels = {ns.SettingsPanels.Profiles(), ns.SettingsPanels.Appearance(), ns.SettingsPanels.Colors(), ns.SettingsPanels.Advanced(), ns.SettingsPanels.TRP3()}
 ns.SettingsUI.InstallCombatGuard()
 local events
 for _, object in ipairs(ui.objects) do
@@ -94,6 +94,7 @@ end
 local size = Control("Name size", "slider")
 local width = Control("Health bar width", "slider")
 local effect = Control("Effect", "dropdown")
+local advancedThickness = Control("Pulse thickness", "slider")
 local swatch = Control("Interruptible cast highlight", "color")
 local castToggle = Control("Interruptible cast highlight", "switch")
 local trpChild = Control("Use TRP3 roleplaying full name", "switch")
@@ -102,11 +103,14 @@ assert(not trpChild:IsEnabled(), "TRP3 dependent starts disabled")
 size:SetValue(25)
 Click(castToggle)
 local originalWidth = width:GetValue()
+local originalPulse = advancedThickness:GetValue()
 local baseline = Snapshot(SimpleNameplatesDB)
 local editor = Editor(size)
 editor:SetText("32")
 width:GetScript("OnMouseDown")(width, "LeftButton")
 width:SetValue(145)
+advancedThickness:GetScript("OnMouseDown")(advancedThickness, "LeftButton")
+advancedThickness:SetValue(9)
 Click(swatch)
 local retainedPicker = ColorPickerFrame.info
 function ColorPickerFrame:GetColorRGB() return 0.1, 0.2, 0.3 end
@@ -119,10 +123,11 @@ oldPopup.editBox:SetText("Cancelled combat profile")
 Enter()
 assert(Snapshot(SimpleNameplatesDB) == baseline, "typed, drag and RGB previews roll back to committed values")
 assert(size:GetValue() == 25 and width:GetValue() == originalWidth and not editor:IsShown())
+assert(advancedThickness:GetValue() == originalPulse, "unfinished advanced slider drag cancelled")
 assert(not effect.dropdownframe:IsShown() and effect.MyObject.myvalue == "PULSE", "menu closes and current choice is restored")
 assert(not ColorPickerFrame:IsShown() and not oldPopup:IsShown(), "owned picker and profile dialog close")
 assert(oldPopup.data.cancelled, "cancelled dialog callbacks cannot revive after combat")
-for _, frame in ipairs({size, width, effect, swatch, castToggle, Button("Reset settings"), Button("Reset all colors"), Button("Create")}) do
+for _, frame in ipairs({size, width, advancedThickness, effect, swatch, castToggle, Button("Reset settings"), Button("Reset all colors"), Button("Reset advanced effects"), Button("Create")}) do
     assert(not frame:IsEnabled(), "editable control is disabled")
 end
 -- Simulate callbacks already queued before lockdown, and refresh while locked.
@@ -138,7 +143,7 @@ for _, panel in ipairs(panels) do panel.Refresh() end
 assert(Snapshot(SimpleNameplatesDB) == baseline and size:GetValue() == 25, "combat callbacks and page refresh cannot change settings")
 assert(not Button("Create"):IsEnabled() and not trpChild:IsEnabled())
 Leave()
-assert(size:IsEnabled() and width:IsEnabled() and effect:IsEnabled() and castToggle:IsEnabled())
+assert(size:IsEnabled() and width:IsEnabled() and advancedThickness:IsEnabled() and effect:IsEnabled() and castToggle:IsEnabled())
 assert(not Button("Rename"):IsEnabled() and not Button("Delete"):IsEnabled(), "Default protection survives combat exit")
 assert(not trpChild:IsEnabled(), "dependency disable survives combat exit")
 StaticPopupDialogs.SNP_PROFILE_NAME.OnAccept(oldPopup, oldPopup.data)

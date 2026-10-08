@@ -1,3 +1,9 @@
+## 1.0.223 — 2026-10-08
+
+- Added a profile-scoped Advanced tab with sliders and switches for five cast effects: pulse thickness/inset/opacity/timing, solid thickness/extension/distance, three-layer soft border spread/opacity/visibility, marching-ants speed/distance/frame count/opacity, and spell-alert extent/position/opacity.
+- Added five previews, reset, validation, persistence, and combat edit cancellation. The Colors page continues to control cast color, effect selection, and activation.
+- Marching-ants dash length/spacing and spell-alert template timing and intrinsic texture thickness remain fixed. Live-client acceptance is pending.
+
 ## 1.0.222 — 2026-10-08
 
 - Entering combat cancels unfinished RGB/typed-slider/slider-drag previews, closes dropdowns and profile dialogs, restores controls from saved values and disables settings changes across pages. Completed edits remain saved.
