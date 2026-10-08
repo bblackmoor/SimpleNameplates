@@ -141,6 +141,7 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
     RestoreNativePresentation(frame, assessment, context, removedUnit)
     frame.SNPNameStyle, frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = nil, nil, nil, nil
     frame.SNPNameAppearancePending = nil
+    frame.SNPGeometryPending = nil
     frame.SNPOriginalVisibility, frame.SNPOriginalUnit, frame.SNPOriginalPresentation = nil, nil, nil
     frame.SNPOriginalHealthBar, frame.SNPOriginalHealthBarsContainer = nil, nil
     frame.SNPTitleVisibilityPending = nil

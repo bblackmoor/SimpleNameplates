@@ -496,6 +496,21 @@ local function Different(actual, desired)
     return type(actual) == type(desired) and actual ~= desired
 end
 
+-- Native dimensions can be rounded to physical pixels. Keep font/color
+-- comparisons strict; only geometry gets half a pixel of tolerance.
+local function DimensionDifferent(actual, desired, region, context)
+    actual, desired = AccessibleNumber(actual), AccessibleNumber(desired)
+    if actual == nil or desired == nil then return false end
+    local tolerance = 0.001
+    local scale = AccessibleNumber(ns.PresentationCapabilities.ReadRegion(region, "GetEffectiveScale", context))
+    if scale and scale > 0 and PixelUtil and type(PixelUtil.GetPixelToUIUnitFactor) == "function" then
+        local ok, factor = pcall(PixelUtil.GetPixelToUIUnitFactor)
+        factor = ok and AccessibleNumber(factor)
+        if factor and factor > 0 then tolerance = factor / scale / 2 + 0.001 end
+    end
+    return math.abs(actual - desired) > tolerance
+end
+
 local function CachedNameHasDrifted(frame, context, assessment)
     context = context or GetContext()
     assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
@@ -516,7 +531,11 @@ local function CachedNameHasDrifted(frame, context, assessment)
     local function Check(key, region, method, desired, label)
         if desired == nil then return end
         local actual = Observe(expected, key, region, method, context)
-        if Different(actual, desired) then
+        local geometry = key == "barWidth" or key == "barHeight" or key == "containerWidth" or key == "containerHeight"
+        local differs
+        if geometry then differs = DimensionDifferent(actual, desired, region, context)
+        else differs = Different(actual, desired) end
+        if differs then
             Add(key, desired, label)
             if key == "barWidth" or key == "barHeight" or key == "containerWidth" or key == "containerHeight" then
                 ns.Profiler.SizeSample(key, actual, desired, region)
@@ -722,6 +741,30 @@ InstallNameAppearanceHooks = function(frame, name, context)
     end
 end
 
+local function RepairBarGeometry(frame, context, assessment)
+    local expected = frame.SNPNameStyle
+    if not expected or expected.suppressed or not CacheIsCurrent(frame, expected, context, assessment) then return false end
+    local plan = {expected = expected, name = assessment.name, bar = assessment.healthBar,
+        container = frame.HealthBarsContainer, insideName = frame.SNPInsideName,
+        unit = AccessibleValue(frame.unit), presentation = frame.SNPPresentation, revision = context.revision}
+    local changed
+    for _, item in ipairs({
+        {"barWidth", plan.bar, "GetWidth", expected.barWidth},
+        {"barHeight", plan.bar, "GetHeight", expected.barHeight},
+        {"containerWidth", plan.container, "GetWidth", expected.containerWidth},
+        {"containerHeight", plan.container, "GetHeight", expected.barHeight},
+    }) do
+        if item[4] ~= nil then
+            local actual = ns.PresentationCapabilities.ReadRegion(item[2], item[3], context)
+            if DimensionDifferent(actual, item[4], item[2], context) then
+                plan[item[1]], changed = item[4], true
+            end
+        end
+    end
+    if changed then return RepairCachedName(frame, context, assessment, plan) end
+    return true
+end
+
 local function RepairPendingNameAppearance(frame)
     if not frame.SNPNameAppearancePending then return end
     frame.SNPNameAppearancePending = nil
@@ -735,6 +778,7 @@ CachedNameHasDrifted = ns.Profiler.Wrap("Name drift check", CachedNameHasDrifted
 RepairCachedName = ns.Profiler.Wrap("Text repair", RepairCachedName)
 
 ns.NameplateText = {
+    RepairBarGeometry = RepairBarGeometry,
     RepairPendingNameAppearance = RepairPendingNameAppearance,
     NameFontPath = NameFontPath,
     RepairNameOnly = RepairNameOnly,

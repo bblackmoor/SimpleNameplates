@@ -133,3 +133,12 @@ identifies sizing using the known Retail hierarchy without positional getters.
 `restricted layout unsupported` leaves an unknown restricted hierarchy untouched.
 A successful release should be followed by stable dimensions; repeated releases
 can indicate Blizzard is resetting anchors. See the live verification checklist.
+
+
+Version 1.0.212 adds inclusive `Geometry hook repair` and `Global refresh`
+timings. `Initialization: reused initial plate` / `reused late plate` identify
+focused refreshes replacing duplicate initialization. `Global refresh plates`
+counts full/focused plate visits, and `Urgent batches` counts global full/focused
+batches and remaining unit jobs. These counts do not identify the duration of
+an individual batch. Compare matched runs; do not add nested timings or assume
+that separately reported maxima occurred together.

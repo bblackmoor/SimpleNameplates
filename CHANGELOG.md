@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.212
+
+* Repairs cached bar dimensions immediately after native UpdateAnchors, without classification, fonts, name/title styling or full restyling. Current settings, identity, context and access checks still gate the hook; synchronous updates during styling/artwork are retained and serviced after their guard releases.
+* Uses half a physical pixel of tolerance for bar/container dimensions where pixel factor and effective scale are readable. Font, color and other comparisons retain their strict tolerance.
+* Reuses a valid presentation if a native lookup already initialized the plate through the name hook. The initial and half-second late passes use focused data updates; missing or stale caches still receive full styling. Generation checks prevent old delayed callbacks from updating recycled unit tokens.
+* Adds Geometry hook repair and Global refresh timing rows, Initialization reuse counters, Global refresh plates counts, and Urgent batches counts. The 94.2-second 1.0.211 report had cached repairs on 464 of 4,236 checks, with a 27.196 ms urgent-refresh maximum. Native confirmation and that spike remain open; scheduler limits are unchanged.
+* All 21 smoke suites pass, including native geometry callbacks, rounding versus real geometry/font drift, pending callback handling, initialization reuse, cache fallback and delayed-token recycling. New regression coverage fails against 1.0.211.
+
 ## 1.0.211
 
 * Fixes anchor preparation on Retail nameplates whose GetPoint cannot be queried. Uses the known Blizzard HealthBarsContainer/CastBarsContainer hierarchy and NamePlateSetupOptions with PixelUtil to release opposing anchors and restore native modern/classic offsets. IsAnchoringRestricted bypasses GetPoint; a failed getter can use the same validated layout fallback. Unknown hierarchies remain untouched.

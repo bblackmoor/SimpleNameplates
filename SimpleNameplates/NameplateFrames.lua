@@ -409,6 +409,7 @@ local function ApplyBarArtwork(frame, assessment, context)
     frame.SNPApplyingArtwork = nil
     if not ok then error(err, 0) end
     if not frame.SNPApplyingStyle and ns.NameplateText then
+        if ns.NameplatePresentation then ns.NameplatePresentation.RepairPendingGeometry(frame) end
         ns.NameplateText.RepairPendingNameAppearance(frame)
     end
 end

@@ -7,6 +7,7 @@ local Resolve = ns.PresentationRules.Resolve
 local Restore = ns.NameplateRestoration
 local Text = ns.NameplateText
 local SetShownSafe = ns.NameplateFrames.SetShownSafe
+local InstallGeometryHook, RepairPendingGeometry
 
 local function ApplyVisibility(frame, decision, assessment, context)
     SetShownSafe(assessment.healthBar, decision.showHealthBar, context)
@@ -94,6 +95,7 @@ local function ApplyStyle(frame, context)
     CaptureSettings(frame)
     frame.SNPStyledCastBar = assessment.castBar
     frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = state, decision, facts
+    InstallGeometryHook(frame, context)
     if decision.suppressText then
         Text.StyleName(frame, state, context, decision, assessment)
         return "text suppressed"
@@ -126,6 +128,7 @@ local function ApplySimpleStyle(frame, context, reason)
         ns.Profiler.Count("Styling outcomes", "failed")
         error(result, 0)
     end
+    RepairPendingGeometry(frame)
     Text.RepairPendingNameAppearance(frame)
     ns.Profiler.Count("Styling outcomes", result or "deferred or native")
 end
@@ -293,6 +296,7 @@ local function FocusedUpdate(frame, context, work, kind)
         local current = Cap.InspectFrame(frame, context)
         if current.canAccess then ns.NameplateFrames.ApplyBarArtwork(frame, current, context) end
     end
+    RepairPendingGeometry(frame)
     Text.RepairPendingNameAppearance(frame)
     ns.Profiler.Count("Focused outcomes", "updated")
 end
@@ -301,7 +305,42 @@ local function RepairName(frame, context) return FocusedUpdate(frame, context, n
 local function RepairHealthColor(frame, context) return FocusedUpdate(frame, context, nil, "health-color hook") end
 local function UpdateData(frame, context, work) return FocusedUpdate(frame, context, work, "data update") end
 
+local function RepairGeometry(frame)
+    local context = GetContext()
+    local assessment = Cap.InspectFrame(frame, context)
+    if not assessment.canAccess or frame.SNPRestoring or not ns.GetStylingEnabled() then return end
+    if frame.SNPApplyingStyle or frame.SNPApplyingArtwork then frame.SNPGeometryPending = true; return end
+    if not PresentationIsCurrent(frame, assessment, context) then return end
+    ns.Profiler.Count("Geometry hook", "current presentation")
+    Text.RepairBarGeometry(frame, context, assessment)
+end
+RepairGeometry = ns.Profiler.Wrap("Geometry hook repair", RepairGeometry)
+InstallGeometryHook = function(frame, context)
+    if frame.SNPGeometryHookInstalled or not hooksecurefunc
+        or type(Cap.SafeField(frame, "UpdateAnchors", context)) ~= "function" then return end
+    hooksecurefunc(frame, "UpdateAnchors", function() RepairGeometry(frame) end)
+    frame.SNPGeometryHookInstalled = true
+end
+RepairPendingGeometry = function(frame)
+    if not frame.SNPGeometryPending then return end
+    frame.SNPGeometryPending = nil
+    RepairGeometry(frame)
+end
+
+-- Native getters may invoke the name hook before the ADDED handler obtains
+-- its frame. Reuse that completed style and only refresh data on the late pass.
+local function InitializeOrRefresh(frame, context, reason)
+    local assessment = Cap.InspectFrame(frame, context)
+    if assessment.canAccess and PresentationIsCurrent(frame, assessment, context) then
+        ns.Profiler.Count("Initialization", "reused " .. reason)
+        return UpdateData(frame, context, {classify = true, name = true, threat = true, cast = true, layout = true})
+    end
+    return ApplySimpleStyle(frame, context, reason)
+end
+
 ns.NameplatePresentation = {
+    RepairPendingGeometry = RepairPendingGeometry,
+    InitializeOrRefresh = InitializeOrRefresh,
     ApplySimpleStyle = ApplySimpleStyle,
     RepairHealthColor = ns.Profiler.Wrap("Health-color repair", RepairHealthColor),
     RepairName = ns.Profiler.Wrap("Name hook repair", RepairName),

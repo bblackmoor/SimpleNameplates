@@ -318,3 +318,31 @@ It avoids GetPoint when IsAnchoringRestricted reports true and uses the same
 validated fallback if the getter throws. Unsupported hierarchies remain untouched.
 Smoke coverage models the failed getter, restoration and convergence; it cannot
 establish native secure behavior or prove the runtime spike is fixed.
+
+
+## Native resets and duplicate initialization (1.0.212)
+
+The 94.2-second 1.0.211 report reduced cached reconciliation repairs to
+464 / 4,236 (about 11%). It recorded 385 width-first mismatches, 77 height-first
+mismatches (including 25.108 vs 25.000), and a 27.196 ms urgent-refresh maximum.
+Its 1,547 full styling requests consisted of 525 initial, 525 name-hook fallback,
+473 late and 24 global passes. The regression reproduces a native lookup styling
+through the name hook before ADDED reaches its frame.
+
+1. Install 1.0.212, reload, and retain the same inside-name/120% width settings.
+2. Move between nearby NPCs and out of range/back. Verify immediate bar width,
+   stable grey names, threat space, cast/title substitution and native restoration.
+3. Run a matched one-minute recording and include Geometry hook repair, Global
+   refresh, Initialization, Global refresh plates, Urgent batches, Name drift,
+   Name size drift and Urgent refresh rows. Initial and late reuse should reduce
+   duplicate full styling. A not-initialized name-hook fallback can still be the
+   one required first initialization; it is not by itself proof of a defect.
+4. Verify pixel rounding does not repeatedly repair dimensions at different UI
+   scales, while substantial native width resets still correct immediately.
+5. Compare urgent and global timing maxima. Inclusive rows must not be added
+   together; separate maxima do not prove simultaneous occurrence. Use batch
+   counts to identify broad refresh frequency before changing scheduler limits.
+
+The scheduler and urgent event order are unchanged. The new batch diagnostics
+do not prove the 27 ms spike is fixed. Native secure behavior and performance
+acceptance remain pending.

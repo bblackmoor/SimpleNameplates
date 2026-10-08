@@ -22,6 +22,7 @@ local function ResetReconciliation()
 end
 local pendingUnits = {}
 local removedUnits = {}
+local unitGenerations = {}
 local pendingPlates = setmetatable({}, {__mode = "k"})
 local CachedNameHasDrifted, RepairCachedName =
     ns.NameplateText.CachedNameHasDrifted, ns.NameplateText.RepairCachedName
@@ -71,7 +72,9 @@ RefreshUnit = function(unit, reason, work)
     if frame and assigned == unit then
         knownFrames[unit], knownPlates[unit], pendingUnits[unit] = frame, plate, nil
         Periodic.Cancel("unit retry", unit)
-        if work.full then ApplySimpleStyle(frame, context, reason or "unit refresh")
+        if work.full and (reason == "initial plate" or reason == "late plate") then
+            ns.NameplatePresentation.InitializeOrRefresh(frame, context, reason)
+        elseif work.full then ApplySimpleStyle(frame, context, reason or "unit refresh")
         else UpdateData(frame, context, work) end
     else pendingUnits[unit] = work; DeferUnit(unit) end
 end
@@ -83,6 +86,7 @@ local function RefreshAll(work, queuedUnits)
     if work.full then ResetReconciliation() end
     local context = WorldContext.Get()
     for _, plate in ipairs(C_NamePlate.GetNamePlates()) do
+        ns.Profiler.Count("Global refresh plates", work.full and "full" or "focused")
         local frame = GetFrameFromPlate(plate, context)
         if frame then
             local unit = ns.AccessibleValue(frame.unit)
@@ -105,6 +109,7 @@ local function RefreshAll(work, queuedUnits)
         else pendingPlates[plate] = true; DeferPlate(plate) end
     end
 end
+RefreshAll = ns.Profiler.Wrap("Global refresh", RefreshAll)
 
 local function RestoreAll()
     ResetReconciliation()
@@ -169,8 +174,12 @@ local function FlushQueuedRefreshes()
     -- new work, which must survive for the next frame rather than being wiped.
     local units, work = dirtyUnits, allWork
     dirtyUnits, allWork = {}, nil
+    if work then ns.Profiler.Count("Urgent batches", work.full and "global full" or "global focused") end
     if work then RefreshAll(work, units) end
-    for unit, flags in pairs(units) do RefreshUnit(unit, "unit refresh", flags) end
+    for unit, flags in pairs(units) do
+        ns.Profiler.Count("Urgent batches", "unit job")
+        RefreshUnit(unit, "unit refresh", flags)
+    end
 end
 FlushQueuedRefreshes = ns.Profiler.Wrap("Urgent refresh", FlushQueuedRefreshes)
 
@@ -233,15 +242,20 @@ local function CleanupRemovedNameplate(unit)
     Restoration.Request(frame, WorldContext.Get(), unit)
     knownFrames[unit], knownPlates[unit], dirtyUnits[unit], pendingUnits[unit] = nil, nil, nil, nil
     removedUnits[unit] = true
+    unitGenerations[unit] = (unitGenerations[unit] or 0) + 1
 end
 
 local function HandleNameplateEvent(event, unit)
     if event == "NAME_PLATE_UNIT_ADDED" then
         removedUnits[unit] = nil
+        unitGenerations[unit] = (unitGenerations[unit] or 0) + 1
+        local generation = unitGenerations[unit]
         RefreshUnit(unit, "initial plate")
         -- One delayed pass covers late nameplate initialization; the Blizzard
         -- hooks and cached drift check handle subsequent changes.
-        C_Timer.After(0.50, function() RefreshUnit(unit, "late plate") end)
+        C_Timer.After(0.50, function()
+            if unitGenerations[unit] == generation and GetStylingEnabled() then RefreshUnit(unit, "late plate") end
+        end)
         return true
     end
     if event == "NAME_PLATE_UNIT_REMOVED" then

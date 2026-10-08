@@ -2457,6 +2457,51 @@ do
             equal(bar:GetHeight(), 25, "unreadable anchors reach configured height")
             assert(not ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)),
                 "unreadable anchor sizing converges")
+            local geometryHook
+            for _, hook in ipairs(hooks) do
+                if hook.name == frame and hook.method == "UpdateAnchors" then geometryHook = hook.callback end
+            end
+            assert(geometryHook, "native geometry hook installed")
+            NativeAnchors()
+            local lines, savedPrint = {}, print
+            print = function(line) lines[#lines + 1] = line end
+            ns.Profiler.Command("start"); geometryHook(); ns.Profiler.Command("stop"); ns.Profiler.Command("report")
+            print = savedPrint
+            local report = table.concat(lines, "\n")
+            assert(not report:find("Full styling:", 1, true) and not report:find("Classification:", 1, true)
+                and not report:find("Name/title styling:", 1, true), "geometry hook performs focused sizing only")
+            equal(bar:GetWidth(), 168, "geometry reset repaired immediately")
+            assert(not ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)),
+                "native geometry callback converges before reconciliation")
+            -- Geometry rounding must not weaken font-size comparisons.
+            local originalHeight, originalWidth = bar.GetHeight, bar.GetWidth
+            PixelUtil.GetPixelToUIUnitFactor = function() return 0.5 end
+            bar.GetEffectiveScale = function() return 1 end
+            bar.GetHeight = function(self) return originalHeight(self) + 0.108 end
+            bar.GetWidth = function(self) return originalWidth(self) + 0.108 end
+            assert(not ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)),
+                "subpixel dimensions are stable")
+            local oldSize = frame.name.size; frame.name.size = oldSize + 0.108
+            local fontDrift, _, fontPlan = ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context))
+            assert(fontDrift and fontPlan.font, "font-size mismatch remains strict")
+            frame.name.size = oldSize
+            bar.GetHeight = function(self) return originalHeight(self) + 1 end
+            assert(ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)),
+                "geometry beyond pixel tolerance is repaired")
+            bar.GetHeight, bar.GetWidth = originalHeight, originalWidth
+            lines = {}; print = function(line) lines[#lines + 1] = line end
+            ns.Profiler.Command("start")
+            ns.NameplatePresentation.InitializeOrRefresh(frame, context, "initial plate")
+            ns.NameplatePresentation.InitializeOrRefresh(frame, context, "late plate")
+            ns.Profiler.Command("stop"); ns.Profiler.Command("report"); print = savedPrint
+            assert(not table.concat(lines, "\n"):find("Full styling:", 1, true),
+                "initial and late handlers reuse current presentation")
+            NativeAnchors(); frame.SNPApplyingStyle = true; geometryHook()
+            assert(frame.SNPGeometryPending, "nested native anchor update remains pending")
+            frame.SNPApplyingStyle = nil
+            ns.NameplatePresentation.InitializeOrRefresh(frame, context, "late plate")
+            assert(not frame.SNPGeometryPending, "focused pass drains pending geometry")
+            equal(bar:GetWidth(), 168, "pending native geometry restored")
             NativeAnchors()
             local drift, reason, plan = ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context))
             assert(drift and ns.NameplateText.RepairCachedName(frame, context, cap.InspectFrame(frame, context), plan))
@@ -2515,6 +2560,48 @@ do
     equal(name.r, 153 / 255, "external shared-color white returns to grey")
     assert(not ns.NameplateText.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)),
         "shared-color repair converges")
+end
+
+-- A native lookup can finish styling through the name hook before returning
+-- to ADDED. Neither ADDED nor its late timer should duplicate that full pass.
+do
+    local originalGetter = C_NamePlate.GetNamePlateForUnit
+    local frame, plate = Region(), {}
+    frame.unit, frame.name, frame.healthBar, frame.HealthBarsContainer = "nameplate11", Region(), Region(), Region()
+    plate.UnitFrame = frame
+    frame.name:SetFont("Native", 10, ""); frame.name:SetTextColor(1, 1, 1)
+    frame.name:SetVertexColor(1, 1, 1, 1); frame.name:SetText("Native initialized")
+    stylingEnabled, categoryMode, showBar, dimBackground = true, "active", true, false
+    appearance.namePlacement, appearance.healthBarWidth = "ABOVE", 100
+    unit = {reaction = 3}; UnitGUID = function() return "Creature-Lifecycle" end
+    local first = true
+    C_NamePlate.GetNamePlateForUnit = function()
+        if first then first = false; hooks[2].callback(frame) end
+        return plate
+    end
+    local function Measure(callback)
+        local lines, savedPrint = {}, print
+        print = function(line) lines[#lines + 1] = line end
+        ns.Profiler.Command("start"); callback(); ns.Profiler.Command("stop"); ns.Profiler.Command("report")
+        print = savedPrint
+        return table.concat(lines, "\n")
+    end
+    local report = Measure(function() events.scripts.OnEvent(events, "NAME_PLATE_UNIT_ADDED", "nameplate11") end)
+    assert(report:find("Full styling: 1 calls;", 1, true), "native lookup and ADDED share one full initialization")
+    assert(report:find("Initialization: reused initial plate = 1", 1, true), "ADDED reuse is observable")
+    local late = timers[#timers][2]
+    report = Measure(late)
+    assert(not report:find("Full styling:", 1, true), "late callback refreshes data without full styling")
+    events.scripts.OnEvent(events, "NAME_PLATE_UNIT_REMOVED", "nameplate11")
+    frame.SNPNameStyle = nil
+    events.scripts.OnEvent(events, "NAME_PLATE_UNIT_ADDED", "nameplate11")
+    report = Measure(late)
+    assert(not report:find("Data update:", 1, true) and not report:find("Full styling:", 1, true),
+        "old late callback cannot refresh a recycled token")
+    frame.SNPNameStyle = nil
+    report = Measure(function() ns.NameplatePresentation.InitializeOrRefresh(frame, ns.WorldContext.Get(), "late plate") end)
+    assert(report:find("Full styling: 1 calls;", 1, true), "missing cache still initializes fully")
+    C_NamePlate.GetNamePlateForUnit = originalGetter
 end
 
 print("Nameplates smoke: passed")
