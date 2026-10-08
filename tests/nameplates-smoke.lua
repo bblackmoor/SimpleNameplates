@@ -2604,4 +2604,58 @@ do
     C_NamePlate.GetNamePlateForUnit = originalGetter
 end
 
+-- A native hide must not invalidate an otherwise-current presentation. Repair
+-- bar/container/inside-name visibility together without classification/fonts.
+do
+    local frame = Region()
+    frame.unit, frame.name, frame.healthBar, frame.HealthBarsContainer = "nameplate12", Region(), Region(), Region()
+    local name, bar, container = frame.name, frame.healthBar, frame.HealthBarsContainer
+    name:SetFont("Native", 10, ""); name:SetTextColor(1, 1, 1)
+    name:SetVertexColor(1, 1, 1, 1); name:SetText("Visibility regression")
+    stylingEnabled, categoryMode, showBar, dimBackground = true, "active", true, false
+    appearance.namePlacement, appearance.healthBarWidth = "INSIDE", 100
+    unit = {reaction = 3}; UnitGUID = function() return "Creature-Visibility" end
+    local context, cap, text = ns.WorldContext.Get(), ns.PresentationCapabilities, ns.NameplateText
+    ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+    local inside = frame.SNPInsideName
+    bar.shown, container.shown, inside.shown = false, false, false
+    local drift, reason, plan = text.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context))
+    assert(drift and reason == "bar visibility" and not plan.full and plan.barShown and plan.containerShown
+        and plan.insideShown, "native visibility produces a selective combined plan")
+    local lines, savedPrint = {}, print
+    print = function(line) lines[#lines + 1] = line end
+    ns.Profiler.Command("start")
+    assert(text.RepairCachedName(frame, context, cap.InspectFrame(frame, context), plan))
+    ns.Profiler.Command("stop"); ns.Profiler.Command("report"); print = savedPrint
+    local report = table.concat(lines, "\n")
+    assert(not report:find("Full styling:", 1, true) and not report:find("Classification:", 1, true)
+        and not report:find("Name/title styling:", 1, true), "visibility repairs avoid full styling and classification")
+    assert(bar.shown and container.shown and inside.shown, "visibility repairs restore all required regions")
+    assert(not text.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)), "visibility repair converges")
+    bar.shown = false
+    for _, callback in ipairs(bar.scriptHooks.OnHide) do callback(bar) end
+    assert(bar.shown, "native OnHide repairs bar before reconciliation")
+    showBar = false
+    ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+    bar.shown = true
+    drift, reason, plan = text.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context))
+    assert(drift and plan.barShown == false and not plan.full, "configured hidden bar uses a false-valued selective plan")
+    assert(text.RepairCachedName(frame, context, cap.InspectFrame(frame, context), plan) and not bar.shown)
+    local shownGetter = bar.IsShown
+    bar.IsShown = function() return nil end
+    drift, reason, plan = text.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context))
+    assert(not plan or plan.barShown == nil, "unknown bar visibility does not trigger a write")
+    bar.IsShown = shownGetter
+    showBar = true; ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+    bar.shown = false; name.IsForbidden = function() return true end
+    for _, callback in ipairs(bar.scriptHooks.OnHide) do callback(bar) end
+    assert(not bar.shown, "native hide repair respects inaccessible frames")
+    name.IsForbidden = nil
+    stylingEnabled = false
+    for _, callback in ipairs(bar.scriptHooks.OnHide) do callback(bar) end
+    assert(not bar.shown, "native hide repair respects disabled styling")
+    stylingEnabled = true
+    assert(ns.NameplateRestoration.Request(frame, context), "visibility repair preserves restoration")
+end
+
 print("Nameplates smoke: passed")

@@ -142,3 +142,10 @@ counts full/focused plate visits, and `Urgent batches` counts global full/focuse
 batches and remaining unit jobs. These counts do not identify the duration of
 an individual batch. Compare matched runs; do not add nested timings or assume
 that separately reported maxima occurred together.
+
+
+As of 1.0.213, `Name drift: bar visibility` and `container visibility` can
+request a cached repair instead of a full-style fallback. Native bar OnHide
+also uses `Geometry hook repair` for current visibility and dimensions.
+Compare Reconciliation repairs and Styling requests to distinguish selective
+visibility recovery from actual cache invalidation.

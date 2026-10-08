@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.213
+
+* Treats readable native health-bar/container visibility differences as selective repair work rather than invalid cache identity. Reconciliation can restore bar, container and inside-name visibility together without classification, font writes, name/title styling or full restyling. Unknown visibility remains subject to the existing retry backoff; identity, context, region and access checks are retained.
+* Adds a native bar OnHide hook using the current validated presentation to restore required bar/container visibility immediately. Disabled styling, restoration, inaccessible frames, suppressed presentations and retired source bars are skipped. Replacement bars receive their own hook without duplicating existing hooks.
+* Records the 1.0.212 live report: 4,495 reconciliation checks, 402 visibility-driven full-style fallbacks, 81 cached repairs, six width-first mismatches, 543 initial and 403 late reuse counters, and a 19.472 ms urgent-refresh maximum. Native confirmation and the remaining urgent spike stay open; scheduler behavior is unchanged.
+* All 21 smoke suites pass. The new combined-visibility regression fails against 1.0.212 and covers convergence, native hide callbacks, intentionally hidden bars, unreadable visibility, disabled styling, access restrictions and restoration.
+
 ## 1.0.212
 
 * Repairs cached bar dimensions immediately after native UpdateAnchors, without classification, fonts, name/title styling or full restyling. Current settings, identity, context and access checks still gate the hook; synchronous updates during styling/artwork are retained and serviced after their guard releases.

@@ -456,8 +456,8 @@ local function CacheIsCurrent(frame, expected, context, assessment)
     if expected.bar ~= assessment.healthBar then return false, "health bar replaced" end
     if frame.SNPOriginalVisibility
         and frame.SNPOriginalHealthBarsContainer ~= frame.HealthBarsContainer then return false, "container replaced" end
-    local shown = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(assessment.healthBar, "IsShown", context))
-    if shown ~= nil and shown ~= decision.showHealthBar then return false, "bar visibility" end
+    -- Visibility is mutable native presentation, not cache identity. A native
+    -- hide/show needs selective repair while assignment and policy stay valid.
     return true
 end
 
@@ -551,6 +551,10 @@ local function CachedNameHasDrifted(frame, context, assessment)
         return plan ~= nil, reason, plan
     end
     Check("shown", name, "IsShown", true, "name hidden")
+    Check("barShown", assessment.healthBar, "IsShown", frame.SNPPresentation.showHealthBar, "bar visibility")
+    if frame.HealthBarsContainer then
+        Check("containerShown", frame.HealthBarsContainer, "IsShown", true, "container visibility")
+    end
     Check("text", name, "GetText", AccessibleValue(expected.text), "native name text")
     local font, size, flags = Observe(expected, "font", name, "GetFont", context, 3)
     local faceDrift = font ~= nil and not ns.FontPathMatches(font, expected.font)
@@ -642,6 +646,8 @@ local function RepairCachedName(frame, context, assessment, plan)
         if plan.shadowOffset then name:SetShadowOffset(0, 0) end
         if plan.alpha ~= nil then name:SetAlpha(plan.alpha) end
         if plan.shown ~= nil then name:SetShown(plan.shown) end
+        if plan.containerShown ~= nil then ns.NameplateFrames.SetShownSafe(plan.container, plan.containerShown, context) end
+        if plan.barShown ~= nil then ns.NameplateFrames.SetShownSafe(plan.bar, plan.barShown, context) end
         if plan.barHeight or plan.barWidth then ns.NameplateFrames.PrepareBarSize(frame, plan.bar, context) end
         if plan.containerHeight or plan.containerWidth then ns.NameplateFrames.PrepareBarSize(frame, plan.container, context) end
         if plan.barHeight then plan.bar:SetHeight(plan.barHeight) end
@@ -748,6 +754,12 @@ local function RepairBarGeometry(frame, context, assessment)
         container = frame.HealthBarsContainer, insideName = frame.SNPInsideName,
         unit = AccessibleValue(frame.unit), presentation = frame.SNPPresentation, revision = context.revision}
     local changed
+    local function Visibility(key, region, desired)
+        local actual = AccessibleBoolean(ns.PresentationCapabilities.ReadRegion(region, "IsShown", context))
+        if actual ~= nil and actual ~= desired then plan[key], changed = desired, true end
+    end
+    if plan.container then Visibility("containerShown", plan.container, true) end
+    if plan.bar then Visibility("barShown", plan.bar, frame.SNPPresentation.showHealthBar) end
     for _, item in ipairs({
         {"barWidth", plan.bar, "GetWidth", expected.barWidth},
         {"barHeight", plan.bar, "GetHeight", expected.barHeight},

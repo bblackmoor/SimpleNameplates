@@ -259,3 +259,36 @@ through the name hook before ADDED reaches its frame.
 The scheduler and urgent event order are unchanged. The new batch diagnostics
 do not prove the 27 ms spike is fixed. Native secure behavior and performance
 acceptance remain pending.
+
+
+## Selective native visibility repairs (1.0.213)
+
+The 1.0.212 report shows six width-first mismatches in 4,495 reconciliation
+checks, with 543 initial and 403 late initialization reuses. It also shows
+402 bar-visibility mismatches causing full-style fallbacks and 81 cached
+repairs. All 975 full styling requests are accounted for by 543 first
+name-hook initializations, 402 reconciliation fallbacks, 21 global passes
+and nine data-presentation fallbacks.
+
+Version 1.0.213 removes visibility from cache identity validation, observes
+bar/container visibility as selective repair work and handles native bar
+OnHide through the current presentation. Real presentation or identity
+changes still invalidate caches.
+
+1. Install and reload 1.0.213. Keep the same settings and crowded scene.
+2. Move in/out of NPC range, change target/mouseover and enter/leave combat.
+   Verify required bars and inside names remain visible, background grey
+   names stay stable, and configured hidden bars remain hidden.
+3. Profile for about one minute and include Name drift, Reconciliation repairs,
+   Styling requests, Geometry hook repair, Global refresh and Urgent refresh.
+   Bar visibility alone should no longer produce full-style fallbacks; cached
+   or immediate repairs should converge. First name-hook initialization can
+   still require a full style.
+4. Disable styling and switch categories/profiles, including inaccessible
+   contexts. Confirm native visibility restoration and no forced bar show
+   while disabled, suppressed or otherwise native-controlled.
+
+The urgent-refresh maximum was 19.472 ms and global-refresh maximum was
+19.566 ms. These separate maxima do not prove simultaneous occurrence.
+Broad refresh batches remain a candidate; this patch does not change the
+scheduler or claim that the urgent spike is resolved.

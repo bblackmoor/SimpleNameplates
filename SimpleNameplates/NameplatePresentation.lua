@@ -305,21 +305,30 @@ local function RepairName(frame, context) return FocusedUpdate(frame, context, n
 local function RepairHealthColor(frame, context) return FocusedUpdate(frame, context, nil, "health-color hook") end
 local function UpdateData(frame, context, work) return FocusedUpdate(frame, context, work, "data update") end
 
-local function RepairGeometry(frame)
+local function RepairGeometry(frame, sourceBar)
     local context = GetContext()
     local assessment = Cap.InspectFrame(frame, context)
     if not assessment.canAccess or frame.SNPRestoring or not ns.GetStylingEnabled() then return end
+    if sourceBar and sourceBar ~= assessment.healthBar then return end
     if frame.SNPApplyingStyle or frame.SNPApplyingArtwork then frame.SNPGeometryPending = true; return end
     if not PresentationIsCurrent(frame, assessment, context) then return end
     ns.Profiler.Count("Geometry hook", "current presentation")
     Text.RepairBarGeometry(frame, context, assessment)
 end
 RepairGeometry = ns.Profiler.Wrap("Geometry hook repair", RepairGeometry)
+local visibilityHookOwners = setmetatable({}, {__mode = "k"})
 InstallGeometryHook = function(frame, context)
-    if frame.SNPGeometryHookInstalled or not hooksecurefunc
-        or type(Cap.SafeField(frame, "UpdateAnchors", context)) ~= "function" then return end
-    hooksecurefunc(frame, "UpdateAnchors", function() RepairGeometry(frame) end)
-    frame.SNPGeometryHookInstalled = true
+    if not frame.SNPGeometryHookInstalled and hooksecurefunc
+        and type(Cap.SafeField(frame, "UpdateAnchors", context)) == "function" then
+        hooksecurefunc(frame, "UpdateAnchors", function() RepairGeometry(frame) end)
+        frame.SNPGeometryHookInstalled = true
+    end
+    local bar = Cap.SafeField(frame, "healthBar", context)
+        or Cap.SafeField(Cap.SafeField(frame, "HealthBarsContainer", context), "healthBar", context)
+    if not visibilityHookOwners[bar] and type(Cap.SafeField(bar, "HookScript", context)) == "function" then
+        bar:HookScript("OnHide", function() RepairGeometry(frame, bar) end)
+        visibilityHookOwners[bar] = frame
+    end
 end
 RepairPendingGeometry = function(frame)
     if not frame.SNPGeometryPending then return end
