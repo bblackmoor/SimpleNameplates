@@ -414,3 +414,16 @@ work, not a complete synchronous all-plate styling pass. Global plate refresh
 measures one deferred or immediate plate operation. These inclusive rows
 overlap and must not be added together. Broad refresh latency, fairness and
 native secure behavior remain live acceptance gates.
+
+
+### 1.0.215: guarded color follow-up
+
+The 97-second 1.0.214 report lowers Runtime update/Urgent refresh maxima to
+5.323/3.198 ms, with no reported geometry drift or reconciliation full-style
+fallback. Remaining first mismatches are 528 text color, 136 inside-name
+visibility and four suppressed alpha. A regression confirms that nested native
+color callbacks during guarded visibility repairs are lost in 1.0.214.
+Version 1.0.215 checks retained notifications on guard release, avoiding font
+writes and redundant recovery after converged own writes. All 21 suites pass;
+live contribution is unconfirmed. The visibility counter is split into native
+alpha and addon-label visibility to guide the next investigation.

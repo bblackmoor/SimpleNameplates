@@ -588,11 +588,11 @@ local function CachedNameHasDrifted(frame, context, assessment)
         if width and width > 0 then Check("titleWidth", frame.SNPFullTitleText, "GetWidth", width, "title width") end
     end
     Check("alpha", name, "GetAlpha", expected.inside and 0 or 1,
-        expected.inside and "inside name visibility" or "native name alpha")
+        expected.inside and "inside native name alpha" or "native name alpha")
     if expected.inside then
         local inside = frame.SNPInsideName
         if not inside or frame.SNPInsideNameBar ~= expected.bar then return true, "inside name replaced", {full = true} end
-        Check("insideShown", inside, "IsShown", true, "inside name visibility")
+        Check("insideShown", inside, "IsShown", true, "inside label visibility")
         Check("insideText", inside, "GetText", AccessibleValue(expected.text), "inside name text")
     elseif frame.SNPInsideName then
         Check("insideShown", frame.SNPInsideName, "IsShown", false, "inside name visible")
@@ -688,6 +688,7 @@ end
 -- from a setter hook. Own writes/restoration exit before any assessment.
 local appearanceHookOwners = setmetatable({}, {__mode = "k"})
 local appearanceHookRepair = setmetatable({}, {__mode = "k"})
+local appearanceColorRepair = setmetatable({}, {__mode = "k"})
 InstallNameAppearanceHooks = function(frame, name, context)
     if not hooksecurefunc or appearanceHookOwners[name] then return end
     appearanceHookOwners[name] = frame
@@ -703,6 +704,10 @@ InstallNameAppearanceHooks = function(frame, name, context)
                     -- writes nested inside its UI callbacks must survive guards.
                     if method == "SetFontObject" or method == "SetTextHeight" then
                         frame.SNPNameAppearancePending = true
+                    elseif method == "SetTextColor" or method == "SetVertexColor" then
+                        -- Own color writes also pass here. Check the completed
+                        -- result after the guard instead of repairing recursively.
+                        frame.SNPNameColorPending = true
                     end
                     return
                 end
@@ -742,6 +747,7 @@ InstallNameAppearanceHooks = function(frame, name, context)
                 if not ok then error(err, 0) end
             end
             if method == "SetFont" then appearanceHookRepair[name] = Repair end
+            if method == "SetTextColor" then appearanceColorRepair[name] = Repair end
             hooksecurefunc(name, method, Repair)
         end
     end
@@ -778,10 +784,33 @@ local function RepairBarGeometry(frame, context, assessment)
 end
 
 local function RepairPendingNameAppearance(frame)
-    if not frame.SNPNameAppearancePending then return end
-    frame.SNPNameAppearancePending = nil
-    local repair = appearanceHookRepair[frame.name]
-    if repair then repair() end
+    local fontPending, colorPending = frame.SNPNameAppearancePending, frame.SNPNameColorPending
+    frame.SNPNameAppearancePending, frame.SNPNameColorPending = nil, nil
+    if fontPending then
+        local repair = appearanceHookRepair[frame.name]
+        if repair then repair() end
+    elseif colorPending then
+        local expected, name = frame.SNPNameStyle, frame.name
+        if not expected or expected.name ~= name or expected.suppressed then return end
+        local context = GetContext()
+        local r, g, b = Observe(expected, "color", name, "GetTextColor", context, 3)
+        local changed = Different(AccessibleNumber(r), expected.r)
+            or Different(AccessibleNumber(g), expected.g) or Different(AccessibleNumber(b), expected.b)
+        local vr, vg, vb, va = Observe(expected, "vertex", name, "GetVertexColor", context, 4)
+        local vertex = expected.vertexColor
+        if vertex then
+            changed = changed or Different(AccessibleNumber(vr), vertex[1])
+                or Different(AccessibleNumber(vg), vertex[2]) or Different(AccessibleNumber(vb), vertex[3])
+                or Different(AccessibleNumber(va), vertex[4])
+        end
+        if changed then
+            local repair = appearanceColorRepair[name]
+            if repair then
+                ns.Profiler.Count("Name appearance deferred", "color repair")
+                repair()
+            end
+        end
+    end
 end
 
 

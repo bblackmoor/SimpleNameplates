@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.215
+
+* Retains native text/vertex color writes made while styling or artwork guards are active. On guard release, checks the completed readable color against the current cache and repairs a mismatch through the existing identity/access/restoration-validated appearance hook. Converged addon writes require no extra setters; color-only recovery does not rewrite fonts. Restoration clears the pending color flag.
+* Splits the ambiguous inside-name visibility drift counter into inside native name alpha and inside label visibility. Adds Name appearance deferred: color repair for guarded color recovery. This identifies which part of the live visibility drift needs further work.
+* Records the 97-second 1.0.214 profile: Runtime update maximum 5.323 ms and Urgent refresh maximum 3.198 ms, down from 21.265/20.085 ms in the prior report. No reported geometry drift or reconciliation full-style fallback. There were 528 text-color, 136 inside-name visibility and four suppressed-alpha first mismatches. These runs are not matched benchmarks; the exact source of all live color/visibility writes remains unconfirmed.
+* All 21 smoke suites pass. The guarded-color regression fails against 1.0.214. Coverage includes nested visibility callbacks, green-channel-only drift, text/vertex recovery, artwork guards, no font rewrites and no redundant repairs after converged own writes. Native confirmation is pending.
+
 ## 1.0.214
 
 * Moves broad global refreshes (including settings, callbacks and login passes) into per-plate jobs sharing the existing four-job/one-millisecond cooperative scheduler. Current and previous target/mouseover/interaction plates and explicit unit requests remain immediate. A running plate operation cannot be interrupted; immediate priority work is outside the periodic budget.

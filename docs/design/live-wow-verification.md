@@ -327,3 +327,32 @@ work, not a complete synchronous all-plate styling pass. Global plate refresh
 measures one deferred or immediate plate operation. These inclusive rows
 overlap and must not be added together. Broad refresh latency, fairness and
 native secure behavior remain live acceptance gates.
+
+
+## Guarded color callbacks and visibility diagnosis (1.0.215)
+
+The latest 97-second 1.0.214 report has Runtime update/Urgent refresh maxima
+of 5.323/3.198 ms, versus 21.265/20.085 ms in the prior report. It has no
+reported geometry drift or reconciliation full-style fallback, but 528
+text-color and 136 inside-name visibility first mismatches. The memory delta
+alone does not establish a leak; these reports are not matched benchmarks.
+
+A smoke regression confirms that a native color setter nested in a selective
+visibility repair is discarded by the 1.0.214 styling guard. Version 1.0.215
+retains guarded color notifications and checks the completed color on guard
+release. It repairs only readable mismatches, preserving the appearance hook's
+current ownership/access/restoration checks. It does not establish that this
+path explains every live mismatch. Scheduler budgets are unchanged.
+
+1. Install 1.0.215 and reload in the same crowded scene. Verify dim background
+   names remain grey and inside labels remain legible through target/mouseover,
+   bar visibility and profile changes.
+2. Record approximately one minute. Include Name drift, Name appearance writes,
+   Name appearance deferred, Reconciliation repairs, Runtime update and Urgent
+   refresh rows. Compare text-color repair counts and maxima.
+3. The old inside name visibility row now separates inside native name alpha
+   from inside label visibility. Include both rows to identify whether native
+   alpha or the addon label's shown state changes. This patch adds diagnosis;
+   it does not claim a confirmed fix for that remaining visibility drift.
+4. Toggle Active, recycle plates and cross a zone boundary. Verify native
+   restoration and no stale cached colors on reassigned units.

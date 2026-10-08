@@ -2317,12 +2317,58 @@ do
     equal(name.font, expected.font, "pending native appearance repaired after guard")
     equal(name.r, 153 / 255, "pending native white repaired after guard")
     assert(not plateFrame.SNPNameAppearancePending)
+    -- Native callbacks can recolor names while addon writes are guarded.
+    -- Final own writes must converge without recursive or redundant font work.
+    local fontWrites, fontSetter = 0, name.SetFont
+    name.SetFont = function(self, ...) fontWrites = fontWrites + 1; return fontSetter(self, ...) end
+    plateFrame.SNPApplyingStyle = true
+    name:SetTextColor(1, 1, 1)
+    assert(plateFrame.SNPNameColorPending, "guarded native color write survives")
+    plateFrame.SNPApplyingStyle = nil
+    ns.NameplateText.RepairPendingNameAppearance(plateFrame)
+    equal(name.r, expected.r, "guarded native color repaired before reconciliation")
+    equal(fontWrites, 0, "pending color does not rewrite font")
+    plateFrame.SNPApplyingArtwork = true
+    name:SetVertexColor(0.2, 0.3, 0.4, 1)
+    plateFrame.SNPApplyingArtwork = nil
+    ns.NameplateText.RepairPendingNameAppearance(plateFrame)
+    equal(name.vr, 1, "guarded native vertex tint repaired")
+    equal(name.r, expected.r, "guarded vertex repair finishes with intended grey")
+    plateFrame.SNPApplyingStyle = true
+    name:SetVertexColor(1, 1, 1, 1)
+    name:SetTextColor(expected.r, expected.g, expected.b, 1)
+    plateFrame.SNPApplyingStyle = nil
+    local repairCalls = 0
+    local colorSetter = name.SetTextColor
+    name.SetTextColor = function(self, ...) repairCalls = repairCalls + 1; return colorSetter(self, ...) end
+    ns.NameplateText.RepairPendingNameAppearance(plateFrame)
+    equal(repairCalls, 0, "converged own color writes need no follow-up setter")
+    name.SetTextColor = colorSetter
+    assert(not plateFrame.SNPNameColorPending, "pending color flag cleared")
+    -- A real selective visibility repair triggers a native callback after its
+    -- earlier color write. The completed operation must still converge.
+    local shownSetter = name.SetShown
+    name.SetShown = function(self, shown)
+        shownSetter(self, shown)
+        if shown then self:SetTextColor(expected.r, 1, expected.b, 1) end
+    end
+    name.shown = false
+    local cap, context = ns.PresentationCapabilities, ns.WorldContext.Get()
+    local assessment = cap.InspectFrame(plateFrame, context)
+    local drifted, _, plan = ns.NameplateText.CachedNameHasDrifted(plateFrame, context, assessment)
+    assert(drifted and plan.shown, "native hidden name produces selective visibility plan")
+    assert(ns.NameplateText.RepairCachedName(plateFrame, context, assessment, plan))
+    equal(name.g, expected.g, "nested visibility callback color repaired on guard release")
+    equal(fontWrites, 0, "nested visibility color repair avoids fonts")
+    name.SetShown, name.SetFont = shownSetter, fontSetter
+
     ns.Profiler.Command("stop"); ns.Profiler.Command("report")
     print = savedPrint
     local report = table.concat(lines, "\n")
     assert(not report:find("Full styling:", 1, true) and not report:find("Classification:", 1, true)
         and not report:find("Bar artwork:", 1, true), "setter repair avoids broad work")
     assert(report:find("Name appearance writes: SetFontObject =", 1, true))
+    assert(report:find("Name appearance deferred: color repair =", 1, true))
     assert(maximum <= 3 and not plateFrame.SNPRepairingNameAppearance, "reentry guard released")
 
     -- A semantically identical native GetFont result causes no repeated repair.
