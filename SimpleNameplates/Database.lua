@@ -6,6 +6,7 @@ local DEFAULT_CATEGORY_MODES = defaults.categoryModes
 local DEFAULT_HEALTH_BARS = defaults.healthBars
 local DEFAULT_DIM_BACKGROUND_NAMES = defaults.dimBackgroundNames
 local DEFAULT_EFFECT_COLORS = defaults.effectColors
+local CAST_ADVANCED_CONTROLS = ns.CAST_ADVANCED_CONTROLS
 local COLOR_PRESETS = defaults.colorPresets
 local IsSavedFontSelection = ns.IsSavedFontSelection
 local IsAvailableFontSelection = ns.IsAvailableFontSelection
@@ -61,6 +62,28 @@ local function CopySavedCVarOriginals(source, allowedCVars)
     return copy
 end
 
+
+local function ValidatedCastAdvanced(saved)
+    saved = type(saved) == "table" and saved or {}
+    local result = {}
+    for effect, controls in pairs(CAST_ADVANCED_CONTROLS) do
+        local source = type(saved[effect]) == "table" and saved[effect] or {}
+        result[effect] = {}
+        for _, control in ipairs(controls) do
+            local value = source[control.key]
+            if control.kind == "switch" then
+                result[effect][control.key] = SavedBoolean(value, control.default)
+            elseif IsFiniteNumber(value) then
+                local steps = math.floor((math.max(control.min, math.min(control.max, value)) - control.min) / control.step + 0.5)
+                result[effect][control.key] = math.min(control.max, control.min + steps * control.step)
+            else
+                result[effect][control.key] = control.default
+            end
+        end
+    end
+    return result
+end
+
 local function NewProfile(presetName)
     local preset = presetName and COLOR_PRESETS[presetName] or nil
     local profile = {
@@ -73,6 +96,7 @@ local function NewProfile(presetName)
         dimBackgroundNames = DEFAULT_DIM_BACKGROUND_NAMES,
         interruptibleHighlight = defaults.interruptibleHighlight,
         interruptibleEffect = defaults.interruptibleEffect,
+        castAdvanced = ValidatedCastAdvanced(),
     }
     for key, default in pairs(DEFAULT_PRIORITY_COLORS) do
         local color = preset and preset.priorityColors and preset.priorityColors[key] or default
@@ -153,6 +177,7 @@ local function ValidatedProfile(saved, presetName)
     ValidateProfileColors(profile, saved)
     ValidateProfileAppearance(profile, saved)
     ValidateProfileToggles(profile, saved)
+    profile.castAdvanced = ValidatedCastAdvanced(saved.castAdvanced)
     return profile
 end
 
@@ -337,6 +362,7 @@ end
 local function CancelProfileEdits()
     if ns.SettingsUI and ns.SettingsUI.CancelColorEdit then ns.SettingsUI.CancelColorEdit() end
     if ns.CancelAppearanceEdits then ns.CancelAppearanceEdits(true) end
+    if ns.CancelAdvancedEdits then ns.CancelAdvancedEdits(true) end
 end
 
 local function CancelColorEdit()
@@ -551,6 +577,33 @@ local function ResetAllColors()
     if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
 end
 
+
+local function GetCastAdvancedSetting(effect, key)
+    local values = ActiveProfile().castAdvanced[effect]
+    return values and values[key]
+end
+
+local function SetCastAdvancedSetting(effect, key, value)
+    local controls = CAST_ADVANCED_CONTROLS[effect]
+    if not controls then return end
+    for _, control in ipairs(controls) do
+        if control.key == key then
+            if control.kind == "switch" then
+                if type(value) == "boolean" then ActiveProfile().castAdvanced[effect][key] = value end
+            elseif IsFiniteNumber(value) then
+                local steps = math.floor((math.max(control.min, math.min(control.max, value)) - control.min) / control.step + 0.5)
+                ActiveProfile().castAdvanced[effect][key] = math.min(control.max, control.min + steps * control.step)
+            end
+            return
+        end
+    end
+end
+
+local function ResetCastAdvanced()
+    CancelProfileEdits()
+    ActiveProfile().castAdvanced = ValidatedCastAdvanced()
+end
+
 local function GetInterruptibleHighlightEnabled()
     return ActiveProfile().interruptibleHighlight == true
 end
@@ -605,6 +658,9 @@ ns.EffectColor = EffectColor
 ns.SetEffectColor = SetEffectColor
 ns.ResetEffectColor = ResetEffectColor
 ns.ResetAllColors = ResetAllColors
+ns.GetCastAdvancedSetting = GetCastAdvancedSetting
+ns.SetCastAdvancedSetting = SetCastAdvancedSetting
+ns.ResetCastAdvanced = ResetCastAdvanced
 ns.GetInterruptibleHighlightEnabled = GetInterruptibleHighlightEnabled
 ns.SetInterruptibleHighlightEnabled = SetInterruptibleHighlightEnabled
 ns.GetInterruptibleEffect = function() return ActiveProfile().interruptibleEffect end

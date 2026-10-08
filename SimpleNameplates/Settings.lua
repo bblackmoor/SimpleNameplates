@@ -7,6 +7,7 @@ local pageOrder = {
     {key = "Profiles", label = "Profiles"},
     {key = "Appearance", label = "Appearance"},
     {key = "Colors", label = "Colors"},
+    {key = "Advanced", label = "Advanced"},
     {key = "TRP3", label = "TRP3"},
 }
 local aliases = {
@@ -14,7 +15,8 @@ local aliases = {
     options = "Appearance", settings = "Appearance", about = "About",
     profiles = "Profiles", profile = "Profiles",
     appearance = "Appearance", text = "Appearance", font = "Appearance", fonts = "Appearance",
-    colors = "Colors", color = "Colors", trp3 = "TRP3", rp = "TRP3",
+    colors = "Colors", color = "Colors", advanced = "Advanced", adv = "Advanced",
+    trp3 = "TRP3", rp = "TRP3",
 }
 local function RegisterSettingsPanels()
     if rootCategory or not addon.SettingsPanels or not Settings or not Settings.RegisterCanvasLayoutCategory
@@ -54,7 +56,7 @@ local function RegisterSettingsPanels()
         end
         local category = aliases[command] and categories[aliases[command]]
         if category then Settings.OpenToCategory(category:GetID())
-        else print("|cff0cd29fSimple Nameplates:|r /snp, /snp profiles, /snp appearance, /snp colors, /snp trp3, /snp debug [target|mouseover], /snp perf [start|stop|report], /snp about") end
+        else print("|cff0cd29fSimple Nameplates:|r /snp, /snp profiles, /snp appearance, /snp colors, /snp advanced, /snp trp3, /snp debug [target|mouseover], /snp perf [start|stop|report], /snp about") end
     end
 end
 addon.RegisterSettingsPanels = RegisterSettingsPanels

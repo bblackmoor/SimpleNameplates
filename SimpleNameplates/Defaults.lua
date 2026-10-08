@@ -102,6 +102,51 @@ ns.Defaults = {
     interruptibleEffect = "PULSE",
     hideCritterCompanionNames = DEFAULT_HIDE_CRITTER_COMPANION_NAMES,
 }
+
+-- Saved per-profile experimental render controls. Database validation and
+-- Advanced UI both read these definitions to avoid divergent defaults.
+ns.CAST_ADVANCED_CONTROLS = {
+ PULSE = {
+  {key="thickness",label="Pulse thickness",min=1,max=12,step=1,default=4,suffix=" px"},
+  {key="inset",label="Pulse inset",min=0,max=8,step=1,default=2,suffix=" px"},
+  {key="lowAlpha",label="Minimum opacity",min=0,max=1,step=0.05,default=0.35},
+  {key="highAlpha",label="Maximum opacity",min=0,max=1,step=0.05,default=1},
+  {key="fadeOut",label="Fade-out time",min=0.1,max=2,step=0.05,default=0.55,suffix=" s"},
+  {key="fadeIn",label="Fade-in time",min=0.1,max=2,step=0.05,default=0.55,suffix=" s"},
+ },
+ SOLID = {
+  {key="thickness",label="Solid thickness",min=1,max=10,step=1,default=2,suffix=" px"},
+  {key="minPixels",label="Minimum physical pixels",min=1,max=5,step=1,default=2,suffix=" px"},
+  {key="upward",label="Upper extension",min=0,max=12,step=1,default=2,suffix=" px"},
+  {key="upwardMin",label="Upper minimum pixels",min=0,max=5,step=1,default=2,suffix=" px"},
+  {key="distance",label="Border distance",min=0,max=12,step=1,default=0,suffix=" px"},
+ },
+ SOFT = {
+  {key="thickness",label="Soft layer thickness",min=1,max=8,step=1,default=2,suffix=" px"},
+  {key="spread",label="Soft border spread",min=0,max=12,step=1,default=0,suffix=" px"},
+  {key="alpha1",label="Inner layer opacity",min=0,max=1,step=0.05,default=1},
+  {key="alpha2",label="Middle layer opacity",min=0,max=1,step=0.05,default=0.55},
+  {key="alpha3",label="Outer layer opacity",min=0,max=1,step=0.05,default=0.2},
+  {key="layer1",label="Show inner layer",kind="switch",default=true},
+  {key="layer2",label="Show middle layer",kind="switch",default=true},
+  {key="layer3",label="Show outer layer",kind="switch",default=true},
+ },
+ ANTS = {
+  {key="frameTime",label="Marching frame interval",min=0.01,max=0.15,step=0.005,default=0.025,suffix=" s"},
+  {key="distance",label="Marching distance",min=0,max=14,step=1,default=3,suffix=" px"},
+  {key="opacity",label="Marching opacity",min=0,max=1,step=0.05,default=1},
+  {key="frames",label="Animation frames",min=1,max=22,step=1,default=22},
+ },
+ GLOW = {
+  {key="expandX",label="Horizontal glow extent",min=0,max=32,step=1,default=8,suffix=" px"},
+  {key="expandY",label="Vertical glow extent",min=0,max=32,step=1,default=8,suffix=" px"},
+  {key="offsetX",label="Horizontal glow offset",min=-20,max=20,step=1,default=0,suffix=" px"},
+  {key="offsetY",label="Vertical glow offset",min=-20,max=20,step=1,default=0,suffix=" px"},
+  {key="antsAlpha",label="Inner animation opacity",min=0,max=1,step=0.05,default=1},
+  {key="glowAlpha",label="Outer glow opacity",min=0,max=1,step=0.05,default=1},
+ },
+}
+
 ns.CAST_EFFECT_OPTIONS = {
     {value = "PULSE", label = "Pulsing border"},
     {value = "SOLID", label = "Solid border"},
