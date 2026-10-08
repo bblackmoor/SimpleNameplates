@@ -12,7 +12,6 @@ end
 local ns = {AccessibleNumber = function(value) if type(value) == "number" then return value end end}
 assert(loadfile("SimpleNameplates/Profiler.lua"))("SimpleNameplates", ns)
 local p = ns.Profiler
-assert(p.SessionToken() == nil)
 local function Contains(text)
     for _, line in ipairs(output) do if line:find(text, 1, true) then return true end end
     error("Missing report: " .. text)
@@ -29,10 +28,8 @@ p.ColorSample(1, 1, 1, 0.6, 0.6, 0.6)
 assert(clockReads == 0 and memoryReads == 0 and updates == 0, "disabled path performs no measurement")
 p.Command("report"); Contains("No profiling session")
 p.Command("start")
-local token = p.SessionToken(); assert(type(token) == "table" and next(token) == nil, "opaque token retains no session records")
 local startReads = memoryReads
 p.Command("start"); assert(memoryReads == startReads, "duplicate start does not reset")
-assert(p.SessionToken() == token, "duplicate start retains session token")
 result = Pack(parent(nil, marker, false, nil))
 assert(result.n == 4 and result[2] == marker and result[3] == false)
 local beforeCounters = clockReads
@@ -69,14 +66,13 @@ local failure = {}
 local broken = p.Wrap("Failure", function() now = now + 0.001; error(failure) end)
 local ok, err = pcall(broken); assert(not ok and err == failure, "original error object preserved")
 p.Command("stop"); p.Command("report")
-assert(p.SessionToken() == nil, "stopped session has no active token")
 Contains("Failure: 1 calls; 1.000 ms total")
 Contains("100.0 -> 90.0 KiB (-10.0 KiB)")
 local reads = clockReads
 parent(); p.Count("Styling requests", "name hook"); p.Command("stop"); p.Command("report")
 assert(clockReads == reads and memoryReads == 2, "stopped calls/reports perform no measurements")
 Contains("Styling requests: name hook = 2")
-output = {}; p.Command("start"); assert(p.SessionToken() ~= token, "restart uses a new token"); p.Command("report"); Contains("No measured calls yet")
+output = {}; p.Command("start"); p.Command("report"); Contains("No measured calls yet")
 for _, line in ipairs(output) do assert(not line:find("Styling requests:", 1, true), "new session clears reasons") end
 -- Finishing a call after stop/restart cannot pollute the next session.
 local transition = p.Wrap("Transition", function() p.Command("stop"); p.Command("start") end)

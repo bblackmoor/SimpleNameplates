@@ -193,7 +193,11 @@ of less temporary allocation, not a live retained-memory or leak measurement.
 The addon itself does not pause or force GC.
 
 
-## Appearance timing checkpoints (1.0.217)
+## Historical appearance timing checkpoints (1.0.217–1.0.218)
+
+Removed in 1.0.219 after live convergence was confirmed. The description below
+records the diagnostic reports from those versions; these rows and reads are
+no longer active.
 
 During profiling, Appearance checkpoints: sampled counts validated observations
 of completed native text RGB and alpha. Checkpoints run after full style,
@@ -242,8 +246,17 @@ check uses fresh access/current context, ownership/cache and readable GUID
 validation. Unknown/non-finite observations are not proof of mismatch and stay
 subject to reconciliation retry. Converged state requires no extra setters.
 
-The checkpoints still describe completed state, now after finalization. In the
-next report, compare Appearance checkpoint drift, Name color/alpha origin,
-Name drift and Appearance finalization rows. A finalization count means the
-completion path observed a reset; successful live convergence still requires
-few/no repeated completed-state mismatches and correct visible rendering.
+The 94.4-second 1.0.218 live report contained 4,686 reconciliation checks and
+11,534 checkpoints with no reported appearance drift or repair fallback.
+There were 660 color finalizations. Runtime update/Urgent refresh maxima were
+4.728/2.951 ms. This confirms convergence in that scene, not a matched benchmark
+or acceptance of every combat/context transition.
+
+## Profiling after diagnostic cleanup (1.0.219)
+
+Temporary checkpoints, origin counters, audit cache fields and the native Show
+audit hook have been removed. Appearance finalization: color/alpha and ordinary
+Name drift/reconciliation counters remain available when profiling is enabled.
+The working bounded finalizer and appearance hooks remain active during normal
+play. First verify visible behavior with profiling off; capture another report
+if drift, flicker or hitches return. No forced garbage collection is added.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.219
+
+* Removes the temporary appearance checkpoint reads, native Show audit hook, cached audit fields, origin counters and profiler session tokens introduced in 1.0.217. Retains the validated appearance finalizer, setter hooks, deferred repairs and ordinary profiling counters.
+* Records the 94.4-second 1.0.218 live report: 4,686 reconciliation checks and 11,534 checkpoints with no reported appearance drift or repair fallback; 660 color finalizations caught resets at completion. Runtime update/Urgent refresh maxima were 4.728/2.951 ms. This confirms convergence in the tested scene; broader normal-play verification remains pending.
+* All 21 smoke suites pass, including visibility-callback and standalone-artwork reset regressions, unknown/stale/inaccessible sources, alpha-only recovery and failed-write guard recovery.
+
 ## 1.0.218
 
 * Finishes selective color/vertex/alpha writes after visibility, dimensions and label layout callbacks. Color repair also restores native opacity if a readable post-color alpha differs. Consumes pending artwork before selective repair reports completion, so trailing artwork cannot silently undo that repair.

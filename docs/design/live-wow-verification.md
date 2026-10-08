@@ -449,3 +449,22 @@ native callback resets that bypass Lua setter hooks and converge with the fix.
 
 The finalizer is bounded and preserves error/reentry behavior. It does not add
 fonts, classification, scheduling or full styles; native acceptance is pending.
+
+
+## 1.0.219 diagnostic cleanup and normal play
+
+The 94.4-second 1.0.218 report showed no appearance drift or reconciliation
+repair fallback across 4,686 checks, and no checkpoint failures across 11,534
+samples. The finalizer caught 660 color resets at completion. Runtime update
+and Urgent refresh maxima were 4.728 and 2.951 ms. This supersedes the pending
+confirmation above for that tested scene.
+
+1. Install 1.0.219, reload, and play normally with profiling off. Check that
+   background names remain grey and inside labels have no duplicate native name.
+2. Verify target/mouseover changes, bar visibility, cast/threat updates, profile
+   changes, unit recycling, zone transitions and restricted combat contexts.
+3. Toggle Active to verify native restoration. If flicker or hitches return,
+   capture a report with Name drift, Appearance finalization and runtime timings.
+
+The temporary checkpoint instrumentation is removed; the validated completion
+fix remains. Broader normal-play acceptance is still pending.

@@ -7,7 +7,8 @@ cast highlighting, title substitution and restoration. This is a follow-up to th
 [four completed code phases](performance-plan.md), numbered phases 5–8 so the
 earlier work remains distinguishable.
 
-Status: targeted follow-up implemented in 1.0.207; native acceptance pending.
+Status: targeted crowded-scene convergence confirmed in 1.0.218; temporary
+diagnostics removed in 1.0.219. Broader normal-play acceptance remains pending.
 The user confirmed 1.0.206 and supplied a complete 65.1-second report plus a
 recording showing several background NPC names flashing grey/white. All 3,521
 reconciliation jobs reported native-font drift; name hooks caused 372 cache

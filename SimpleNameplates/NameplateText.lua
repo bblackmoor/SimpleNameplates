@@ -12,7 +12,7 @@ local PriorityColorForState, FontPath = ns.PriorityColorForState, ns.FontPath
 local GetAppearanceSetting, GetTRP3Setting = ns.GetAppearanceSetting, ns.GetTRP3Setting
 local GetHealthBar = ns.NameplateFrames.GetHealthBar
 local GetCastBar = ns.NameplateFrames.GetCastBar
-local InstallNameAppearanceHooks, AuditNameAppearance, FinishCachedAppearance
+local InstallNameAppearanceHooks, FinishCachedAppearance
 
 local function NameFontPath(context)
     if context.sanctuary == true and GetAppearanceSetting("matchSanctuaryFont") == true then
@@ -308,9 +308,6 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.name = frame.name
     expected.unit = AccessibleValue(frame.unit)
     expected.unknownReads = nil
-    -- Rebuilt intent cannot inherit an observation of an older presentation.
-    expected.appearanceAuditSession, expected.appearanceAuditPhase = nil, nil
-    expected.appearanceAuditColor, expected.appearanceAuditAlpha = nil, nil
     expected.font = fontPath
     expected.size = size
     expected.flags = ns.FontFlags()
@@ -469,55 +466,6 @@ local function CacheIsCurrent(frame, expected, context, assessment)
     return true
 end
 
--- Read-only checkpoints are confined to an active profiling session. Never
--- infer a good state from unknown/secret values or borrow a prior access check.
-AuditNameAppearance = function(frame, phase, sourceName)
-    local session = ns.Profiler.SessionToken()
-    if not session then return end
-    local context = GetContext()
-    local cap = ns.PresentationCapabilities
-    local assessment = cap.InspectFrame(frame, context)
-    if not assessment.canAccess or frame.SNPRestoring or frame.SNPApplyingStyle
-        or frame.SNPApplyingArtwork or frame.SNPRepairingNameAppearance
-        or not ns.GetStylingEnabled() then return end
-    local expected, name = frame.SNPNameStyle, assessment.name
-    if not expected or (sourceName and sourceName ~= name)
-        or frame.SNPOriginalUnit ~= expected.unit
-        or not CacheIsCurrent(frame, expected, context, assessment) then return end
-    if UnitGUID then
-        local ok, guid = pcall(UnitGUID, expected.unit)
-        guid = ok and AccessibleValue(guid)
-        local previous = frame.SNPEntityFacts and frame.SNPEntityFacts.guid
-        if type(guid) == "string" and type(previous) == "string" and guid ~= previous then return end
-    end
-    local function Read(method)
-        local getter = cap.SafeField(name, method, context)
-        if type(getter) ~= "function" then return end
-        local ok, r, g, b = pcall(getter, name)
-        if ok then return AppearanceNumber(r), AppearanceNumber(g), AppearanceNumber(b) end
-    end
-    local alpha = Read("GetAlpha")
-    local desired = (expected.suppressed or expected.inside) and 0 or 1
-    local alphaMatches
-    if alpha ~= nil then alphaMatches = NearlyEqual(alpha, desired) end
-    local colorMatches
-    if not expected.suppressed then
-        local r, g, b = Read("GetTextColor")
-        if r ~= nil and g ~= nil and b ~= nil then
-            colorMatches = NearlyEqual(r, expected.r) and NearlyEqual(g, expected.g) and NearlyEqual(b, expected.b)
-        end
-    end
-    expected.appearanceAuditSession, expected.appearanceAuditPhase = session, phase
-    expected.appearanceAuditColor, expected.appearanceAuditAlpha = colorMatches, alphaMatches
-    ns.Profiler.Count("Appearance checkpoints", "sampled")
-    if not expected.suppressed then
-        if colorMatches == false then ns.Profiler.Count("Appearance checkpoint drift", phase .. ": color")
-        elseif colorMatches == nil then ns.Profiler.Count("Appearance checkpoint unreadable", phase .. ": color") end
-    end
-    if alphaMatches == false then ns.Profiler.Count("Appearance checkpoint drift", phase .. ": alpha")
-    elseif alphaMatches == nil then ns.Profiler.Count("Appearance checkpoint unreadable", phase .. ": alpha") end
-end
-
 -- Unknown is neither equality nor drift. Retry an unreadable property after
 -- 0.25, 0.5, 1, 2, then four elapsed seconds, independent of visit count, while
 -- continuing to observe independent properties. Styling resets this backoff.
@@ -568,18 +516,6 @@ local function DimensionDifferent(actual, desired, region, context)
     return math.abs(actual - desired) > tolerance
 end
 
-local function CountAppearanceOrigin(expected, property)
-    local session = ns.Profiler.SessionToken()
-    if not session then return end
-    local matched = expected.appearanceAuditSession == session and expected[property]
-    local reason = "checkpoint unavailable"
-    if matched == true then reason = "after verified " .. expected.appearanceAuditPhase
-    elseif matched == false and expected.appearanceAuditSession == session then
-        reason = "present after " .. expected.appearanceAuditPhase
-    end
-    ns.Profiler.Count(property == "appearanceAuditColor" and "Name color origin" or "Name alpha origin", reason)
-end
-
 local function CachedNameHasDrifted(frame, context, assessment)
     context = context or GetContext()
     assessment = assessment or ns.PresentationCapabilities.InspectFrame(frame, context)
@@ -606,7 +542,6 @@ local function CachedNameHasDrifted(frame, context, assessment)
         else differs = Different(actual, desired) end
         if differs then
             Add(key, desired, label)
-            if key == "alpha" then CountAppearanceOrigin(expected, "appearanceAuditAlpha") end
             if key == "barWidth" or key == "barHeight" or key == "containerWidth" or key == "containerHeight" then
                 ns.Profiler.SizeSample(key, actual, desired, region)
             end
@@ -670,7 +605,6 @@ local function CachedNameHasDrifted(frame, context, assessment)
     local r, g, b = Observe(expected, "color", name, "GetTextColor", context, 3)
     if Different(r, expected.r) or Different(g, expected.g) or Different(b, expected.b) then
         Add("color", true, "text color")
-        CountAppearanceOrigin(expected, "appearanceAuditColor")
         ns.Profiler.ColorSample(r, g, b, expected.r, expected.g, expected.b)
     end
     r, g, b, flags = Observe(expected, "vertex", name, "GetVertexColor", context, 4)
@@ -763,7 +697,6 @@ local function RepairCachedName(frame, context, assessment, plan)
     end
     if ns.NameplateText then ns.NameplateText.RepairPendingNameAppearance(frame) end
     FinishCachedAppearance(frame, context)
-    AuditNameAppearance(frame, "cached repair")
     return true
 end
 
@@ -840,19 +773,12 @@ InstallNameAppearanceHooks = function(frame, name, context)
                 end)
                 frame.SNPRepairingNameAppearance = nil
                 if not ok then error(err, 0) end
-                local phase = method == "SetAlpha" and "alpha repair"
-                    or ((method == "SetFont" or method == "SetFontObject" or method == "SetTextHeight")
-                        and "font repair" or "color repair")
-                AuditNameAppearance(frame, phase, name)
             end
             if method == "SetFont" then appearanceHookRepair[name] = Repair end
             if method == "SetTextColor" then appearanceColorRepair[name] = Repair end
             if method == "SetAlpha" then appearanceAlphaRepair[name] = Repair end
             hooksecurefunc(name, method, Repair)
         end
-    end
-    if type(ns.PresentationCapabilities.SafeField(name, "Show", context)) == "function" then
-        hooksecurefunc(name, "Show", function() AuditNameAppearance(frame, "native Show", name) end)
     end
 end
 
@@ -990,7 +916,6 @@ RepairCachedName = ns.Profiler.Wrap("Text repair", RepairCachedName)
 
 ns.NameplateText = {
     FinishCachedAppearance = FinishCachedAppearance,
-    AuditNameAppearance = AuditNameAppearance,
     RepairBarGeometry = RepairBarGeometry,
     RepairPendingNameAppearance = RepairPendingNameAppearance,
     NameFontPath = NameFontPath,
