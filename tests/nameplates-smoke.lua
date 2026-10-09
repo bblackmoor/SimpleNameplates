@@ -3029,4 +3029,45 @@ do
     equal(frame.SNPInsideName.shown, false, "replacement hidden on restoration")
 end
 
+-- Nearby diagnostics must preserve a vanished untargeted plate: no direct
+-- lookup, classification, tooltip reads, timers, hooks or presentation writes.
+do
+    local base, frame, container, bar, inside = Region(), Region(), Region(), Region(), Region()
+    base.UnitFrame, frame.unit = frame, "nameplate1"
+    frame.name, frame.HealthBarsContainer, frame.healthBar, frame.SNPInsideName = Region(), container, bar, inside
+    frame.SNPState, frame.SNPNameStyle = "hostile", {inside = true}
+    frame.alpha = 0
+    function inside:GetParent() return bar end
+    function bar:GetParent() return container end
+    function container:GetParent() return frame end
+    function frame:GetParent() return base end
+    function inside:GetEffectiveAlpha() return 0 end
+    local getPlates, getPlate, getName = C_NamePlate.GetNamePlates, C_NamePlate.GetNamePlateForUnit, UnitName
+    C_NamePlate.GetNamePlates = function() return {base, base} end
+    C_NamePlate.GetNamePlateForUnit = function() error("nearby snapshot must not perform native unit lookup") end
+    unit.names = {nameplate1 = "Citadel Watcher"}
+    UnitName = function() return "Citadel Watcher" end
+    local hookCount, timerCount, frameCount = #hooks, #timers, #frames
+    for _, region in ipairs({base, frame, frame.name, container, bar, inside}) do
+        for _, method in ipairs({"Show", "Hide", "SetAlpha", "SetText", "SetFont", "SetPoint", "SetShown"}) do
+            region[method] = function() error("nearby snapshot must not write presentation") end
+        end
+    end
+    local lines, outputPrint = {}, print
+    print = function(line) lines[#lines + 1] = line end
+    ns.DebugNearby("CITADEL WATCHER")
+    local report = table.concat(lines, "\n")
+    assert(report:find("Matching plates: 1", 1, true), "nearby enumeration deduplicates")
+    assert(report:find("Unit frame: access accessible; shown yes; visible yes; alpha 0", 1, true), "nearby captures vanished ancestor alpha")
+    assert(report:find("effective alpha 0", 1, true), "nearby captures inherited invisibility")
+    equal(frame.alpha, 0, "nearby snapshot leaves failure intact")
+    lines = {}; ns.DebugNearby("watcher[")
+    assert(table.concat(lines, "\n"):find("Matching plates: 0", 1, true), "nearby filter is literal")
+    print = outputPrint
+    equal(#hooks, hookCount, "nearby adds no hooks")
+    equal(#timers, timerCount, "nearby adds no timers")
+    equal(#frames, frameCount, "nearby creates no frames")
+    C_NamePlate.GetNamePlates, C_NamePlate.GetNamePlateForUnit, UnitName = getPlates, getPlate, getName
+end
+
 print("Nameplates smoke: passed")

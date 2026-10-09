@@ -327,6 +327,68 @@ local function DebugUnit(unit, context)
     DebugScannedPlates(candidates, context)
 end
 
+-- Inspect enumeration directly: direct unit lookups, classification and tooltip
+-- collection can invoke native callbacks or change caches. Keep the failed
+-- presentation intact so targeting/mouseover cannot mask the cause.
+local function DebugNearby(filter)
+    local context = GetContext()
+    DebugContext(context)
+    filter = type(filter) == "string" and string.lower(filter) or ""
+    print("|cff0cd29fSimple Nameplates nearby snapshot:|r filter " .. (filter ~= "" and filter or "(all)")
+        .. "; addon version " .. (ns.VERSION or "unknown"))
+    local plates = ReadUnitAPI(C_NamePlate and C_NamePlate.GetNamePlates)
+    if type(plates) ~= "table" then
+        print("  Nameplate enumeration unavailable.")
+        return
+    end
+    local seen, count = {}, 0
+    for _, plate in pairs(plates) do
+        if not seen[plate] then
+            seen[plate] = true
+            local frame = Capabilities.SafeField(plate, "UnitFrame", context)
+            local token = Capabilities.SafeField(frame, "unit", context)
+            local name = type(token) == "string" and ReadUnitAPI(UnitName, token) or nil
+            if filter == "" or (type(name) == "string" and string.lower(name):find(filter, 1, true)) then
+                count = count + 1
+                if count > 20 then print("  Snapshot limited to 20 plates; narrow the name filter."); break end
+                local assessment = Capabilities.InspectFrame(frame, context)
+                local expected = Capabilities.SafeField(frame, "SNPNameStyle", context)
+                print("  Plate " .. count .. ": " .. DebugValue(name) .. "; token " .. DebugValue(token)
+                    .. "; access " .. assessment.status .. "; blocked " .. (assessment.reason or "(none)")
+                    .. "; state " .. DebugValue(Capabilities.SafeField(frame, "SNPState", context))
+                    .. "; inside " .. DebugBoolean(Capabilities.SafeField(expected, "inside", context)))
+                local regionsSeen = {}
+                local function Region(label, region)
+                    if not region or regionsSeen[region] then return end
+                    regionsSeen[region] = true
+                    print("    " .. label .. ": access " .. Capabilities.ObjectStatus(region, context)
+                        .. "; shown " .. DebugRegionValue(region, "IsShown", "boolean", context)
+                        .. "; visible " .. DebugRegionValue(region, "IsVisible", "boolean", context)
+                        .. "; alpha " .. DebugRegionValue(region, "GetAlpha", nil, context)
+                        .. "; effective alpha " .. DebugRegionValue(region, "GetEffectiveAlpha", nil, context)
+                        .. "; width " .. DebugRegionValue(region, "GetWidth", nil, context)
+                        .. "; height " .. DebugRegionValue(region, "GetHeight", nil, context))
+                end
+                Region("Base plate", plate)
+                Region("Unit frame", frame)
+                Region("Health container", Capabilities.SafeField(frame, "HealthBarsContainer", context))
+                Region("Health bar", assessment.healthBar)
+                Region("Native name", assessment.name)
+                local inside = Capabilities.SafeField(frame, "SNPInsideName", context)
+                Region("Inside name", inside)
+                local parent = inside
+                for depth = 1, 8 do
+                    parent = Capabilities.ReadRegion(parent, "GetParent", context)
+                    if not parent then break end
+                    Region("Inside ancestor " .. depth, parent)
+                end
+            end
+        end
+    end
+    print("  Matching plates: " .. math.min(count, 20)
+        .. "; snapshot does not target, hover, refresh or repair plates.")
+end
 
+ns.DebugNearby = DebugNearby
 ns.DebugUnit = DebugUnit
 

@@ -1,6 +1,6 @@
 # Simple Nameplates
 
-Documentation reviewed for 1.0.226 (2026-10-09). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
+Documentation reviewed for 1.0.227 (2026-10-09). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
 
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
@@ -151,6 +151,15 @@ Saved settings are validated individually in their current locations. Recognized
 While styling is enabled, confirmed widget-only plates retain their widgets but do not draw an additional name or title. Ordinary NPC plates continue displaying names and service subtitles. This prevents duplicate addon labels when WoW supplies both plate types for one NPC. Friendly NPC nameplates must be enabled in WoW to supply ordinary friendly NPC plates; the startup setup dialog can request that change with consent. Normal styling does not continuously rewrite visibility settings.
 
 Profiling is off by default and session-only. Use `/snp perf start`, play through a representative scene, then `/snp perf stop` and `/snp perf report`. The chat report shows call counts, total/average/longest timings and start/end addon memory. Additional rows measure focused name/color repairs, data/name-layout updates, access assessments, artwork, name/title styling, health-text layout, drift checks, periodic work and native plate discovery. Reconciliation now counts individual plate jobs; periodic counters identify processed groups and count/time limits. Reason counters distinguish full/focused requests and outcomes, queued events, the first observed name drift, cached repairs and full-styling fallbacks. Timings overlap and must not be summed as total CPU; memory is aggregate, not per-function allocation. Commands work during combat. See the [profiling guide](docs/design/profiling.md) for the measured paths, session behavior and interpretation.
+
+For disappearing names that return when targeted or hovered, use
+`/snp debug nearby Citadel Watcher` while the names are missing, with no target
+and the mouse away from the units. This read-only snapshot uses existing plate
+enumeration, avoids direct unit lookups/classification/tooltips, and reports local
+and effective alpha, visibility and dimensions through the display hierarchy.
+The optional name filter is a literal, case-insensitive substring; output is
+limited to 20 matching plates. The disappearance persisted after 1.0.226 and
+requires this failure-state capture to determine the remaining cause.
 
 `/snp debug` inspects your target; `/snp debug mouseover` inspects the hovered unit without targeting it. For a distant enemy, put `/snp debug mouseover` in a keybound macro and press the key while hovering over its body. The report identifies the inspected unit token and distinguishes missing plates from inaccessible ones. If nothing is under the pointer, it reports that no mouseover unit is available.
 

@@ -88,6 +88,7 @@ local function CreateAboutPanel()
         "/snp trp3 — TRP3 settings\n" ..
         "/snp debug — Explain the current target\n" ..
         "/snp debug mouseover — Inspect without targeting\n" ..
+        "/snp debug nearby [name] — Snapshot existing plates without targeting or hovering\n" ..
         "/snp perf [start|stop|report] — Record or report performance\n" ..
         "/snp about — This page")
     UI.AddSection(content, layout, "Presentation limits")

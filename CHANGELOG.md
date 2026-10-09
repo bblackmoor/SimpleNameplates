@@ -1,3 +1,10 @@
+## 1.0.227 — 2026-10-09
+
+- Add `/snp debug nearby [name]` to capture disappearing names before target/mouseover refresh can conceal the failed state. Enumerates existing plates directly without direct unit lookup, classification, tooltip collection or presentation writes.
+- Reports shown/visible state, local/effective alpha and dimensions across the base plate, unit frame, health container/bar, native name, inside name and additional inside-name ancestors. Deduplicates frames and bounds output to 20 matches.
+- All 23 smoke suites pass, including read-only failure preservation, inherited alpha reporting and literal name filtering.
+- The reported hostile NPC disappearance persists after 1.0.226. Its cause remains unconfirmed; this build collects the missing failure-state evidence rather than changing additional native fades without evidence.
+
 ## 1.0.226 — 2026-10-09
 
 - Recover readable health-bar, health-container and inside-name opacity resets, including native distance/detail transitions that leave regions shown but transparent. Bar/container show, hide and alpha callbacks repair immediately; periodic reconciliation also covers native changes that bypass Lua hooks.
