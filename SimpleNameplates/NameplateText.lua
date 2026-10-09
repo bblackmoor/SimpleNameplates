@@ -319,8 +319,12 @@ local function CacheNameStyle(frame, displayName, fontPath, size, nameR, nameG, 
     expected.rightRegion = rightRegion
     expected.bar = bar
     expected.barHeight = frame.SNPOriginalBarHeight and InsideBarHeight(frame, size) or nil
-    expected.barWidth = frame.SNPBarWidth
-    expected.containerWidth = frame.SNPContainerWidth
+    local anchors = frame.SNPOriginalSizeAnchors or {}
+    -- Height-only ownership also releases the native horizontal anchors. Keep
+    -- their width in reconciliation even with the width slider at 100%.
+    expected.barWidth = frame.SNPBarWidth or (anchors[bar] and anchors[bar].width)
+    local container = frame.HealthBarsContainer
+    expected.containerWidth = frame.SNPContainerWidth or (anchors[container] and anchors[container].width)
 end
 
 local function SuppressText(frame, context)

@@ -3070,4 +3070,59 @@ do
     C_NamePlate.GetNamePlates, C_NamePlate.GetNamePlateForUnit, UnitName = getPlates, getPlate, getName
 end
 
+-- Native horizontal anchors can supply all width, with no explicit width.
+-- Height-only styling must preserve it at the default 100% width setting.
+do
+    local frame = Region()
+    frame.unit, frame.name, frame.healthBar, frame.HealthBarsContainer = "nameplate1", Region(), Region(), Region()
+    frame.name:SetFont("Native", 10, ""); frame.name:SetTextColor(1, 0, 0)
+    frame.name:SetVertexColor(1, 1, 1, 1)
+    local bar, container = frame.healthBar, frame.HealthBarsContainer
+    for _, region in ipairs({bar, container}) do
+        function region:ClearAllPoints() self.points = {}; self.width = 0 end
+        function region:SetPoint(...)
+            self.points[#self.points + 1] = {...}
+            if #self.points == 2 then self.width = 140 end
+        end
+    end
+    local function NativeAnchors()
+        container:ClearAllPoints()
+        container:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+        container:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+        bar:ClearAllPoints()
+        bar:SetPoint("TOPLEFT", container, "TOPLEFT", 0, 0)
+        bar:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", 0, 0)
+    end
+    stylingEnabled, categoryMode, showBar, dimBackground = true, "active", true, false
+    appearance.namePlacement, appearance.healthBarWidth = "INSIDE", 100
+    unit = {reaction = 3, names = {nameplate1 = "Citadel Watcher"}}
+    UnitGUID = function() return "Creature-AnchorWidth" end
+    local context, cap, text = ns.WorldContext.Get(), ns.PresentationCapabilities, ns.NameplateText
+    NativeAnchors()
+    ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+    equal(bar.width, 140, "height-only anchor release preserves bar width")
+    equal(container.width, 140, "height-only anchor release preserves container width")
+    equal(frame.SNPNameStyle.barWidth, 140, "100% width participates in reconciliation")
+    equal(frame.SNPNameStyle.containerWidth, 140, "100% container participates in reconciliation")
+    equal(frame.SNPInsideName.shown, true, "inside name survives initial styling")
+    bar.width, container.width = 0, 0
+    local assessment = cap.InspectFrame(frame, context)
+    local drifted, _, plan = text.CachedNameHasDrifted(frame, context, assessment)
+    assert(drifted and plan.barWidth == 140 and plan.containerWidth == 140)
+    assert(text.RepairCachedName(frame, context, assessment, plan))
+    equal(bar.width, 140, "collapsed bar recovers without targeting")
+    equal(container.width, 140, "collapsed container recovers without targeting")
+    assert(not text.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)), "width repair converges")
+    ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+    equal(bar.width, 140, "repeated full styling preserves native width")
+    assert(ns.NameplateRestoration.Request(frame, context))
+    equal(#bar.points, 2, "native bar anchors restored")
+    equal(#container.points, 2, "native container anchors restored")
+    -- A not-yet-measurable native bar retains its anchors for a later retry.
+    NativeAnchors(); bar.width = 0
+    local points = bar.points
+    assert(not ns.NameplateFrames.PrepareBarSize(frame, bar, context))
+    equal(bar.points, points, "zero-width initialization does not release native anchors")
+end
+
 print("Nameplates smoke: passed")

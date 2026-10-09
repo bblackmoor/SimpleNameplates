@@ -1,6 +1,6 @@
 # Simple Nameplates
 
-Documentation reviewed for 1.0.227 (2026-10-09). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
+Documentation reviewed for 1.0.228 (2026-10-09). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
 
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
@@ -158,8 +158,10 @@ and the mouse away from the units. This read-only snapshot uses existing plate
 enumeration, avoids direct unit lookups/classification/tooltips, and reports local
 and effective alpha, visibility and dimensions through the display hierarchy.
 The optional name filter is a literal, case-insensitive substring; output is
-limited to 20 matching plates. The disappearance persisted after 1.0.226 and
-requires this failure-state capture to determine the remaining cause.
+limited to 20 matching plates. The 1.0.227 failure-state capture identified zero-width health bars and containers.
+Version 1.0.228 preserves width when releasing native anchors for height changes
+and tracks that width for untargeted recovery, including at 100% bar width.
+Client confirmation remains pending.
 
 `/snp debug` inspects your target; `/snp debug mouseover` inspects the hovered unit without targeting it. For a distant enemy, put `/snp debug mouseover` in a keybound macro and press the key while hovering over its body. The report identifies the inspected unit token and distinguishes missing plates from inaccessible ones. If nothing is under the pointer, it reports that no mouseover unit is available.
 
@@ -183,8 +185,8 @@ Readable health-bar/container opacity resets and inside-name opacity drift are
 repaired without targeting. Bar/container visibility and alpha callbacks recover
 immediately; periodic reconciliation covers native changes that bypass hooks.
 Whole-plate and unit-frame fades remain Blizzard-controlled, and disabling styling
-restores captured native bar/container opacity. The disappearing hostile-NPC-name
-report still requires client verification after this recovery change.
+restores captured native bar/container opacity. The disappearing hostile-NPC-name report was subsequently traced to zero-width
+bar geometry and addressed in 1.0.228; client confirmation remains pending.
 Configured dimensions release opposing native anchors while preserving their
 restoration baseline; unchanged geometry should no longer trigger repeated repair.
 Global repair hooks skip unrelated raid/party or cleared-unit frames.

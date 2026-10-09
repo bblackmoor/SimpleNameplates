@@ -1,3 +1,10 @@
+## 1.0.228 — 2026-10-09
+
+- Fix zero-width health bars/containers when height-only styling releases Blizzard's opposing native anchors. Preserve readable positive width before clearing those anchors; leave unmeasurable native geometry intact for later retries.
+- Track released-anchor widths in reconciliation even at 100% bar width, so collapsed bars recover without targeting. Configured width scaling remains authoritative and original native anchors restore when styling ends.
+- The 1.0.227 failure-state snapshot showed accessible/shown/opaque hostile NPC plates with both health-container and bar width zero. Added a regression fixture where clearing native anchors collapses width, covering initial/repeated styling, untargeted recovery, convergence, restoration and zero-width initialization.
+- All 23 smoke suites pass. Live confirmation of the width fix remains pending.
+
 ## 1.0.227 — 2026-10-09
 
 - Add `/snp debug nearby [name]` to capture disappearing names before target/mouseover refresh can conceal the failed state. Enumerates existing plates directly without direct unit lookup, classification, tooltip collection or presentation writes.

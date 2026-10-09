@@ -117,6 +117,11 @@ local function PrepareBarSize(frame, region, context)
     end
     local height = ns.AccessibleNumber(Capabilities.ReadRegion(region, "GetHeight", context))
     if not height then return AnchorPreparationResult(false, "height unreadable") end
+    -- Opposing anchors may be the only source of width. Removing them before
+    -- setting just the height collapses a natively sized bar to zero width.
+    local width = ns.AccessibleNumber(Capabilities.ReadRegion(region, "GetWidth", context))
+    if not width or width <= 0 then return AnchorPreparationResult(false, "width unavailable") end
+    points.width = width
     frame.SNPOriginalSizeAnchors = frame.SNPOriginalSizeAnchors or {}
     if not frame.SNPOriginalSizeAnchors[region] then frame.SNPOriginalSizeAnchors[region] = points end
     region:ClearAllPoints()
@@ -125,6 +130,7 @@ local function PrepareBarSize(frame, region, context)
     else
         region:SetPoint(Center(first[1]), first[2], Center(first[3]), (first[4] + last[4]) / 2, first[5])
     end
+    region:SetWidth(width)
     region:SetHeight(height)
     return AnchorPreparationResult(true, native and "released native restricted anchors" or "released opposing anchors")
 end
