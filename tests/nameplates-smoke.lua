@@ -1558,7 +1558,7 @@ ns.RestoreAll()
 -- Gradient toggles preserve one outlined label, without health-dependent text work.
 assert(loadfile("SimpleNameplates/HealthGradient.lua"))("SimpleNameplates", ns)
 local gradients = true
-ns.GetGradientEnabled = function() return gradients end
+ns.GetGradientOpacity = function() return gradients and 100 or 0 end
 function CreateColor(r, g, b, a) return {r=r, g=g, b=b, a=a} end
 local function GradientTexture()
     local texture = Region()

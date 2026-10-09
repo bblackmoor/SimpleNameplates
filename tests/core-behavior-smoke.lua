@@ -656,46 +656,49 @@ end
 
 do
     local gradients = fresh()
-    equal(gradients.GetGradientEnabled(), true, "Default gradients default on")
+    equal(gradients.GetGradientOpacity(), 100, "Default opacity default")
     gradients.SetActiveProfileName("High Contrast")
-    equal(gradients.GetGradientEnabled(), false, "High Contrast gradients default off")
-    gradients.SetGradientEnabled(true)
+    equal(gradients.GetGradientOpacity(), 0, "High Contrast opacity default")
+    gradients.SetGradientOpacity(50)
     gradients.ResetAllColors()
-    equal(gradients.GetGradientEnabled(), false, "High Contrast Colors reset disables gradient")
+    equal(gradients.GetGradientOpacity(), 0, "High Contrast reset")
     gradients.SetActiveProfileName("Default")
-    gradients.SetGradientEnabled(true)
+    gradients.SetGradientOpacity(37)
     assert(gradients.CopyActiveProfile("Gradient copy"))
-    equal(gradients.GetGradientEnabled(), true, "copy gradient enabled")
-    gradients.SetGradientEnabled(false)
+    equal(gradients.GetGradientOpacity(), 37, "copy opacity")
+    gradients.SetGradientOpacity(0)
     gradients.SetActiveProfileName("Default")
-    equal(gradients.GetGradientEnabled(), true, "gradient copy independent")
+    equal(gradients.GetGradientOpacity(), 37, "copy independent")
     gradients.ResetAppearance()
-    equal(gradients.GetGradientEnabled(), true, "appearance reset preserves gradient")
+    equal(gradients.GetGradientOpacity(), 37, "appearance reset preserves opacity")
     gradients = loadCore()
-    equal(gradients.GetGradientEnabled(), true, "reload preserves gradient")
-    gradients.SetGradientEnabled("bad")
-    equal(gradients.GetGradientEnabled(), true, "invalid gradient setter rejected")
+    equal(gradients.GetGradientOpacity(), 37, "reload preserves opacity")
+    for _, value in ipairs({"bad", true, math.huge, 0/0}) do
+        gradients.SetGradientOpacity(value)
+        equal(gradients.GetGradientOpacity(), 37, "invalid setter ignored")
+    end
+    gradients.SetGradientOpacity(120)
+    equal(gradients.GetGradientOpacity(), 100, "setter upper clamp")
+    gradients.SetGradientOpacity(-2)
+    equal(gradients.GetGradientOpacity(), 0, "setter lower clamp")
+    gradients.SetGradientOpacity(37.6)
+    equal(gradients.GetGradientOpacity(), 38, "whole-percent steps")
     gradients.ResetAllColors()
-    equal(gradients.GetGradientEnabled(), true, "Default Colors reset enables gradient")
-    SimpleNameplatesDB.profiles.Default.gradients = "bad"
+    equal(gradients.GetGradientOpacity(), 100, "Default reset")
+    for _, value in ipairs({-1, 101, true, "bad", math.huge, 0/0}) do
+        SimpleNameplatesDB.profiles.Default.gradientOpacity = value
+        gradients = loadCore()
+        equal(gradients.GetGradientOpacity(), 100, "invalid saved opacity defaults")
+    end
+    SimpleNameplatesDB.profiles.Default.gradientOpacity = nil
+    SimpleNameplatesDB.profiles.Default.gradients = false
     gradients = loadCore()
-    equal(gradients.GetGradientEnabled(), true, "invalid Default gradient defaults on")
-    SimpleNameplatesDB.profiles.Default.gradients = nil
-    SimpleNameplatesDB.profiles["High Contrast"].gradients = "bad"
+    equal(gradients.GetGradientOpacity(), 100, "retired toggle not converted")
+    equal(SimpleNameplatesDB.profiles.Default.gradients, nil, "retired toggle discarded")
+    gradients.SetGradientOpacity(0)
     gradients = loadCore()
-    equal(gradients.GetGradientEnabled(), true, "missing Default gradient defaults on")
-    gradients.SetActiveProfileName("High Contrast")
-    equal(gradients.GetGradientEnabled(), false, "invalid High Contrast gradient defaults off")
-    SimpleNameplatesDB.profiles["High Contrast"].gradients = nil
-    gradients = loadCore()
-    equal(gradients.GetGradientEnabled(), false, "missing High Contrast gradient defaults off")
-    gradients.SetGradientEnabled(true)
-    gradients.SetActiveProfileName("Default")
-    gradients.SetGradientEnabled(false)
-    gradients = loadCore()
-    equal(gradients.GetGradientEnabled(), false, "saved Default off preserved")
-    gradients.SetActiveProfileName("High Contrast")
-    equal(gradients.GetGradientEnabled(), true, "saved High Contrast on preserved")
+    equal(gradients.GetGradientOpacity(), 0, "zero survives reload")
+
 end
 
 do

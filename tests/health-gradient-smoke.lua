@@ -1,7 +1,9 @@
 -- Verify fixed tint geometry and native clipping without reading health.
 local ui = dofile("tests/details-framework-ui-stubs.lua")
-local enabled = true
-local ns = {GetGradientEnabled = function() return enabled end,
+local methods = getmetatable(UIParent).__index
+function methods:SetAlpha(value) self.alpha = value end
+local opacity = 100
+local ns = {GetGradientOpacity = function() return opacity end,
     GetAppearanceSetting = function() return false end,
     WorldContext = {Get = function() return {} end},
     PresentationCapabilities = {
@@ -41,10 +43,17 @@ assert(mask.allPoints == replacement and bar.SNPHealthGradient == tint, "replace
 bar:SetWidth(250)
 ns.HealthGradient.Apply(bar, replacement, {})
 assert(tint.width == 237.5 and math.abs(tail.width - 12.5) < 0.00001, "configured width preserves fade and clear tail proportions")
-enabled = false
+for _, value in ipairs({25, 50, 75, 100}) do
+    opacity = value
+    ns.HealthGradient.Apply(bar, replacement, {})
+    assert(tint.alpha == value / 100 and tail.alpha == value / 100, "opacity scales existing tint")
+    assert(tint.gradient[2].a == 0.8 and tint.gradient[3].a == 0, "gradient endpoints unchanged")
+    assert(tint.width == 237.5 and mask.allPoints == replacement, "opacity leaves geometry/clipping intact")
+end
+opacity = 0
 ns.HealthGradient.Apply(bar, replacement, {})
 assert(not tail:IsShown() and not tint:IsShown())
-enabled = true
+opacity = 100
 ns.HealthGradient.Apply(bar, replacement, {})
 assert(tint:IsShown())
 ns.HealthGradient.Hide(bar)

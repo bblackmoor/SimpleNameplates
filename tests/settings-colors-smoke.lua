@@ -103,10 +103,12 @@ assert(not ns.GetDimBackgroundNames(), "invalid setter ignored")
 ns.ResetAllColors(); panel.Refresh()
 assert(ns.GetDimBackgroundNames() and dimToggle.MyObject:GetValue(), "Colors reset enables dimming")
 
-local gradientToggle = Control(Row("Gradients"), "switch")
+local methods = getmetatable(UIParent).__index
+function methods:SetAlpha(value) self.alpha = value end
+local gradientSlider = Control(Row("Gradient opacity"), "slider")
 local preview
 for _, object in ipairs(ui.objects) do
-    if object:GetParent() == Row("Gradients") and object.kind == "StatusBar" then preview = object end
+    if object:GetParent() == Row("Gradient preview") and object.kind == "StatusBar" then preview = object end
 end
 assert(preview and preview:GetValue() == 100 and preview:GetMinMaxValues() == 0)
 local sample, threat
@@ -119,37 +121,31 @@ end
 assert(sample and threat and sample.textColor[1] == 1 and threat.textColor[1] == 1)
 assert(sample.flags == "SLUG,OUTLINE" and threat.flags == "SLUG,OUTLINE", "preview text always outlined")
 assert(sample.SNPUnderlayers == nil and threat.SNPUnderlayers == nil, "preview has no glyph copies")
-assert(Row("Gradients").point[5] > Row("1. Attacking me").point[5], "gradient row above colors")
-assert(ns.GetGradientEnabled() and gradientToggle.MyObject:GetValue(), "Default toggle starts on")
+assert(Row("Gradient preview").point[5] > Row("1. Attacking me").point[5], "gradient row above colors")
+assert(ns.GetGradientOpacity() == 100 and gradientSlider.MyObject:GetValue() == 100, "Default starts at 100%")
 local beforeGradient = refreshes
-gradientToggle:GetScript("OnClick")(gradientToggle, "LeftButton")
-assert(not ns.GetGradientEnabled() and refreshes == beforeGradient + 1)
+gradientSlider:SetValue(0)
+assert(ns.GetGradientOpacity() == 0 and refreshes == beforeGradient + 1)
 assert(not preview.SNPHealthGradient:IsShown())
-assert(sample.flags == "SLUG,OUTLINE" and threat.flags == "SLUG,OUTLINE"
-    and sample.SNPUnderlayers == nil and threat.SNPUnderlayers == nil, "gradient off preserves simple outlines")
-gradientToggle:GetScript("OnClick")(gradientToggle, "LeftButton")
-assert(ns.GetGradientEnabled() and refreshes == beforeGradient + 2)
-assert(preview.SNPHealthGradient:IsShown() and preview.SNPHealthGradient.width == 190 * 0.95
-    and math.abs(preview.SNPHealthGradientTail.width - 190 * 0.05) < 0.00001)
+assert(sample.flags == "SLUG,OUTLINE" and threat.flags == "SLUG,OUTLINE", "opacity preserves outlines")
+gradientSlider:SetValue(50)
+assert(ns.GetGradientOpacity() == 50 and refreshes == beforeGradient + 2)
+assert(preview.SNPHealthGradient:IsShown() and preview.SNPHealthGradient.alpha == 0.5)
+assert(preview.SNPHealthGradient.width == 190 * 0.95, "preview fade position preserved")
 assert(ns.CopyActiveProfile("Gradient copy"))
-assert(ns.GetGradientEnabled(), "profile copy retains gradient")
-ns.SetGradientEnabled(false)
+assert(ns.GetGradientOpacity() == 50, "profile copy retains opacity")
+ns.SetGradientOpacity(0)
 assert(ns.SetActiveProfileName("Default"))
-assert(ns.GetGradientEnabled(), "copy has independent toggle")
+assert(ns.GetGradientOpacity() == 50, "copy independent")
 ns.ResetAppearance()
-assert(ns.GetGradientEnabled(), "Appearance reset preserves Colors toggle")
-ns.ResetAllColors()
-panel.Refresh()
-assert(ns.GetGradientEnabled() and preview.SNPHealthGradient:IsShown(), "Default reset enables gradient")
-assert(ns.SetActiveProfileName("High Contrast"))
-panel.Refresh()
-assert(not ns.GetGradientEnabled() and not gradientToggle.MyObject:GetValue(), "High Contrast toggle starts off")
-ns.SetGradientEnabled(true)
-ns.ResetAllColors()
-panel.Refresh()
-assert(not ns.GetGradientEnabled() and not preview.SNPHealthGradient:IsShown())
-assert(ns.SetActiveProfileName("Default"))
-panel.Refresh()
+assert(ns.GetGradientOpacity() == 50, "Appearance reset preserves opacity")
+ns.ResetAllColors(); panel.Refresh()
+assert(ns.GetGradientOpacity() == 100 and preview.SNPHealthGradient:IsShown(), "Default reset")
+assert(ns.SetActiveProfileName("High Contrast")); panel.Refresh()
+assert(ns.GetGradientOpacity() == 0 and gradientSlider.MyObject:GetValue() == 0, "High Contrast starts at 0%")
+ns.SetGradientOpacity(50); ns.ResetAllColors(); panel.Refresh()
+assert(ns.GetGradientOpacity() == 0 and not preview.SNPHealthGradient:IsShown())
+assert(ns.SetActiveProfileName("Default")); panel.Refresh()
 
 local castRow = Row("Interruptible cast highlight")
 local cast = Control(castRow, "color")

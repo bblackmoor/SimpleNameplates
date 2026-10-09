@@ -24,7 +24,7 @@ end
 local appearanceKeys = {"nameFont", "threatFont", "nameSize", "namePlacement",
     "healthBarWidth", "useSlugRendering", "matchSanctuaryFont"}
 local trpKeys = {"useRoleplayingName", "showShortTitle", "showFullTitle", "showOOC"}
-local optionalSettings = {"GetGradientEnabled", "GetDimBackgroundNames",
+local optionalSettings = {"GetGradientOpacity", "GetDimBackgroundNames",
     "GetThreatEnabled", "GetInterruptibleHighlightEnabled", "GetTRP3Enabled", "GetActiveProfileName"}
 
 local function CaptureSettings(frame)

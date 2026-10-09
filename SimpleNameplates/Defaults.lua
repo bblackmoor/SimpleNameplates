@@ -26,7 +26,7 @@ local DEFAULT_EFFECT_COLORS = {
 }
 local COLOR_PRESETS = {
     highContrast = {
-        gradients = false,
+        gradientOpacity = 0,
         appearance = {namePlacement = "ABOVE"},
         priorityColors = {
             attacking = RGB8(255, 0, 255),
@@ -90,7 +90,7 @@ ns.Defaults = {
     categoryModes = DEFAULT_CATEGORY_MODES,
     healthBars = {attacking = true, hostile = true, neutral = true, friendly = true, useful = true, useless = false},
     dimBackgroundNames = true,
-    gradients = true,
+    gradientOpacity = 100,
     effectColors = DEFAULT_EFFECT_COLORS,
     colorPresets = COLOR_PRESETS,
     fontByValue = FONT_BY_VALUE,

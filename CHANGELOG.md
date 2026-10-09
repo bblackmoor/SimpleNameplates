@@ -1,3 +1,10 @@
+## 1.0.225 — 2026-10-09
+
+- Replaced the Colors gradient toggle with a profile Gradient opacity slider from 0 to 100%. Zero hides the tint, 100 preserves the existing gradient, and intermediate values scale opacity while preserving fade position, native fill clipping and text outlines.
+- Defaults and Colors reset use 100% for Default/custom profiles and 0% for High Contrast. Valid current values survive copies/reloads; removed toggle values are discarded without conversion and invalid opacity values use defaults.
+- The full-health preview updates immediately. Unfinished typed/drag opacity edits cancel on combat entry, page hide, reset and profile changes.
+- All 23 local smoke suites pass, including partial opacity, geometry/clipping preservation, persistence/defaults and combat cancellation. Native-client visual verification remains pending.
+
 ## 1.0.224 — 2026-10-08
 
 - Removed Soft border, Marching ants, Spell-alert glow, their settings, and the Advanced page/routes.

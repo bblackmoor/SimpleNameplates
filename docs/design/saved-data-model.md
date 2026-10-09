@@ -26,7 +26,7 @@ SimpleNameplatesDB = {
         Default = { priorityColors = { ... }, effectColors = { ... },
                     appearance = { ... }, healthBars = { attacking = true, hostile = true,
                         neutral = true, friendly = true, useful = true, useless = false },
-                    showThreat = true, gradients = true, dimBackgroundNames = true,
+                    showThreat = true, gradientOpacity = 100, dimBackgroundNames = true,
                     interruptibleHighlight = false, interruptibleEffect = "PULSE" },
         ["High Contrast"] = { ... },
     },
@@ -57,7 +57,7 @@ Profiling introduced in 1.0.163 is session-only. It adds no fields to `SimpleNam
 | `appearance.nameFont`, `nameSize`, `threatFont`, `namePlacement`, `matchSanctuaryFont`, `useSlugRendering`, `healthBarWidth` | Profile | Text and layout |
 | `showThreat`, `interruptibleHighlight` | Profile | Threat visibility (default on) and cast highlight activation (default off) |
 | `interruptibleEffect` | Profile | `PULSE` (default) or `SOLID`; independent of Active |
-| `gradients`, `dimBackgroundNames` | Profile | Gradient default on for Default/custom and off for High Contrast; background-name dimming default on |
+| `gradientOpacity`, `dimBackgroundNames` | Profile | Gradient opacity 0–100%, default 100 for Default/custom and 0 for High Contrast; background-name dimming default on |
 | `profileKeys` | Account-wide character selection map | Independent Profile choice per character |
 | `global.managedNameCVarOriginals` | Internal restoration ledger | Original critter and legacy managed values, retained until restored |
 | `global.nameplateSetupOriginals` | Internal ledger keyed by character GUID | Visibility values captured after setup consent, restored when styling is disabled |
@@ -83,7 +83,7 @@ Both Global category modes and Profile priority colors recognize only `attacking
 
 `healthBars` accepts boolean values only. Copies and reloads retain false; missing or invalid values use the category default (first five on, background off). Reset all colors restores those defaults in the selected profile. Reset Appearance preserves these choices. Names default to size 18; saved sizes are preserved, and long titles use the chosen name size minus two.
 
-`gradients` is a per-profile boolean, on by default for Default and new custom profiles, off for High Contrast. Copies/reloads retain saved choices; invalid or missing values use the profile’s default. Colors reset restores that default; Appearance reset preserves it. It controls fixed-position health fill tinting, not cast fill, health values or text outlines.
+`gradientOpacity` is a whole-percent profile number from 0 to 100. Default/custom profiles default to 100; High Contrast defaults to 0. At 0 the tint is hidden, at 100 its existing 80%-black-to-clear gradient is unchanged, and intermediate values scale texture opacity without moving the fade or mask. Copies/reloads retain valid values; missing, wrong-type, non-finite and out-of-range values use defaults. The retired `gradients` boolean is discarded without conversion. Colors reset restores the opacity default; Appearance reset preserves it. Opacity does not affect cast fill, health values or text outlines.
 
 Health bars default On for the first five categories and Off for NPC - Background. `dimBackgroundNames` is a per-profile boolean, default On: background names use #999999 when enabled and #FFFFFF when disabled. Colors reset restores both defaults; Appearance reset preserves them. Valid saved choices remain authoritative.
 
@@ -91,6 +91,6 @@ Health bars default On for the first five categories and Off for NPC - Backgroun
 
 Validation imports only valid current values. `interruptibleCastStyle` is discarded without conversion. Removed effect selections default to `PULSE`; `interruptibleHighlight` defaults off unless a valid boolean is saved. The existing `castAdvanced.PULSE.thickness`, `fadeIn`, and `fadeOut` locations retain valid values without renaming or relocation. Thickness is now shared by both effects (default 4); fades default to 0.2 seconds. Other `castAdvanced` fields are discarded. Non-finite, out-of-range, wrong-type or missing border values use defaults rather than clamping. Colors reset restores these parameters; Appearance reset preserves them.
 
-Reset all colors restores the selected profile's six priority colors, cast color, cast activation (off), cast effect (Pulsing border), health-bar defaults, background dimming (on) and gradient default. High Contrast uses its factory palette and gradient off; Default and custom profiles use factory Default values. It also resets retained global category modes to active internally; rendering ignores those modes. It preserves profile selection, appearance/threat settings, styling enablement, critter hiding and TRP3.
+Reset all colors restores the selected profile's six priority colors, cast color, cast activation (off), cast effect (Pulsing border), health-bar defaults, background dimming (on) and gradient default. High Contrast uses its factory palette and gradient opacity 0%; Default and custom profiles use factory Default values. It also resets retained global category modes to active internally; rendering ignores those modes. It preserves profile selection, appearance/threat settings, styling enablement, critter hiding and TRP3.
 
 Reset settings on Appearance restores that profile's appearance defaults and threat on, plus global critter hiding off. It preserves all Colors preferences, styling enablement, TRP3 and selection. Restore bundled profiles replaces Default/High Contrast while preserving custom profiles and globals.

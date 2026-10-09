@@ -3,8 +3,12 @@ local _, ns = ...
 local SHADE_KNEE = 0.95
 local SHADE_AT_KNEE = 0
 
+local function Opacity()
+    return ns.GetGradientOpacity and ns.GetGradientOpacity() / 100 or 0
+end
+
 local function Enabled()
-    return ns.GetGradientEnabled and ns.GetGradientEnabled() == true
+    return Opacity() > 0
 end
 
 local function Hide(bar)
@@ -18,7 +22,8 @@ local function Apply(bar, fill, context)
     if not bar then return end
     local cap = ns.PresentationCapabilities
     if cap.ObjectStatus(bar, context) ~= "accessible" then return end
-    if not Enabled() then Hide(bar); return end
+    local opacity = Opacity()
+    if opacity == 0 then Hide(bar); return end
     if cap.ObjectStatus(fill, context) ~= "accessible" then Hide(bar); return end
     local width = ns.AccessibleNumber(cap.ReadRegion(bar, "GetWidth", context))
     if not width or width <= 0 then Hide(bar); return end
@@ -49,6 +54,8 @@ local function Apply(bar, fill, context)
     bar.SNPHealthGradientMask:SetAllPoints(fill)
     bar.SNPHealthGradient:SetWidth(width * SHADE_KNEE)
     bar.SNPHealthGradientTail:SetWidth(width * (1 - SHADE_KNEE))
+    bar.SNPHealthGradient:SetAlpha(opacity)
+    bar.SNPHealthGradientTail:SetAlpha(opacity)
     bar.SNPHealthGradient:Show()
     bar.SNPHealthGradientTail:Show()
 end

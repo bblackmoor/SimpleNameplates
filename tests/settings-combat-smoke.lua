@@ -94,6 +94,7 @@ end
 local size = Control("Name size", "slider")
 local width = Control("Health bar width", "slider")
 local effect = Control("Effect", "dropdown")
+local gradientOpacity = Control("Gradient opacity", "slider")
 local pulseThickness = Control("Border thickness", "slider")
 local swatch = Control("Interruptible cast highlight", "color")
 local castToggle = Control("Interruptible cast highlight", "switch")
@@ -103,6 +104,7 @@ assert(not trpChild:IsEnabled(), "TRP3 dependent starts disabled")
 size:SetValue(25)
 Click(castToggle)
 local originalWidth = width:GetValue()
+local originalOpacity = gradientOpacity:GetValue()
 local originalPulse = pulseThickness:GetValue()
 local baseline = Snapshot(SimpleNameplatesDB)
 local editor = Editor(size)
@@ -111,6 +113,8 @@ width:GetScript("OnMouseDown")(width, "LeftButton")
 width:SetValue(145)
 pulseThickness:GetScript("OnMouseDown")(pulseThickness, "LeftButton")
 pulseThickness:SetValue(9)
+gradientOpacity:GetScript("OnMouseDown")(gradientOpacity, "LeftButton")
+gradientOpacity:SetValue(40)
 Click(swatch)
 local retainedPicker = ColorPickerFrame.info
 function ColorPickerFrame:GetColorRGB() return 0.1, 0.2, 0.3 end
@@ -123,11 +127,12 @@ oldPopup.editBox:SetText("Cancelled combat profile")
 Enter()
 assert(Snapshot(SimpleNameplatesDB) == baseline, "typed, drag and RGB previews roll back to committed values")
 assert(size:GetValue() == 25 and width:GetValue() == originalWidth and not editor:IsShown())
+assert(gradientOpacity:GetValue() == originalOpacity, "unfinished opacity drag cancelled")
 assert(pulseThickness:GetValue() == originalPulse, "unfinished Colors slider drag cancelled")
 assert(not effect.dropdownframe:IsShown() and effect.MyObject.myvalue == "PULSE", "menu closes and current choice is restored")
 assert(not ColorPickerFrame:IsShown() and not oldPopup:IsShown(), "owned picker and profile dialog close")
 assert(oldPopup.data.cancelled, "cancelled dialog callbacks cannot revive after combat")
-for _, frame in ipairs({size, width, pulseThickness, effect, swatch, castToggle, Button("Reset settings"), Button("Reset all colors"), Button("Create")}) do
+for _, frame in ipairs({size, width, pulseThickness, gradientOpacity, effect, swatch, castToggle, Button("Reset settings"), Button("Reset all colors"), Button("Create")}) do
     assert(not frame:IsEnabled(), "editable control is disabled")
 end
 -- Simulate callbacks already queued before lockdown, and refresh while locked.

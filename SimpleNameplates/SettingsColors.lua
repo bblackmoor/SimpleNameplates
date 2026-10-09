@@ -136,20 +136,33 @@ local function CreatePriorityColorRow(context, text, state, displayText)
 end
 
 local function AddGradientControl(context)
-    local row = UI.CreateSettingRow(context.content, context.layout, "Gradients")
-    -- Reserve room for a preview even at the maximum configured font size.
-    context.layout.items[#context.layout.items].height = 50
-    local toggle = Widgets.CreateSwitch(row, function(checked)
-        addon.SetGradientEnabled(checked)
-        RefreshContext(context)
-        RefreshNameplates()
+    local row = UI.CreateSettingRow(context.content, context.layout, "Gradient opacity")
+    context.layout.items[#context.layout.items].height = 48
+    local amount = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    amount:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X + 188, 0)
+    local slider = Widgets.CreateSlider(row, 0, 100, 1, function(value)
+        amount:SetText(string.format("%d%%", value))
+        if value == addon.GetGradientOpacity() then return end
+        addon.SetGradientOpacity(value)
+        if not context.canceling then RefreshContext(context); RefreshNameplates() end
     end)
-    toggle:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
-    context.refreshers[#context.refreshers + 1] = function()
-        toggle:SetChecked(addon.GetGradientEnabled())
+    slider:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
+    for _, endpoint in ipairs({{0, "LEFT"}, {100, "RIGHT"}}) do
+        local caption = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        caption:SetText(endpoint[1] .. "%")
+        caption:SetPoint("TOP"..endpoint[2], slider:GetFrame(), "BOTTOM"..endpoint[2], 0, -2)
     end
+    if slider.widget.amt then slider.widget.amt:Hide() end
+    context.sliders[#context.sliders + 1] = slider
+    context.refreshers[#context.refreshers + 1] = function()
+        local value = addon.GetGradientOpacity()
+        slider:SetValue(value)
+        amount:SetText(string.format("%d%%", value))
+    end
+    row = UI.CreateSettingRow(context.content, context.layout, "Gradient preview")
+    context.layout.items[#context.layout.items].height = 50
     local preview = CreateFrame("StatusBar", nil, row)
-    preview:SetPoint("LEFT", toggle:GetFrame(), "RIGHT", 12, 0)
+    preview:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
     preview:SetWidth(190)
     preview:SetMinMaxValues(0, 100)
     preview:SetValue(100)
@@ -214,7 +227,7 @@ local function CreateColorsPanel()
     local panel, content, layout = UI.CreateScrollablePanel("Colors")
     UI.AddTitle(content, layout, "Colors")
     local context = {content = content, layout = layout, refreshers = {}, sliders = {}}
-    local function CancelBorderEdits(quiet)
+    local function CancelColorsEdits(quiet)
         context.canceling = true
         local changed = false
         Widgets.CancelEdits(function()
@@ -227,7 +240,7 @@ local function CreateColorsPanel()
         context.canceling = false
         if changed and not quiet then RefreshNameplates() end
     end
-    addon.CancelCastBorderEdits = CancelBorderEdits
+    addon.CancelColorsEdits = CancelColorsEdits
     local function Refresh()
         RefreshContext(context)
     end
@@ -240,7 +253,7 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Restores health bars to On except NPC - Background, background-name dimming to On, gradients to On for Default/custom profiles or Off for High Contrast, and cast highlight to Inactive with Pulsing border, border thickness to 4, and pulse fade times to 0.2 seconds.")
+        "Restores health bars to On except NPC - Background, background-name dimming to On, gradient opacity to 100% for Default/custom profiles or 0% for High Contrast, and cast highlight to Inactive with Pulsing border, border thickness to 4, and pulse fade times to 0.2 seconds.")
     AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
@@ -253,7 +266,7 @@ local function CreateColorsPanel()
     panel.Refresh = Refresh
     panel:SetScript("OnShow", panel.Refresh)
     panel:SetScript("OnHide", function()
-        CancelBorderEdits()
+        CancelColorsEdits()
         UI.CancelColorEdit()
         if addon.CastHighlight then addon.CastHighlight.StopPreview(context.preview) end
     end)

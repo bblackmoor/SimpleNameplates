@@ -95,3 +95,5 @@ See [the repeatable cast test](cast-effect-testing.md) for enemy selection, prev
 Acceptance remains partial until the applicable client checks above are recorded. Passing smoke suites or one converged scene does not close unobserved settings, restoration, combat or secure-behavior checks.
 
 - [ ] Advanced is absent. Both border effects align with the cast bar at zero inset; all four edges use the shared thickness. Colors reset restores thickness 4 and fades 0.2 seconds. Removed saved effects/parameters are discarded, without conversion; valid remaining values survive reload.
+
+- [ ] Gradient opacity on Colors spans 0–100%. Test 0 (none), 50 (half-strength tint) and 100 (original gradient); fade position, native health clipping and outlines remain unchanged. Preview updates immediately. Typed/drag edits roll back on combat entry and profile changes. Colors reset uses 100 for Default/custom and 0 for High Contrast; retired toggles are discarded without conversion.

@@ -89,7 +89,7 @@ local function NewProfile(presetName)
         healthBars = {},
         appearance = {},
         showThreat = DEFAULT_SHOW_THREAT,
-        gradients = SavedBoolean(preset and preset.gradients, defaults.gradients),
+        gradientOpacity = preset and preset.gradientOpacity or defaults.gradientOpacity,
         dimBackgroundNames = DEFAULT_DIM_BACKGROUND_NAMES,
         interruptibleHighlight = defaults.interruptibleHighlight,
         interruptibleEffect = defaults.interruptibleEffect,
@@ -158,7 +158,9 @@ local function ValidateProfileToggles(profile, saved)
     for key in pairs(DEFAULT_PRIORITY_COLORS) do
         profile.healthBars[key] = SavedBoolean(savedBars[key], DEFAULT_HEALTH_BARS[key])
     end
-    profile.gradients = SavedBoolean(saved.gradients, profile.gradients)
+    if IsFiniteNumber(saved.gradientOpacity) and saved.gradientOpacity >= 0 and saved.gradientOpacity <= 100 then
+        profile.gradientOpacity = math.floor(saved.gradientOpacity + 0.5)
+    end
     profile.dimBackgroundNames = SavedBoolean(saved.dimBackgroundNames, DEFAULT_DIM_BACKGROUND_NAMES)
     profile.showThreat = SavedBoolean(saved.showThreat, profile.showThreat)
     if type(saved.interruptibleHighlight) == "boolean" then
@@ -357,7 +359,7 @@ end
 local function CancelProfileEdits()
     if ns.SettingsUI and ns.SettingsUI.CancelColorEdit then ns.SettingsUI.CancelColorEdit() end
     if ns.CancelAppearanceEdits then ns.CancelAppearanceEdits(true) end
-    if ns.CancelCastBorderEdits then ns.CancelCastBorderEdits(true) end
+    if ns.CancelColorsEdits then ns.CancelColorsEdits(true) end
 end
 
 local function CancelColorEdit()
@@ -490,12 +492,14 @@ local function SetDimBackgroundNames(enabled)
     if type(enabled) == "boolean" then ActiveProfile().dimBackgroundNames = enabled end
 end
 
-local function GetGradientEnabled()
-    return ActiveProfile().gradients
+local function GetGradientOpacity()
+    return ActiveProfile().gradientOpacity
 end
 
-local function SetGradientEnabled(enabled)
-    if type(enabled) == "boolean" then ActiveProfile().gradients = enabled end
+local function SetGradientOpacity(value)
+    if IsFiniteNumber(value) then
+        ActiveProfile().gradientOpacity = math.floor(math.max(0, math.min(100, value)) + 0.5)
+    end
 end
 
 local function GetHealthBarEnabled(state)
@@ -554,7 +558,7 @@ end
 
 local function ResetAllColors()
     CancelColorEdit()
-    if ns.CancelCastBorderEdits then ns.CancelCastBorderEdits(true) end
+    if ns.CancelColorsEdits then ns.CancelColorsEdits(true) end
     local profile = ActiveProfile()
     local defaults = ActiveProfileDefaults()
     for key, default in pairs(defaults.priorityColors) do
@@ -567,7 +571,7 @@ local function ResetAllColors()
     profile.interruptibleHighlight = defaults.interruptibleHighlight
     profile.interruptibleEffect = defaults.interruptibleEffect
     profile.castAdvanced = ValidatedCastBorders()
-    profile.gradients = defaults.gradients
+    profile.gradientOpacity = defaults.gradientOpacity
     profile.dimBackgroundNames = DEFAULT_DIM_BACKGROUND_NAMES
     local modes = EnsureDB().global.categoryModes
     for key, default in pairs(DEFAULT_CATEGORY_MODES) do modes[key] = default end
@@ -635,8 +639,8 @@ ns.RestoreBundledProfiles = RestoreBundledProfiles
 ns.PriorityColorForState = PriorityColorForState
 ns.GetDimBackgroundNames = GetDimBackgroundNames
 ns.SetDimBackgroundNames = SetDimBackgroundNames
-ns.GetGradientEnabled = GetGradientEnabled
-ns.SetGradientEnabled = SetGradientEnabled
+ns.GetGradientOpacity = GetGradientOpacity
+ns.SetGradientOpacity = SetGradientOpacity
 ns.GetHealthBarEnabled = GetHealthBarEnabled
 ns.SetHealthBarEnabled = SetHealthBarEnabled
 -- Legacy category modes are retained for saved-data compatibility only.

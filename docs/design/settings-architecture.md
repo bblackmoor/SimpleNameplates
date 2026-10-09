@@ -11,12 +11,12 @@ The pages are About, Profiles, Appearance, Colors and TRP3, in that order. All u
 | About | Metadata, source link, commands, known presentation limits and read-only native-label swatches |
 | Profiles | Account-wide profile management and the global styling Active switch |
 | Appearance | Profile fonts, Slug rendering, name size/placement, health-bar width and threat display; global critter/companion hiding |
-| Colors | Six profile priority colors, profile cast color/Active switch/effect dropdown/preview and six profile Health Bar switches, background-name dimming, a profile gradient toggle and full-health preview |
+| Colors | Six profile priority colors, profile cast color/Active switch/effect dropdown/preview and six profile Health Bar switches, background-name dimming, a profile gradient opacity slider (0–100%) and full-health preview |
 | TRP3 | Global integration and RP-name/title/OOC preferences |
 
 Visible pages refresh their selected-profile controls immediately; hidden pages reread on show. Profile switching cancels active previews before changing selection and refreshes plates. Native profile dialogs capture name and object identity at opening and reject acceptance after selection changes or same-name replacement. Database mutations cancel affected drafts before switching or replacing their targets.
 
-Reset settings on Appearance restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors, cast highlighting off and effect Pulsing border, background dimming on, gradients On for Default/custom profiles or Off for High Contrast, and Health Bar preferences On except NPC - Background. There are no individual color reset buttons. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
+Reset settings on Appearance restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors, cast highlighting off and effect Pulsing border, background dimming on, gradient opacity 100% for Default/custom profiles or 0% for High Contrast, and Health Bar preferences On except NPC - Background. There are no individual color reset buttons. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
 
 ## Current source ownership
 
@@ -36,7 +36,7 @@ Reset settings on Appearance restores profile appearance and threat display plus
 | `PeriodicWork.lua` | Fair due-time scheduler, shared job/time budgets and elapsed-time retry clock |
 | `FontRendering.lua` | Shared thin solid outline flags for all styled plate text |
 | `NameplateFrames.lua` | Region access, native geometry/restoration baselines, restricted-anchor fallback and flat-fill artwork |
-| `HealthGradient.lua` | Fixed 80%-black to clear-at-95% tint clipped by the native fill |
+| `HealthGradient.lua` | Opacity-scaled fixed 80%-black to clear-at-95% tint clipped by the native fill |
 | `NPCTitles.lua` | Safe structured-tooltip subtitle resolution and bounded session caches |
 | `NameplateText.lua` | Names/titles, placement, bar-height padding, cast/title visibility and cached repair |
 | `NameplateThreat.lua` | Secret-safe formatted threat percentage; blank when unavailable |
