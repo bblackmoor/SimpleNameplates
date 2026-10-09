@@ -107,6 +107,8 @@ local function Capture(frame, assessment, context)
         values[key] = ns.AccessibleBoolean(Cap.ReadRegion(frame[key], "IsShown", context))
     end
     values.healthBar = ns.AccessibleBoolean(Cap.ReadRegion(assessment.healthBar, "IsShown", context))
+    values.barAlpha = ns.AccessibleNumber(Cap.ReadRegion(assessment.healthBar, "GetAlpha", context))
+    values.containerAlpha = ns.AccessibleNumber(Cap.ReadRegion(frame.HealthBarsContainer, "GetAlpha", context))
     values.nameAlpha = ns.AccessibleNumber(Cap.ReadRegion(assessment.name, "GetAlpha", context))
     frame.SNPOriginalVisibility = values
     frame.SNPOriginalName = assessment.name
@@ -137,6 +139,10 @@ local function RestoreAccessibleFrame(frame, assessment, context, removedUnit)
         if original[key] ~= nil then SetShownSafe(region, original[key], context) end
     end
     if original.healthBar ~= nil then SetShownSafe(frame.SNPOriginalHealthBar, original.healthBar, context) end
+    if original.barAlpha ~= nil and frame.SNPOriginalHealthBar then frame.SNPOriginalHealthBar:SetAlpha(original.barAlpha) end
+    if original.containerAlpha ~= nil and frame.SNPOriginalHealthBarsContainer then
+        frame.SNPOriginalHealthBarsContainer:SetAlpha(original.containerAlpha)
+    end
     if original.nameAlpha ~= nil and frame.SNPOriginalName then frame.SNPOriginalName:SetAlpha(original.nameAlpha) end
     RestoreNativePresentation(frame, assessment, context, removedUnit)
     frame.SNPNameStyle, frame.SNPState, frame.SNPPresentation, frame.SNPEntityFacts = nil, nil, nil, nil

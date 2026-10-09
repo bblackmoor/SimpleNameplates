@@ -1,3 +1,10 @@
+## 1.0.226 — 2026-10-09
+
+- Recover readable health-bar, health-container and inside-name opacity resets, including native distance/detail transitions that leave regions shown but transparent. Bar/container show, hide and alpha callbacks repair immediately; periodic reconciliation also covers native changes that bypass Lua hooks.
+- Keep whole-plate/unit-frame fades Blizzard-controlled. Restore captured native bar/container alpha when styling ends; restricted values remain deferred.
+- Diagnostics now includes local and effective alpha for addon name/title regions. Added untargeted opacity recovery, convergence, immediate callback and native restoration regression coverage.
+- All 23 local smoke suites pass. Live verification of the reported disappearing hostile NPC names remains pending.
+
 ## 1.0.225 — 2026-10-09
 
 - Replaced the Colors gradient toggle with a profile Gradient opacity slider from 0 to 100%. Zero hides the tint, 100 preserves the existing gradient, and intermediate values scale opacity while preserving fade position, native fill clipping and text outlines.

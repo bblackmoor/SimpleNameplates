@@ -285,6 +285,7 @@ local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, righ
     insideName:SetPoint("LEFT", bar, "LEFT", 3, -0.5)
     insideName:SetPoint("RIGHT", rightRegion or bar, rightRegion and "LEFT" or "RIGHT", rightInset, rightRegion and 0 or -0.5)
     insideName:SetJustifyH("LEFT")
+    insideName:SetAlpha(1)
     insideName:Show()
     -- Leave Blizzard's name shown for its health-text visibility logic, but
     -- avoid drawing a second copy behind the bar.
@@ -560,6 +561,12 @@ local function CachedNameHasDrifted(frame, context, assessment)
     if frame.HealthBarsContainer then
         Check("containerShown", frame.HealthBarsContainer, "IsShown", true, "container visibility")
     end
+    if frame.SNPPresentation.showHealthBar then
+        Check("barAlpha", assessment.healthBar, "GetAlpha", 1, "bar alpha")
+        if frame.HealthBarsContainer then
+            Check("containerAlpha", frame.HealthBarsContainer, "GetAlpha", 1, "container alpha")
+        end
+    end
     Check("text", name, "GetText", AccessibleValue(expected.text), "native name text")
     local font, size, flags = Observe(expected, "font", name, "GetFont", context, 3)
     local faceDrift = font ~= nil and not ns.FontPathMatches(font, expected.font)
@@ -597,6 +604,7 @@ local function CachedNameHasDrifted(frame, context, assessment)
     if expected.inside then
         local inside = frame.SNPInsideName
         if not inside or frame.SNPInsideNameBar ~= expected.bar then return true, "inside name replaced", {full = true} end
+        Check("insideAlpha", inside, "GetAlpha", 1, "inside label alpha")
         Check("insideShown", inside, "IsShown", true, "inside label visibility")
         Check("insideText", inside, "GetText", AccessibleValue(expected.text), "inside name text")
     elseif frame.SNPInsideName then
@@ -658,6 +666,9 @@ local function RepairCachedName(frame, context, assessment, plan)
         if plan.barWidth then plan.bar:SetWidth(plan.barWidth) end
         if plan.containerWidth then plan.container:SetWidth(plan.containerWidth) end
         if plan.titleWidth then frame.SNPFullTitleText:SetWidth(plan.titleWidth) end
+        if plan.barAlpha ~= nil then plan.bar:SetAlpha(plan.barAlpha) end
+        if plan.containerAlpha ~= nil then plan.container:SetAlpha(plan.containerAlpha) end
+        if plan.insideAlpha ~= nil then frame.SNPInsideName:SetAlpha(plan.insideAlpha) end
         if plan.insideShown ~= nil then frame.SNPInsideName:SetShown(plan.insideShown) end
         if plan.insideText ~= nil then frame.SNPInsideName:SetText(plan.insideText) end
         if expected.suppressed then
@@ -795,6 +806,12 @@ local function RepairBarGeometry(frame, context, assessment)
     end
     if plan.container then Visibility("containerShown", plan.container, true) end
     if plan.bar then Visibility("barShown", plan.bar, frame.SNPPresentation.showHealthBar) end
+    if frame.SNPPresentation.showHealthBar then
+        for _, item in ipairs({{"barAlpha", plan.bar}, {"containerAlpha", plan.container}}) do
+            local alpha = AccessibleNumber(ns.PresentationCapabilities.ReadRegion(item[2], "GetAlpha", context))
+            if alpha ~= nil and Different(alpha, 1) then plan[item[1]], changed = 1, true end
+        end
+    end
     for _, item in ipairs({
         {"barWidth", plan.bar, "GetWidth", expected.barWidth},
         {"barHeight", plan.bar, "GetHeight", expected.barHeight},

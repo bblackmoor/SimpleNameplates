@@ -13,6 +13,15 @@ local function ApplyVisibility(frame, decision, assessment, context)
     SetShownSafe(assessment.healthBar, decision.showHealthBar, context)
     -- Keep the ancestor visible so name-only text is not concealed with the bar.
     SetShownSafe(frame.HealthBarsContainer, true, context)
+    -- Native distance/detail transitions can fade the bar's subtree while its
+    -- regions still report shown. Keep our displayed bar/name opaque locally;
+    -- base-plate and unit-frame fades remain Blizzard-controlled.
+    if decision.showHealthBar then
+        for _, region in ipairs({assessment.healthBar, frame.HealthBarsContainer}) do
+            local alpha = ns.AccessibleNumber(Cap.ReadRegion(region, "GetAlpha", context))
+            if alpha ~= nil and alpha ~= 1 then region:SetAlpha(1) end
+        end
+    end
     -- Blizzard shows casts/channels and hides idle cast bars. Do not force an
     -- idle bar visible: the space below health belongs to the long title.
     -- Selection and classification visibility remain driven by Blizzard.
@@ -309,7 +318,7 @@ local function RepairGeometry(frame, sourceBar)
     local context = GetContext()
     local assessment = Cap.InspectFrame(frame, context)
     if not assessment.canAccess or frame.SNPRestoring or not ns.GetStylingEnabled() then return end
-    if sourceBar and sourceBar ~= assessment.healthBar then return end
+    if sourceBar and sourceBar ~= assessment.healthBar and sourceBar ~= frame.HealthBarsContainer then return end
     if frame.SNPApplyingStyle or frame.SNPApplyingArtwork then frame.SNPGeometryPending = true; return end
     if not PresentationIsCurrent(frame, assessment, context) then return end
     ns.Profiler.Count("Geometry hook", "current presentation")
@@ -317,6 +326,7 @@ local function RepairGeometry(frame, sourceBar)
 end
 RepairGeometry = ns.Profiler.Wrap("Geometry hook repair", RepairGeometry)
 local visibilityHookOwners = setmetatable({}, {__mode = "k"})
+local alphaHookOwners = setmetatable({}, {__mode = "k"})
 InstallGeometryHook = function(frame, context)
     if not frame.SNPGeometryHookInstalled and hooksecurefunc
         and type(Cap.SafeField(frame, "UpdateAnchors", context)) == "function" then
@@ -325,9 +335,18 @@ InstallGeometryHook = function(frame, context)
     end
     local bar = Cap.SafeField(frame, "healthBar", context)
         or Cap.SafeField(Cap.SafeField(frame, "HealthBarsContainer", context), "healthBar", context)
-    if not visibilityHookOwners[bar] and type(Cap.SafeField(bar, "HookScript", context)) == "function" then
-        bar:HookScript("OnHide", function() RepairGeometry(frame, bar) end)
-        visibilityHookOwners[bar] = frame
+    local regions = {bar, Cap.SafeField(frame, "HealthBarsContainer", context)}
+    for _, region in pairs(regions) do
+        if not visibilityHookOwners[region] and type(Cap.SafeField(region, "HookScript", context)) == "function" then
+            region:HookScript("OnHide", function() RepairGeometry(frame, region) end)
+            region:HookScript("OnShow", function() RepairGeometry(frame, region) end)
+            visibilityHookOwners[region] = frame
+        end
+        if hooksecurefunc and not alphaHookOwners[region]
+            and type(Cap.SafeField(region, "SetAlpha", context)) == "function" then
+            hooksecurefunc(region, "SetAlpha", function() RepairGeometry(frame, region) end)
+            alphaHookOwners[region] = frame
+        end
     end
 end
 RepairPendingGeometry = function(frame)

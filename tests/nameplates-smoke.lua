@@ -2984,4 +2984,49 @@ do
     equal(name.r, expected.r, "failed finalization can recover")
 end
 
+-- Distance/detail changes can leave shown bars transparent. Repair without
+-- targeting, keep whole-unit fades native, and restore the captured opacity.
+do
+    local frame = Region()
+    frame.unit, frame.name = "nameplate1", Region()
+    frame.healthBar, frame.HealthBarsContainer = Region(), Region()
+    frame.name:SetFont("NativeFont", 10, "")
+    frame.name:SetText("Watcher")
+    frame.name:SetTextColor(1, 0, 0)
+    frame.healthBar:SetStatusBarColor(1, 0, 0)
+    frame.healthBar.alpha, frame.HealthBarsContainer.alpha = 0.4, 0.6
+    frame.alpha = 0.7
+    unit = {reaction = 3, names = {nameplate1 = "Watcher"}}
+    appearance.namePlacement = "INSIDE"
+    local context = ns.WorldContext.Get()
+    local cap, text = ns.PresentationCapabilities, ns.NameplateText
+    ns.NameplatePresentation.ApplySimpleStyle(frame, context, "opacity regression")
+    assert(frame.SNPNameStyle.inside, "opacity fixture uses inside name")
+    equal(frame.healthBar.alpha, 1, "initial transparent bar repaired")
+    equal(frame.HealthBarsContainer.alpha, 1, "initial transparent container repaired")
+    equal(frame.alpha, 0.7, "whole-unit fade remains native")
+    -- Raw assignments simulate native changes that bypass Lua setter hooks.
+    frame.healthBar.alpha, frame.HealthBarsContainer.alpha, frame.SNPInsideName.alpha = 0, 0, 0
+    local assessment = cap.InspectFrame(frame, context)
+    local drifted, _, plan = text.CachedNameHasDrifted(frame, context, assessment)
+    assert(drifted and plan.barAlpha == 1 and plan.containerAlpha == 1 and plan.insideAlpha == 1)
+    assert(text.RepairCachedName(frame, context, assessment, plan))
+    equal(frame.healthBar.alpha, 1, "untargeted bar opacity recovered")
+    equal(frame.HealthBarsContainer.alpha, 1, "untargeted ancestor opacity recovered")
+    equal(frame.SNPInsideName.alpha, 1, "untargeted inside name opacity recovered")
+    assert(not text.CachedNameHasDrifted(frame, context, cap.InspectFrame(frame, context)), "opacity repair converges")
+    -- Explicit alpha setters get immediate recovery as well.
+    frame.HealthBarsContainer.alpha = 0
+    for _, hook in ipairs(hooks) do
+        if hook.name == frame.HealthBarsContainer and hook.method == "SetAlpha" then hook.callback() end
+    end
+    equal(frame.HealthBarsContainer.alpha, 1, "container alpha hook repairs immediately")
+    frame.HealthBarsContainer:Hide()
+    equal(frame.HealthBarsContainer.shown, true, "container hide repairs immediately")
+    assert(ns.NameplateRestoration.Request(frame, context))
+    equal(frame.healthBar.alpha, 0.4, "native bar opacity restored")
+    equal(frame.HealthBarsContainer.alpha, 0.6, "native container opacity restored")
+    equal(frame.SNPInsideName.shown, false, "replacement hidden on restoration")
+end
+
 print("Nameplates smoke: passed")

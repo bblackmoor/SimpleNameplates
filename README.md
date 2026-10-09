@@ -1,6 +1,6 @@
 # Simple Nameplates
 
-Documentation reviewed for 1.0.225 (2026-10-08). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
+Documentation reviewed for 1.0.226 (2026-10-09). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
 
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
@@ -170,6 +170,12 @@ Equivalent font filename spellings and flag order do not cause periodic drift.
 The profiler distinguishes font components, cache invalidation reasons and
 external appearance writes, and measures urgent event refreshes separately.
 Cached color repair remains eligible during native bar visibility changes.
+Readable health-bar/container opacity resets and inside-name opacity drift are
+repaired without targeting. Bar/container visibility and alpha callbacks recover
+immediately; periodic reconciliation covers native changes that bypass hooks.
+Whole-plate and unit-frame fades remain Blizzard-controlled, and disabling styling
+restores captured native bar/container opacity. The disappearing hostile-NPC-name
+report still requires client verification after this recovery change.
 Configured dimensions release opposing native anchors while preserving their
 restoration baseline; unchanged geometry should no longer trigger repeated repair.
 Global repair hooks skip unrelated raid/party or cleared-unit frames.

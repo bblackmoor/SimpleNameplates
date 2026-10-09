@@ -114,7 +114,9 @@ local function DebugAddonText(assessment, context)
         print("  " .. key .. ": " .. (region and "found" or "not found")
             .. "; text: " .. DebugRegionValue(region, "GetText", nil, context)
             .. "; shown: " .. DebugRegionValue(region, "IsShown", "boolean", context)
-            .. "; visible: " .. DebugRegionValue(region, "IsVisible", "boolean", context))
+            .. "; visible: " .. DebugRegionValue(region, "IsVisible", "boolean", context)
+            .. "; alpha: " .. DebugRegionValue(region, "GetAlpha", nil, context)
+            .. "; effective alpha: " .. DebugRegionValue(region, "GetEffectiveAlpha", nil, context))
     end
 end
 
