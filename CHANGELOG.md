@@ -1,3 +1,7 @@
+## 1.0.230 — 2026-10-09
+
+- Remove the current percentage readout between the gradient slider and preview. Move the preview to the original control column and the slider between the Gradient opacity label and preview; retain the slider's 0%/100% endpoint captions.
+
 ## 1.0.229 — 2026-10-09
 
 - Move the full-health gradient preview beside the Gradient opacity slider and remove its separate label/row.

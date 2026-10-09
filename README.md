@@ -1,6 +1,6 @@
 # Simple Nameplates
 
-Documentation reviewed for 1.0.229 (2026-10-09). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
+Documentation reviewed for 1.0.230 (2026-10-09). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
 
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
@@ -118,7 +118,7 @@ Headings use sentence case, labels use normal white text, and brief notes explai
 
 **Dim background NPC names** on Colors, below NPC - Background, applies to the selected profile. Off displays background NPC names in white (`#FFFFFF`); On uses grey (`#999999`). Their titles use the same shade. It applies above or inside health bars and when their bars are disabled. Threat percentages and health-bar colors keep their own styling. Dimming defaults On. Reset all colors turns it on; Reset Appearance preserves it.
 
-**Gradient opacity** is a per-profile 0–100% slider above Priority colors, defaulting to 100% for Default/custom profiles and 0% for High Contrast. At 0% there is no gradient; at 100% the existing gradient is applied unchanged. Intermediate values scale the left endpoint directly: 50% produces 40% black at the left edge, while texture opacity stays full. Its unlabeled full-health preview beside the slider shows a white “Sample” name and **255%** threat. The original tint starts at 80% black and fades linearly to clear at 95% of full bar width; the final 5% remains clear. That geometry remains fixed as health falls, with a native-fill mask clipping the tint without reading secret health values. Cast bars stay flat. The retired `gradients` boolean is discarded without conversion; valid `gradientOpacity` values are retained and other values use defaults.
+**Gradient opacity** is a per-profile 0–100% slider above Priority colors, defaulting to 100% for Default/custom profiles and 0% for High Contrast. At 0% there is no gradient; at 100% the existing gradient is applied unchanged. Intermediate values scale the left endpoint directly: 50% produces 40% black at the left edge, while texture opacity stays full. The row places the label, slider and unlabeled full-health preview in that order, with no separate current-percentage readout. Its preview shows a white “Sample” name and **255%** threat. The original tint starts at 80% black and fades linearly to clear at 95% of full bar width; the final 5% remains clear. That geometry remains fixed as health falls, with a native-fill mask clipping the tint without reading secret health values. Cast bars stay flat. The retired `gradients` boolean is discarded without conversion; valid `gradientOpacity` values are retained and other values use defaults.
 
 All styled names, NPC/TRP3 titles, threat percentages, native health labels, and cast labels use thin solid black outlines at every gradient opacity. No black glyph copies or health-dependent text-layer changes are used. Reset all colors restores the active profile’s gradient default (100% for Default, 0% for High Contrast); Reset Appearance preserves the choice.
 

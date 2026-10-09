@@ -136,18 +136,15 @@ local function CreatePriorityColorRow(context, text, state, displayText)
 end
 
 local function AddGradientControl(context)
-    local row = UI.CreateSettingRow(context.content, context.layout, "Gradient opacity")
+    local row, label = UI.CreateSettingRow(context.content, context.layout, "Gradient opacity")
     context.layout.items[#context.layout.items].height = 48
-    local amount = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    amount:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X + 188, 0)
-    amount:SetWidth(40)
+    label:SetWidth(UI.CONTROL_X - 206)
     local slider = Widgets.CreateSlider(row, 0, 100, 1, function(value)
-        amount:SetText(string.format("%d%%", value))
         if value == addon.GetGradientOpacity() then return end
         addon.SetGradientOpacity(value)
         if not context.canceling then RefreshContext(context); RefreshNameplates() end
     end)
-    slider:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
+    slider:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X - 190, 0)
     for _, endpoint in ipairs({{0, "LEFT"}, {100, "RIGHT"}}) do
         local caption = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
         caption:SetText(endpoint[1] .. "%")
@@ -158,10 +155,9 @@ local function AddGradientControl(context)
     context.refreshers[#context.refreshers + 1] = function()
         local value = addon.GetGradientOpacity()
         slider:SetValue(value)
-        amount:SetText(string.format("%d%%", value))
     end
     local preview = CreateFrame("StatusBar", nil, row)
-    preview:SetPoint("LEFT", amount, "RIGHT", 12, 0)
+    preview:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
     preview:SetWidth(190)
     preview:SetMinMaxValues(0, 100)
     preview:SetValue(100)

@@ -122,7 +122,15 @@ assert(sample and threat and sample.textColor[1] == 1 and threat.textColor[1] ==
 assert(sample.flags == "SLUG,OUTLINE" and threat.flags == "SLUG,OUTLINE", "preview text always outlined")
 assert(sample.SNPUnderlayers == nil and threat.SNPUnderlayers == nil, "preview has no glyph copies")
 assert(Row("Gradient opacity").point[5] > Row("1. Attacking me").point[5], "gradient row above colors")
-assert(preview.point[1] == "LEFT" and preview.point[3] == "RIGHT", "preview sits beside slider value")
+assert(preview.point[1] == "LEFT" and preview.point[2] == Row("Gradient opacity")
+    and preview.point[4] == ns.SettingsUI.CONTROL_X, "preview starts at former slider column")
+assert(gradientSlider.point[4] == ns.SettingsUI.CONTROL_X - 190, "slider sits between label and preview")
+local percentageCaptions = 0
+for _, object in ipairs(ui.objects) do
+    if object.kind == "FontString" and object:GetParent() == Row("Gradient opacity")
+        and object:GetText() == "100%" then percentageCaptions = percentageCaptions + 1 end
+end
+assert(percentageCaptions == 1, "only the endpoint caption remains; no current percentage readout")
 for _, object in ipairs(ui.objects) do
     assert(not (object.kind == "FontString" and object:GetText() == "Gradient preview"), "no separate preview label")
 end
