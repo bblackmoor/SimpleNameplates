@@ -30,11 +30,11 @@ local function NameFontPath(context)
     return FontPath(GetAppearanceSetting("nameFont"))
 end
 
-local function ResolveNameText(frame)
+local function UpdateNameText(frame)
     local name, unit = frame and frame.name, frame and frame.unit
     if not name or not unit then return nil end
-    -- UnitName can be secret in Midnight. Pass it directly to whichever
-    -- FontString displays the name without inspecting or transforming it.
+    -- UnitName can be secret in Midnight. FontString:SetText can display that
+    -- value directly; do not replace it with an empty string.
     local unitName = UnitName(unit)
     local displayName = unitName
     local fullTitle = frame.SNPEntityFacts and frame.SNPEntityFacts.npcTitle
@@ -60,6 +60,7 @@ local function ResolveNameText(frame)
         if not fullTitle and GetTRP3Setting("showFullTitle") then fullTitle = info.fullTitle end
     end
 
+    name:SetText(displayName)
     return fullTitle, displayName, unitName
 end
 
@@ -289,9 +290,6 @@ local function ShowInsideName(frame, bar, text, fontPath, size, rightInset, righ
     -- Leave Blizzard's name shown for its health-text visibility logic, but
     -- avoid drawing a second copy behind the bar.
     frame.name:SetAlpha(0)
-    -- Keep the native region shown for health-label bookkeeping, but remove
-    -- its glyphs as well as its opacity so no outline can leak behind our copy.
-    frame.name:SetText("")
 end
 
 local function RestoreNameDisplay(frame, context, assessment)
@@ -351,12 +349,11 @@ local function StyleName(frame, state, context, decision, assessment)
     end
     local name = frame and frame.name
     if not name then return end
-    local fullTitle, displayName, unitName = ResolveNameText(frame)
+    local fullTitle, displayName, unitName = UpdateNameText(frame)
     local baseSize = GetAppearanceSetting("nameSize") or 12
     local bar = GetHealthBar(frame, context, assessment)
     local nameOnly = decision.nameOnly
     local inside, size = ApplyConfiguredBarHeight(frame, state, bar, baseSize, context, decision, assessment)
-    if not inside then name:SetText(displayName) end
     local rightInset = -3
 
     local fontPath = NameFontPath(context)
@@ -409,7 +406,7 @@ local function RepairNameOnly(frame, context, assessment)
     local expected = frame.SNPNameStyle
     if expected.suppressed then SuppressText(frame, context); return end
     local name = frame.name
-    name:SetText(expected.inside and "" or expected.text)
+    name:SetText(expected.text)
     name:SetFont(expected.font, expected.size, expected.flags)
     name:SetShadowColor(0, 0, 0, 0)
     name:SetShadowOffset(0, 0)
@@ -574,7 +571,7 @@ local function CachedNameHasDrifted(frame, context, assessment)
             Check("containerAlpha", frame.HealthBarsContainer, "GetAlpha", 1, "container alpha")
         end
     end
-    Check("text", name, "GetText", expected.inside and "" or AccessibleValue(expected.text), "native name text")
+    Check("text", name, "GetText", AccessibleValue(expected.text), "native name text")
     local font, size, flags = Observe(expected, "font", name, "GetFont", context, 3)
     local faceDrift = font ~= nil and not ns.FontPathMatches(font, expected.font)
     local sizeDrift = Different(size, expected.size)
@@ -729,7 +726,7 @@ local appearanceAlphaRepair = setmetatable({}, {__mode = "k"})
 InstallNameAppearanceHooks = function(frame, name, context)
     if not hooksecurefunc or appearanceHookOwners[name] then return end
     appearanceHookOwners[name] = frame
-    for _, method in ipairs({"SetFont", "SetFontObject", "SetTextHeight", "SetTextColor", "SetVertexColor", "SetAlpha", "SetText"}) do
+    for _, method in ipairs({"SetFont", "SetFontObject", "SetTextHeight", "SetTextColor", "SetVertexColor", "SetAlpha"}) do
         if type(ns.PresentationCapabilities.SafeField(name, method, context)) == "function" then
             local function Repair()
                 local cap = ns.PresentationCapabilities
@@ -770,15 +767,9 @@ InstallNameAppearanceHooks = function(frame, name, context)
                     or expected.presentation ~= decision
                     or decision.contextRevision ~= current.revision
                     or ns.NameplateRestoration.IsPending(frame) then return end
-                if method == "SetText" and (not expected.inside
-                    or AccessibleValue(cap.ReadRegion(name, "GetText", current)) == "") then return end
                 ns.Profiler.Count("Name appearance writes", method)
                 frame.SNPRepairingNameAppearance = true
                 local ok, err = pcall(function()
-                    if method == "SetText" then
-                        name:SetText("")
-                        return
-                    end
                     if method == "SetAlpha" then
                         name:SetAlpha((expected.suppressed or expected.inside) and 0 or 1)
                         return
@@ -924,12 +915,9 @@ FinishCachedAppearance = function(frame, context)
     local desired = (expected.suppressed or expected.inside) and 0 or 1
     local alpha = Observe(expected, "alpha", name, "GetAlpha", context)
     local alphaChanged = Different(AppearanceNumber(alpha), desired)
-    local nativeText = expected.inside and AccessibleValue(cap.ReadRegion(name, "GetText", context)) or nil
-    local textChanged = nativeText ~= nil and nativeText ~= ""
-    if not colorChanged and not alphaChanged and not textChanged then return end
+    if not colorChanged and not alphaChanged then return end
     frame.SNPFinishingNameAppearance = true
     local ok, err = pcall(function()
-        if textChanged then name:SetText("") end
         if colorChanged and appearanceColorRepair[name] then
             ns.Profiler.Count("Appearance finalization", "color")
             appearanceColorRepair[name]() -- Validates identity/access again before writing.

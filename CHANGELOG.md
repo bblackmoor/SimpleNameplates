@@ -1,3 +1,8 @@
+## 1.0.233 — 2026-10-09
+
+- Revert only 1.0.232's native-name text clearing: retain native name content and suppress its duplicate display using the previous opacity behavior.
+- Keep the 40-unit gradient slider/preview gap and all earlier width-preservation/recovery fixes.
+
 ## 1.0.232 — 2026-10-09
 
 - Clear native name glyphs while the addon inside-bar name is displayed, preventing residual native text/outline behind it. Native text callbacks, reconciliation and bounded finalization preserve the empty native region; the addon label keeps the complete name and normal restoration restores the native unit name.
