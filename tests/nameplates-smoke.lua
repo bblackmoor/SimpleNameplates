@@ -639,7 +639,7 @@ ns.RefreshAll()
 equal(plateFrame.SNPOriginalUnit, "nameplate2", "recycled frame captures current owner")
 Tick(0.25)
 assert(plateFrame.SNPState, "old pending cleanup does not clear recycled style")
-equal(plateFrame.name.text, "Roleplay Name", "recycled name remains")
+equal(plateFrame.name.text, "", "recycled native inside name has no glyphs")
 plateFrame.IsProtected = nil
 plateFrame.unit = "nameplate1"
 ns.RefreshAll()
@@ -1249,7 +1249,7 @@ for _, placement in ipairs({"ABOVE", "INSIDE"}) do
     equal(plateFrame.name.shown, true, "native name visibility repaired")
     plateFrame.name:SetText("Overwritten native name")
     Tick(0.25)
-    equal(plateFrame.name.text, "Expected RP name", "native text-only drift repaired")
+    equal(plateFrame.name.text, placement == "INSIDE" and "" or "Expected RP name", "native text-only drift repaired")
     if placement == "INSIDE" then
         plateFrame.SNPInsideName:SetText("Overwritten inside name")
         Tick(0.25)
@@ -1263,7 +1263,7 @@ plateFrame.name:SetText(secretName)
 plateFrame.SNPInsideName:SetText(secretName)
 assert(not ns.NameplateText.CachedNameHasDrifted(plateFrame), "restricted text skipped")
 plateFrame.SNPNameStyle.text = secretName
-plateFrame.name:SetText("Readable replacement")
+plateFrame.name:SetText("")
 plateFrame.SNPInsideName:SetText("Readable replacement")
 assert(not ns.NameplateText.CachedNameHasDrifted(plateFrame), "restricted expected text skipped")
 issecretvalue = previousSecretCheck
@@ -1701,7 +1701,7 @@ local function CheckFocusedUpdates()
     end)
     NoWork(report, {"Full styling", "Classification", "NPC title lookup", "Bar artwork", "Name/title styling", "Health text layout"})
     Calls(report, "Name hook repair", 1); Calls(report, "Health-color repair", 1)
-    equal(plateFrame.name.text, "RP Focus", "name hook restores cached RP name")
+    equal(plateFrame.name.text, "", "name hook clears hidden native glyphs")
     equal(plateFrame.SNPInsideName.text, "RP Focus", "inside RP name retained")
     equal(plateFrame.name.alpha, 0, "focused name hook keeps native name concealed")
     equal(plateFrame.healthBar.barR, 1, "health hook repairs category color")
@@ -2055,7 +2055,7 @@ local function CheckSelectiveReconciliation()
     equal(text.RepairCachedName(plateFrame, context, assessment, plan), false, "replaced name invalidates assessment")
     Only({}, "stale name assessment")
     plateFrame.name = name
-    name.text = "Selective RP"
+    name.text = ""
     local container = plateFrame.HealthBarsContainer
     plateFrame.HealthBarsContainer = Region()
     equal(cap.AssessmentIsCurrent(plateFrame, assessment, context), false, "replaced container invalidates assessment")
@@ -2150,7 +2150,7 @@ local function CheckBoundedRuntime()
     events.scripts.OnUpdate(events, 0.001)
     for currentToken, frame in pairs(framesByUnit) do
         equal(repairs[currentToken], 1, "every current owner progresses once")
-        equal(frame.name.text, currentToken == token and "Immediate RP" or "Crowded RP", "repair uses current owner's cache")
+        equal(frame.SNPInsideName.text, currentToken == token and "Immediate RP" or "Crowded RP", "repair uses current owner's cache")
     end
     local before = Count()
     events.scripts.OnUpdate(events, 0.001)
@@ -3123,6 +3123,33 @@ do
     local points = bar.points
     assert(not ns.NameplateFrames.PrepareBarSize(frame, bar, context))
     equal(bar.points, points, "zero-width initialization does not release native anchors")
+end
+
+-- The hidden native inside-name region must contain no glyphs, including
+-- after native text writes; the addon copy and normal restoration retain names.
+do
+    local frame = Region()
+    frame.unit, frame.name, frame.healthBar, frame.HealthBarsContainer = "nameplate1", Region(), Region(), Region()
+    frame.name:SetFont("Native", 10, ""); frame.name:SetTextColor(1, 0, 0)
+    frame.name:SetVertexColor(1, 1, 1, 1)
+    stylingEnabled, categoryMode, showBar = true, "active", true
+    appearance.namePlacement, appearance.healthBarWidth = "INSIDE", 100
+    trp3Options = {}; ns.TRP3 = nil
+    unit = {reaction = 3, names = {nameplate1 = "Citadel Watcher"}}
+    local context = ns.WorldContext.Get()
+    ns.NameplatePresentation.ApplySimpleStyle(frame, context)
+    equal(frame.name.text, "", "native inside name contains no residual glyphs")
+    equal(frame.SNPInsideName.text, "Citadel Watcher", "addon copy retains full name")
+    frame.name:SetText("Citadel Watcher")
+    for _, hook in ipairs(hooks) do
+        if hook.name == frame.name and hook.method == "SetText" then hook.callback() end
+    end
+    equal(frame.name.text, "", "native text callback clears residual glyphs immediately")
+    frame.name.text = "C"
+    ns.NameplateText.FinishCachedAppearance(frame, context)
+    equal(frame.name.text, "", "bounded finalization clears nested/native raw text reset")
+    assert(ns.NameplateRestoration.Request(frame, context))
+    equal(frame.name.text, "Citadel Watcher", "disable restores native unit name")
 end
 
 print("Nameplates smoke: passed")

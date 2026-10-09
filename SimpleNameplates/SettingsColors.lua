@@ -157,7 +157,7 @@ local function AddGradientControl(context)
         slider:SetValue(value)
     end
     local preview = CreateFrame("StatusBar", nil, row)
-    preview:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X + 10, 0)
+    preview:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X + 30, 0)
     preview:SetWidth(190)
     preview:SetMinMaxValues(0, 100)
     preview:SetValue(100)

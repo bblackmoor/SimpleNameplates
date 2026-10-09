@@ -1,3 +1,8 @@
+## 1.0.232 — 2026-10-09
+
+- Clear native name glyphs while the addon inside-bar name is displayed, preventing residual native text/outline behind it. Native text callbacks, reconciliation and bounded finalization preserve the empty native region; the addon label keeps the complete name and normal restoration restores the native unit name.
+- Double the gradient slider/preview gap again, from 20 to 40 UI units.
+
 ## 1.0.231 — 2026-10-09
 
 - Double the gap between the Gradient opacity slider and preview from 10 to 20 UI units.
