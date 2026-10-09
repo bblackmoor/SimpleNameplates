@@ -1,5 +1,6 @@
 -- Fixed-position health tint, clipped by native fill geometry; no health arithmetic.
 local _, ns = ...
+local SHADE_LEFT_MAX = 0.8
 local SHADE_KNEE = 0.95
 local SHADE_AT_KNEE = 0
 
@@ -37,7 +38,6 @@ local function Apply(bar, fill, context)
         mask:SetTexture("Interface\\Buttons\\WHITE8X8", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "NEAREST")
         local tint = bar:CreateTexture(nil, "ARTWORK", nil, 3)
         tint:SetColorTexture(1, 1, 1, 1)
-        tint:SetGradient("HORIZONTAL", CreateColor(0, 0, 0, 0.8), CreateColor(0, 0, 0, SHADE_AT_KNEE))
         tint:AddMaskTexture(mask)
         tint:SetPoint("TOPLEFT", bar, "TOPLEFT")
         tint:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT")
@@ -54,8 +54,15 @@ local function Apply(bar, fill, context)
     bar.SNPHealthGradientMask:SetAllPoints(fill)
     bar.SNPHealthGradient:SetWidth(width * SHADE_KNEE)
     bar.SNPHealthGradientTail:SetWidth(width * (1 - SHADE_KNEE))
-    bar.SNPHealthGradient:SetAlpha(opacity)
-    bar.SNPHealthGradientTail:SetAlpha(opacity)
+    -- Scale the left endpoint directly; the clear endpoint and fade position
+    -- stay fixed. Keep texture opacity full so the slider owns darkness only.
+    if bar.SNPHealthGradientOpacity ~= opacity then
+        bar.SNPHealthGradient:SetGradient("HORIZONTAL", CreateColor(0, 0, 0, SHADE_LEFT_MAX * opacity),
+            CreateColor(0, 0, 0, SHADE_AT_KNEE))
+        bar.SNPHealthGradientOpacity = opacity
+    end
+    bar.SNPHealthGradient:SetAlpha(1)
+    bar.SNPHealthGradientTail:SetAlpha(1)
     bar.SNPHealthGradient:Show()
     bar.SNPHealthGradientTail:Show()
 end

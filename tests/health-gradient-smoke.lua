@@ -46,8 +46,8 @@ assert(tint.width == 237.5 and math.abs(tail.width - 12.5) < 0.00001, "configure
 for _, value in ipairs({25, 50, 75, 100}) do
     opacity = value
     ns.HealthGradient.Apply(bar, replacement, {})
-    assert(tint.alpha == value / 100 and tail.alpha == value / 100, "opacity scales existing tint")
-    assert(tint.gradient[2].a == 0.8 and tint.gradient[3].a == 0, "gradient endpoints unchanged")
+    assert(tint.alpha == 1 and tail.alpha == 1, "gradient texture opacity stays full")
+    assert(math.abs(tint.gradient[2].a - 0.8 * value / 100) < 0.00001 and tint.gradient[3].a == 0, "slider scales left darkness and leaves right endpoint clear")
     assert(tint.width == 237.5 and mask.allPoints == replacement, "opacity leaves geometry/clipping intact")
 end
 opacity = 0

@@ -1,3 +1,8 @@
+## 1.0.229 — 2026-10-09
+
+- Move the full-health gradient preview beside the Gradient opacity slider and remove its separate label/row.
+- Apply the slider directly to the left gradient endpoint: 100% means 80% black, 50% means 40% black, and 0% hides the tint. Texture opacity stays full; the linear fade still reaches clear at 95% of full bar width and uses native fill clipping.
+
 ## 1.0.228 — 2026-10-09
 
 - Fix zero-width health bars/containers when height-only styling releases Blizzard's opposing native anchors. Preserve readable positive width before clearing those anchors; leave unmeasurable native geometry intact for later retries.

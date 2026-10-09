@@ -140,6 +140,7 @@ local function AddGradientControl(context)
     context.layout.items[#context.layout.items].height = 48
     local amount = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     amount:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X + 188, 0)
+    amount:SetWidth(40)
     local slider = Widgets.CreateSlider(row, 0, 100, 1, function(value)
         amount:SetText(string.format("%d%%", value))
         if value == addon.GetGradientOpacity() then return end
@@ -159,10 +160,8 @@ local function AddGradientControl(context)
         slider:SetValue(value)
         amount:SetText(string.format("%d%%", value))
     end
-    row = UI.CreateSettingRow(context.content, context.layout, "Gradient preview")
-    context.layout.items[#context.layout.items].height = 50
     local preview = CreateFrame("StatusBar", nil, row)
-    preview:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
+    preview:SetPoint("LEFT", amount, "RIGHT", 12, 0)
     preview:SetWidth(190)
     preview:SetMinMaxValues(0, 100)
     preview:SetValue(100)

@@ -108,7 +108,7 @@ function methods:SetAlpha(value) self.alpha = value end
 local gradientSlider = Control(Row("Gradient opacity"), "slider")
 local preview
 for _, object in ipairs(ui.objects) do
-    if object:GetParent() == Row("Gradient preview") and object.kind == "StatusBar" then preview = object end
+    if object:GetParent() == Row("Gradient opacity") and object.kind == "StatusBar" then preview = object end
 end
 assert(preview and preview:GetValue() == 100 and preview:GetMinMaxValues() == 0)
 local sample, threat
@@ -121,7 +121,11 @@ end
 assert(sample and threat and sample.textColor[1] == 1 and threat.textColor[1] == 1)
 assert(sample.flags == "SLUG,OUTLINE" and threat.flags == "SLUG,OUTLINE", "preview text always outlined")
 assert(sample.SNPUnderlayers == nil and threat.SNPUnderlayers == nil, "preview has no glyph copies")
-assert(Row("Gradient preview").point[5] > Row("1. Attacking me").point[5], "gradient row above colors")
+assert(Row("Gradient opacity").point[5] > Row("1. Attacking me").point[5], "gradient row above colors")
+assert(preview.point[1] == "LEFT" and preview.point[3] == "RIGHT", "preview sits beside slider value")
+for _, object in ipairs(ui.objects) do
+    assert(not (object.kind == "FontString" and object:GetText() == "Gradient preview"), "no separate preview label")
+end
 assert(ns.GetGradientOpacity() == 100 and gradientSlider.MyObject:GetValue() == 100, "Default starts at 100%")
 local beforeGradient = refreshes
 gradientSlider:SetValue(0)
@@ -130,7 +134,8 @@ assert(not preview.SNPHealthGradient:IsShown())
 assert(sample.flags == "SLUG,OUTLINE" and threat.flags == "SLUG,OUTLINE", "opacity preserves outlines")
 gradientSlider:SetValue(50)
 assert(ns.GetGradientOpacity() == 50 and refreshes == beforeGradient + 2)
-assert(preview.SNPHealthGradient:IsShown() and preview.SNPHealthGradient.alpha == 0.5)
+assert(preview.SNPHealthGradient:IsShown() and preview.SNPHealthGradient.alpha == 1
+    and preview.SNPHealthGradient.gradient[2].a == 0.4, "50% slider produces 40% left darkness")
 assert(preview.SNPHealthGradient.width == 190 * 0.95, "preview fade position preserved")
 assert(ns.CopyActiveProfile("Gradient copy"))
 assert(ns.GetGradientOpacity() == 50, "profile copy retains opacity")
