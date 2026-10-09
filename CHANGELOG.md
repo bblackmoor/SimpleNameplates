@@ -1,3 +1,7 @@
+## 1.0.231 — 2026-10-09
+
+- Double the gap between the Gradient opacity slider and preview from 10 to 20 UI units.
+
 ## 1.0.230 — 2026-10-09
 
 - Remove the current percentage readout between the gradient slider and preview. Move the preview to the original control column and the slider between the Gradient opacity label and preview; retain the slider's 0%/100% endpoint captions.

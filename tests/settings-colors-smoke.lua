@@ -123,7 +123,7 @@ assert(sample.flags == "SLUG,OUTLINE" and threat.flags == "SLUG,OUTLINE", "previ
 assert(sample.SNPUnderlayers == nil and threat.SNPUnderlayers == nil, "preview has no glyph copies")
 assert(Row("Gradient opacity").point[5] > Row("1. Attacking me").point[5], "gradient row above colors")
 assert(preview.point[1] == "LEFT" and preview.point[2] == Row("Gradient opacity")
-    and preview.point[4] == ns.SettingsUI.CONTROL_X, "preview starts at former slider column")
+    and preview.point[4] == ns.SettingsUI.CONTROL_X + 10, "preview has doubled 20-unit gap after slider")
 assert(gradientSlider.point[4] == ns.SettingsUI.CONTROL_X - 190, "slider sits between label and preview")
 local percentageCaptions = 0
 for _, object in ipairs(ui.objects) do
