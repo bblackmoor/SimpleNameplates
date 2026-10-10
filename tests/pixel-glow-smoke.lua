@@ -10,6 +10,7 @@ local function Region(parent)
     local r = {parent = parent, shown = true, level = 1, scripts = {}}
     function r:GetParent() return self.parent end
     function r:SetPoint() end
+    function r:ClearAllPoints() end
     function r:SetHeight(v) self.height = v end
     function r:SetWidth(v) self.width = v end
     function r:SetFrameLevel(v) self.level = v end

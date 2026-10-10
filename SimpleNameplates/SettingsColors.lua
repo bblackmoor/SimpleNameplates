@@ -257,7 +257,7 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Restores health bars to On except NPC - Background, background-name dimming to On, gradient opacity to 100% for Default/custom profiles or 0% for High Contrast, and cast highlight to Inactive with magenta Pulsing border, thickness 4, pulse fade times 0.2 seconds, and Alert length 20–100%, shrink/grow times 0.2 seconds, end opacity 0% and center opacity 100%.")
+        "Restores health bars to On except NPC - Background, background-name dimming to On, gradient opacity to 100% for Default/custom profiles or 0% for High Contrast, and cast highlight to Inactive with magenta Pulsing border, thickness 4, outward offset 2, pulse fade times 0.2 seconds, and Alert length 20–100%, shrink/grow times 0.2 seconds, end opacity 0% and center opacity 100%.")
     AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")

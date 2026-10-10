@@ -104,7 +104,28 @@ local function Parameter(effect, key, fallback)
     return fallback
 end
 
+local function ConfigureOffset(h)
+    local offset = Parameter("PULSE", "offset", 2)
+    if h.borderOffset == offset then return end
+    h.borderOffset = offset
+    local corners = {
+        {{"TOPLEFT", -offset, offset}, {"TOPRIGHT", offset, offset}},
+        {{"BOTTOMLEFT", -offset, -offset}, {"BOTTOMRIGHT", offset, -offset}},
+        {{"TOPLEFT", -offset, offset}, {"BOTTOMLEFT", -offset, -offset}},
+        {{"TOPRIGHT", offset, offset}, {"BOTTOMRIGHT", offset, -offset}},
+    }
+    for _, edges in ipairs({h.border, h.alertBorder}) do
+        for index, edge in ipairs(edges) do
+            edge:ClearAllPoints()
+            for _, corner in ipairs(corners[index]) do
+                edge:SetPoint(corner[1], h.frame, corner[1], corner[2], corner[3])
+            end
+        end
+    end
+end
+
 local function ConfigureBorder(h, effect)
+    ConfigureOffset(h)
     local thickness = Parameter("PULSE", "thickness", 4)
     for index, edge in ipairs(h.border) do
         if index <= 2 then edge:SetHeight(thickness) else edge:SetWidth(thickness) end
@@ -142,8 +163,11 @@ local function ConfigureBorder(h, effect)
             local shrink, grow = h.shrink[animationIndex], h.grow[animationIndex]
             shrink:SetScaleFrom(maxX, maxY)
             shrink:SetScaleTo(minX, minY)
-            grow:SetScaleFrom(minX, minY)
-            grow:SetScaleTo(maxX, maxY)
+            -- Scale animations of later orders compound with the completed
+            -- shrink. Start at identity and undo that transform to reach max.
+            local expansion = maximum / minimum
+            grow:SetScaleFrom(1, 1)
+            grow:SetScaleTo(edge.horizontal and expansion or 1, edge.horizontal and 1 or expansion)
             shrink:SetDuration(shrinkTime)
             grow:SetDuration(growTime)
         end

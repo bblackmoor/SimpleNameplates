@@ -98,6 +98,8 @@ Control(Row("Fade in"), "slider"):SetValue(0.4)
 Control(Row("Fade out"), "slider"):SetValue(0.6)
 assert(math.abs(ns.GetCastBorderSetting("PULSE", "fadeIn") - 0.4) < 0.00001, "independent pulse timing control")
 assert(ns.GetCastBorderSetting("ALERT", "minLength") == 20, "Alert starts at 20 percent")
+Control(Row("Border offset"), "slider"):SetValue(1)
+assert(ns.GetCastBorderSetting("PULSE", "offset") == 1, "shared outward offset control")
 -- Every length-pulse parameter has an editable Colors slider and silent refresh.
 for _, case in ipairs({
     {"Minimum length", "minLength", 25}, {"Maximum length", "maxLength", 85},

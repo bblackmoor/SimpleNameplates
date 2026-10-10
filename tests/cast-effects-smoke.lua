@@ -58,7 +58,7 @@ for _, style in ipairs({"ALERT", "SOLID", "ALERT", "SOLID"}) do
         assert(point[2] == owner.castBar and point[4] == 0 and point[5] == 0, "cast bar alignment")
     end
     for _, edge in ipairs(h.border) do
-        for _, point in pairs(edge.points) do assert(point[4] == 0 and point[5] == 0, "zero inset") end
+        for _, point in pairs(edge.points) do assert(math.abs(point[4]) == 2 and math.abs(point[5]) == 2, "two-unit outward offset") end
     end
     assert(h.shrink[1].duration == 0.2 and h.grow[1].duration == 0.2)
     for index, edge in ipairs(h.alertBorder) do
@@ -71,7 +71,15 @@ for _, style in ipairs({"ALERT", "SOLID", "ALERT", "SOLID"}) do
             assert(shrink.target == texture and grow.target == texture, "each gradient half animates directly")
             assert(shrink.origin[1] == origin and grow.origin[1] == origin, "opaque center is the fixed pivot")
             assert(shrink.scaleFrom[axis] == 1 and shrink.scaleTo[axis] == 0.2, "maximum to minimum length")
-            assert(grow.scaleFrom[axis] == 0.2 and grow.scaleTo[axis] == 1, "minimum to maximum length")
+            assert(grow.scaleFrom[axis] == 1 and grow.scaleTo[axis] == 5, "growth reverses completed shrink")
+            local previous = shrink.scaleTo[axis]
+            for _, progress in ipairs({0, 0.25, 0.5, 0.75, 1}) do
+                local transform = grow.scaleFrom[axis] + (grow.scaleTo[axis] - grow.scaleFrom[axis]) * progress
+                local length = shrink.scaleTo[axis] * transform
+                assert(length >= previous and math.abs(length - (0.2 + 0.8 * progress)) < 0.00001, "composed growth is continuous from minimum to maximum")
+                previous = length
+            end
+            assert(math.abs(previous - shrink.scaleFrom[axis]) < 0.00001, "loop boundary has no reset jump")
             assert(shrink.scaleFrom[fixed] == 1 and shrink.scaleTo[fixed] == 1, "thickness never scales")
             -- Geometric regression: at every scale both halves meet at zero,
             -- while their transparent endpoints travel between center/corner.
@@ -92,7 +100,7 @@ for _, style in ipairs({"ALERT", "SOLID", "ALERT", "SOLID"}) do
     local count = #ui.objects; Update()
     assert(#ui.objects == count, "same effect reuses regions")
 end
-custom.PULSE = {thickness = 7, fadeOut = 0.4, fadeIn = 0.7}
+custom.PULSE = {thickness = 7, offset = 1, fadeOut = 0.4, fadeIn = 0.7}
 custom.ALERT = {shrinkTime = 0.4, growTime = 0.7, minLength = 20, maxLength = 80, endOpacity = 15, centerOpacity = 75}
 for _, style in ipairs({"ALERT", "SOLID"}) do
     effect = style; Update()
@@ -103,6 +111,15 @@ assert(h.shrink[1].scaleFrom[1] == 0.8 and h.shrink[1].scaleTo[1] == 0.2)
 assert(h.shrink[5].scaleFrom[2] == 0.8 and h.shrink[5].scaleTo[2] == 0.2)
 assert(h.alertBorder[1].halves[1].gradient[2].a == 0.15 and h.alertBorder[1].halves[1].gradient[3].a == 0.75, "custom gradient opacities")
 assert(h.frame.alpha == 1, "solid restores full opacity")
+assert(h.borderOffset == 1, "shared offset updates")
+for _, edges in ipairs({h.border, h.alertBorder}) do
+    for _, edge in ipairs(edges) do
+        for _, point in pairs(edge.points) do
+            assert(math.abs(point[4]) == 1 and math.abs(point[5]) == 1, "all renderer edges move outward")
+        end
+    end
+end
+assert(h.shrink[1].scaleTo[1] * h.grow[1].scaleTo[1] == 0.8, "custom maximum does not snap at loop boundary")
 effect = "PULSE"; Update()
 assert(h.pulse:IsPlaying() and not h.alert:IsPlaying(), "original opacity pulse restored")
 assert(h.fadeOut.duration == 0.4 and h.fadeIn.duration == 0.7, "pulse has independent timing")

@@ -1,3 +1,9 @@
+## 1.0.238 — 2026-10-09
+
+- Fix Alert growth snapping: later Scale orders compound with the completed shrink, so grow from identity to maximum/minimum to reverse the shrink and return continuously to the maximum length.
+- Add shared Border offset (0–6 UI units, default 2 outward) for Pulse, Solid and Alert, reducing overlap with the cast fill without changing thickness.
+- Add regression coverage for composed growth, loop continuity, custom maximum lengths and outward anchoring.
+
 ## 1.0.237 — 2026-10-09
 
 - Restore Pulsing border as the original four-edge opacity pulse (35–100%, Fade in/Fade out defaulting to 0.2 seconds).
