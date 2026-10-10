@@ -64,7 +64,8 @@ end
 
 
 -- Each centered edge has two half textures so the gradient stays symmetric.
--- Native scale animations change only its long axis; no cast dimensions are read.
+-- Native scale animations pin each half at the shared midpoint and change only
+-- its long axis; no cast dimensions are read.
 local function CreatePulseBorder(parent, thickness)
     local edges = {}
     for index, points in ipairs({
@@ -122,15 +123,18 @@ local function ConfigureBorder(h, effect)
     h.pulseConfig = signature
     h.pulse:Stop()
     for index, edge in ipairs(h.pulseBorder) do
-        local shrink, grow = h.shrink[index], h.grow[index]
         local maxX, maxY = edge.horizontal and maximum or 1, edge.horizontal and 1 or maximum
         local minX, minY = edge.horizontal and minimum or 1, edge.horizontal and 1 or minimum
-        shrink:SetScaleFrom(maxX, maxY)
-        shrink:SetScaleTo(minX, minY)
-        grow:SetScaleFrom(minX, minY)
-        grow:SetScaleTo(maxX, maxY)
-        shrink:SetDuration(shrinkTime)
-        grow:SetDuration(growTime)
+        for half = 1, 2 do
+            local animationIndex = (index - 1) * 2 + half
+            local shrink, grow = h.shrink[animationIndex], h.grow[animationIndex]
+            shrink:SetScaleFrom(maxX, maxY)
+            shrink:SetScaleTo(minX, minY)
+            grow:SetScaleFrom(minX, minY)
+            grow:SetScaleTo(maxX, maxY)
+            shrink:SetDuration(shrinkTime)
+            grow:SetDuration(growTime)
+        end
     end
 end
 
@@ -292,13 +296,20 @@ local function CreateHighlight(castBar, owner, healthBar)
     }
     local pulse = overlay:CreateAnimationGroup()
     for index, edge in ipairs(highlight.pulseBorder) do
-        for order, animations in ipairs({highlight.shrink, highlight.grow}) do
-            local scale = pulse:CreateAnimation("Scale")
-            scale:SetTarget(edge)
-            scale:SetOrigin("CENTER", 0, 0)
-            scale:SetOrder(order)
-            scale:SetSmoothing("IN_OUT")
-            animations[index] = scale
+        for half, texture in ipairs(edge.halves) do
+            -- Animate textures directly. Scaling the containing frame does not
+            -- hold the two gradient halves together at their shared midpoint.
+            local origin
+            if edge.horizontal then origin = half == 1 and "RIGHT" or "LEFT"
+            else origin = half == 1 and "TOP" or "BOTTOM" end
+            for order, animations in ipairs({highlight.shrink, highlight.grow}) do
+                local scale = pulse:CreateAnimation("Scale")
+                scale:SetTarget(texture)
+                scale:SetOrigin(origin, 0, 0)
+                scale:SetOrder(order)
+                scale:SetSmoothing("IN_OUT")
+                animations[(index - 1) * 2 + half] = scale
+            end
         end
     end
     pulse:SetLooping("REPEAT")

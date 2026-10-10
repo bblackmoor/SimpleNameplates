@@ -62,13 +62,27 @@ for _, style in ipairs({"PULSE", "SOLID", "PULSE", "SOLID"}) do
     end
     assert(h.shrink[1].duration == 0.2 and h.grow[1].duration == 0.2)
     for index, edge in ipairs(h.pulseBorder) do
-        local shrink, grow = h.shrink[index], h.grow[index]
         local axis, fixed = edge.horizontal and 1 or 2, edge.horizontal and 2 or 1
-        assert(shrink.animationType == "Scale" and grow.animationType == "Scale", "length pulse has no alpha animation")
-        assert(shrink.target == edge and grow.target == edge and shrink.origin[1] == "CENTER", "segments remain centered")
-        assert(shrink.scaleFrom[axis] == 1 and shrink.scaleTo[axis] == 0.1, "maximum to minimum length")
-        assert(grow.scaleFrom[axis] == 0.1 and grow.scaleTo[axis] == 1, "minimum to maximum length")
-        assert(shrink.scaleFrom[fixed] == 1 and shrink.scaleTo[fixed] == 1, "thickness never scales")
+        for half, texture in ipairs(edge.halves) do
+            local animationIndex = (index - 1) * 2 + half
+            local shrink, grow = h.shrink[animationIndex], h.grow[animationIndex]
+            local origin = edge.horizontal and (half == 1 and "RIGHT" or "LEFT") or (half == 1 and "TOP" or "BOTTOM")
+            assert(shrink.animationType == "Scale" and grow.animationType == "Scale", "length pulse has no alpha animation")
+            assert(shrink.target == texture and grow.target == texture, "each gradient half animates directly")
+            assert(shrink.origin[1] == origin and grow.origin[1] == origin, "opaque center is the fixed pivot")
+            assert(shrink.scaleFrom[axis] == 1 and shrink.scaleTo[axis] == 0.1, "maximum to minimum length")
+            assert(grow.scaleFrom[axis] == 0.1 and grow.scaleTo[axis] == 1, "minimum to maximum length")
+            assert(shrink.scaleFrom[fixed] == 1 and shrink.scaleTo[fixed] == 1, "thickness never scales")
+            -- Geometric regression: at every scale both halves meet at zero,
+            -- while their transparent endpoints travel between center/corner.
+            local low, high = half == 1 and -0.5 or 0, half == 1 and 0 or 0.5
+            local pivot = (origin == "RIGHT" or origin == "TOP") and high or low
+            for _, length in ipairs({0.1, 0.25, 0.5, 1}) do
+                local center = pivot + (0 - pivot) * length
+                local outer = pivot + ((half == 1 and low or high) - pivot) * length
+                assert(center == 0 and math.abs(outer) == 0.5 * length, "continuous centered segment at every pulse length")
+            end
+        end
         assert(edge:IsShown() == (style == "PULSE") and h.border[index]:IsShown() == (style == "SOLID"), "exclusive effect visibility")
         local a, b = edge.halves[1].gradient, edge.halves[2].gradient
         assert(a[1] == (edge.horizontal and "HORIZONTAL" or "VERTICAL"), "gradient follows edge length")
@@ -85,7 +99,7 @@ for _, style in ipairs({"PULSE", "SOLID"}) do
 end
 assert(h.shrink[1].duration == 0.4 and h.grow[1].duration == 0.7)
 assert(h.shrink[1].scaleFrom[1] == 0.8 and h.shrink[1].scaleTo[1] == 0.2)
-assert(h.shrink[3].scaleFrom[2] == 0.8 and h.shrink[3].scaleTo[2] == 0.2)
+assert(h.shrink[5].scaleFrom[2] == 0.8 and h.shrink[5].scaleTo[2] == 0.2)
 assert(h.pulseBorder[1].halves[1].gradient[2].a == 0.15 and h.pulseBorder[1].halves[1].gradient[3].a == 0.75, "custom gradient opacities")
 assert(h.frame.alpha == 1, "solid restores full opacity")
 enabled = false; Update()

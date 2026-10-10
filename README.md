@@ -1,6 +1,6 @@
 # Simple Nameplates
 
-Documentation reviewed for 1.0.235 (2026-10-09). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
+Documentation reviewed for 1.0.236 (2026-10-09). The runtime fixes through 1.0.219 are retained. Crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open.
 
 A deliberately simple standalone nameplate-color addon for World of Warcraft.
 
@@ -230,7 +230,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Bundled libraries
 
-Cast highlighting uses addon-owned four-edge borders for Pulsing gradient border and Solid border. Both anchor directly to the native cast bar without reading its dimensions. Color, Active, effect, shared thickness, minimum/maximum length, shrink/grow times and gradient end/center opacity are on Colors. Pulse uses synchronized native Scale animations on four centered edge frames, with two gradient half-textures per edge; only the length axis is scaled, and no per-frame Lua polling is needed. Cast effects do not require library border/glow constructors.
+Cast highlighting uses addon-owned four-edge borders for Pulsing gradient border and Solid border. Both anchor directly to the native cast bar without reading its dimensions. Color, Active, effect, shared thickness, minimum/maximum length, shrink/grow times and gradient end/center opacity are on Colors. Pulse uses synchronized native Scale animations directly on each gradient half-texture, pinning both halves to their shared opaque midpoint; only the length axis is scaled, and no per-frame Lua polling is needed. Cast effects do not require library border/glow constructors.
 
 LibSharedMedia and CallbackHandler supply the shared font registry and provider-change notifications. External font packs are optional; solid bar fills have no texture selector.
 

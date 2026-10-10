@@ -1,3 +1,9 @@
+## 1.0.236 — 2026-10-09
+
+- Fix Pulse shrinking toward corners: animate each gradient half-texture directly around its shared opaque midpoint (horizontal RIGHT/LEFT pivots; vertical TOP/BOTTOM pivots), rather than scaling the containing edge frame.
+- Both halves now stay joined at the center while transparent endpoints move inward/outward. Keep all 1.0.235 settings, constant thickness and magenta defaults.
+- Add geometric regression coverage for all four edges and multiple pulse lengths; live rendering confirmation remains pending.
+
 ## 1.0.235 — 2026-10-09
 
 - Replace Pulse’s opacity animation with centered gradient segments that shrink/grow along each edge while thickness stays constant. Native synchronized Scale animations follow anchored geometry without reading cast dimensions or using per-frame Lua polling.
