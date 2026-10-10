@@ -270,7 +270,7 @@ ns.SetInterruptibleHighlightEnabled(true)
 ns.SetTRP3Enabled(true)
 local resetAll
 for _, object in ipairs(ui.objects) do
-    if object.MyObject and object.MyObject.type == "button" and object.text:GetText() == "Reset all colors" then resetAll = object end
+    if object.MyObject and object.MyObject.type == "button" and object.text:GetText() == "Reset color settings" then resetAll = object end
 end
 assert(resetAll:GetWidth() == 190 and resetAll:GetHeight() == 24)
 assert(resetAll.point[5] > castRow.point[5], "whole-page reset remains above controls")

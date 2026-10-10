@@ -439,11 +439,11 @@ for _, enabled in ipairs({true, false, true}) do
     equal(castEnabled, enabled, "cast Active switch changes activation")
     equal(castToggle.MyObject:GetValue(), enabled, "activation refreshes immediately")
 end
-button("Reset all colors"):Click()
+button("Reset color settings"):Click()
 equal(allColorResets, 1, "complete page reset available")
 equal(castEnabled, false, "Colors reset disables highlight")
 equal(castToggle.MyObject:GetValue(), false, "cast Active switch refreshes after reset")
-assert(button("Reset all colors").points.TOPLEFT[4] > effectFill.parent.parent.points.TOPLEFT[4], "reset precedes cast controls")
+assert(button("Reset color settings").points.TOPLEFT[4] > effectFill.parent.parent.points.TOPLEFT[4], "reset precedes cast controls")
 castEnabled, threatEnabled = true, false
 local widthSlider
 for _, item in ipairs(frames) do
@@ -456,7 +456,7 @@ equal(profile.healthBarWidth, 125, "width slider changes profile setting")
 profile.nameSize, profile.matchSanctuaryFont = 31, false
 profile.nameFont, profile.threatFont, profile.namePlacement = "SKURRI", "MORPHEUS", "INSIDE"
 hideCritters = true
-button("Reset settings"):Click()
+button("Reset text settings"):Click()
 equal(profile.nameSize, 18, "text reset restores size")
 equal(profile.healthBarWidth, 100, "page reset restores width")
 equal(profile.matchSanctuaryFont, true, "text reset restores sanctuary switch")
@@ -503,8 +503,8 @@ stylingSwitch:Click()
 equal(styling, true, "moved enable switch enables styling")
 equal(setupChecks, 1, "enabling checks compatibility")
 usefulSwitch:Click()
-button("Reset settings"):Click()
-button("Reset all colors"):Click()
+button("Reset text settings"):Click()
+button("Reset color settings"):Click()
 equal(styling, true, "reset retains global styling choice")
 equal(hideCritters, false, "page reset restores global critter default")
 equal(modes.useful, "active", "Colors reset restores global category mode")
@@ -522,9 +522,9 @@ for _, item in ipairs(frames) do
 end
 assert(activationStatus, "active status shown")
 assert(not button("Reset text and layout"), "old reset removed")
-assert(button("Reset settings").points.TOPLEFT[4] > hideSwitch.parent.points.TOPLEFT[4], "reset precedes global visibility")
+assert(button("Reset text settings").points.TOPLEFT[4] > hideSwitch.parent.points.TOPLEFT[4], "reset precedes global visibility")
 
-assert(button("Reset settings").points.TOPLEFT[4] > sanctuaryFont.parent.points.TOPLEFT[4], "reset precedes font controls")
+assert(button("Reset text settings").points.TOPLEFT[4] > sanctuaryFont.parent.points.TOPLEFT[4], "reset precedes font controls")
 -- Startup review failures must show the effective inactive state.
 stylingSwitch:Click()
 setupAllowed = false
@@ -540,12 +540,12 @@ equal(activationStatus.text, "Inactive", "setup rejection updates status")
 -- Cast activation and color share the same row.
 assert(switchFor("Interruptible cast highlight") == castToggle, "cast Active switch retained")
 assert(colorRow("Interruptible cast highlight"), "cast color remains available")
-button("Reset all colors"):Click()
+button("Reset color settings"):Click()
 equal(castToggle.MyObject:GetValue(), false, "Colors reset clears Active")
 equal(castEnabled, false, "Colors reset disables highlighting")
 for _, labelText in ipairs({"1. Attacking me", "6. NPC - Background"}) do
     local swatch = colorRow(labelText)
-    assert(button("Reset all colors").points.TOPLEFT[4] > swatch.parent.points.TOPLEFT[4], "reset precedes priority settings")
+    assert(button("Reset color settings").points.TOPLEFT[4] > swatch.parent.points.TOPLEFT[4], "reset precedes priority settings")
 end
 for _, item in ipairs(frames) do
     assert(not (belongsTo(item, categories[4].panel) and item.text == "Reset colors"), "bottom reset section removed")

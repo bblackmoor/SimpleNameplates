@@ -176,7 +176,7 @@ local function CreateColorsPanel()
         RefreshContext(context)
     end
     addon.AddProfileSelector(content, layout, context.refreshers, Refresh)
-    UI.AddPageAction(content, layout, "Reset all colors", function()
+    UI.AddPageAction(content, layout, "Reset color settings", function()
         UI.CancelColorEdit()
         addon.ResetAllColors()
         Refresh()

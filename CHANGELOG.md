@@ -1,3 +1,7 @@
+## 1.0.242 — 2026-10-09
+
+- Label the page reset buttons Reset text settings, Reset color settings and Reset highlight settings. Preserve their existing reset behavior.
+
 ## 1.0.241 — 2026-10-09
 
 - Set the shared border offset default to 3 UI units outward. Preserve valid saved offsets; resets and missing/invalid values use 3.

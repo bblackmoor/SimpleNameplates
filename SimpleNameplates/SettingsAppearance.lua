@@ -123,7 +123,7 @@ local function CreateAppearancePanel()
     addon.RefreshFontControls = function() UI.RunRefreshers(context.fontRefreshers) end
     local function RefreshPage() Refresh(context) end
     addon.AddProfileSelector(content, layout, context.refreshers, RefreshPage)
-    UI.AddPageAction(content, layout, "Reset settings", function()
+    UI.AddPageAction(content, layout, "Reset text settings", function()
         CancelEdits(true)
         addon.ResetAppearance()
         addon.SetThreatEnabled(addon.Defaults.showThreat)

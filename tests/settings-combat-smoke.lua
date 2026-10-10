@@ -141,7 +141,7 @@ assert(pulseLength:GetValue() == originalLength and pulseOpacity:GetValue() == o
 assert(not effect.dropdownframe:IsShown() and effect.MyObject.myvalue == "PULSE", "menu closes and current choice is restored")
 assert(not ColorPickerFrame:IsShown() and not oldPopup:IsShown(), "owned picker and profile dialog close")
 assert(oldPopup.data.cancelled, "cancelled dialog callbacks cannot revive after combat")
-for _, frame in ipairs({size, width, pulseThickness, pulseLength, pulseOpacity, gradientOpacity, effect, swatch, castToggle, Button("Reset settings"), Button("Reset all colors"), Button("Create")}) do
+for _, frame in ipairs({size, width, pulseThickness, pulseLength, pulseOpacity, gradientOpacity, effect, swatch, castToggle, Button("Reset text settings"), Button("Reset color settings"), Button("Create")}) do
     assert(not frame:IsEnabled(), "editable control is disabled")
 end
 -- Simulate callbacks already queued before lockdown, and refresh while locked.
@@ -153,7 +153,7 @@ size:SetValue(33)
 pulseLength:SetValue(40)
 pulseOpacity:SetValue(80)
 Click(castToggle)
-Click(Button("Reset all colors"))
+Click(Button("Reset color settings"))
 Click(Button("Restore bundled profiles"))
 for _, panel in ipairs(panels) do panel.Refresh() end
 assert(Snapshot(SimpleNameplatesDB) == baseline and size:GetValue() == 25, "combat callbacks and page refresh cannot change settings")
