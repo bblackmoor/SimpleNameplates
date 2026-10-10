@@ -1,6 +1,6 @@
 # Live WoW integration verification
 
-Reviewed for 1.0.222 on 2026-10-08. All 23 local smoke suites pass. Version 1.0.222 adds combat cancellation and disabling for settings edits. Version 1.0.221 adds DF border/glow choices, a labeled preview and native visibility-hook recovery; live cast detection/rendering acceptance remains open. Targeted crowded-scene appearance convergence is confirmed for 1.0.218; broader normal-play acceptance remains open. The runtime fix remains in 1.0.219 and 1.0.220 after temporary diagnostics were removed.
+Current client checklist for 1.0.246. Keep unobserved checks open. The 1.0.218 report confirms appearance convergence in its recorded crowded scene; local suites do not establish broader native acceptance.
 
 Local UI stubs do not establish actual rendering, native permissions, secure CVar behavior or Midnight secret-value safety. Record addon version, client build, date, scene, profile, activity and observed result for client checks. Leave an item open until observed in game. Historical plans describe their original releases; this checklist replaces instructions to exercise removed controls or repeatedly install intermediate diagnostic builds.
 
@@ -16,7 +16,7 @@ Local UI stubs do not establish actual rendering, native permissions, secure CVa
 
 These runs are not matched benchmarks. Inclusive timing rows overlap and must not be summed; separately reported maxima do not prove a shared callback. Memory deltas do not prove a leak. Earlier failed attempts and detailed versioned observations remain in the [follow-up record](reconciliation-stall-plan.md), [profiling guide](profiling.md) and [changelog](../../CHANGELOG.md).
 
-## Next step: normal play with profiling off
+## Normal play with profiling off
 
 - [ ] Install the current inner `SimpleNameplates` folder using the README instructions and confirm the About version. Play normally with profiling off; observe grey background names and inside labels without duplicate native text or visible hitches.
 - [ ] Change target/mouseover, enter/leave combat, move out of range/back, recycle plates and change zones. Verify current names/colors remain stable and no stale labels reappear.
@@ -44,13 +44,13 @@ Capture a complete current-build report if flicker or hitches return. Additional
 - [ ] Open Copy/Rename/Delete, then change selection or replace the captured object before accepting. Stale confirmations do nothing and request reopening; normal unchanged-target actions work. Test bundled restore with missing/replaced targets.
 - [ ] Preview/accept/cancel RGB colors. Switch profiles, reset Colors, hide the page and open another swatch during drafts. Rollback stays with the original current target; retired callbacks cannot undo a reset or affect a later edit. Test with RP Emote Menu's actual picker enabled; neither addon closes or edits the other's session.
 - [ ] Type slider values and test Enter/Escape, focus loss, page hide, profile switching and Text reset during previews. Check 8–36 points/step 1 and 80–150% width/step 5 without stale rollback.
-- [ ] A legacy cast-style string is used only when a valid `interruptibleHighlight` boolean is absent: `NONE` disables, other strings enable the pulse; the selector field is discarded. Legacy category modes remain stored but do not affect rendering.
+- [ ] Retired cast-style strings are discarded without conversion; valid current activation/effect values are retained and missing/invalid values use defaults. Legacy category modes remain stored but do not affect rendering.
 
 ## Current Colors controls and reset scopes
 
 - [ ] All six Health Bar switches follow the selected profile; On shows a supported bar in both combat states, Off shows its name/title without a bar. Verify first-match priority and no category Active/Inactive or Hide controls.
 - [ ] Factory bars are On for the first five categories and Off for NPC - Background. Background-name dimming defaults On; On is grey #999999 and Off white #FFFFFF, with matching subtitles, inside/above/no-bar. Bar colors and threat styling are independent.
-- [ ] Colors contains the interruptible color and Active switch, with default color #3300FF. Highlight (between Colors and TRP3) contains Effect (Pulsing border, Solid border, Alert border), shared Border thickness (4) and outward Border offset (3), Pulse Fade in/Fade out (0.1 seconds each), and Alert length (20–100%), shrink/grow times (0.2 seconds each), end opacity (0%) and center opacity (100%). Pulse fades all four edges between 35% and 100%; Solid is fully opaque; Alert animates centered top/bottom gradient segments with hidden sides. Both Colors and Highlight have labeled effect previews, greyed out while the interruptible Active switch is off. Reset highlight settings restores effect/geometry/timing/gradient without changing Colors color/Active; Reset color settings retains its broader reset scope. Native icon/shield hooks and spellcast events drive detection without reading secret interruptibility. Live visual acceptance remains open.
+- [ ] Colors contains the interruptible color and Active switch, with default color #3300FF. Highlight (between Colors and TRP3) contains Effect (Pulsing border, Solid border, Alert border), shared Border thickness (4) and outward Border offset (3), Pulse Fade in/Fade out (0.1 seconds each), and Alert length (20–100%), shrink/grow times (0.2 seconds each), end opacity (0%) and center opacity (100%). Pulse fades all four edges between 35% and 100%; Solid is fully opaque; Alert animates centered top/bottom gradient segments with hidden sides. Both Colors and Highlight have labeled effect previews, greyed out and static while the interruptible Active switch is off. Reset highlight settings restores effect/geometry/timing/gradient without changing Colors color/Active; Reset color settings retains its broader reset scope. Native icon/shield hooks and spellcast events drive detection without reading secret interruptibility. Live visual acceptance remains open.
 - [ ] Reset color settings restores the selected profile's factory palette, bars On except Background, background dimming On, cast activation Off, effect Pulsing border, and gradients On for Default/custom or Off for High Contrast. It preserves appearance/threat settings, selection, global styling, critter hiding and TRP3. Internal legacy category modes reset to active without affecting rendering.
 - [ ] Text reset restores selected-profile fonts/rendering/size/placement/width and threat On, plus global critter hiding Off. It preserves Colors preferences, global Active, TRP3 and selection. Bundled restore has the separate scope described above.
 
@@ -92,8 +92,13 @@ Capture a complete current-build report if flicker or hitches return. Additional
 
 See [the repeatable cast test](cast-effect-testing.md) for enemy selection, preview versus detection checks and a targeted debug capture.
 
-Acceptance remains partial until the applicable client checks above are recorded. Passing smoke suites or one converged scene does not close unobserved settings, restoration, combat or secure-behavior checks.
-
 - [ ] Advanced is absent. Verify outward offset 3 and constant thickness 4; Pulse fades at 0.1 seconds each way, Solid stays opaque, and Alert has only top/bottom segments with continuous centered growth/shrink. Check previews on both pages and their independent hide/show lifecycle. Valid saved values survive reload; defaults fill missing values without migration.
 
 - [ ] Gradient opacity on Colors spans 0–100%. Test 0 (none), 50 (half-strength tint) and 100 (original gradient); fade position, native health clipping and outlines remain unchanged. Preview updates immediately. Typed/drag edits roll back on combat entry and profile changes. Colors reset uses 100 for Default/custom and 0 for High Contrast; retired toggles are discarded without conversion.
+
+## Recent cast-fill and preview regression checks
+
+- [ ] On the current build, test a fresh live interruptible cast, then leave combat and change its highlight color/profile/effect. Subsequent casts keep a plain fill. Check actual tint, completion/interruption, native shields/icons, disable/re-enable, and restoration without secret-value or taint errors.
+- [ ] Turn highlight Active off on Colors. Both Colors and Highlight previews are grey, dimmed, and completely static for Pulse, Solid, and Alert. Re-enable and verify the selected effect resumes; hide/show each page and repeat.
+
+Acceptance remains partial until the applicable client checks are recorded. Passing local suites or one converged scene does not close unobserved native behavior.

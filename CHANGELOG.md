@@ -1,3 +1,9 @@
+## 1.0.246 — 2026-10-09
+
+- Rewrite the README for users, following RP Emote Menu’s structure: audience/pitch, features, installation, settings, profiles, TRP3, limitations, and commands.
+- Consolidate technical README material into a developer documentation entry point and runtime notes. Replace obsolete phase tasks and intermediate-build instructions with concise implementation records; retain evidence and current client checks.
+- Correct stale developer descriptions of cast effects, saved-field validation, and preview behavior. No runtime or settings behavior changes.
+
 ## 1.0.245 — 2026-10-09
 
 - Flatten fresh live cast fills even when their texture identifier is hidden and no artwork backup exists. Preserve opaque native texture values solely for renderer restoration, without inspecting cast state or writing native control fields.

@@ -1,6 +1,6 @@
 # Saved data model
 
-Reviewed for 1.0.221 on 2026-10-08. Status: implemented version-2 schema. Simple Nameplates uses Global behavior and appearance Profiles, with no separate Theme layer.
+Current for 1.0.246. Implemented version-2 schema. Simple Nameplates uses Global behavior and appearance Profiles, with no separate Theme layer.
 
 ## Why two scopes are sufficient
 
@@ -56,7 +56,7 @@ Profiling introduced in 1.0.163 is session-only. It adds no fields to `SimpleNam
 | Six `priorityColors`, `effectColors.interruptible` | Profile | Appearance colors |
 | `appearance.nameFont`, `nameSize`, `threatFont`, `namePlacement`, `matchSanctuaryFont`, `useSlugRendering`, `healthBarWidth` | Profile | Text and layout |
 | `showThreat`, `interruptibleHighlight` | Profile | Threat visibility (default on) and cast highlight activation (default off) |
-| `interruptibleEffect` | Profile | `PULSE` (default) or `SOLID`; independent of Active |
+| `interruptibleEffect` | Profile | `PULSE` (default), `SOLID`, or `ALERT`; independent of Active |
 | `gradientOpacity`, `dimBackgroundNames` | Profile | Gradient opacity 0–100%, default 100 for Default/custom and 0 for High Contrast; background-name dimming default on |
 | `profileKeys` | Account-wide character selection map | Independent Profile choice per character |
 | `global.managedNameCVarOriginals` | Internal restoration ledger | Original critter and legacy managed values, retained until restored |
@@ -70,7 +70,7 @@ Default and High Contrast are editable account-wide Profiles. Default always exi
 
 ## CVar safety and compatibility
 
-Managed overhead-name original values are persisted in `global.managedNameCVarOriginals` and must survive the refactor unchanged until restored. Setup-approved visibility originals are stored separately per character in `global.nameplateSetupOriginals`. Friendly class-color CVars are observed only; the addon does not capture or write them. Keep combat deferral, capture-before-set, and restoration on disable or when no longer managed. A code-layout refactor has no reason to bump `schemaVersion`; it remains descriptive metadata rather than a reason to reset valid settings. The saved schema marker does not reject an otherwise valid setting. Recognized fields are validated in their current locations; the retired cast selector has the compatibility exception described below. Retain valid restoration-ledger entries until they are restored.
+Managed overhead-name original values are persisted in `global.managedNameCVarOriginals` and must survive the refactor unchanged until restored. Setup-approved visibility originals are stored separately per character in `global.nameplateSetupOriginals`. Friendly class-color CVars are observed only; the addon does not capture or write them. Keep combat deferral, capture-before-set, and restoration on disable or when no longer managed. A code-layout refactor has no reason to bump `schemaVersion`; it remains descriptive metadata rather than a reason to reset valid settings. The saved schema marker does not reject an otherwise valid setting. Recognized fields are validated in their current locations; retired cast selector values are discarded without conversion. Retain valid restoration-ledger entries until they are restored.
 
 ## Runtime phase-3 category fields
 
@@ -87,7 +87,7 @@ Both Global category modes and Profile priority colors recognize only `attacking
 
 Health bars default On for the first five categories and Off for NPC - Background. `dimBackgroundNames` is a per-profile boolean, default On: background names use #999999 when enabled and #FFFFFF when disabled. Colors reset restores both defaults; Text reset preserves them. Valid saved choices remain authoritative.
 
-## Compatibility exception and reset scope
+## Cast settings validation and reset scope
 
 Validation imports only valid current values. `interruptibleCastStyle` is discarded without conversion. Current effects are PULSE, SOLID and ALERT; invalid selections default to PULSE, and activation defaults off. `castAdvanced.PULSE` stores shared thickness (4), offset (3), fadeIn (0.1s) and fadeOut (0.1s). `castAdvanced.ALERT` stores minLength (20%), maxLength (100%), shrinkTime/growTime (0.2s), endOpacity (0%) and centerOpacity (100%). Valid existing values remain authoritative; missing/invalid fields use defaults without migration. Alert minLength greater than maxLength resets both to 20/100. The default `effectColors.interruptible` is #3300FF for all factory profiles, while saved colors remain unchanged. ResetHighlightSettings restores only effect and castAdvanced; color and activation remain on Colors.
 

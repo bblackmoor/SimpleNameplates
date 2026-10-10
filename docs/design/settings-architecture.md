@@ -1,6 +1,6 @@
 # Settings and runtime architecture
 
-Reviewed for 1.0.222 on 2026-10-08. Settings conversion and runtime module work are implemented; live WoW checks remain open. Saved data stays schema 2, with global behavior and account-wide appearance profiles selected per character. Earlier phase history is preserved in the [original implementation plan](implementation-plan.md), [runtime refactor plan](runtime-refactor-plan.md) and [Details Framework conversion record](details-framework-conversion.md).
+Current architecture for 1.0.246. Saved data remains schema 2, with global behavior and account-wide appearance profiles selected per character. Completed records are indexed in [developer documentation](../README.md); live-client checks are tracked separately.
 
 ## Settings ownership and pages
 
@@ -41,7 +41,7 @@ Reset text settings on Text restores profile appearance and threat display plus 
 | `NPCTitles.lua` | Safe structured-tooltip subtitle resolution and bounded session caches |
 | `NameplateText.lua` | Names/titles, placement, bar-height padding, cast/title visibility and cached repair |
 | `NameplateThreat.lua` | Secret-safe formatted threat percentage; blank when unavailable |
-| `CastHighlight.lua` | Interruptible border/glow selection, DF renderer lifecycle, preview and native bar/icon/shield hooks |
+| `CastHighlight.lua` | Addon-owned Pulse/Solid/Alert border lifecycle, static disabled previews, and native bar/icon/shield hooks |
 | `NameplateRestoration.lua` | Original presentation restoration and deferred cleanup/retries |
 | `NameplatePresentation.lua` | Full styling, focused native name/health-color repairs and data updates |
 | `Nameplates.lua` | Single event frame, secure hooks, urgent refresh queues, periodic discovery and per-plate reconciliation |
@@ -74,7 +74,7 @@ Critter hiding claims only its supported world-name CVar. Legacy managed-name re
 
 ## Verification
 
-Run all 23 smoke suites and whitespace checks using the commands in the [README](../../README.md#development). They cover real bundled libraries under UI stubs, saved-field validation, profile/reset scopes, previews/dialogs, context/access gates, uniform presentation, cast/title transitions, restoration, secret-safe formatting, lifecycle and reachable upvalue limits. Profiling has deterministic timing and actual runtime/slash coverage.
+Run the smoke suites and whitespace checks using [the developer commands](../README.md#local-checks). They cover real bundled libraries under UI stubs, saved-field validation, profile/reset scopes, previews/dialogs, context/access gates, uniform presentation, cast/title transitions, restoration, secret-safe formatting, lifecycle and reachable upvalue limits. Profiling has deterministic timing and actual runtime/slash coverage.
 
 Local tests cannot establish native rendering, client frame permissions or secret-value safety. Record observations in the [live WoW checklist](live-wow-verification.md); client items remain open until observed.
 
@@ -84,8 +84,8 @@ Native font/color/alpha setter hooks retain guarded notifications and repair the
 
 Selective repairs finish color/opacity after visibility, sizing and layout callbacks, consume pending artwork, and perform one bounded validated color/alpha finalization. Standalone artwork receives the same completion check. Fresh access, context, ownership/cache and readable GUID validation gate writes; unknown observations remain for reconciliation. The finalizer adds no classification, name-font/layout work, scheduling or full styles.
 
-The 1.0.218 crowded-scene report confirms appearance convergence in that scene. Version 1.0.219 removed temporary checkpoint/audit reads and retained the fixes. All 21 local smoke suites passed for that cleanup; broader normal-play, secure behavior and settings acceptance remain open in the live checklist.
+The 1.0.218 crowded-scene report confirms appearance convergence in that scene. Version 1.0.219 removed temporary checkpoint/audit reads and retained the fixes. Broader normal-play, secure behavior and settings acceptance are recorded in the live checklist.
 
-## Interruptible effects (1.0.221)
+## Interruptible effects
 
-Colors contains the interruptible color and Active switch, with default color #3300FF. Highlight (between Colors and TRP3) contains Effect (Pulsing border, Solid border, Alert border), shared Border thickness (4) and outward Border offset (3), Pulse Fade in/Fade out (0.1 seconds each), and Alert length (20–100%), shrink/grow times (0.2 seconds each), end opacity (0%) and center opacity (100%). Pulse fades all four edges between 35% and 100%; Solid is fully opaque; Alert animates centered top/bottom gradient segments with hidden sides. Both Colors and Highlight have labeled effect previews, greyed out while the interruptible Active switch is off. Reset highlight settings restores effect/geometry/timing/gradient without changing Colors color/Active; Reset color settings retains its broader reset scope. Native icon/shield hooks and spellcast events drive detection without reading secret interruptibility. Live visual acceptance remains open.
+Colors contains the interruptible color and Active switch, with default color #3300FF. Highlight (between Colors and TRP3) contains Effect (Pulsing border, Solid border, Alert border), shared Border thickness (4) and outward Border offset (3), Pulse Fade in/Fade out (0.1 seconds each), and Alert length (20–100%), shrink/grow times (0.2 seconds each), end opacity (0%) and center opacity (100%). Pulse fades all four edges between 35% and 100%; Solid is fully opaque; Alert animates centered top/bottom gradient segments with hidden sides. Both Colors and Highlight have labeled effect previews, greyed out and static, with both animation groups stopped, while the interruptible Active switch is off. Reset highlight settings restores effect/geometry/timing/gradient without changing Colors color/Active; Reset color settings retains its broader reset scope. Native icon/shield hooks and spellcast events drive detection without reading secret interruptibility. Live visual acceptance remains open.

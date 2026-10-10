@@ -1,166 +1,18 @@
-# Nearby-entity performance: four phases
+# Performance implementation record
 
-Implementation history, reviewed for 1.0.220 on 2026-10-08. All four original code phases and the measured follow-up fixes are implemented. The 1.0.218 crowded-scene report confirms appearance convergence; 1.0.219 removes temporary diagnostics. Broader normal-play acceptance and matched FPS/profiling-off/on comparisons remain open. Phase-specific descriptions below retain their original timing definitions and acceptance status; later findings supersede them. See [the follow-up record](reconciliation-stall-plan.md) and [current live checklist](live-wow-verification.md).
+The four original code phases (1.0.202–1.0.205) and subsequent targeted repairs are implemented. This records the resulting design; completed tasks, visit-count backoff, and intermediate-build test instructions have been removed.
 
-## Baseline and scope
+## Baseline
 
-The 2026-10-06 live report recorded 119.6 seconds: 8,454 full-styling calls
-(20,134.112 ms inclusive), 440 reconciliation passes (11,435.746 ms inclusive,
-25.990 ms average, 116.109 ms maximum), and 9,866 cached-text repair calls
-(5,232.329 ms inclusive). Classification and NPC-title lookup were smaller
-measured costs. Inclusive rows overlap and must not be summed. Profiler overhead
-and differing scenes prevent exact FPS predictions or a memory-leak conclusion.
+The 2026-10-06 report covered 119.6 seconds: 8,454 full styles (20,134.112 ms inclusive), 440 all-plate reconciliation passes (11,435.746 ms inclusive; 25.990 ms average, 116.109 ms maximum), and 9,866 cached-text repairs (5,232.329 ms inclusive). Native name/color hooks triggered full styling and glyph copies synchronized through setter hooks. Inclusive totals overlap; unmatched scenes do not establish FPS gains or leaks.
 
-The original baseline routed Blizzard name and health-color hooks through full styling,
-repeated frame access assessments within operations, and broadly repaired small
-text differences. The original black glyph copies also synchronized repeatedly
-through setter hooks, including when only health-dependent alpha changed.
+## Implemented changes
 
-The agreed presentation is now thin solid black outlines on all styled text.
-The gradient remains 80% black at the left, clear at 95% width, and clipped by
-native remaining fill geometry. Removing glyph copies also removes their former
-80% health threshold. Existing title/cast substitution, dimming, native health
-progress, restricted-value handling and restoration must remain correct.
+1. Remove glyph copies and their health-dependent alpha logic; use thin outlines. Add optional timings and bounded reason counters.
+2. Separate focused native-name/health-color repair from full styling. Coalesce per-unit classification, content, threat, cast, and layout work. Invalid identity/presentation caches still trigger full styling.
+3. Reuse access assessments only within an operation; selectively repair readable differences. Unchanged plates write nothing; unknown observations do not establish drift.
+4. Share a fair due-time scheduler across reconciliation and deferred restoration/cast/unit/plate/global work. The budget is at most four atomic jobs per frame with a one-millisecond target checked between jobs. Discovery and served-plate cadence are 0.25 seconds; elapsed unknown-property retry eligibility backs off from 0.25 to four seconds.
 
-## Phase 1 — Simplify text and improve measurements
+Explicit unit work and current/previous target, mouseover, and interaction plates remain immediate. Broad settings/context updates settle over successive frames. A time target cannot interrupt an atomic operation, and a backlog can delay service beyond eligibility. Restoration remains eligible while styling is disabled.
 
-Implemented in 1.0.202; live acceptance pending.
-
-- Remove the glyph-copy module and its native setter hooks, preview copies,
-  curve API, health-dependent alpha path and health-event registrations.
-- Keep OUTLINE or SLUG,OUTLINE on names, titles, health, threat and cast labels;
-  preserve dimensions, colors and original native restoration data.
-- Add optional access/artwork/name/layout/drift timings and bounded reason
-  counters to the existing screenshot-friendly chat report.
-- Preserve existing drift decisions, refresh cadence and full-styling behavior
-  for later phases. Counters distinguish requests, outcomes, queue coalescing
-  inputs and reconciliation repairs; they contain no unit identities.
-- Update tests and documentation. Repeat a comparable crowded recording to
-  establish the simplified baseline and identify recurring work triggers.
-
-## Phase 2 — Separate styling from updates
-
-Implemented in 1.0.203; live acceptance pending.
-
-- Ordinary native-name hooks restore the cached name/font/color/visibility. A
-  readable native source-name change updates content and classification, without
-  artwork when presentation structure is unchanged.
-- Ordinary health-color hooks repair category bar color/visibility. Settings,
-  current token/readable GUID, original regions, cast-region identity and context
-  revision validate the focused cache; invalid state safely falls back to full
-  styling. Retired native name regions retain their own restoration baseline.
-- Per-unit work flags merge with all-plate work. A detached batch protects requests
-  queued by synchronous callbacks; inaccessible unit lookups retain their merged
-  work, and removal discards work for the departed unit.
-- Name events update content/classification, threat events update threat and
-  classification, cast events update highlight/title visibility, and target or
-  interaction events request focused all-plate work. TRP3 callbacks queue name
-  content. Threat/native-label presence can request a separate name-layout update.
-- Tests verify absent unrelated timing rows for ordinary hooks and cast/value
-  updates, queue preservation, structural fallback, recycling and error guards.
-
-Original phase 2 requirements:
-
-- Introduce focused name and health-color repair paths for Blizzard hooks.
-- Separate classification, name/title content, threat, cast state and layout
-  updates. Coalesce pending work per current plate assignment.
-- Reserve complete styling for initialization, relevant settings/context
-  changes, replaced regions and invalid presentation state.
-- Verify ordinary name/color hooks do not cause full restyling, including
-  recycled plates, synchronous callbacks and failures.
-
-## Phase 3 — Make reconciliation cheaper
-
-Implemented in 1.0.204; live acceptance pending.
-
-Reconciliation shares an assessment from plate lookup through drift observation
-and selective repair. Text styling/layout/title/restoration helpers can reuse the
-caller's assessment; complete assessments are renewed after restoration and
-native artwork callbacks. No assessment persists between operations.
-
-Readable mismatches form a repair set. Text, font, shadows, colors, visibility and
-geometry repair independently; unchanged plates write nothing. Changed native
-label chains reuse observed labels and anchor only the affected layout. Structural
-cache invalidation still falls back to full styling, with identity validation
-rejecting stale observations before repair.
-
-Unknown properties never establish drift. Per-property retries back off through
-1, 2, 4, 8 and 16 reconciliation passes (nominally up to four seconds), without
-blocking readable properties. Pending unknown cast/title visibility also backs
-off while keeping titles hidden; native cast hooks and events bypass that delay.
-Full content/layout setup resets property retry state. Phase 4 replaces these
-visit-count delays with elapsed-time deadlines. Setter/read-count tests
-cover unchanged scans, isolated/combined mismatches, unknown recovery, label
-observation reuse, replaced regions and error guards. Cadence remains 0.25 seconds.
-
-Original phase 3 requirements:
-
-- Reuse an assessment only within one operation. Renew it after restoration,
-  region replacement or other invalidation; retain restricted-frame safeguards.
-- Repair only the properties whose readable observations show drift.
-- Treat unreadable native properties as unknown, with bounded retries rather
-  than repeated repairs caused solely by an unknown comparison.
-- Avoid duplicate layout scans and redundant font, geometry and anchor writes.
-- Confirm unchanged plates cause no repair writes and retain event-driven
-  title/cast behavior. No underlayer batching work remains after phase 1.
-
-## Phase 4 — Bound periodic work and verify in WoW
-
-Implemented in 1.0.205; live acceptance and budget tuning pending.
-
-The user authorized bounded work without a post-phase-3 live recording. The
-initial conservative budget is four atomic jobs per frame and a one-millisecond
-elapsed target checked between jobs. An expensive single UI operation may exceed
-that target; no native FPS improvement has been established yet.
-
-A due-time heap shares this budget across reconciliation, restoration, cast
-recovery and pending unit/plate retries. Equal deadlines preserve insertion order;
-coalescing retains older work, and failed jobs retry without monopolizing the
-queue. The native visible list is discovered every 0.25 seconds with Lua queue
-bookkeeping, separate from plate styling. Each served plate is due again after
-0.25 seconds; backlog and low FPS may extend actual service intervals.
-
-Jobs obtain fresh context/access and observations only when processed. Removal,
-changed assignments, full refreshes and disabling styling invalidate routine
-work. Urgent event queues are flushed before the periodic budget; successful
-restoration refreshes only the recovered unit when styling is active, while
-restoration remains eligible when it is disabled. Broad retry loops are retired.
-
-Unreadable-property/title retries now use elapsed deadlines of 0.25, 0.5, 1, 2
-and four seconds instead of sixteen visits. Native cast hooks/events still
-bypass backoff. A deadline establishes eligibility; a congested queue can service
-it later. Tests cover the shared count/time limits, fairness, heap cancellation,
-callback replacement/errors, crowded queues, urgent updates, context/settings,
-recycling, disabled restoration and elapsed-time backoff.
-
-All four code phases are implemented. The live checklist stays open; comparable
-in-game recordings must establish FPS impact, native correctness and whether
-the initial budget should change. No release artifact or ZIP is generated.
-
-Original phase 4 requirements:
-
-- If the optimized scan still causes spikes, distribute routine reconciliation
-  across frames with a bounded work budget and fair progress for every plate.
-- Keep urgent names, threat and cast changes event-driven; do not merely lower
-  scan frequency while allowing delayed or incorrect presentation.
-- Run smoke suites and native checks for crowded scenes, combat transitions,
-  recycled/replaced plates, restricted values, profile changes and TRP3.
-- Compare similar durations, activity, plate counts and settings, with profiling
-  off/on. Measure actual FPS and scan cost; do not infer FPS from overlapping
-  timing totals or declare a leak from aggregate memory changes.
-
-## Verification
-
-Run `texlua` on each `tests/*-smoke.lua` and `git diff --check` after each phase.
-The suite uses UI stubs and cannot establish native secure behavior or rendering.
-The [live checklist](live-wow-verification.md) retains pending client acceptance;
-the [profiling guide](profiling.md) defines counter and timing interpretation.
-
-## Follow-up after the October 8 report
-
-The [reconciliation stall plan](reconciliation-stall-plan.md) defines phases 5–8:
-verify the installed build, collect matched complete reports, instrument remaining
-stalls if necessary, fix the measured cause and complete native acceptance. The
-first October 8 screenshot lacked current profiler rows/counters and did not establish
-post-phase-4 performance; subsequent confirmed-build reports are recorded in the follow-up plan. The latest 1.0.218 report confirms convergence in its tested scene, with broader acceptance still open. Reconciliation averages across the old all-plate and
-new per-plate definitions are not directly comparable.
+The follow-up [appearance convergence record](reconciliation-stall-plan.md) captures the measured boundary fixes. Use [profiling](profiling.md) for equivalent timing definitions and [live verification](live-wow-verification.md) for unconfirmed client behavior. Exact FPS impact remains unestablished; another diagnostic phase is warranted only by a reproduced problem.
