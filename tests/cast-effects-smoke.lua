@@ -142,13 +142,19 @@ local preview = CreateFrame("StatusBar")
 effect = "PULSE"; enabled = false
 ns.CastHighlight.UpdatePreview(preview)
 assert(preview.SNPCastPreview.activeEffect == "PULSE", "inactive preview retains selected effect")
+assert(not preview.SNPCastPreview.pulse:IsPlaying() and not preview.SNPCastPreview.alert:IsPlaying(), "disabled Pulse preview is inert")
 assert(preview.SNPCastPreview.previewDisabled and preview.SNPCastPreview.border[1].color[1] == 0.5
     and preview.SNPCastPreview.border[1].color[2] == 0.5, "inactive preview border is grey")
 effect = "ALERT"; ns.CastHighlight.UpdatePreview(preview)
+assert(not preview.SNPCastPreview.pulse:IsPlaying() and not preview.SNPCastPreview.alert:IsPlaying(), "disabled Alert preview is inert")
 local gray = preview.SNPCastPreview.alertBorder[1].halves[1].gradient[3]
 assert(gray.r == 0.5 and gray.g == 0.5 and gray.b == 0.5, "inactive Alert gradient is grey")
 enabled = true; ns.CastHighlight.UpdatePreview(preview)
 assert(not preview.SNPCastPreview.previewDisabled, "reenabled preview restores chosen color")
+assert(preview.SNPCastPreview.alert:IsPlaying(), "reenabling resumes Alert")
+enabled = false; ns.CastHighlight.UpdatePreview(preview)
+assert(not preview.SNPCastPreview.alert:IsPlaying(), "disabling a running Alert stops it")
+enabled = true; ns.CastHighlight.UpdatePreview(preview)
 local color = preview.SNPCastPreview.alertBorder[1].halves[1].gradient[3]
 assert(color.r == 0.2 and color.g == 0.8 and color.b == 1, "active preview shows configured color")
 effect = "SOLID"; ns.CastHighlight.UpdatePreview(preview)

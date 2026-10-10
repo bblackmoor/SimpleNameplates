@@ -1,5 +1,7 @@
 -- Verify native edge removal and reversible bar/text artwork.
 local ns = {}
+local secretTexture = {}
+issecretvalue = function(value) return value == secretTexture end
 local slug = false
 ns.GetAppearanceSetting = function(key) return key == "useSlugRendering" and slug end
 assert(loadfile("SimpleNameplates/FontRendering.lua"))("SimpleNameplates", ns)
@@ -213,5 +215,17 @@ cast:UpdateBarFillTexture("native-green")
 assert(castFill.atlas == "native-green" and castFill.vr == 1, "inactive fill hook leaves native artwork untouched")
 cast:ShowSpark()
 assert(cast.Spark.alpha == 1, "inactive spark hook leaves native artwork untouched")
+-- Fresh styling after a settings refresh has no saved fill to rely on.
+castFill.GetAtlas = function() return nil end
+castFill.GetTexture = function() return secretTexture end
+castFill.texture, castFill.atlas = secretTexture, nil
+ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
+assert(castFill.texture == "Interface\\Buttons\\WHITE8X8", "fresh secret cast is flattened")
+ns.NameplateFrames.RestoreBarArtwork(frame, context)
+assert(castFill.texture == secretTexture, "opaque native texture forwarded during restoration")
+ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
+assert(castFill.texture == "Interface\\Buttons\\WHITE8X8", "settings restyle keeps secret cast plain")
+ns.NameplateFrames.RestoreBarArtwork(frame, context)
+castFill.GetAtlas, castFill.GetTexture = getAtlas, getTexture
 print("Bar artwork smoke: passed")
 

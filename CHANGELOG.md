@@ -1,3 +1,8 @@
+## 1.0.245 — 2026-10-09
+
+- Flatten fresh live cast fills even when their texture identifier is hidden and no artwork backup exists. Preserve opaque native texture values solely for renderer restoration, without inspecting cast state or writing native control fields.
+- Stop Pulse and Alert preview animations when interruptible highlight is off, leaving both page previews grey, dimmed and inert. Resume the selected effect when enabled.
+
 ## 1.0.244 — 2026-10-09
 
 - Remove 1.0.243’s writes to Blizzard’s native classicStyleCastBar field, including restoration, to avoid tainting native secret-value execution. Keep the plain-fill repair for hidden live texture identifiers.

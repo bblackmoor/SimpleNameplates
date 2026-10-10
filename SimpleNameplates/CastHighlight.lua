@@ -188,6 +188,11 @@ local function ApplyRenderer(highlight)
     if highlight.activeEffect ~= effect then StopRenderer(highlight) end
     highlight.activeEffect = effect
     ConfigureBorder(highlight, effect)
+    if highlight.previewDisabled then
+        highlight.pulse:Stop()
+        highlight.alert:Stop()
+        highlight.frame:SetAlpha(1)
+    end
     local r, g, b = EffectColor("interruptible")
     if highlight.previewDisabled then r, g, b = 0.5, 0.5, 0.5 end
     for _, edge in ipairs(highlight.border) do
@@ -205,8 +210,10 @@ local function ApplyRenderer(highlight)
         second:SetGradient(direction, CreateColor(r, g, b, centerAlpha), CreateColor(r, g, b, endAlpha))
         edge:SetShown(effect == "ALERT" and edge.horizontal)
     end
-    if effect == "PULSE" and not highlight.pulse:IsPlaying() then highlight.pulse:Play() end
-    if effect == "ALERT" and not highlight.alert:IsPlaying() then highlight.alert:Play() end
+    if not highlight.previewDisabled then
+        if effect == "PULSE" and not highlight.pulse:IsPlaying() then highlight.pulse:Play() end
+        if effect == "ALERT" and not highlight.alert:IsPlaying() then highlight.alert:Play() end
+    end
 end
 
 -- Midnight can make IsInterruptable() secret. Blizzard has already consumed that

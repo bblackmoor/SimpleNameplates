@@ -224,14 +224,24 @@ local function RemoveArtworkEdge(frame, region, context)
     if original.alpha ~= nil then region:SetAlpha(0) end
 end
 
-local function FlattenFill(frame, region, context)
+local function FlattenFill(frame, region, context, isCast)
     local original = OriginalArtwork(frame, region, context)
     if not original then return end
     if not original.fill then
         local atlas = Capabilities.ReadRegion(region, "GetAtlas", context)
         local texture = Capabilities.ReadRegion(region, "GetTexture", context)
         local coords = ReadValues(region, "GetTexCoord", context)
-        if not atlas and not texture then return end
+        if not atlas and not texture then
+            if not isCast then return end
+            -- Preserve an opaque native texture only for renderer restoration.
+            -- Never compare or classify its value; a fresh live cast may already
+            -- have a secret identifier before this frame has an artwork backup.
+            local getter = Capabilities.SafeField(region, "GetTexture", context)
+            if type(getter) ~= "function" then return end
+            local ok, nativeTexture = pcall(getter, region)
+            if not ok then return end
+            texture = nativeTexture
+        end
         original.fill = {atlas = atlas, texture = texture, coords = coords}
     end
     region:SetTexture("Interface\\Buttons\\WHITE8X8")
@@ -369,7 +379,7 @@ local function FlattenBar(frame, bar, backgroundKey, context, isCast)
         or Capabilities.SafeField(bar, "barTexture", context)
     if isCast then FlattenCastColor(frame, fill, context) end
     -- A saved fill can be replaced even when its current identifier is secret.
-    FlattenFill(frame, fill, context)
+    FlattenFill(frame, fill, context, isCast)
     local background = bar.SNPPlainBackground
     if not background and type(bar.CreateTexture) == "function" then
         background = bar:CreateTexture(nil, "BACKGROUND", nil, -1)
