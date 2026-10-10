@@ -58,7 +58,7 @@ for _, style in ipairs({"ALERT", "SOLID", "ALERT", "SOLID"}) do
         assert(point[2] == owner.castBar and point[4] == 0 and point[5] == 0, "cast bar alignment")
     end
     for _, edge in ipairs(h.border) do
-        for _, point in pairs(edge.points) do assert(math.abs(point[4]) == 2 and math.abs(point[5]) == 2, "two-unit outward offset") end
+        for _, point in pairs(edge.points) do assert(math.abs(point[4]) == 3 and math.abs(point[5]) == 3, "three-unit outward offset") end
     end
     assert(h.shrink[1].duration == 0.2 and h.grow[1].duration == 0.2)
     for index, edge in ipairs(h.alertBorder) do

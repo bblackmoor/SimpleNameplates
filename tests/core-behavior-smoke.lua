@@ -95,7 +95,7 @@ end
 -- Pulse and Alert have independent validated controls; no obsolete migration.
 local borders = fresh()
 equal(borders.GetCastBorderSetting("PULSE", "thickness"), 4, "shared thickness default")
-equal(borders.GetCastBorderSetting("PULSE", "offset"), 2, "shared outward offset default")
+equal(borders.GetCastBorderSetting("PULSE", "offset"), 3, "shared outward offset default")
 equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.1, "original fade-in default")
 equal(borders.GetCastBorderSetting("PULSE", "fadeOut"), 0.1, "original fade-out default")
 equal(borders.GetCastBorderSetting("ALERT", "minLength"), 20, "Alert minimum default")

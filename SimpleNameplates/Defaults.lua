@@ -107,7 +107,7 @@ ns.Defaults = {
 ns.CAST_BORDER_CONTROLS = {
     PULSE = {
         {key="thickness", label="Border thickness", min=1, max=12, step=1, default=4, suffix=" px"},
-        {key="offset", label="Border offset", min=0, max=6, step=1, default=2, suffix=" px"},
+        {key="offset", label="Border offset", min=0, max=6, step=1, default=3, suffix=" px"},
         {key="fadeIn", label="Fade in", min=0.1, max=2, step=0.05, default=0.1, suffix=" s"},
         {key="fadeOut", label="Fade out", min=0.1, max=2, step=0.05, default=0.1, suffix=" s"},
     },

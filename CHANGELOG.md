@@ -1,3 +1,7 @@
+## 1.0.241 — 2026-10-09
+
+- Set the shared border offset default to 3 UI units outward. Preserve valid saved offsets; resets and missing/invalid values use 3.
+
 ## 1.0.240 — 2026-10-09
 
 - Grey and dim both interruptible effect previews when the Colors Active switch is off; restore the selected highlight color and normal brightness when enabled. Apply the same behavior to Pulse, Solid and Alert previews without changing live cast colors.

@@ -105,7 +105,7 @@ local function Parameter(effect, key, fallback)
 end
 
 local function ConfigureOffset(h)
-    local offset = Parameter("PULSE", "offset", 2)
+    local offset = Parameter("PULSE", "offset", 3)
     if h.borderOffset == offset then return end
     h.borderOffset = offset
     local corners = {
