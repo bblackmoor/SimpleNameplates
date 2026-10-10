@@ -43,13 +43,17 @@ local function AddCastHighlightSwitch(context, row, swatch)
 end
 
 local function AddCastBorderControls(context)
-    for _, effect in ipairs({"PULSE"}) do
+    for _, effect in ipairs({"PULSE", "ALERT"}) do
         for _, definition in ipairs(addon.CAST_BORDER_CONTROLS[effect]) do
             local key = definition.key
-            if key == "minLength" then
+            if key == "fadeIn" then
                 AddSection(context.content, context.layout, "Pulse settings")
                 AddDescription(context.content, context.layout,
-                    "Centered gradient segments shrink and grow along each edge. Length is a percentage of that edge; thickness stays constant. These settings apply to Pulsing gradient border.")
+                    "Pulsing border fades all four edges between 35% and 100% opacity.")
+            elseif key == "minLength" then
+                AddSection(context.content, context.layout, "Alert settings")
+                AddDescription(context.content, context.layout,
+                    "Alert border shrinks and grows centered gradient segments on the top and bottom edges. Length is a percentage of the edge; thickness stays constant. Side borders are hidden.")
             end
             local block = CreateFrame("Frame", nil, context.content)
             block.LayoutFullWidth = true
@@ -253,7 +257,7 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Restores health bars to On except NPC - Background, background-name dimming to On, gradient opacity to 100% for Default/custom profiles or 0% for High Contrast, and cast highlight to Inactive with magenta Pulsing gradient border, thickness 4, length 10–100%, shrink/grow times 0.2 seconds, end opacity 0% and center opacity 100%.")
+        "Restores health bars to On except NPC - Background, background-name dimming to On, gradient opacity to 100% for Default/custom profiles or 0% for High Contrast, and cast highlight to Inactive with magenta Pulsing border, thickness 4, pulse fade times 0.2 seconds, and Alert length 20–100%, shrink/grow times 0.2 seconds, end opacity 0% and center opacity 100%.")
     AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")

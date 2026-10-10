@@ -159,7 +159,7 @@ local ns = {
     SetInterruptibleHighlightEnabled = function(value) castEnabled = value end,
     CAST_EFFECT_OPTIONS = {{value = "PULSE", label = "Pulsing border"}},
     CAST_EFFECT_BY_VALUE = {PULSE = "Pulsing border", SOLID = "Solid border", },
-    CAST_BORDER_CONTROLS = {PULSE = {}, SOLID = {}},
+    CAST_BORDER_CONTROLS = {PULSE = {}, SOLID = {}, ALERT = {}},
     GetCastBorderSetting = function() return nil end,
     SetCastBorderSetting = function() end,
     GetInterruptibleEffect = function() return "PULSE" end,

@@ -66,7 +66,7 @@ end
 -- Each centered edge has two half textures so the gradient stays symmetric.
 -- Native scale animations pin each half at the shared midpoint and change only
 -- its long axis; no cast dimensions are read.
-local function CreatePulseBorder(parent, thickness)
+local function CreateAlertBorder(parent, thickness)
     local edges = {}
     for index, points in ipairs({
         {"TOPLEFT", "TOPRIGHT"}, {"BOTTOMLEFT", "BOTTOMRIGHT"},
@@ -109,20 +109,32 @@ local function ConfigureBorder(h, effect)
     for index, edge in ipairs(h.border) do
         if index <= 2 then edge:SetHeight(thickness) else edge:SetWidth(thickness) end
     end
-    for _, edge in ipairs(h.pulseBorder) do
+    for _, edge in ipairs(h.alertBorder) do
         if edge.horizontal then edge:SetHeight(thickness) else edge:SetWidth(thickness) end
     end
-    if effect ~= "PULSE" then return end
-    local minimum = Parameter("PULSE", "minLength", 10) / 100
-    local maximum = Parameter("PULSE", "maxLength", 100) / 100
+    if effect == "PULSE" then
+        local fadeOut = Parameter("PULSE", "fadeOut", 0.2)
+        local fadeIn = Parameter("PULSE", "fadeIn", 0.2)
+        local signature = table.concat({fadeOut, fadeIn}, ":")
+        if h.pulseConfig ~= signature then
+            h.pulseConfig = signature
+            h.pulse:Stop()
+            h.fadeOut:SetDuration(fadeOut)
+            h.fadeIn:SetDuration(fadeIn)
+        end
+        return
+    end
+    if effect ~= "ALERT" then return end
+    local minimum = Parameter("ALERT", "minLength", 20) / 100
+    local maximum = Parameter("ALERT", "maxLength", 100) / 100
     minimum = math.min(minimum, maximum)
-    local shrinkTime = Parameter("PULSE", "shrinkTime", 0.2)
-    local growTime = Parameter("PULSE", "growTime", 0.2)
+    local shrinkTime = Parameter("ALERT", "shrinkTime", 0.2)
+    local growTime = Parameter("ALERT", "growTime", 0.2)
     local signature = table.concat({minimum, maximum, shrinkTime, growTime}, ":")
-    if h.pulseConfig == signature then return end
-    h.pulseConfig = signature
-    h.pulse:Stop()
-    for index, edge in ipairs(h.pulseBorder) do
+    if h.alertConfig == signature then return end
+    h.alertConfig = signature
+    h.alert:Stop()
+    for index, edge in ipairs(h.alertBorder) do
         local maxX, maxY = edge.horizontal and maximum or 1, edge.horizontal and 1 or maximum
         local minX, minY = edge.horizontal and minimum or 1, edge.horizontal and 1 or minimum
         for half = 1, 2 do
@@ -140,34 +152,36 @@ end
 
 local function StopRenderer(highlight)
     highlight.pulse:Stop()
+    highlight.alert:Stop()
     highlight.frame:SetAlpha(1)
     for _, edge in ipairs(highlight.border) do edge:Hide() end
-    for _, edge in ipairs(highlight.pulseBorder) do edge:Hide() end
+    for _, edge in ipairs(highlight.alertBorder) do edge:Hide() end
 end
 
 local function ApplyRenderer(highlight)
     local effect = highlight.previewEffect or (ns.GetInterruptibleEffect and ns.GetInterruptibleEffect()) or "PULSE"
-    if effect ~= "SOLID" then effect = "PULSE" end
+    if effect ~= "SOLID" and effect ~= "ALERT" then effect = "PULSE" end
     if highlight.activeEffect ~= effect then StopRenderer(highlight) end
     highlight.activeEffect = effect
     ConfigureBorder(highlight, effect)
     local r, g, b = EffectColor("interruptible")
     for _, edge in ipairs(highlight.border) do
         edge:SetColorTexture(r, g, b, 1)
-        edge:SetShown(effect == "SOLID")
+        edge:SetShown(effect ~= "ALERT")
     end
-    local endAlpha = Parameter("PULSE", "endOpacity", 0) / 100
-    local centerAlpha = Parameter("PULSE", "centerOpacity", 100) / 100
-    for _, edge in ipairs(highlight.pulseBorder) do
+    local endAlpha = Parameter("ALERT", "endOpacity", 0) / 100
+    local centerAlpha = Parameter("ALERT", "centerOpacity", 100) / 100
+    for _, edge in ipairs(highlight.alertBorder) do
         local direction = edge.horizontal and "HORIZONTAL" or "VERTICAL"
         local first, second = unpack(edge.halves)
         first:SetColorTexture(1, 1, 1, 1)
         second:SetColorTexture(1, 1, 1, 1)
         first:SetGradient(direction, CreateColor(r, g, b, endAlpha), CreateColor(r, g, b, centerAlpha))
         second:SetGradient(direction, CreateColor(r, g, b, centerAlpha), CreateColor(r, g, b, endAlpha))
-        edge:SetShown(effect == "PULSE")
+        edge:SetShown(effect == "ALERT" and edge.horizontal)
     end
     if effect == "PULSE" and not highlight.pulse:IsPlaying() then highlight.pulse:Play() end
+    if effect == "ALERT" and not highlight.alert:IsPlaying() then highlight.alert:Play() end
 end
 
 -- Midnight can make IsInterruptable() secret. Blizzard has already consumed that
@@ -291,11 +305,24 @@ local function CreateHighlight(castBar, owner, healthBar)
         owner = owner,
         frame = overlay,
         border = CreateBorder(overlay, 0, 4),
-        pulseBorder = CreatePulseBorder(overlay, 4),
+        alertBorder = CreateAlertBorder(overlay, 4),
         shrink = {}, grow = {},
     }
     local pulse = overlay:CreateAnimationGroup()
-    for index, edge in ipairs(highlight.pulseBorder) do
+    local fadeOut = pulse:CreateAnimation("Alpha")
+    fadeOut:SetFromAlpha(1)
+    fadeOut:SetToAlpha(0.35)
+    fadeOut:SetDuration(0.2)
+    fadeOut:SetOrder(1)
+    local fadeIn = pulse:CreateAnimation("Alpha")
+    fadeIn:SetFromAlpha(0.35)
+    fadeIn:SetToAlpha(1)
+    fadeIn:SetDuration(0.2)
+    fadeIn:SetOrder(2)
+    pulse:SetLooping("REPEAT")
+    highlight.pulse, highlight.fadeOut, highlight.fadeIn = pulse, fadeOut, fadeIn
+    local alert = overlay:CreateAnimationGroup()
+    for index, edge in ipairs(highlight.alertBorder) do
         for half, texture in ipairs(edge.halves) do
             -- Animate textures directly. Scaling the containing frame does not
             -- hold the two gradient halves together at their shared midpoint.
@@ -303,7 +330,7 @@ local function CreateHighlight(castBar, owner, healthBar)
             if edge.horizontal then origin = half == 1 and "RIGHT" or "LEFT"
             else origin = half == 1 and "TOP" or "BOTTOM" end
             for order, animations in ipairs({highlight.shrink, highlight.grow}) do
-                local scale = pulse:CreateAnimation("Scale")
+                local scale = alert:CreateAnimation("Scale")
                 scale:SetTarget(texture)
                 scale:SetOrigin(origin, 0, 0)
                 scale:SetOrder(order)
@@ -312,8 +339,8 @@ local function CreateHighlight(castBar, owner, healthBar)
             end
         end
     end
-    pulse:SetLooping("REPEAT")
-    highlight.pulse = pulse
+    alert:SetLooping("REPEAT")
+    highlight.alert = alert
 
     overlay:SetScript("OnShow", function() ApplyRenderer(highlight) end)
     overlay:SetScript("OnHide", function() StopRenderer(highlight) end)

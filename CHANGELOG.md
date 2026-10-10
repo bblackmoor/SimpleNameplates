@@ -1,3 +1,10 @@
+## 1.0.237 — 2026-10-09
+
+- Restore Pulsing border as the original four-edge opacity pulse (35–100%, Fade in/Fade out defaulting to 0.2 seconds).
+- Add the gradient length pulse as the separate Alert border effect. Hide its side borders and keep centered top/bottom segments with fixed thickness.
+- Add Alert settings below Pulse settings; default Alert minimum length to 20%. Keep maximum length 100%, shrink/grow times 0.2 seconds, end opacity 0% and center opacity 100%, with shared thickness 4 and magenta default color.
+- Keep current valid settings in place; discard obsolete length/gradient values under PULSE without migrating them into ALERT.
+
 ## 1.0.236 — 2026-10-09
 
 - Fix Pulse shrinking toward corners: animate each gradient half-texture directly around its shared opaque midpoint (horizontal RIGHT/LEFT pivots; vertical TOP/BOTTOM pivots), rather than scaling the containing edge frame.

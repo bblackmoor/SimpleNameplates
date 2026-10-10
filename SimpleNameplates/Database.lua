@@ -78,8 +78,8 @@ local function ValidatedCastBorders(saved)
             end
         end
     end
-    if result.PULSE.minLength > result.PULSE.maxLength then
-        result.PULSE.minLength, result.PULSE.maxLength = 10, 100
+    if result.ALERT.minLength > result.ALERT.maxLength then
+        result.ALERT.minLength, result.ALERT.maxLength = 20, 100
     end
     return result
 end

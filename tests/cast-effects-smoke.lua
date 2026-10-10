@@ -47,11 +47,11 @@ owner.castBar.Icon = CreateFrame("Frame", nil, owner.castBar)
 owner.castBar.GetSize = function() error("native cast geometry read") end
 local function Update() ns.CastHighlight.UpdateInterruptibleHighlight(owner, {}, owner.SNPPresentation) end
 local h
-for _, style in ipairs({"PULSE", "SOLID", "PULSE", "SOLID"}) do
+for _, style in ipairs({"ALERT", "SOLID", "ALERT", "SOLID"}) do
     effect = style; Update()
     h = owner.SNPInterruptibleHighlight
     assert(h.frame:IsShown() and h.activeEffect == style, style.." renders")
-    assert(h.pulse:IsPlaying() == (style == "PULSE"), "only pulse animates")
+    assert(h.alert:IsPlaying() == (style == "ALERT"), "only pulse animates")
     assert(h.border[1].height == 4 and h.border[2].height == 4)
     assert(h.border[3].width == 4 and h.border[4].width == 4, "side thickness matches")
     for _, point in pairs(h.frame.points) do
@@ -61,7 +61,7 @@ for _, style in ipairs({"PULSE", "SOLID", "PULSE", "SOLID"}) do
         for _, point in pairs(edge.points) do assert(point[4] == 0 and point[5] == 0, "zero inset") end
     end
     assert(h.shrink[1].duration == 0.2 and h.grow[1].duration == 0.2)
-    for index, edge in ipairs(h.pulseBorder) do
+    for index, edge in ipairs(h.alertBorder) do
         local axis, fixed = edge.horizontal and 1 or 2, edge.horizontal and 2 or 1
         for half, texture in ipairs(edge.halves) do
             local animationIndex = (index - 1) * 2 + half
@@ -70,8 +70,8 @@ for _, style in ipairs({"PULSE", "SOLID", "PULSE", "SOLID"}) do
             assert(shrink.animationType == "Scale" and grow.animationType == "Scale", "length pulse has no alpha animation")
             assert(shrink.target == texture and grow.target == texture, "each gradient half animates directly")
             assert(shrink.origin[1] == origin and grow.origin[1] == origin, "opaque center is the fixed pivot")
-            assert(shrink.scaleFrom[axis] == 1 and shrink.scaleTo[axis] == 0.1, "maximum to minimum length")
-            assert(grow.scaleFrom[axis] == 0.1 and grow.scaleTo[axis] == 1, "minimum to maximum length")
+            assert(shrink.scaleFrom[axis] == 1 and shrink.scaleTo[axis] == 0.2, "maximum to minimum length")
+            assert(grow.scaleFrom[axis] == 0.2 and grow.scaleTo[axis] == 1, "minimum to maximum length")
             assert(shrink.scaleFrom[fixed] == 1 and shrink.scaleTo[fixed] == 1, "thickness never scales")
             -- Geometric regression: at every scale both halves meet at zero,
             -- while their transparent endpoints travel between center/corner.
@@ -83,7 +83,7 @@ for _, style in ipairs({"PULSE", "SOLID", "PULSE", "SOLID"}) do
                 assert(center == 0 and math.abs(outer) == 0.5 * length, "continuous centered segment at every pulse length")
             end
         end
-        assert(edge:IsShown() == (style == "PULSE") and h.border[index]:IsShown() == (style == "SOLID"), "exclusive effect visibility")
+        assert(edge:IsShown() == (style == "ALERT" and edge.horizontal) and h.border[index]:IsShown() == (style == "SOLID"), "exclusive effect visibility")
         local a, b = edge.halves[1].gradient, edge.halves[2].gradient
         assert(a[1] == (edge.horizontal and "HORIZONTAL" or "VERTICAL"), "gradient follows edge length")
         assert(a[2].a == 0 and a[3].a == 1 and b[2].a == 1 and b[3].a == 0, "symmetric opacity gradient")
@@ -92,18 +92,30 @@ for _, style in ipairs({"PULSE", "SOLID", "PULSE", "SOLID"}) do
     local count = #ui.objects; Update()
     assert(#ui.objects == count, "same effect reuses regions")
 end
-custom.PULSE = {thickness = 7, shrinkTime = 0.4, growTime = 0.7, minLength = 20, maxLength = 80, endOpacity = 15, centerOpacity = 75}
-for _, style in ipairs({"PULSE", "SOLID"}) do
+custom.PULSE = {thickness = 7, fadeOut = 0.4, fadeIn = 0.7}
+custom.ALERT = {shrinkTime = 0.4, growTime = 0.7, minLength = 20, maxLength = 80, endOpacity = 15, centerOpacity = 75}
+for _, style in ipairs({"ALERT", "SOLID"}) do
     effect = style; Update()
     assert(h.border[1].height == 7 and h.border[3].width == 7, "shared thickness")
 end
 assert(h.shrink[1].duration == 0.4 and h.grow[1].duration == 0.7)
 assert(h.shrink[1].scaleFrom[1] == 0.8 and h.shrink[1].scaleTo[1] == 0.2)
 assert(h.shrink[5].scaleFrom[2] == 0.8 and h.shrink[5].scaleTo[2] == 0.2)
-assert(h.pulseBorder[1].halves[1].gradient[2].a == 0.15 and h.pulseBorder[1].halves[1].gradient[3].a == 0.75, "custom gradient opacities")
+assert(h.alertBorder[1].halves[1].gradient[2].a == 0.15 and h.alertBorder[1].halves[1].gradient[3].a == 0.75, "custom gradient opacities")
 assert(h.frame.alpha == 1, "solid restores full opacity")
+effect = "PULSE"; Update()
+assert(h.pulse:IsPlaying() and not h.alert:IsPlaying(), "original opacity pulse restored")
+assert(h.fadeOut.duration == 0.4 and h.fadeIn.duration == 0.7, "pulse has independent timing")
+for index, edge in ipairs(h.border) do
+    assert(edge:IsShown() and not h.alertBorder[index]:IsShown(), "pulse includes all four solid-color edges")
+end
+effect = "ALERT"; Update()
+assert(h.alert:IsPlaying() and not h.pulse:IsPlaying(), "Alert stops opacity pulse")
+for index, edge in ipairs(h.alertBorder) do
+    assert(edge:IsShown() == (index <= 2), "Alert hides both side borders")
+end
 enabled = false; Update()
-assert(not h.frame:IsShown() and not h.pulse:IsPlaying())
+assert(not h.frame:IsShown() and not h.pulse:IsPlaying() and not h.alert:IsPlaying())
 enabled = true; Update()
 ns.CastHighlight.RecordSpellcastEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE", "nameplate1"); Update()
 assert(not h.frame:IsShown(), "noninterruptible hides selected effect")

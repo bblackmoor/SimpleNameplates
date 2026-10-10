@@ -2,7 +2,7 @@
 
 Reviewed for 1.0.221 on 2026-10-08 against the repository and `.toc` load chain.
 
-LibCustomGlow is no longer bundled or loaded. Cast highlighting uses addon-owned four-edge borders for Pulsing gradient border and Solid border; neither effect uses DF border/glow constructors. Pulse uses native length-only Scale animations and symmetric gradient textures. Both anchor directly to the native cast bar without reading its dimensions. Details Framework remains bundled for settings widgets.
+LibCustomGlow is no longer bundled or loaded. Cast highlighting uses addon-owned four-edge borders for Pulsing border, Solid border and Alert border; none uses DF border/glow constructors. Pulse uses opacity animation on all four edges. Alert uses native length-only Scale animations and symmetric gradient textures on the top/bottom edges, hiding the sides. All anchor directly to the native cast bar without reading its dimensions. Details Framework remains bundled for settings widgets.
 
 LibStub 2 (upstream revision 103), from https://github.com/lua-wow/LibStub/blob/master/LibStub.lua.
 Upstream source blob: `7e9b5cd15277d750ef2f106bca3999c306044f03`.

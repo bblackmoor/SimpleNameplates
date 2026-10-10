@@ -87,6 +87,17 @@ for _, case in ipairs(cases) do
     assert(refreshes == before + 3, "each user edit refreshes plates once; redraws are silent")
 end
 
+assert(ns.CAST_EFFECT_BY_VALUE.PULSE == "Pulsing border" and ns.CAST_EFFECT_BY_VALUE.ALERT == "Alert border", "requested effect labels")
+local pulseSection, alertSection
+for index, object in ipairs(ui.objects) do
+    if object.kind == "FontString" and object:GetText() == "Pulse settings" then pulseSection = index end
+    if object.kind == "FontString" and object:GetText() == "Alert settings" then alertSection = index end
+end
+assert(pulseSection and alertSection and pulseSection < alertSection, "Alert settings follows Pulse settings")
+Control(Row("Fade in"), "slider"):SetValue(0.4)
+Control(Row("Fade out"), "slider"):SetValue(0.6)
+assert(math.abs(ns.GetCastBorderSetting("PULSE", "fadeIn") - 0.4) < 0.00001, "independent pulse timing control")
+assert(ns.GetCastBorderSetting("ALERT", "minLength") == 20, "Alert starts at 20 percent")
 -- Every length-pulse parameter has an editable Colors slider and silent refresh.
 for _, case in ipairs({
     {"Minimum length", "minLength", 25}, {"Maximum length", "maxLength", 85},
@@ -96,7 +107,7 @@ for _, case in ipairs({
     local slider = Control(Row(case[1]), "slider")
     local before = refreshes
     slider:SetValue(case[3])
-    assert(math.abs(ns.GetCastBorderSetting("PULSE", case[2]) - case[3]) < 0.00001, "Colors pulse control updates profile")
+    assert(math.abs(ns.GetCastBorderSetting("ALERT", case[2]) - case[3]) < 0.00001, "Colors pulse control updates profile")
     assert(refreshes == before + 1, "one nameplate refresh per pulse edit")
 end
 local before = refreshes
@@ -180,13 +191,13 @@ local castRow = Row("Interruptible cast highlight")
 local cast = Control(castRow, "color")
 local castToggle = Control(castRow, "switch")
 local effectDropdown = Control(Row("Effect"), "dropdown")
-assert(#effectDropdown.MyObject.func() == 2, "only pulse and solid exposed")
+assert(#effectDropdown.MyObject.func() == 3, "pulse, solid and alert exposed")
 local effectRefreshes = refreshes
 for _, option in ipairs(effectDropdown.MyObject.func()) do
     option.onclick(nil, nil, option.value)
     assert(ns.GetInterruptibleEffect() == option.value, "effect selection saved")
 end
-assert(refreshes == effectRefreshes + 2, "one plate refresh per effect change")
+assert(refreshes == effectRefreshes + 3, "one plate refresh per effect change")
 assert(not ns.GetInterruptibleHighlightEnabled(), "effect choice does not enable Active")
 assert(castToggle.point[2]:GetText() == "Active" and castToggle.point[4] == 8)
 for _, enabled in ipairs({true, false, true}) do

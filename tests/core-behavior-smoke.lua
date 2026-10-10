@@ -92,48 +92,41 @@ for _, legacy in ipairs({{true, "PIXEL", true}, {false, "PROC", false},
     equal(effectNS.EnsureDB().profiles.Default.interruptibleCastStyle, nil, "retired style removed")
 end
 
--- Border settings keep valid values in place and discard every retired setting.
+-- Pulse and Alert have independent validated controls; no obsolete migration.
 local borders = fresh()
 equal(borders.GetCastBorderSetting("PULSE", "thickness"), 4, "shared thickness default")
-equal(borders.GetCastBorderSetting("PULSE", "growTime"), 0.2, "fade-in default")
-equal(borders.GetCastBorderSetting("PULSE", "shrinkTime"), 0.2, "fade-out default")
+equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.2, "original fade-in default")
+equal(borders.GetCastBorderSetting("PULSE", "fadeOut"), 0.2, "original fade-out default")
+equal(borders.GetCastBorderSetting("ALERT", "minLength"), 20, "Alert minimum default")
+equal(borders.GetCastBorderSetting("ALERT", "maxLength"), 100, "Alert maximum default")
 local saved = borders.EnsureDB().profiles.Default
-saved.castAdvanced = {PULSE = {thickness=7, growTime=0.55, shrinkTime=99, fadeIn=0.8, fadeOut=0.9, inset=3, lowAlpha=0.8},
+saved.castAdvanced = {PULSE = {thickness=7, fadeIn=0.55, fadeOut=99, minLength=30},
+    ALERT={minLength=25, maxLength=85, shrinkTime=0.45, endOpacity=40, centerOpacity=80},
     SOLID={thickness=2}, SOFT={thickness=8}, ANTS={frames=11}, GLOW={offsetX=5}}
-saved.interruptibleEffect = "ANTS"
+saved.interruptibleEffect = "ALERT"
 borders = loadCore()
-equal(borders.GetInterruptibleEffect(), "PULSE", "removed selection defaults")
+equal(borders.GetInterruptibleEffect(), "ALERT", "Alert selection survives reload")
 equal(borders.GetCastBorderSetting("PULSE", "thickness"), 7, "valid thickness retained")
-equal(borders.GetCastBorderSetting("PULSE", "growTime"), 0.55, "valid timing retained")
-equal(borders.GetCastBorderSetting("PULSE", "shrinkTime"), 0.2, "out-of-range timing defaults")
+equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.55, "valid pulse timing retained")
+equal(borders.GetCastBorderSetting("PULSE", "fadeOut"), 0.2, "invalid pulse timing defaults")
+equal(borders.GetCastBorderSetting("PULSE", "minLength"), nil, "old pulse length discarded without migration")
+equal(borders.GetCastBorderSetting("ALERT", "minLength"), 25, "valid Alert length retained")
 local retained = borders.EnsureDB().profiles.Default.castAdvanced
 for _, key in ipairs({"SOLID", "SOFT", "ANTS", "GLOW"}) do equal(retained[key], nil, "obsolete controls discarded") end
-equal(retained.PULSE.inset, nil, "inset discarded")
-equal(retained.PULSE.lowAlpha, nil, "obsolete opacity discarded")
-equal(retained.PULSE.fadeIn, nil, "old alpha-pulse timing discarded without migration")
-equal(retained.PULSE.fadeOut, nil, "old alpha-pulse timing discarded without migration")
-equal(borders.GetCastBorderSetting("PULSE", "minLength"), 10, "minimum length default")
-equal(borders.GetCastBorderSetting("PULSE", "maxLength"), 100, "maximum length default")
-borders.SetCastBorderSetting("PULSE", "maxLength", 5)
-equal(borders.GetCastBorderSetting("PULSE", "maxLength"), 10, "maximum cannot pass minimum")
-borders.SetCastBorderSetting("PULSE", "maxLength", 80)
-borders.SetCastBorderSetting("PULSE", "minLength", 90)
-equal(borders.GetCastBorderSetting("PULSE", "minLength"), 80, "minimum cannot pass maximum")
-borders.SetCastBorderSetting("PULSE", "endOpacity", 40)
-borders.SetCastBorderSetting("PULSE", "centerOpacity", 80)
+borders.SetCastBorderSetting("ALERT", "maxLength", 5)
+equal(borders.GetCastBorderSetting("ALERT", "maxLength"), 25, "maximum cannot pass minimum")
 borders.CopyActiveProfile("Borders")
 borders = loadCore()
-equal(borders.GetCastBorderSetting("PULSE", "thickness"), 7, "shared setting survives copy/reload")
-equal(borders.GetCastBorderSetting("PULSE", "endOpacity"), 40, "gradient survives copy/reload")
-equal(borders.GetCastBorderSetting("PULSE", "centerOpacity"), 80, "center survives copy/reload")
+equal(borders.GetCastBorderSetting("ALERT", "endOpacity"), 40, "Alert gradient survives copy/reload")
 local profile = borders.EnsureDB().profiles[borders.GetActiveProfileName()]
-profile.castAdvanced.PULSE.minLength, profile.castAdvanced.PULSE.maxLength = 90, 20
+profile.castAdvanced.ALERT.minLength, profile.castAdvanced.ALERT.maxLength = 90, 20
 borders = loadCore()
-equal(borders.GetCastBorderSetting("PULSE", "minLength"), 10, "invalid saved length pair defaults")
-equal(borders.GetCastBorderSetting("PULSE", "maxLength"), 100, "invalid saved length pair defaults")
+equal(borders.GetCastBorderSetting("ALERT", "minLength"), 20, "invalid saved length pair defaults")
+equal(borders.GetCastBorderSetting("ALERT", "maxLength"), 100, "invalid saved length pair defaults")
 borders.ResetAllColors()
 equal(borders.GetCastBorderSetting("PULSE", "thickness"), 4, "Colors reset thickness")
-equal(borders.GetCastBorderSetting("PULSE", "growTime"), 0.2, "Colors reset fade")
+equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.2, "Colors reset original pulse")
+equal(borders.GetCastBorderSetting("ALERT", "minLength"), 20, "Colors reset Alert")
 
 -- Background dimming validation and persistence.
 local dim = fresh()

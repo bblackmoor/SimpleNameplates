@@ -107,7 +107,11 @@ ns.Defaults = {
 ns.CAST_BORDER_CONTROLS = {
     PULSE = {
         {key="thickness", label="Border thickness", min=1, max=12, step=1, default=4, suffix=" px"},
-        {key="minLength", label="Minimum length", min=1, max=100, step=1, default=10, suffix="%"},
+        {key="fadeIn", label="Fade in", min=0.1, max=2, step=0.05, default=0.2, suffix=" s"},
+        {key="fadeOut", label="Fade out", min=0.1, max=2, step=0.05, default=0.2, suffix=" s"},
+    },
+    ALERT = {
+        {key="minLength", label="Minimum length", min=1, max=100, step=1, default=20, suffix="%"},
         {key="maxLength", label="Maximum length", min=1, max=100, step=1, default=100, suffix="%"},
         {key="shrinkTime", label="Shrink time", min=0.1, max=2, step=0.05, default=0.2, suffix=" s"},
         {key="growTime", label="Grow time", min=0.1, max=2, step=0.05, default=0.2, suffix=" s"},
@@ -117,8 +121,9 @@ ns.CAST_BORDER_CONTROLS = {
 }
 
 ns.CAST_EFFECT_OPTIONS = {
-    {value = "PULSE", label = "Pulsing gradient border"},
+    {value = "PULSE", label = "Pulsing border"},
     {value = "SOLID", label = "Solid border"},
+    {value = "ALERT", label = "Alert border"},
 }
 ns.CAST_EFFECT_BY_VALUE = {}
 for _, option in ipairs(ns.CAST_EFFECT_OPTIONS) do ns.CAST_EFFECT_BY_VALUE[option.value] = option.label end
