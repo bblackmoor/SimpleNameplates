@@ -100,7 +100,14 @@ function cast:ShowSpark()
     self.StandardGlow:Show()
 end
 cast:UpdateBarFillTexture("native-yellow")
-cast.classicStyleCastBar = false
+-- Native control fields must stay untainted, including during restoration.
+setmetatable(cast, {
+    __index = function(_, key) if key == "classicStyleCastBar" then return false end end,
+    __newindex = function(self, key, value)
+        assert(key ~= "classicStyleCastBar", "must not write native cast control fields")
+        rawset(self, key, value)
+    end,
+})
 local frame = {healthBar = health, castBar = cast, overAbsorbGlow = Region()}
 local context = ns.WorldContext.Get()
 local assessment = ns.PresentationCapabilities.InspectFrame(frame, context)
@@ -138,7 +145,7 @@ end
 slug = false
 ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
 assert(cast.Text.flags == "OUTLINE" and health.Text.flags == "OUTLINE", "toggle off restores ordinary rendering")
-assert(cast.classicStyleCastBar == true, "native updates use classic cast colors")
+assert(cast.classicStyleCastBar == false, "native cast style untouched")
 -- Live cast atlas identifiers can be secret even though the fill is writable.
 local getAtlas, getTexture = castFill.GetAtlas, castFill.GetTexture
 castFill.GetAtlas, castFill.GetTexture = function() return nil end, function() return nil end
@@ -191,7 +198,7 @@ assert(health.Text.layer == "ARTWORK" and health.Text.level == 0, "native draw l
 assert(health.Text.r == 0.7 and health.Text.g == 0.8 and health.Text.vr == 0.5, "native health text restored")
 assert(health.bgTexture.alpha == 1 and health.selectedBorder.alpha == 1)
 assert(health.overAbsorbGlow.alpha == 0.7 and frame.overAbsorbGlow.alpha == 1, "original overflow glow alpha restored")
-assert(cast.classicStyleCastBar == false, "native cast style restored")
+assert(cast.classicStyleCastBar == false, "native cast style untouched during restoration")
 assert(cast.Border.alpha == 1 and cast.DropShadow.alpha == 1)
 assert(cast.Spark.texture == "original" and cast.Flash.texture == "original", "native decoration textures restored")
 assert(cast.Spark.alpha == 1 and cast.Flash.alpha == 1 and castFill.vr == 1 and castFill.vg == 1, "native cast artwork and tint restored")

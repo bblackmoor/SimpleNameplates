@@ -364,15 +364,6 @@ end
 
 local function FlattenBar(frame, bar, backgroundKey, context, isCast)
     if Capabilities.ObjectStatus(bar, context) ~= "accessible" then return end
-    if isCast then
-        -- Let native cast updates supply classic colors directly to the renderer.
-        -- Modern atlas identifiers can be secret during live enemy casts.
-        local original = OriginalArtwork(frame, bar, context)
-        if original and not original.classicStyle then
-            original.classicStyle = {value = Capabilities.SafeField(bar, "classicStyleCastBar", context)}
-        end
-        bar.classicStyleCastBar = true
-    end
     RemoveArtworkEdge(frame, Capabilities.SafeField(bar, backgroundKey, context), context)
     local fill = Capabilities.ReadRegion(bar, "GetStatusBarTexture", context)
         or Capabilities.SafeField(bar, "barTexture", context)
@@ -505,7 +496,6 @@ local function RestoreArtwork(frame, context)
             error("Bar artwork restoration is temporarily inaccessible")
         end
         if original.drawLayer then region:SetDrawLayer(unpackValues(original.drawLayer)) end
-        if original.classicStyle then region.classicStyleCastBar = original.classicStyle.value end
         if original.alpha ~= nil then region:SetAlpha(original.alpha) end
         if original.fill then
             if original.fill.atlas then region:SetAtlas(original.fill.atlas)

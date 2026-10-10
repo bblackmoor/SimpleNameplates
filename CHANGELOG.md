@@ -1,3 +1,8 @@
+## 1.0.244 — 2026-10-09
+
+- Remove 1.0.243’s writes to Blizzard’s native classicStyleCastBar field, including restoration, to avoid tainting native secret-value execution. Keep the plain-fill repair for hidden live texture identifiers.
+- Add a regression guard rejecting native cast-style writes during styling and restoration. Live taint and visual acceptance require a fresh UI session.
+
 ## 1.0.243 — 2026-10-09
 
 - Keep cast fills plain when live enemy cast texture identifiers are hidden. Use the native classic cast-color path and repair saved fills without requiring a readable current atlas; restore the original cast style when styling ends.
