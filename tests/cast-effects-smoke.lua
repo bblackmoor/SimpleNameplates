@@ -141,7 +141,16 @@ assert(not h.frame:IsShown(), "noninterruptible hides selected effect")
 local preview = CreateFrame("StatusBar")
 effect = "PULSE"; enabled = false
 ns.CastHighlight.UpdatePreview(preview)
-assert(preview.SNPCastPreview.activeEffect == "PULSE", "preview independent of Active")
+assert(preview.SNPCastPreview.activeEffect == "PULSE", "inactive preview retains selected effect")
+assert(preview.SNPCastPreview.previewDisabled and preview.SNPCastPreview.border[1].color[1] == 0.5
+    and preview.SNPCastPreview.border[1].color[2] == 0.5, "inactive preview border is grey")
+effect = "ALERT"; ns.CastHighlight.UpdatePreview(preview)
+local gray = preview.SNPCastPreview.alertBorder[1].halves[1].gradient[3]
+assert(gray.r == 0.5 and gray.g == 0.5 and gray.b == 0.5, "inactive Alert gradient is grey")
+enabled = true; ns.CastHighlight.UpdatePreview(preview)
+assert(not preview.SNPCastPreview.previewDisabled, "reenabled preview restores chosen color")
+local color = preview.SNPCastPreview.alertBorder[1].halves[1].gradient[3]
+assert(color.r == 0.2 and color.g == 0.8 and color.b == 1, "active preview shows configured color")
 effect = "SOLID"; ns.CastHighlight.UpdatePreview(preview)
 assert(not preview.SNPCastPreview.pulse:IsPlaying(), "preview stops pulse on selection change")
 ns.CastHighlight.StopPreview(preview)

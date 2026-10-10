@@ -136,6 +136,21 @@ for _, object in ipairs(ui.objects) do
     end
 end
 assert(colorsPreview == 1 and highlightPreview == 1, "each page has an effect preview")
+local function AssertPreviewAlpha(alpha)
+    panel.Refresh(); highlightPanel.Refresh()
+    for _, object in ipairs(ui.objects) do
+        if object.kind == "StatusBar" and object:GetWidth() == 190 and object:GetHeight() == 14 then
+            assert(object.alpha == alpha, "both previews track Colors Active state")
+        end
+        if object.kind == "FontString" then
+            assert(object:GetText() ~= "Preview demonstrates the selected effect even while Inactive; it does not detect a real cast. Enable Active on Colors to highlight interruptible enemy casts.", "preview explanation removed")
+        end
+    end
+end
+AssertPreviewAlpha(0.5)
+ns.SetInterruptibleHighlightEnabled(true); AssertPreviewAlpha(1)
+ns.SetInterruptibleHighlightEnabled(false); AssertPreviewAlpha(0.5)
+
 local dimToggle = Control(Row("Dim background NPC names"), "switch")
 assert(ns.GetDimBackgroundNames(), "background dimming defaults on")
 assert(Row("Dim background NPC names").point[5] < Row("6. NPC - Background").point[5], "dimming follows background category")

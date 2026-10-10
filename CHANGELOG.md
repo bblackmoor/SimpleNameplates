@@ -1,3 +1,8 @@
+## 1.0.240 — 2026-10-09
+
+- Grey and dim both interruptible effect previews when the Colors Active switch is off; restore the selected highlight color and normal brightness when enabled. Apply the same behavior to Pulse, Solid and Alert previews without changing live cast colors.
+- Remove the explanatory text beneath the shared preview on Colors and Highlight.
+
 ## 1.0.239 — 2026-10-09
 
 - Rename the Appearance tab to Text; add Highlight between Colors and TRP3, with `/snp text` and `/snp highlight` routes. Keep `/snp appearance` as an alias.

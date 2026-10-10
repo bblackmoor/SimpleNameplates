@@ -64,7 +64,7 @@ local function AddCastEffectControl(context)
 end
 
 local function AddCastEffectPreview(context)
-    local row = UI.CreateSettingRow(context.content, context.layout, "Effect preview")
+    local row, label = UI.CreateSettingRow(context.content, context.layout, "Effect preview")
     local preview = CreateFrame("StatusBar", nil, row)
     preview:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
     preview:SetSize(190, 14)
@@ -74,10 +74,12 @@ local function AddCastEffectPreview(context)
     preview:SetValue(65)
     context.preview = preview
     context.refreshers[#context.refreshers + 1] = function()
+        local active = addon.GetInterruptibleHighlightEnabled()
+        preview:SetAlpha(active and 1 or 0.5)
+        local shade = active and 1 or 0.5
+        label:SetTextColor(shade, shade, shade)
         if addon.CastHighlight then addon.CastHighlight.UpdatePreview(preview) end
     end
-    AddDescription(context.content, context.layout,
-        "Preview demonstrates the selected effect even while Inactive; it does not detect a real cast. Enable Active on Colors to highlight interruptible enemy casts.")
 end
 
 addon.AddCastEffectPreview = AddCastEffectPreview

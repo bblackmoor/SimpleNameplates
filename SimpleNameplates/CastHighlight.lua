@@ -189,6 +189,7 @@ local function ApplyRenderer(highlight)
     highlight.activeEffect = effect
     ConfigureBorder(highlight, effect)
     local r, g, b = EffectColor("interruptible")
+    if highlight.previewDisabled then r, g, b = 0.5, 0.5, 0.5 end
     for _, edge in ipairs(highlight.border) do
         edge:SetColorTexture(r, g, b, 1)
         edge:SetShown(effect ~= "ALERT")
@@ -438,6 +439,7 @@ ns.CastHighlight = {
     UpdatePreview = function(bar, effect)
         if not bar.SNPCastPreview then bar.SNPCastPreview = CreateHighlight(bar) end
         bar.SNPCastPreview.previewEffect = effect
+        bar.SNPCastPreview.previewDisabled = not GetInterruptibleHighlightEnabled()
         bar.SNPCastPreview.frame:Show()
         ApplyRenderer(bar.SNPCastPreview)
     end,
