@@ -1,3 +1,7 @@
+## 1.0.243 — 2026-10-09
+
+- Keep cast fills plain when live enemy cast texture identifiers are hidden. Use the native classic cast-color path and repair saved fills without requiring a readable current atlas; restore the original cast style when styling ends.
+
 ## 1.0.242 — 2026-10-09
 
 - Label the page reset buttons Reset text settings, Reset color settings and Reset highlight settings. Preserve their existing reset behavior.
