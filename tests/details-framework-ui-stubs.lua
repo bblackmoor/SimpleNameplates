@@ -95,7 +95,17 @@ function methods:SetGradient() end
 function methods:RemoveMaskTexture() end
 function methods:CreateFontString(name) return object(name,self,'FontString') end
 function methods:CreateAnimationGroup() return object(nil,self,'AnimationGroup') end
-function methods:CreateAnimation() return object(nil,self,'Animation') end
+function methods:CreateAnimation(kind)
+    local animation = object(nil, self, 'Animation')
+    animation.animationType = kind
+    return animation
+end
+function methods:SetScaleFrom(x, y) self.scaleFrom = {x, y} end
+function methods:SetScaleTo(x, y) self.scaleTo = {x, y} end
+function methods:SetTarget(target) self.target = target end
+function methods:SetOrigin(...) self.origin = {...} end
+function methods:SetOrder(value) self.order = value end
+function methods:SetSmoothing(value) self.smoothing = value end
 function methods:GetStringWidth() return 20 end
 function methods:GetStringHeight() return 12 end
 function methods:IsMovable() return false end

@@ -22,7 +22,7 @@ local DEFAULT_CATEGORY_MODES = {
     useless = "active",
 }
 local DEFAULT_EFFECT_COLORS = {
-    interruptible = RGB8(0, 255, 255),
+    interruptible = RGB8(255, 0, 255),
 }
 local COLOR_PRESETS = {
     highContrast = {
@@ -37,7 +37,7 @@ local COLOR_PRESETS = {
             useless = RGB8(255, 255, 255),
         },
         effectColors = {
-            interruptible = RGB8(0, 255, 0),
+            interruptible = RGB8(255, 0, 255),
         },
     },
 }
@@ -107,13 +107,17 @@ ns.Defaults = {
 ns.CAST_BORDER_CONTROLS = {
     PULSE = {
         {key="thickness", label="Border thickness", min=1, max=12, step=1, default=4, suffix=" px"},
-        {key="fadeIn", label="Fade in", min=0.1, max=2, step=0.05, default=0.2, suffix=" s"},
-        {key="fadeOut", label="Fade out", min=0.1, max=2, step=0.05, default=0.2, suffix=" s"},
+        {key="minLength", label="Minimum length", min=1, max=100, step=1, default=10, suffix="%"},
+        {key="maxLength", label="Maximum length", min=1, max=100, step=1, default=100, suffix="%"},
+        {key="shrinkTime", label="Shrink time", min=0.1, max=2, step=0.05, default=0.2, suffix=" s"},
+        {key="growTime", label="Grow time", min=0.1, max=2, step=0.05, default=0.2, suffix=" s"},
+        {key="endOpacity", label="End opacity", min=0, max=100, step=1, default=0, suffix="%"},
+        {key="centerOpacity", label="Center opacity", min=0, max=100, step=1, default=100, suffix="%"},
     },
 }
 
 ns.CAST_EFFECT_OPTIONS = {
-    {value = "PULSE", label = "Pulsing border"},
+    {value = "PULSE", label = "Pulsing gradient border"},
     {value = "SOLID", label = "Solid border"},
 }
 ns.CAST_EFFECT_BY_VALUE = {}

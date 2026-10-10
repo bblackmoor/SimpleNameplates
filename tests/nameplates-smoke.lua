@@ -1,3 +1,4 @@
+function CreateColor(r, g, b, a) return {r=r, g=g, b=b, a=a} end
 -- Characterize nameplate classification and one-time runtime setup.
 -- Run from the repository root: lua tests/nameplates-smoke.lua
 local function equal(actual, expected, label)
@@ -207,6 +208,7 @@ local function Region()
     function region:CreateTexture() return Region() end
     function region:SetAllPoints() end
     function region:SetColorTexture(...) self.color = {...} end
+    function region:SetGradient(...) self.gradient = {...} end
     function region:GetFrameLevel() return self.level or 1 end
     function region:SetFrameLevel(level) self.level = level end
     function region:SetScript(event, callback)

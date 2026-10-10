@@ -1,3 +1,9 @@
+## 1.0.235 — 2026-10-09
+
+- Replace Pulse’s opacity animation with centered gradient segments that shrink/grow along each edge while thickness stays constant. Native synchronized Scale animations follow anchored geometry without reading cast dimensions or using per-frame Lua polling.
+- Add Colors controls for minimum/maximum edge length (10%/100%), shrink/grow time (0.2 seconds each), and gradient end/center opacity (0%/100%). Keep shared thickness at 4 and Solid fully opaque/full length; update the preview and layout.
+- Set the default interruptible color to magenta #FF00FF for Default, High Contrast and new custom profiles. Keep valid saved colors. Discard retired fadeIn/fadeOut timings without migration; retain valid current parameters and default missing/invalid values.
+
 ## 1.0.234 — 2026-10-09
 
 - Repair cast fills after native texture/state changes while the bar is already visible, using the actual status-bar texture rather than a potentially stale alias.

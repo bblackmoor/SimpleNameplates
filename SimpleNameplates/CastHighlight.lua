@@ -63,6 +63,39 @@ local function CreateBorder(parent, inset, thickness)
 end
 
 
+-- Each centered edge has two half textures so the gradient stays symmetric.
+-- Native scale animations change only its long axis; no cast dimensions are read.
+local function CreatePulseBorder(parent, thickness)
+    local edges = {}
+    for index, points in ipairs({
+        {"TOPLEFT", "TOPRIGHT"}, {"BOTTOMLEFT", "BOTTOMRIGHT"},
+        {"TOPLEFT", "BOTTOMLEFT"}, {"TOPRIGHT", "BOTTOMRIGHT"},
+    }) do
+        local edge = CreateFrame("Frame", nil, parent)
+        edge:SetPoint(points[1], parent, points[1], 0, 0)
+        edge:SetPoint(points[2], parent, points[2], 0, 0)
+        edge.horizontal = index <= 2
+        if edge.horizontal then edge:SetHeight(thickness) else edge:SetWidth(thickness) end
+        local first = edge:CreateTexture(nil, "OVERLAY", nil, 7)
+        local second = edge:CreateTexture(nil, "OVERLAY", nil, 7)
+        if edge.horizontal then
+            first:SetPoint("TOPLEFT", edge, "TOPLEFT", 0, 0)
+            first:SetPoint("BOTTOMRIGHT", edge, "BOTTOM", 0, 0)
+            second:SetPoint("TOPLEFT", edge, "TOP", 0, 0)
+            second:SetPoint("BOTTOMRIGHT", edge, "BOTTOMRIGHT", 0, 0)
+        else
+            first:SetPoint("BOTTOMLEFT", edge, "BOTTOMLEFT", 0, 0)
+            first:SetPoint("TOPRIGHT", edge, "RIGHT", 0, 0)
+            second:SetPoint("BOTTOMLEFT", edge, "LEFT", 0, 0)
+            second:SetPoint("TOPRIGHT", edge, "TOPRIGHT", 0, 0)
+        end
+        edge.halves = {first, second}
+        edge:Hide()
+        edges[index] = edge
+    end
+    return edges
+end
+
 local function Parameter(effect, key, fallback)
     local getter = ns.GetCastBorderSetting
     local value = getter and getter(effect, key)
@@ -72,26 +105,40 @@ end
 
 local function ConfigureBorder(h, effect)
     local thickness = Parameter("PULSE", "thickness", 4)
-    local top, bottom, left, right = unpack(h.border)
-    top:SetHeight(thickness)
-    bottom:SetHeight(thickness)
-    left:SetWidth(thickness)
-    right:SetWidth(thickness)
+    for index, edge in ipairs(h.border) do
+        if index <= 2 then edge:SetHeight(thickness) else edge:SetWidth(thickness) end
+    end
+    for _, edge in ipairs(h.pulseBorder) do
+        if edge.horizontal then edge:SetHeight(thickness) else edge:SetWidth(thickness) end
+    end
     if effect ~= "PULSE" then return end
-    local fadeOut = Parameter("PULSE", "fadeOut", 0.2)
-    local fadeIn = Parameter("PULSE", "fadeIn", 0.2)
-    local signature = table.concat({fadeOut, fadeIn}, ":")
+    local minimum = Parameter("PULSE", "minLength", 10) / 100
+    local maximum = Parameter("PULSE", "maxLength", 100) / 100
+    minimum = math.min(minimum, maximum)
+    local shrinkTime = Parameter("PULSE", "shrinkTime", 0.2)
+    local growTime = Parameter("PULSE", "growTime", 0.2)
+    local signature = table.concat({minimum, maximum, shrinkTime, growTime}, ":")
     if h.pulseConfig == signature then return end
     h.pulseConfig = signature
     h.pulse:Stop()
-    h.fadeOut:SetDuration(fadeOut)
-    h.fadeIn:SetDuration(fadeIn)
+    for index, edge in ipairs(h.pulseBorder) do
+        local shrink, grow = h.shrink[index], h.grow[index]
+        local maxX, maxY = edge.horizontal and maximum or 1, edge.horizontal and 1 or maximum
+        local minX, minY = edge.horizontal and minimum or 1, edge.horizontal and 1 or minimum
+        shrink:SetScaleFrom(maxX, maxY)
+        shrink:SetScaleTo(minX, minY)
+        grow:SetScaleFrom(minX, minY)
+        grow:SetScaleTo(maxX, maxY)
+        shrink:SetDuration(shrinkTime)
+        grow:SetDuration(growTime)
+    end
 end
 
 local function StopRenderer(highlight)
     highlight.pulse:Stop()
     highlight.frame:SetAlpha(1)
     for _, edge in ipairs(highlight.border) do edge:Hide() end
+    for _, edge in ipairs(highlight.pulseBorder) do edge:Hide() end
 end
 
 local function ApplyRenderer(highlight)
@@ -103,7 +150,18 @@ local function ApplyRenderer(highlight)
     local r, g, b = EffectColor("interruptible")
     for _, edge in ipairs(highlight.border) do
         edge:SetColorTexture(r, g, b, 1)
-        edge:Show()
+        edge:SetShown(effect == "SOLID")
+    end
+    local endAlpha = Parameter("PULSE", "endOpacity", 0) / 100
+    local centerAlpha = Parameter("PULSE", "centerOpacity", 100) / 100
+    for _, edge in ipairs(highlight.pulseBorder) do
+        local direction = edge.horizontal and "HORIZONTAL" or "VERTICAL"
+        local first, second = unpack(edge.halves)
+        first:SetColorTexture(1, 1, 1, 1)
+        second:SetColorTexture(1, 1, 1, 1)
+        first:SetGradient(direction, CreateColor(r, g, b, endAlpha), CreateColor(r, g, b, centerAlpha))
+        second:SetGradient(direction, CreateColor(r, g, b, centerAlpha), CreateColor(r, g, b, endAlpha))
+        edge:SetShown(effect == "PULSE")
     end
     if effect == "PULSE" and not highlight.pulse:IsPlaying() then highlight.pulse:Play() end
 end
@@ -229,20 +287,22 @@ local function CreateHighlight(castBar, owner, healthBar)
         owner = owner,
         frame = overlay,
         border = CreateBorder(overlay, 0, 4),
+        pulseBorder = CreatePulseBorder(overlay, 4),
+        shrink = {}, grow = {},
     }
     local pulse = overlay:CreateAnimationGroup()
-    local fadeOut = pulse:CreateAnimation("Alpha")
-    fadeOut:SetFromAlpha(1)
-    fadeOut:SetToAlpha(0.35)
-    fadeOut:SetDuration(0.2)
-    fadeOut:SetOrder(1)
-    local fadeIn = pulse:CreateAnimation("Alpha")
-    fadeIn:SetFromAlpha(0.35)
-    fadeIn:SetToAlpha(1)
-    fadeIn:SetDuration(0.2)
-    fadeIn:SetOrder(2)
+    for index, edge in ipairs(highlight.pulseBorder) do
+        for order, animations in ipairs({highlight.shrink, highlight.grow}) do
+            local scale = pulse:CreateAnimation("Scale")
+            scale:SetTarget(edge)
+            scale:SetOrigin("CENTER", 0, 0)
+            scale:SetOrder(order)
+            scale:SetSmoothing("IN_OUT")
+            animations[index] = scale
+        end
+    end
     pulse:SetLooping("REPEAT")
-    highlight.pulse, highlight.fadeOut, highlight.fadeIn = pulse, fadeOut, fadeIn
+    highlight.pulse = pulse
 
     overlay:SetScript("OnShow", function() ApplyRenderer(highlight) end)
     overlay:SetScript("OnHide", function() StopRenderer(highlight) end)

@@ -87,6 +87,22 @@ for _, case in ipairs(cases) do
     assert(refreshes == before + 3, "each user edit refreshes plates once; redraws are silent")
 end
 
+-- Every length-pulse parameter has an editable Colors slider and silent refresh.
+for _, case in ipairs({
+    {"Minimum length", "minLength", 25}, {"Maximum length", "maxLength", 85},
+    {"Shrink time", "shrinkTime", 0.4}, {"Grow time", "growTime", 0.6},
+    {"End opacity", "endOpacity", 20}, {"Center opacity", "centerOpacity", 75},
+}) do
+    local slider = Control(Row(case[1]), "slider")
+    local before = refreshes
+    slider:SetValue(case[3])
+    assert(math.abs(ns.GetCastBorderSetting("PULSE", case[2]) - case[3]) < 0.00001, "Colors pulse control updates profile")
+    assert(refreshes == before + 1, "one nameplate refresh per pulse edit")
+end
+local before = refreshes
+panel.Refresh()
+assert(refreshes == before, "pulse-control refresh remains read-only")
+ns.ResetAllColors(); panel.Refresh()
 local dimToggle = Control(Row("Dim background NPC names"), "switch")
 assert(ns.GetDimBackgroundNames(), "background dimming defaults on")
 assert(Row("Dim background NPC names").point[5] < Row("6. NPC - Background").point[5], "dimming follows background category")
@@ -184,7 +200,7 @@ local picker = ColorPickerFrame.info
 picker.swatchFunc()
 RGBEqual({ns.EffectColor("interruptible")}, 0.2, 0.3, 0.4)
 picker.cancelFunc()
-RGBEqual({ns.EffectColor("interruptible")}, 0, 1, 1)
+RGBEqual({ns.EffectColor("interruptible")}, 1, 0, 1)
 assert(ns.GetInterruptibleHighlightEnabled(), "cast-color cancellation preserves activation")
 
 -- Adapted profile selector stays shared; switching refreshes DF controls silently.
@@ -221,7 +237,7 @@ for _, case in ipairs(cases) do
     RGBEqual(SwatchRGB(Control(Row(case[2]), "color")), default.r, default.g, default.b)
     assert(ns.GetHealthBarEnabled(case[1]) == (case[1] ~= "useless"))
 end
-RGBEqual(SwatchRGB(cast), 0, 1, 0)
+RGBEqual(SwatchRGB(cast), 1, 0, 1)
 initial, before = Snapshot(SimpleNameplatesDB), refreshes
 panel:GetScript("OnShow")(panel)
 panel:GetScript("OnShow")(panel)

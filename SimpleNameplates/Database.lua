@@ -78,6 +78,9 @@ local function ValidatedCastBorders(saved)
             end
         end
     end
+    if result.PULSE.minLength > result.PULSE.maxLength then
+        result.PULSE.minLength, result.PULSE.maxLength = 10, 100
+    end
     return result
 end
 
@@ -591,7 +594,13 @@ local function SetCastBorderSetting(effect, key, value)
         if control.key == key then
             if IsFiniteNumber(value) then
                 local steps = math.floor((math.max(control.min, math.min(control.max, value)) - control.min) / control.step + 0.5)
-                ActiveProfile().castAdvanced[effect][key] = math.min(control.max, control.min + steps * control.step)
+                local settings = ActiveProfile().castAdvanced[effect]
+                settings[key] = math.min(control.max, control.min + steps * control.step)
+                if key == "minLength" and settings.minLength > settings.maxLength then
+                    settings.minLength = settings.maxLength
+                elseif key == "maxLength" and settings.maxLength < settings.minLength then
+                    settings.maxLength = settings.minLength
+                end
             end
             return
         end

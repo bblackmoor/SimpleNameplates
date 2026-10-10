@@ -60,16 +60,33 @@ for _, style in ipairs({"PULSE", "SOLID", "PULSE", "SOLID"}) do
     for _, edge in ipairs(h.border) do
         for _, point in pairs(edge.points) do assert(point[4] == 0 and point[5] == 0, "zero inset") end
     end
-    assert(h.fadeIn.duration == 0.2 and h.fadeOut.duration == 0.2)
+    assert(h.shrink[1].duration == 0.2 and h.grow[1].duration == 0.2)
+    for index, edge in ipairs(h.pulseBorder) do
+        local shrink, grow = h.shrink[index], h.grow[index]
+        local axis, fixed = edge.horizontal and 1 or 2, edge.horizontal and 2 or 1
+        assert(shrink.animationType == "Scale" and grow.animationType == "Scale", "length pulse has no alpha animation")
+        assert(shrink.target == edge and grow.target == edge and shrink.origin[1] == "CENTER", "segments remain centered")
+        assert(shrink.scaleFrom[axis] == 1 and shrink.scaleTo[axis] == 0.1, "maximum to minimum length")
+        assert(grow.scaleFrom[axis] == 0.1 and grow.scaleTo[axis] == 1, "minimum to maximum length")
+        assert(shrink.scaleFrom[fixed] == 1 and shrink.scaleTo[fixed] == 1, "thickness never scales")
+        assert(edge:IsShown() == (style == "PULSE") and h.border[index]:IsShown() == (style == "SOLID"), "exclusive effect visibility")
+        local a, b = edge.halves[1].gradient, edge.halves[2].gradient
+        assert(a[1] == (edge.horizontal and "HORIZONTAL" or "VERTICAL"), "gradient follows edge length")
+        assert(a[2].a == 0 and a[3].a == 1 and b[2].a == 1 and b[3].a == 0, "symmetric opacity gradient")
+        assert(a[2].r == 0.2 and a[3].r == 0.2, "color remains constant")
+    end
     local count = #ui.objects; Update()
     assert(#ui.objects == count, "same effect reuses regions")
 end
-custom.PULSE = {thickness = 7, fadeOut = 0.4, fadeIn = 0.7}
+custom.PULSE = {thickness = 7, shrinkTime = 0.4, growTime = 0.7, minLength = 20, maxLength = 80, endOpacity = 15, centerOpacity = 75}
 for _, style in ipairs({"PULSE", "SOLID"}) do
     effect = style; Update()
     assert(h.border[1].height == 7 and h.border[3].width == 7, "shared thickness")
 end
-assert(h.fadeOut.duration == 0.4 and h.fadeIn.duration == 0.7)
+assert(h.shrink[1].duration == 0.4 and h.grow[1].duration == 0.7)
+assert(h.shrink[1].scaleFrom[1] == 0.8 and h.shrink[1].scaleTo[1] == 0.2)
+assert(h.shrink[3].scaleFrom[2] == 0.8 and h.shrink[3].scaleTo[2] == 0.2)
+assert(h.pulseBorder[1].halves[1].gradient[2].a == 0.15 and h.pulseBorder[1].halves[1].gradient[3].a == 0.75, "custom gradient opacities")
 assert(h.frame.alpha == 1, "solid restores full opacity")
 enabled = false; Update()
 assert(not h.frame:IsShown() and not h.pulse:IsPlaying())

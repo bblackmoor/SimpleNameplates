@@ -1,3 +1,4 @@
+function CreateColor(r, g, b, a) return {r=r, g=g, b=b, a=a} end
 -- Exercise the geometry-independent interruptible cast pulse.
 local function equal(actual, expected, label)
     assert(actual == expected, label .. ": expected " .. tostring(expected) .. ", got " .. tostring(actual))
@@ -29,6 +30,7 @@ local function Region(parent)
     function r:Hide() self:SetShown(false) end
     function r:SetAlpha(v) self.alpha = v end
     function r:SetColorTexture(...) self.color = {...} end
+    function r:SetGradient(...) self.gradient = {...} end
     function r:CreateTexture() return Region(self) end
     function r:CreateAnimationGroup()
         local group = {playing = false}
