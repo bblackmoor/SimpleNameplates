@@ -37,7 +37,7 @@ local function Region()
     function r:SetTexCoord(...) self.coords = {...} end
     function r:GetTextColor() return self.r or 0.7, self.g or 0.8, self.b or 0.9, 1 end
     function r:SetTextColor(r, g, b) self.r, self.g, self.b = r, g, b end
-    function r:GetVertexColor() return 0.5, 0.5, 0.5, 1 end
+    function r:GetVertexColor() return self.vr or 0.5, self.vg or 0.5, self.vb or 0.5, 1 end
     function r:SetVertexColor(r, g, b) self.vr, self.vg, self.vb = r, g, b end
     function r:GetFont() return self.font, self.size, self.flags end
     function r:SetFont(f, s, flags) self.font, self.size, self.flags = f, s, flags end
@@ -71,6 +71,35 @@ cast.Border, cast.DropShadow, cast.Text = Region(), Region(), Region()
 cast.BorderShield = Region()
 health.Text.flags = "THICKOUTLINE"
 cast.Text.flags = "MONOCHROME"
+-- Retail rewrites the native texture even when the bar remains shown.
+function hooksecurefunc(object, method, callback)
+    local original = object[method]
+    object[method] = function(self, ...)
+        original(self, ...)
+        callback(self, ...)
+    end
+end
+local function Color(r, g, b)
+    return {GetRGB = function() return r, g, b end}
+end
+CastingBarTypeInfo = {
+    standard = {filling = "native-yellow", full = "native-green", classicFillColor = Color(1, 0.7, 0), classicFullColor = Color(0, 1, 0)},
+    interrupted = {filling = "native-red", full = "native-red", classicFillColor = Color(1, 0, 0), classicFullColor = Color(1, 0, 0)},
+}
+local castFill = cast.barTexture
+cast.barTexture = Region() -- stale alias must not take precedence over getter
+function cast:GetStatusBarTexture() return castFill end
+function cast:UpdateBarFillTexture(atlas)
+    castFill:SetAtlas(atlas)
+    castFill:SetVertexColor(1, 1, 1)
+end
+cast.Spark, cast.Flash, cast.StandardGlow = Region(), Region(), Region()
+function cast:ShowSpark()
+    self.Spark:SetAlpha(1)
+    self.Spark:Show()
+    self.StandardGlow:Show()
+end
+cast:UpdateBarFillTexture("native-yellow")
 local frame = {healthBar = health, castBar = cast, overAbsorbGlow = Region()}
 local context = ns.WorldContext.Get()
 local assessment = ns.PresentationCapabilities.InspectFrame(frame, context)
@@ -110,9 +139,23 @@ ns.NameplateFrames.ApplyBarArtwork(frame, assessment, context)
 assert(cast.Text.flags == "OUTLINE" and health.Text.flags == "OUTLINE", "toggle off restores ordinary rendering")
 assert(health.barTexture.texture == "Interface\\Buttons\\WHITE8X8")
 assert(health.SNPPlainBackground.bar == health and health.SNPPlainBackground.shown)
-cast.barTexture:SetAtlas("changed-for-new-cast")
+castFill:SetAtlas("changed-for-new-cast")
 cast.onShow()
-assert(cast.barTexture.atlas == nil, "new casts regain flat artwork")
+assert(castFill.atlas == nil, "new casts regain flat artwork")
+assert(cast.Spark.alpha == 0 and cast.Flash.alpha == 0 and cast.StandardGlow.alpha == 0, "cast decorations suppressed")
+cast:UpdateBarFillTexture("native-green")
+assert(castFill.atlas == nil and castFill.texture == "Interface\\Buttons\\WHITE8X8", "visible cast texture rewrite repaired immediately")
+assert(castFill.vr == 0 and castFill.vg == 1 and castFill.vb == 0, "Blizzard completion color retained in flat fill")
+cast:UpdateBarFillTexture("native-red")
+assert(castFill.vr == 1 and castFill.vg == 0 and castFill.vb == 0, "Blizzard interrupted color retained")
+cast:UpdateBarFillTexture("native-yellow")
+assert(castFill.vr == 1 and castFill.vg == 0.7 and castFill.vb == 0, "Blizzard casting color retained")
+cast:ShowSpark()
+assert(cast.Spark.alpha == 0 and cast.StandardGlow.alpha == 0, "native spark refresh remains suppressed")
+assert(cast.BorderShield.alpha == 1, "non-interruptible shield remains intact")
+cast.Flash:SetAtlas("completion-glow")
+cast.Flash:SetAlpha(1) -- native animation can change alpha after the repair
+assert(cast.Flash.texture == nil and cast.Flash.atlas == nil, "animation cannot reveal decorative shine")
 -- A native layout callback during font writes cannot recurse through artwork.
 local setFont, writes = cast.Text.SetFont, 0
 function cast.Text:SetFont(...)
@@ -140,12 +183,18 @@ assert(health.Text.r == 0.7 and health.Text.g == 0.8 and health.Text.vr == 0.5, 
 assert(health.bgTexture.alpha == 1 and health.selectedBorder.alpha == 1)
 assert(health.overAbsorbGlow.alpha == 0.7 and frame.overAbsorbGlow.alpha == 1, "original overflow glow alpha restored")
 assert(cast.Border.alpha == 1 and cast.DropShadow.alpha == 1)
+assert(cast.Spark.texture == "original" and cast.Flash.texture == "original", "native decoration textures restored")
+assert(cast.Spark.alpha == 1 and cast.Flash.alpha == 1 and castFill.vr == 1 and castFill.vg == 1, "native cast artwork and tint restored")
 assert(health.barTexture.atlas == "native-fill" and health.barTexture.coords[1] == 0.1)
 assert(health.Text.flags == "THICKOUTLINE", "original health outline restored")
 assert(cast.Text.flags == "MONOCHROME" and cast.Text.shadow[4] == 1 and cast.Text.offset[1] == 1)
 assert(not health.SNPPlainBackground.shown and not frame.SNPOriginalArtwork)
-cast.barTexture:SetAtlas("restored-native-update")
+castFill:SetAtlas("restored-native-update")
 cast.onShow()
-assert(cast.barTexture.atlas == "restored-native-update", "inactive hooks leave Blizzard alone")
+assert(castFill.atlas == "restored-native-update", "inactive hooks leave Blizzard alone")
+cast:UpdateBarFillTexture("native-green")
+assert(castFill.atlas == "native-green" and castFill.vr == 1, "inactive fill hook leaves native artwork untouched")
+cast:ShowSpark()
+assert(cast.Spark.alpha == 1, "inactive spark hook leaves native artwork untouched")
 print("Bar artwork smoke: passed")
 

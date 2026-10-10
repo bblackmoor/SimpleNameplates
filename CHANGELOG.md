@@ -1,3 +1,9 @@
+## 1.0.234 — 2026-10-09
+
+- Repair cast fills after native texture/state changes while the bar is already visible, using the actual status-bar texture rather than a potentially stale alias.
+- Convert accessible modern cast atlases to flat fills using Blizzard’s classic cast-state colors, preserving yellow casts, green completion/channels, gray non-interruptible casts and red interruptions.
+- Suppress native cast sparks, shine and glow; keep spell icons, non-interruptible shields, progress and the configured interruptible border. Restore native artwork/tint when styling ends.
+
 ## 1.0.233 — 2026-10-09
 
 - Revert only 1.0.232's native-name text clearing: retain native name content and suppress its duplicate display using the previous opacity behavior.

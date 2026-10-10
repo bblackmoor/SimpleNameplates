@@ -334,12 +334,42 @@ local function LayoutHealthText(frame, bar, context, observed)
     return labels[#labels] or threat, signature
 end
 
-local function FlattenBar(frame, bar, backgroundKey, context)
+-- Modern cast colors are baked into the atlas, while its vertex color is
+-- white. Use Blizzard's own flat/classic colors before replacing that atlas.
+-- Only inspect accessible artwork identifiers, never secret cast state.
+local function FlattenCastColor(frame, fill, context)
+    local atlas = Capabilities.ReadRegion(fill, "GetAtlas", context)
+    local texture = Capabilities.ReadRegion(fill, "GetTexture", context)
+    local identifier = atlas or texture
+    if identifier == nil then return false end
+    if type(identifier) ~= "string" then return true end
+    for _, info in pairs(CastingBarTypeInfo or {}) do
+        local color
+        if identifier == info.filling then color = info.classicFillColor
+        elseif identifier == info.full then color = info.classicFullColor end
+        if color then
+            local rgb = ReadValues(color, "GetRGB", context)
+            local original = OriginalArtwork(frame, fill, context)
+            if rgb and original then
+                if not original.vertexColor then
+                    original.vertexColor = ReadValues(fill, "GetVertexColor", context)
+                end
+                if original.vertexColor then fill:SetVertexColor(rgb[1], rgb[2], rgb[3], 1) end
+            end
+            return true
+        end
+    end
+    return true
+end
+
+local function FlattenBar(frame, bar, backgroundKey, context, isCast)
     if Capabilities.ObjectStatus(bar, context) ~= "accessible" then return end
     RemoveArtworkEdge(frame, Capabilities.SafeField(bar, backgroundKey, context), context)
-    local fill = Capabilities.SafeField(bar, "barTexture", context)
-        or Capabilities.ReadRegion(bar, "GetStatusBarTexture", context)
-    FlattenFill(frame, fill, context)
+    local fill = Capabilities.ReadRegion(bar, "GetStatusBarTexture", context)
+        or Capabilities.SafeField(bar, "barTexture", context)
+    if not isCast or FlattenCastColor(frame, fill, context) then
+        FlattenFill(frame, fill, context)
+    end
     local background = bar.SNPPlainBackground
     if not background and type(bar.CreateTexture) == "function" then
         background = bar:CreateTexture(nil, "BACKGROUND", nil, -1)
@@ -354,11 +384,30 @@ local function FlattenBar(frame, bar, backgroundKey, context)
     end
 end
 
+local CAST_DECORATIONS = {"Spark", "Flash", "StandardGlow", "CraftGlow", "CraftingGlow",
+    "ChannelShadow", "Shine", "EnergyGlow", "Flakes01", "Flakes02", "Flakes03",
+    "BaseGlow", "WispGlow", "Sparkles01", "Sparkles02", "InterruptGlow", "ChargeGlow", "ChargeFlash"}
+
+local function RemoveCastDecoration(frame, region, context)
+    RemoveArtworkEdge(frame, region, context)
+    local original = OriginalArtwork(frame, region, context)
+    if not original then return end
+    if not original.fill then
+        local atlas = Capabilities.ReadRegion(region, "GetAtlas", context)
+        local texture = Capabilities.ReadRegion(region, "GetTexture", context)
+        if not atlas and not texture then return end
+        original.fill = {atlas = atlas, texture = texture, coords = ReadValues(region, "GetTexCoord", context)}
+    end
+    -- Animation alpha can override SetAlpha(0); an empty texture stays invisible.
+    region:SetTexture(nil)
+end
+
 local function InstallArtworkHooks(frame, bar, context)
     if Capabilities.ObjectStatus(bar, context) ~= "accessible" then return end
     if bar.SNPArtworkHookOwner == frame then return end
     local function Refresh()
-        if frame.SNPRestoring or frame.SNPApplyingArtwork or not frame.SNPOriginalArtwork then return end
+        if frame.SNPRestoring or frame.SNPRestoringArtwork or frame.SNPApplyingArtwork
+            or not frame.SNPOriginalArtwork then return end
         if frame.SNPApplyingStyle then frame.SNPArtworkPending = true; return end
         local current = ns.WorldContext.Get()
         local assessment = Capabilities.InspectFrame(frame, current)
@@ -367,6 +416,22 @@ local function InstallArtworkHooks(frame, bar, context)
     if type(bar.HookScript) == "function" then bar:HookScript("OnShow", Refresh) end
     if hooksecurefunc and type(bar.ApplyStyleAndAnchoring) == "function" then
         hooksecurefunc(bar, "ApplyStyleAndAnchoring", Refresh)
+    end
+    if hooksecurefunc and type(bar.UpdateBarFillTexture) == "function" then
+        hooksecurefunc(bar, "UpdateBarFillTexture", Refresh)
+    end
+    if hooksecurefunc and type(bar.ShowSpark) == "function" then
+        hooksecurefunc(bar, "ShowSpark", Refresh)
+    end
+    if hooksecurefunc and type(bar.UpdateBarFillTexture) == "function" then
+        for _, key in ipairs(CAST_DECORATIONS) do
+            local region = Capabilities.SafeField(bar, key, context)
+            for _, method in ipairs({"SetAtlas", "SetTexture"}) do
+                if type(Capabilities.SafeField(region, method, context)) == "function" then
+                    hooksecurefunc(region, method, Refresh)
+                end
+            end
+        end
     end
     bar.SNPArtworkHookOwner = frame
 end
@@ -396,9 +461,12 @@ local function ApplyArtwork(frame, assessment, context)
     for _, key in ipairs({"selectedBorder", "deselectedOverlay"}) do
         RemoveArtworkEdge(frame, Capabilities.SafeField(healthBar, key, context), context)
     end
-    FlattenBar(frame, castBar, "Background", context)
+    FlattenBar(frame, castBar, "Background", context, true)
     for _, key in ipairs({"Border", "TextBorder", "DropShadow"}) do
         RemoveArtworkEdge(frame, Capabilities.SafeField(castBar, key, context), context)
+    end
+    for _, key in ipairs(CAST_DECORATIONS) do
+        RemoveCastDecoration(frame, Capabilities.SafeField(castBar, key, context), context)
     end
     for _, key in ipairs({"Text", "CastTargetNameText"}) do
         StyleNativeTextOutline(frame, Capabilities.SafeField(castBar, key, context), context)
@@ -422,7 +490,7 @@ local function ApplyBarArtwork(frame, assessment, context)
 end
 
 local unpackValues = unpack or table.unpack
-local function RestoreBarArtwork(frame, context)
+local function RestoreArtwork(frame, context)
     for region, original in pairs(frame.SNPOriginalArtwork or {}) do
         if Capabilities.ObjectStatus(region, context) ~= "accessible" then
             error("Bar artwork restoration is temporarily inaccessible")
@@ -461,6 +529,13 @@ local function RestoreBarArtwork(frame, context)
     frame.SNPGradientBars = nil
     frame.SNPArtworkPending = nil
     frame.SNPOriginalArtwork, frame.SNPPlainBackgrounds = nil, nil
+end
+
+local function RestoreBarArtwork(frame, context)
+    frame.SNPRestoringArtwork = true
+    local ok, err = pcall(RestoreArtwork, frame, context)
+    frame.SNPRestoringArtwork = nil
+    if not ok then error(err, 0) end
 end
 
 LayoutHealthText = ns.Profiler.Wrap("Health text layout", LayoutHealthText)
