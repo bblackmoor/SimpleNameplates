@@ -363,6 +363,7 @@ local function CancelProfileEdits()
     if ns.SettingsUI and ns.SettingsUI.CancelColorEdit then ns.SettingsUI.CancelColorEdit() end
     if ns.CancelAppearanceEdits then ns.CancelAppearanceEdits(true) end
     if ns.CancelColorsEdits then ns.CancelColorsEdits(true) end
+    if ns.CancelHighlightEdits then ns.CancelHighlightEdits(true) end
 end
 
 local function CancelColorEdit()
@@ -562,6 +563,7 @@ end
 local function ResetAllColors()
     CancelColorEdit()
     if ns.CancelColorsEdits then ns.CancelColorsEdits(true) end
+    if ns.CancelHighlightEdits then ns.CancelHighlightEdits(true) end
     local profile = ActiveProfile()
     local defaults = ActiveProfileDefaults()
     for key, default in pairs(defaults.priorityColors) do
@@ -581,6 +583,14 @@ local function ResetAllColors()
     if ns.ApplyManagedNameSettings then ns.ApplyManagedNameSettings() end
 end
 
+
+local function ResetHighlightSettings()
+    if ns.CancelHighlightEdits then ns.CancelHighlightEdits(true) end
+    local profile = ActiveProfile()
+    profile.interruptibleEffect = defaults.interruptibleEffect
+    profile.castAdvanced = ValidatedCastBorders()
+end
+ns.ResetHighlightSettings = ResetHighlightSettings
 
 local function GetCastBorderSetting(effect, key)
     local values = ActiveProfile().castAdvanced[effect]

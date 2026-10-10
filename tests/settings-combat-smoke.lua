@@ -31,7 +31,7 @@ function StaticPopup_Hide(key) if popups[key] then popups[key]:Hide() end end
 local ns = {}
 for _, file in ipairs({"Defaults", "FontMedia", "Core", "ManagedNames", "Database",
     "HealthGradient", "FontRendering", "SettingsControls", "SettingsColorPicker", "SettingsWidgets",
-    "SettingsBehavior", "SettingsProfileDialogs", "SettingsProfiles", "SettingsAppearance", "SettingsColors", "SettingsTRP3"}) do
+    "SettingsBehavior", "SettingsProfileDialogs", "SettingsProfiles", "SettingsAppearance", "SettingsHighlight", "SettingsColors", "SettingsTRP3"}) do
     assert(loadfile("SimpleNameplates/" .. file .. ".lua"))("SimpleNameplates", ns)
 end
 ns.RefreshAll = function() end
@@ -40,7 +40,7 @@ ns.PresentationCapabilities = {ObjectStatus = function() return "accessible" end
     ReadRegion = function(object, method) return object[method](object) end}
 ns.TRP3 = {Refresh = function() end, IsAvailable = function() return false end}
 ns.GetActiveProfileName()
-local panels = {ns.SettingsPanels.Profiles(), ns.SettingsPanels.Appearance(), ns.SettingsPanels.Colors(), ns.SettingsPanels.TRP3()}
+local panels = {ns.SettingsPanels.Profiles(), ns.SettingsPanels.Appearance(), ns.SettingsPanels.Colors(), ns.SettingsPanels.Highlight(), ns.SettingsPanels.TRP3()}
 ns.SettingsUI.InstallCombatGuard()
 local events
 for _, object in ipairs(ui.objects) do

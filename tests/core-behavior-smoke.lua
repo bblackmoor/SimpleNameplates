@@ -96,8 +96,8 @@ end
 local borders = fresh()
 equal(borders.GetCastBorderSetting("PULSE", "thickness"), 4, "shared thickness default")
 equal(borders.GetCastBorderSetting("PULSE", "offset"), 2, "shared outward offset default")
-equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.2, "original fade-in default")
-equal(borders.GetCastBorderSetting("PULSE", "fadeOut"), 0.2, "original fade-out default")
+equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.1, "original fade-in default")
+equal(borders.GetCastBorderSetting("PULSE", "fadeOut"), 0.1, "original fade-out default")
 equal(borders.GetCastBorderSetting("ALERT", "minLength"), 20, "Alert minimum default")
 equal(borders.GetCastBorderSetting("ALERT", "maxLength"), 100, "Alert maximum default")
 local saved = borders.EnsureDB().profiles.Default
@@ -109,7 +109,7 @@ borders = loadCore()
 equal(borders.GetInterruptibleEffect(), "ALERT", "Alert selection survives reload")
 equal(borders.GetCastBorderSetting("PULSE", "thickness"), 7, "valid thickness retained")
 equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.55, "valid pulse timing retained")
-equal(borders.GetCastBorderSetting("PULSE", "fadeOut"), 0.2, "invalid pulse timing defaults")
+equal(borders.GetCastBorderSetting("PULSE", "fadeOut"), 0.1, "invalid pulse timing defaults")
 equal(borders.GetCastBorderSetting("PULSE", "minLength"), nil, "old pulse length discarded without migration")
 equal(borders.GetCastBorderSetting("ALERT", "minLength"), 25, "valid Alert length retained")
 local retained = borders.EnsureDB().profiles.Default.castAdvanced
@@ -126,8 +126,24 @@ equal(borders.GetCastBorderSetting("ALERT", "minLength"), 20, "invalid saved len
 equal(borders.GetCastBorderSetting("ALERT", "maxLength"), 100, "invalid saved length pair defaults")
 borders.ResetAllColors()
 equal(borders.GetCastBorderSetting("PULSE", "thickness"), 4, "Colors reset thickness")
-equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.2, "Colors reset original pulse")
+equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.1, "Colors reset original pulse")
 equal(borders.GetCastBorderSetting("ALERT", "minLength"), 20, "Colors reset Alert")
+
+borders.SetInterruptibleHighlightEnabled(true)
+borders.SetEffectColor("interruptible", 0.4, 0.5, 0.6)
+borders.SetInterruptibleEffect("ALERT")
+borders.SetCastBorderSetting("PULSE", "fadeIn", 0.5)
+borders.ResetHighlightSettings()
+equal(borders.GetInterruptibleEffect(), "PULSE", "Highlight reset restores effect")
+equal(borders.GetCastBorderSetting("PULSE", "fadeIn"), 0.1, "Highlight reset restores timing")
+equal(borders.GetInterruptibleHighlightEnabled(), true, "Highlight reset preserves Colors activation")
+local r, g, b = borders.EffectColor("interruptible")
+equal(r, 0.4, "Highlight reset preserves Colors color")
+borders.ResetAllColors()
+r, g, b = borders.EffectColor("interruptible")
+equal(r, 0.2, "new factory red component")
+equal(g, 0, "new factory green component")
+equal(b, 1, "new factory blue component")
 
 -- Background dimming validation and persistence.
 local dim = fresh()
@@ -548,7 +564,7 @@ for line in toc:lines() do
 end
 toc:close()
 equal(table.concat(modules, ","),
-    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,Profiler.lua,PeriodicWork.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,HealthGradient.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsColorPicker.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfileDialogs.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
+    "Libs/LibStub/LibStub.lua,Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua,Libs/LibSharedMedia-3.0/LibSharedMedia-3.0.lua,Libs/DetailsFramework/load.xml,Defaults.lua,FontMedia.lua,Core.lua,Profiler.lua,PeriodicWork.lua,WorldContext.lua,ManagedNames.lua,NameplateSetup.lua,Database.lua,TRP3.lua,EntityFacts.lua,NameplateClassification.lua,PresentationCapabilities.lua,PresentationRules.lua,FontRendering.lua,HealthGradient.lua,NameplateFrames.lua,NPCTitles.lua,NameplateText.lua,NameplateThreat.lua,CastHighlight.lua,NameplateRestoration.lua,NameplatePresentation.lua,Nameplates.lua,Diagnostics.lua,SettingsControls.lua,SettingsColorPicker.lua,SettingsWidgets.lua,SettingsAbout.lua,SettingsBehavior.lua,SettingsProfileDialogs.lua,SettingsProfiles.lua,SettingsAppearance.lua,SettingsHighlight.lua,SettingsColors.lua,SettingsTRP3.lua,Settings.lua",
     "TOC module order")
 
 -- Removing the optional bundle persists until an explicit bundled restore.

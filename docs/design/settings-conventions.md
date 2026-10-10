@@ -30,9 +30,9 @@ About uses a large heading, muted description, Version/Author/Category/License m
 | Saved ownership | Global preferences, content/behavior Profiles, shared appearance Themes | Global behavior/integration and appearance Profiles |
 | Database API | `addon.Database` | Existing flat addon exports, including `GetProfile(name)` |
 | Scroll backend | Details Framework canvas adapter | Native scroll frame |
-| Default settings route | Behavior | Appearance |
+| Default settings route | Behavior | Text |
 | Profile confirmation after selection change | Unchanged captured original may remain valid | Captured original must still be selected |
-| Specialized refresh | Editor targets, category selection, font refresh | Appearance draft cancellation, font refresh, runtime plate refresh |
+| Specialized refresh | Editor targets, category selection, font refresh | Text draft cancellation, font refresh, runtime plate refresh |
 
 Both pickers use RGB tables for get/apply callbacks. Setup is silent and ignores hides emitted while the new session is opening; live previews apply, cancellation restores the original only while target identity remains current, native Okay/hide commits, and retired callbacks are inert. CancelColorEdit(owner) only cancels that owner; callers using frame scripts must wrap a global cancellation in a zero-argument callback. Native picker extraInfo identifies ownership. An addon must not close or roll back a picker owned by another addon.
 

@@ -8,7 +8,7 @@ function GameTooltip:SetOwner(frame) self.owner = frame end
 function GameTooltip:AddLine() end
 local ns, refreshes = {}, 0
 for _, file in ipairs({"Defaults", "FontMedia", "Core", "ManagedNames", "Database",
-    "HealthGradient", "FontRendering", "SettingsControls", "SettingsColorPicker", "SettingsWidgets", "SettingsProfileDialogs", "SettingsProfiles", "SettingsColors"}) do
+    "HealthGradient", "FontRendering", "SettingsControls", "SettingsColorPicker", "SettingsWidgets", "SettingsProfileDialogs", "SettingsProfiles", "SettingsHighlight", "SettingsColors"}) do
     assert(loadfile("SimpleNameplates/" .. file .. ".lua"))("SimpleNameplates", ns)
 end
 ns.RefreshAll = function() refreshes = refreshes + 1 end
@@ -26,6 +26,7 @@ local function Snapshot(value)
 end
 local initial = Snapshot(SimpleNameplatesDB)
 local panel = ns.SettingsPanels.Colors()
+local highlightPanel = ns.SettingsPanels.Highlight()
 assert(Snapshot(SimpleNameplatesDB) == initial and refreshes == 0, "constructing Colors is read-only")
 local function Row(text)
     for _, object in ipairs(ui.objects) do
@@ -113,9 +114,28 @@ for _, case in ipairs({
     assert(refreshes == before + 1, "one nameplate refresh per pulse edit")
 end
 local before = refreshes
-panel.Refresh()
+highlightPanel.Refresh()
 assert(refreshes == before, "pulse-control refresh remains read-only")
-ns.ResetAllColors(); panel.Refresh()
+ns.ResetAllColors(); panel.Refresh(); highlightPanel.Refresh()
+local function BelongsTo(object, ancestor)
+    while object do
+        if object == ancestor then return true end
+        object = object:GetParent()
+    end
+    return false
+end
+for _, label in ipairs({"Effect", "Border thickness", "Border offset", "Fade in", "Fade out", "Minimum length", "Maximum length", "Shrink time", "Grow time", "End opacity", "Center opacity"}) do
+    assert(BelongsTo(Row(label), highlightPanel), "interruptible settings moved to Highlight")
+    assert(not BelongsTo(Row(label), panel), "interruptible settings removed from Colors")
+end
+local colorsPreview, highlightPreview = 0, 0
+for _, object in ipairs(ui.objects) do
+    if object.kind == "StatusBar" and object:GetWidth() == 190 and object:GetHeight() == 14 then
+        if BelongsTo(object, panel) then colorsPreview = colorsPreview + 1 end
+        if BelongsTo(object, highlightPanel) then highlightPreview = highlightPreview + 1 end
+    end
+end
+assert(colorsPreview == 1 and highlightPreview == 1, "each page has an effect preview")
 local dimToggle = Control(Row("Dim background NPC names"), "switch")
 assert(ns.GetDimBackgroundNames(), "background dimming defaults on")
 assert(Row("Dim background NPC names").point[5] < Row("6. NPC - Background").point[5], "dimming follows background category")
@@ -129,7 +149,7 @@ ns.ResetAppearance()
 assert(not ns.GetDimBackgroundNames(), "Appearance reset preserves dimming")
 ns.SetDimBackgroundNames("invalid")
 assert(not ns.GetDimBackgroundNames(), "invalid setter ignored")
-ns.ResetAllColors(); panel.Refresh()
+ns.ResetAllColors(); panel.Refresh(); highlightPanel.Refresh()
 assert(ns.GetDimBackgroundNames() and dimToggle.MyObject:GetValue(), "Colors reset enables dimming")
 
 local methods = getmetatable(UIParent).__index
@@ -181,11 +201,11 @@ assert(ns.SetActiveProfileName("Default"))
 assert(ns.GetGradientOpacity() == 50, "copy independent")
 ns.ResetAppearance()
 assert(ns.GetGradientOpacity() == 50, "Appearance reset preserves opacity")
-ns.ResetAllColors(); panel.Refresh()
+ns.ResetAllColors(); panel.Refresh(); highlightPanel.Refresh()
 assert(ns.GetGradientOpacity() == 100 and preview.SNPHealthGradient:IsShown(), "Default reset")
 assert(ns.SetActiveProfileName("High Contrast")); panel.Refresh()
 assert(ns.GetGradientOpacity() == 0 and gradientSlider.MyObject:GetValue() == 0, "High Contrast starts at 0%")
-ns.SetGradientOpacity(50); ns.ResetAllColors(); panel.Refresh()
+ns.SetGradientOpacity(50); ns.ResetAllColors(); panel.Refresh(); highlightPanel.Refresh()
 assert(ns.GetGradientOpacity() == 0 and not preview.SNPHealthGradient:IsShown())
 assert(ns.SetActiveProfileName("Default")); panel.Refresh()
 
@@ -213,7 +233,7 @@ local picker = ColorPickerFrame.info
 picker.swatchFunc()
 RGBEqual({ns.EffectColor("interruptible")}, 0.2, 0.3, 0.4)
 picker.cancelFunc()
-RGBEqual({ns.EffectColor("interruptible")}, 1, 0, 1)
+RGBEqual({ns.EffectColor("interruptible")}, 0.2, 0, 1)
 assert(ns.GetInterruptibleHighlightEnabled(), "cast-color cancellation preserves activation")
 
 -- Adapted profile selector stays shared; switching refreshes DF controls silently.
@@ -250,7 +270,7 @@ for _, case in ipairs(cases) do
     RGBEqual(SwatchRGB(Control(Row(case[2]), "color")), default.r, default.g, default.b)
     assert(ns.GetHealthBarEnabled(case[1]) == (case[1] ~= "useless"))
 end
-RGBEqual(SwatchRGB(cast), 1, 0, 1)
+RGBEqual(SwatchRGB(cast), 0.2, 0, 1)
 initial, before = Snapshot(SimpleNameplatesDB), refreshes
 panel:GetScript("OnShow")(panel)
 panel:GetScript("OnShow")(panel)

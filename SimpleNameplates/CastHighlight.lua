@@ -134,8 +134,8 @@ local function ConfigureBorder(h, effect)
         if edge.horizontal then edge:SetHeight(thickness) else edge:SetWidth(thickness) end
     end
     if effect == "PULSE" then
-        local fadeOut = Parameter("PULSE", "fadeOut", 0.2)
-        local fadeIn = Parameter("PULSE", "fadeIn", 0.2)
+        local fadeOut = Parameter("PULSE", "fadeOut", 0.1)
+        local fadeIn = Parameter("PULSE", "fadeIn", 0.1)
         local signature = table.concat({fadeOut, fadeIn}, ":")
         if h.pulseConfig ~= signature then
             h.pulseConfig = signature
@@ -336,12 +336,12 @@ local function CreateHighlight(castBar, owner, healthBar)
     local fadeOut = pulse:CreateAnimation("Alpha")
     fadeOut:SetFromAlpha(1)
     fadeOut:SetToAlpha(0.35)
-    fadeOut:SetDuration(0.2)
+    fadeOut:SetDuration(0.1)
     fadeOut:SetOrder(1)
     local fadeIn = pulse:CreateAnimation("Alpha")
     fadeIn:SetFromAlpha(0.35)
     fadeIn:SetToAlpha(1)
-    fadeIn:SetDuration(0.2)
+    fadeIn:SetDuration(0.1)
     fadeIn:SetOrder(2)
     pulse:SetLooping("REPEAT")
     highlight.pulse, highlight.fadeOut, highlight.fadeIn = pulse, fadeOut, fadeIn

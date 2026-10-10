@@ -5,8 +5,9 @@ local categories, panels = {}, {}
 local pageOrder = {
     {key = "About", label = "About"},
     {key = "Profiles", label = "Profiles"},
-    {key = "Appearance", label = "Appearance"},
+    {key = "Appearance", label = "Text"},
     {key = "Colors", label = "Colors"},
+    {key = "Highlight", label = "Highlight"},
     {key = "TRP3", label = "TRP3"},
 }
 local aliases = {
@@ -15,6 +16,7 @@ local aliases = {
     profiles = "Profiles", profile = "Profiles",
     appearance = "Appearance", text = "Appearance", font = "Appearance", fonts = "Appearance",
     colors = "Colors", color = "Colors",
+    highlight = "Highlight", highlights = "Highlight",
     trp3 = "TRP3", rp = "TRP3",
 }
 local function RegisterSettingsPanels()
@@ -60,7 +62,7 @@ local function RegisterSettingsPanels()
         end
         local category = aliases[command] and categories[aliases[command]]
         if category then Settings.OpenToCategory(category:GetID())
-        else print("|cff0cd29fSimple Nameplates:|r /snp, /snp profiles, /snp appearance, /snp colors, /snp trp3, /snp debug [target|mouseover|nearby [name]], /snp perf [start|stop|report], /snp about") end
+        else print("|cff0cd29fSimple Nameplates:|r /snp, /snp profiles, /snp text, /snp colors, /snp highlight, /snp trp3, /snp debug [target|mouseover|nearby [name]], /snp perf [start|stop|report], /snp about") end
     end
 end
 addon.RegisterSettingsPanels = RegisterSettingsPanels

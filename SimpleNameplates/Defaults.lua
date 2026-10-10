@@ -22,7 +22,7 @@ local DEFAULT_CATEGORY_MODES = {
     useless = "active",
 }
 local DEFAULT_EFFECT_COLORS = {
-    interruptible = RGB8(255, 0, 255),
+    interruptible = RGB8(51, 0, 255),
 }
 local COLOR_PRESETS = {
     highContrast = {
@@ -37,7 +37,7 @@ local COLOR_PRESETS = {
             useless = RGB8(255, 255, 255),
         },
         effectColors = {
-            interruptible = RGB8(255, 0, 255),
+            interruptible = RGB8(51, 0, 255),
         },
     },
 }
@@ -108,8 +108,8 @@ ns.CAST_BORDER_CONTROLS = {
     PULSE = {
         {key="thickness", label="Border thickness", min=1, max=12, step=1, default=4, suffix=" px"},
         {key="offset", label="Border offset", min=0, max=6, step=1, default=2, suffix=" px"},
-        {key="fadeIn", label="Fade in", min=0.1, max=2, step=0.05, default=0.2, suffix=" s"},
-        {key="fadeOut", label="Fade out", min=0.1, max=2, step=0.05, default=0.2, suffix=" s"},
+        {key="fadeIn", label="Fade in", min=0.1, max=2, step=0.05, default=0.1, suffix=" s"},
+        {key="fadeOut", label="Fade out", min=0.1, max=2, step=0.05, default=0.1, suffix=" s"},
     },
     ALERT = {
         {key="minLength", label="Minimum length", min=1, max=100, step=1, default=20, suffix="%"},

@@ -1,3 +1,10 @@
+## 1.0.239 — 2026-10-09
+
+- Rename the Appearance tab to Text; add Highlight between Colors and TRP3, with `/snp text` and `/snp highlight` routes. Keep `/snp appearance` as an alias.
+- Keep interruptible color/Active on Colors; move effect, shared thickness/offset, Pulse and Alert settings to Highlight. Both pages have previews. Highlight has a selected-profile control and a scoped reset preserving color/Active.
+- Default Pulse Fade in/Fade out to 0.1 seconds each, and factory interruptible color to #3300FF. Preserve valid saved timing/color choices; Alert timing remains 0.2 seconds each way.
+- Preserve profile-switch, page-hide and combat draft cancellation for moved controls; update current documentation and UI regression coverage.
+
 ## 1.0.238 — 2026-10-09
 
 - Fix Alert growth snapping: later Scale orders compound with the completed shrink, so grow from identity to maximum/minimum to reverse the shrink and return continuously to the maximum length.

@@ -42,79 +42,6 @@ local function AddCastHighlightSwitch(context, row, swatch)
     end
 end
 
-local function AddCastBorderControls(context)
-    for _, effect in ipairs({"PULSE", "ALERT"}) do
-        for _, definition in ipairs(addon.CAST_BORDER_CONTROLS[effect]) do
-            local key = definition.key
-            if key == "fadeIn" then
-                AddSection(context.content, context.layout, "Pulse settings")
-                AddDescription(context.content, context.layout,
-                    "Pulsing border fades all four edges between 35% and 100% opacity.")
-            elseif key == "minLength" then
-                AddSection(context.content, context.layout, "Alert settings")
-                AddDescription(context.content, context.layout,
-                    "Alert border shrinks and grows centered gradient segments on the top and bottom edges. Length is a percentage of the edge; thickness stays constant. Side borders are hidden.")
-            end
-            local block = CreateFrame("Frame", nil, context.content)
-            block.LayoutFullWidth = true
-            context.layout:Add(block, 24, 48, 6)
-            local label = block:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-            label:SetPoint("TOPLEFT", 0, -12)
-            label:SetText(definition.label)
-            local amount = block:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-            amount:SetPoint("TOPLEFT", UI.CONTROL_X + 188, -12)
-            local slider = Widgets.CreateSlider(block, definition.min, definition.max, definition.step, function(value)
-                amount:SetText(string.format("%g", value) .. definition.suffix)
-                if value == addon.GetCastBorderSetting(effect, key) then return end
-                addon.SetCastBorderSetting(effect, key, value)
-                if not context.canceling then RefreshContext(context); RefreshNameplates() end
-            end)
-            slider:SetPoint("TOPLEFT", block, "TOPLEFT", UI.CONTROL_X, -10)
-            slider:GetFrame():SetHeight(18)
-            if slider.widget.amt then slider.widget.amt:Hide() end
-            for _, endpoint in ipairs({{definition.min, "LEFT"}, {definition.max, "RIGHT"}}) do
-                local caption = block:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-                caption:SetText(string.format("%g", endpoint[1]))
-                caption:SetPoint("TOP"..endpoint[2], slider:GetFrame(), "BOTTOM"..endpoint[2], 0, -2)
-            end
-            context.sliders[#context.sliders + 1] = slider
-            context.refreshers[#context.refreshers + 1] = function()
-                local value = addon.GetCastBorderSetting(effect, key)
-                slider:SetValue(value)
-                amount:SetText(string.format("%g", value) .. definition.suffix)
-            end
-        end
-    end
-end
-
-local function AddCastEffectControl(context)
-    local _, dropdown = UI.CreateDropdownRow(context.content, context.layout, "Effect",
-        function() return addon.CAST_EFFECT_OPTIONS end, function(value)
-            addon.SetInterruptibleEffect(value)
-            RefreshContext(context)
-            RefreshNameplates()
-        end)
-    context.refreshers[#context.refreshers + 1] = function()
-        local value = addon.GetInterruptibleEffect()
-        dropdown:SetValue(value, addon.CAST_EFFECT_BY_VALUE[value])
-    end
-    AddCastBorderControls(context)
-    local row = UI.CreateSettingRow(context.content, context.layout, "Effect preview")
-    local preview = CreateFrame("StatusBar", nil, row)
-    preview:SetPoint("LEFT", row, "LEFT", UI.CONTROL_X, 0)
-    preview:SetSize(190, 14)
-    preview:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    preview:SetStatusBarColor(0.25, 0.25, 0.25, 1)
-    preview:SetMinMaxValues(0, 100)
-    preview:SetValue(65)
-    context.preview = preview
-    context.refreshers[#context.refreshers + 1] = function()
-        if addon.CastHighlight then addon.CastHighlight.UpdatePreview(preview) end
-    end
-    AddDescription(context.content, context.layout,
-        "Preview demonstrates the selected effect even while Inactive; it does not detect a real cast. Enable Active above to highlight interruptible enemy casts.")
-end
-
 local function CreateColorRow(context, text, displayText, getColor, setColor, state)
     local row = UI.CreateSettingRow(context.content, context.layout, text)
     local swatch = Widgets.CreateColorPicker(row, function(r, g, b)
@@ -257,7 +184,7 @@ local function CreateColorsPanel()
     end)
     AddDescription(content, layout,
         "Restores High Contrast defaults for that profile, Default for all others. " ..
-        "Restores health bars to On except NPC - Background, background-name dimming to On, gradient opacity to 100% for Default/custom profiles or 0% for High Contrast, and cast highlight to Inactive with magenta Pulsing border, thickness 4, outward offset 2, pulse fade times 0.2 seconds, and Alert length 20–100%, shrink/grow times 0.2 seconds, end opacity 0% and center opacity 100%.")
+        "Restores health-bar preferences, background-name dimming and gradient opacity. Disables cast highlighting and restores its settings on Highlight.")
     AddGradientControl(context)
     AddPriorityColorControls(context)
     AddSection(content, layout, "Cast highlight color")
@@ -266,7 +193,7 @@ local function CreateColorsPanel()
         function() return EffectColor("interruptible") end,
         function(r, g, b) SetEffectColor("interruptible", r, g, b) end)
     AddCastHighlightSwitch(context, row, swatch)
-    AddCastEffectControl(context)
+    addon.AddCastEffectPreview(context)
     panel.Refresh = Refresh
     panel:SetScript("OnShow", panel.Refresh)
     panel:SetScript("OnHide", function()

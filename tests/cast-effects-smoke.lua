@@ -100,6 +100,8 @@ for _, style in ipairs({"ALERT", "SOLID", "ALERT", "SOLID"}) do
     local count = #ui.objects; Update()
     assert(#ui.objects == count, "same effect reuses regions")
 end
+effect = "PULSE"; Update()
+assert(h.fadeOut.duration == 0.1 and h.fadeIn.duration == 0.1, "new pulse timing defaults")
 custom.PULSE = {thickness = 7, offset = 1, fadeOut = 0.4, fadeIn = 0.7}
 custom.ALERT = {shrinkTime = 0.4, growTime = 0.7, minLength = 20, maxLength = 80, endOpacity = 15, centerOpacity = 75}
 for _, style in ipairs({"ALERT", "SOLID"}) do

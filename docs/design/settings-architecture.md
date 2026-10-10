@@ -4,19 +4,20 @@ Reviewed for 1.0.222 on 2026-10-08. Settings conversion and runtime module work 
 
 ## Settings ownership and pages
 
-The pages are About, Profiles, Appearance, Colors and TRP3, in that order. All use the Details Framework widget adapter with shared layout helpers, native dialogs and yellow circled-i links. There is no Behavior page or slash route.
+The pages are About, Profiles, Text, Colors, Highlight and TRP3, in that order. All use the Details Framework widget adapter with shared layout helpers, native dialogs and yellow circled-i links. There is no Behavior page or slash route.
 
 | Page | Current responsibility |
 | --- | --- |
 | About | Metadata, source link, commands, known presentation limits and read-only native-label swatches |
 | Profiles | Account-wide profile management and the global styling Active switch |
-| Appearance | Profile fonts, Slug rendering, name size/placement, health-bar width and threat display; global critter/companion hiding |
-| Colors | Six profile priority colors, profile cast color/Active switch/effect dropdown/preview and six profile Health Bar switches, background-name dimming, a profile gradient opacity slider (0–100%) and full-health preview |
+| Text | Profile fonts, Slug rendering, name size/placement, health-bar width and threat display; global critter/companion hiding |
+| Colors | Six profile priority colors, profile cast color/Active switch/preview and six profile Health Bar switches, background-name dimming, a profile gradient opacity slider (0–100%) and full-health preview |
+| Highlight | Profile effect, shared thickness/offset, Pulse and Alert parameters, effect preview and reset |
 | TRP3 | Global integration and RP-name/title/OOC preferences |
 
 Visible pages refresh their selected-profile controls immediately; hidden pages reread on show. Profile switching cancels active previews before changing selection and refreshes plates. Native profile dialogs capture name and object identity at opening and reject acceptance after selection changes or same-name replacement. Database mutations cancel affected drafts before switching or replacing their targets.
 
-Reset settings on Appearance restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors, cast highlighting off and effect Pulsing border, background dimming on, gradient opacity 100% for Default/custom profiles or 0% for High Contrast, and Health Bar preferences On except NPC - Background. There are no individual color reset buttons. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
+Reset settings on Text restores profile appearance and threat display plus global critter hiding. Reset all colors restores the selected profile's factory colors, cast highlighting off and effect Pulsing border, background dimming on, gradient opacity 100% for Default/custom profiles or 0% for High Contrast, and Health Bar preferences On except NPC - Background. There are no individual color reset buttons. Neither page reset changes the global styling switch or TRP3 preferences. See the [saved-data model](saved-data-model.md) for exact field ownership.
 
 ## Current source ownership
 
@@ -50,7 +51,7 @@ Reset settings on Appearance restores profile appearance and threat display plus
 | `SettingsProfileDialogs.lua` | Captured profile identity and native lifecycle/restore confirmations |
 | `SettingsAbout.lua` / `SettingsProfiles.lua` | About page, profile management and shared selectors |
 | `SettingsBehavior.lua` | Global styling/critter controls and their setup/restoration callbacks |
-| `SettingsAppearance.lua` / `SettingsColors.lua` / `SettingsTRP3.lua` | Page construction, refresh and scoped user actions |
+| `SettingsAppearance.lua` (Text) / `SettingsColors.lua` / `SettingsHighlight.lua` / `SettingsTRP3.lua` | Page construction, refresh and scoped user actions |
 | `Settings.lua` | Settings registration and slash routing |
 
 ## Shared settings contracts
@@ -87,10 +88,4 @@ The 1.0.218 crowded-scene report confirms appearance convergence in that scene. 
 
 ## Interruptible effects (1.0.221)
 
-Colors has a profile Effect dropdown with Pulsing border and Solid border, one shared Border thickness slider (default 4), pulse Fade in and Fade out (0.2 seconds each), and a labeled preview. Both use addon-owned four-edge borders anchored directly to the cast bar at zero inset. Pulse opacity is fixed at 35–100%; solid opacity is 100%. Advanced and all other effects/controls are removed. Direct icon/shield Show/Hide and cast-bar visibility changes refresh detection, hidden casts gate explicit events, and unknown active state retries conservatively. Actual cast and visual acceptance remains open. See [cast-effect testing](cast-effect-testing.md).
-
-## Combat settings guard (1.0.222)
-
-`SettingsControls.lua` installs one PLAYER_REGEN_DISABLED/ENABLED listener after page construction. On combat entry, `SettingsWidgets.lua` retires color/typed-slider/drag previews through a scoped rollback path, closes dropdown menus, disables the shared controls and refreshes every page from saved values. `SettingsProfileDialogs.lua` cancels owned dialogs and invalidates their data so retained acceptance callbacks remain inert after combat. Already committed edits remain saved; no cancelled session resumes on combat exit.
-
-Widget callbacks and picker/dialog entry/acceptance also check current player combat/lockdown, including before the event arrives and when controls are constructed during combat. Handles retain page-requested enablement separately from effective combat enablement, preserving protected profile actions and TRP3 dependencies. Silent refresh guards still prevent setters during page refresh. Debug/perf slash commands remain available. The `settings-combat-smoke.lua` suite exercises the actual bundled framework, rollback, menus/dialogs, retained callbacks, combat refreshes and normal editing after combat. Native timing, rendering and secure behavior remain live-client checks.
+Colors contains the interruptible color and Active switch, with default color #3300FF. Highlight (between Colors and TRP3) contains Effect (Pulsing border, Solid border, Alert border), shared Border thickness (4) and outward Border offset (2), Pulse Fade in/Fade out (0.1 seconds each), and Alert length (20–100%), shrink/grow times (0.2 seconds each), end opacity (0%) and center opacity (100%). Pulse fades all four edges between 35% and 100%; Solid is fully opaque; Alert animates centered top/bottom gradient segments with hidden sides. Both Colors and Highlight have labeled effect previews, including while Inactive. Reset highlight settings restores effect/geometry/timing/gradient without changing Colors color/Active; Reset all colors retains its broader reset scope. Native icon/shield hooks and spellcast events drive detection without reading secret interruptibility. Live visual acceptance remains open.

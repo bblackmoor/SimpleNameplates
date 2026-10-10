@@ -164,6 +164,7 @@ local ns = {
     SetCastBorderSetting = function() end,
     GetInterruptibleEffect = function() return "PULSE" end,
     SetInterruptibleEffect = function() end,
+    ResetHighlightSettings = function() end,
     ResetAllColors = function()
         allColorResets = allColorResets + 1
         castEnabled = false
@@ -203,11 +204,11 @@ end
 loadSettings()
 assert(ns.RegisterSettingsPanels, "settings registration API")
 ns.RegisterSettingsPanels()
-equal(#categories, 5, "About and four subcategories")
-equal(table.concat({categories[1].name,categories[2].name,categories[3].name,categories[4].name,categories[5].name}, ","),
-    "Simple Nameplates,Profiles,Appearance,Colors,TRP3", "tab order")
+equal(#categories, 6, "About and four subcategories")
+equal(table.concat({categories[1].name,categories[2].name,categories[3].name,categories[4].name,categories[5].name,categories[6].name}, ","),
+    "Simple Nameplates,Profiles,Text,Colors,Highlight,TRP3", "tab order")
 ns.RegisterSettingsPanels()
-equal(#categories, 5, "one-time registration")
+equal(#categories, 6, "one-time registration")
 equal(SLASH_SNP1, "/snp", "slash registration")
 local debugUnits = {}
 ns.DebugUnit = function(unit) debugUnits[#debugUnits + 1] = unit end
@@ -224,7 +225,7 @@ local debugCount = #debugUnits
 SlashCmdList.SNP("debug invalid")
 equal(#debugUnits, debugCount, "invalid diagnostic unit is not inspected")
 
-for _, route in ipairs({{"",3},{"about",1},{"profiles",2},{"appearance",3},{"colors",4},{"trp3",5}}) do
+for _, route in ipairs({{"",3},{"about",1},{"profiles",2},{"appearance",3},{"colors",4},{"text",3},{"highlight",5},{"trp3",6}}) do
     SlashCmdList.SNP(route[1])
     equal(opened[#opened], route[2], "route " .. route[1])
 end
@@ -299,14 +300,14 @@ equal(fullTitle:GetChecked(), true, "existing full-title value retained")
 equal(fullTitle:IsEnabled(), false, "title disabled with TRP3 integration off")
 local trp3Master = assert(switchFor("Display TRP3 profile information"))
 trp3Master:Click()
-categories[5].panel.scripts.OnShow(categories[5].panel)
+categories[6].panel.scripts.OnShow(categories[6].panel)
 equal(fullTitle:IsEnabled(), true, "title enabled when integration enabled")
 local beforeTitleRefresh = trp3Refreshes
 fullTitle:Click()
 equal(trp3Settings.showFullTitle, false, "moved control updates original global key")
 equal(trp3Refreshes, beforeTitleRefresh + 1, "title change refreshes TRP3 presentation")
 trp3Master:Click()
-categories[5].panel.scripts.OnShow(categories[5].panel)
+categories[6].panel.scripts.OnShow(categories[6].panel)
 equal(fullTitle:IsEnabled(), false, "title gate refreshed after integration disabled")
 equal(fullTitle:GetChecked(), false, "disabled integration preserves title choice")
 assert(button("Create") and button("Copy") and button("Rename") and button("Delete"),
@@ -425,7 +426,7 @@ categories[3].panel.scripts.OnShow(categories[3].panel)
 equal(profilesSelector.MyObject.myvalue, "High Contrast", "Profiles selector refreshes on show")
 equal(appearanceSelector.MyObject.myvalue, "High Contrast", "Appearance selector refreshes on show")
 assert(belongsTo(button("Create"), categories[2].panel), "management belongs to Profiles")
-assert(belongsTo(fullTitle, categories[5].panel), "long-title switch belongs to TRP3")
+assert(belongsTo(fullTitle, categories[6].panel), "long-title switch belongs to TRP3")
 local _, _, effectFill = colorRow("Interruptible cast highlight")
 assert(belongsTo(effectFill, categories[4].panel), "cast color belongs to Colors")
 assert(not switchFor("Highlight interruptible casts and channels"), "redundant Appearance cast toggle removed")

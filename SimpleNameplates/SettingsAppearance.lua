@@ -105,8 +105,8 @@ local function AddControls(context)
 end
 
 local function CreateAppearancePanel()
-    local panel, content, layout = UI.CreateScrollablePanel("Appearance")
-    UI.AddTitle(content, layout, "Appearance")
+    local panel, content, layout = UI.CreateScrollablePanel("Text")
+    UI.AddTitle(content, layout, "Text")
     local context = {content = content, layout = layout, refreshers = {}, fontRefreshers = {}, sliders = {}}
     local function CancelEdits(quiet)
         local changed = false

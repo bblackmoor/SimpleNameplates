@@ -374,6 +374,7 @@ function Widgets.SetCombatLocked(locked)
         Widgets.CancelEdits(function()
             if addon.SettingsUI.CancelColorEdit then addon.SettingsUI.CancelColorEdit() end
             if addon.CancelAppearanceEdits then addon.CancelAppearanceEdits() end
+            if addon.CancelHighlightEdits then addon.CancelHighlightEdits() end
             for _, handle in ipairs(handles) do
                 if handle.CancelCombatEdit then handle:CancelCombatEdit()
                 elseif handle.CancelEdit then handle:CancelEdit() end

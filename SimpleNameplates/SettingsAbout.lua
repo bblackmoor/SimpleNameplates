@@ -82,9 +82,10 @@ local function CreateAboutPanel()
 
     UI.AddSection(content, layout, "Commands")
     AddDescription(content, layout,
-        "/snp or /snp appearance — Appearance settings\n" ..
+        "/snp or /snp text — Text settings\n" ..
         "/snp profiles — Manage appearance profiles\n" ..
         "/snp colors — Color settings\n" ..
+        "/snp highlight — Interruptible border settings\n" ..
         "/snp trp3 — TRP3 settings\n" ..
         "/snp debug — Explain the current target\n" ..
         "/snp debug mouseover — Inspect without targeting\n" ..

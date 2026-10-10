@@ -34,8 +34,10 @@ Existing LibStub, CallbackHandler and LibSharedMedia load first. No Ace framewor
 profile scaffold or optional DF helper dependencies are used by our adapter.
 `SettingsWidgets.lua` supplies Blizzard textures instead of Details image paths
 for its controls; Details and Plater are not required. Colors uses the adapter
-as of 1.0.152, Appearance as of 1.0.154, and Profiles/TRP3/About as of 1.0.155.
+as of 1.0.152, Text (formerly Appearance) as of 1.0.154, and Profiles/TRP3/About as of 1.0.155.
 Native dialogs and info links remain; the existing layout helpers in
 `SettingsControls.lua` now compose the adapter through shared switch, dropdown
 and page-action layouts; unused legacy controls were removed in 1.0.156.
 Client rendering, security and external-copy verification remain pending.
+
+As of 1.0.239, Highlight uses the same DF adapter for border controls. Colors retains color/Active and an effect preview; Highlight has a second preview. No additional library is required.
